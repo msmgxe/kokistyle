@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Download, Plus, Printer, QrCode, Trash2 } from "lucide-react";
 
 import { branding } from "@/src/config/branding";
+import { useLanguage } from "@/src/context/LanguageContext";
 import Button from "../ui/Button";
 import Container from "../ui/Container";
 
@@ -23,37 +24,25 @@ interface EstimateItem {
   unitPrice: number;
 }
 
-const initialItems: EstimateItem[] = [
-  {
-    id: 1,
-    description: "Design consultation and site review",
-    quantity: 1,
-    unitPrice: 750,
-  },
-  {
-    id: 2,
-    description: "Premium remodeling allowance",
-    quantity: 1,
-    unitPrice: 8500,
-  },
-];
-
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
 
 export default function EstimateBuilder() {
-  const [items, setItems] = useState<EstimateItem[]>(initialItems);
+  const { t } = useLanguage();
+  const createInitialItems = () =>
+    t.estimate.initialItems.map((description, index) => ({
+      id: index + 1,
+      description,
+      quantity: 1,
+      unitPrice: index === 0 ? 750 : 8500,
+    }));
+
+  const [items, setItems] = useState<EstimateItem[]>(createInitialItems);
   const [qrPreview, setQrPreview] = useState("");
   const { register, getValues } = useForm<EstimateFormValues>({
-    defaultValues: {
-      clientName: "Sample Client",
-      clientEmail: "client@example.com",
-      projectType: "Kitchen Remodeling",
-      propertyCity: "Miami, FL",
-      notes: "Premium concept estimate. Final pricing depends on scope, materials, and site verification.",
-    },
+    defaultValues: t.estimate.defaults,
   });
 
   const subtotal = useMemo(
@@ -90,7 +79,7 @@ export default function EstimateBuilder() {
       ...current,
       {
         id: Date.now(),
-        description: "New scope item",
+        description: t.estimate.newScopeItem,
         quantity: 1,
         unitPrice: 0,
       },
@@ -138,13 +127,13 @@ export default function EstimateBuilder() {
     doc.rect(0, 0, 210, 36, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
-    doc.text("KokiStyle Estimate", 16, 18);
+    doc.text(t.estimate.pdfTitle, 16, 18);
     doc.setFontSize(10);
     doc.text(branding.slogan, 16, 27);
 
     doc.setTextColor(15, 61, 86);
     doc.setFontSize(13);
-    doc.text("Client", 16, 52);
+    doc.text(t.estimate.client, 16, 52);
     doc.setTextColor(70, 80, 90);
     doc.setFontSize(10);
     doc.text(values.clientName, 16, 60);
@@ -153,7 +142,7 @@ export default function EstimateBuilder() {
 
     doc.setTextColor(15, 61, 86);
     doc.setFontSize(13);
-    doc.text("Scope", 16, 92);
+    doc.text(t.estimate.scope, 16, 92);
     doc.setFontSize(10);
     doc.setTextColor(70, 80, 90);
 
@@ -172,19 +161,19 @@ export default function EstimateBuilder() {
     doc.line(16, y + 2, 194, y + 2);
     doc.setFontSize(11);
     doc.setTextColor(15, 61, 86);
-    doc.text("Subtotal", 145, y + 12);
+    doc.text(t.estimate.subtotal, 145, y + 12);
     doc.text(currencyFormatter.format(subtotal), 194, y + 12, { align: "right" });
-    doc.text("Contingency 10%", 145, y + 20);
+    doc.text(`${t.estimate.contingency} 10%`, 145, y + 20);
     doc.text(currencyFormatter.format(contingency), 194, y + 20, { align: "right" });
     doc.setFontSize(14);
-    doc.text("Estimated Total", 145, y + 32);
+    doc.text(t.estimate.estimatedTotal, 145, y + 32);
     doc.text(currencyFormatter.format(total), 194, y + 32, { align: "right" });
 
     doc.setFontSize(10);
     doc.setTextColor(80, 90, 100);
     doc.text(values.notes, 16, y + 48, { maxWidth: 118 });
     doc.addImage(qrUrl, "PNG", 158, y + 42, 32, 32);
-    doc.text("Scan estimate QR", 158, y + 80);
+    doc.text(t.estimate.scanQr, 158, y + 80);
 
     doc.save("kokistyle-estimate.pdf");
   };
@@ -195,19 +184,18 @@ export default function EstimateBuilder() {
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#0F3D56]/70">
-              Estimate system
+              {t.estimate.eyebrow}
             </p>
             <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] sm:text-5xl">
-              Sales-ready estimates with PDF export and QR tracking
+              {t.estimate.title}
             </h2>
             <p className="mt-6 leading-8 text-slate-700">
-              Capture lead details, adjust scope items, print, export a branded
-              PDF, and generate a dynamic QR payload for project handoff.
+              {t.estimate.description}
             </p>
 
             <div className="mt-8 grid gap-4 rounded-lg bg-[#F5E9DA] p-5">
               {qrPreview ? (
-                <img src={qrPreview} alt="Estimate QR code" className="size-36 rounded-lg bg-white p-2" />
+                <img src={qrPreview} alt={t.estimate.qrAlt} className="size-36 rounded-lg bg-white p-2" />
               ) : (
                 <div className="grid size-36 place-items-center rounded-lg border border-[#0F3D56]/20 bg-white text-[#0F3D56]">
                   <QrCode size={52} />
@@ -215,10 +203,10 @@ export default function EstimateBuilder() {
               )}
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button type="button" onClick={downloadPdf}>
-                  <Download size={18} /> Export PDF
+                  <Download size={18} /> {t.estimate.exportPdf}
                 </Button>
                 <Button type="button" variant="secondary" onClick={() => window.print()}>
-                  <Printer size={18} /> Print
+                  <Printer size={18} /> {t.estimate.print}
                 </Button>
               </div>
             </div>
@@ -227,28 +215,28 @@ export default function EstimateBuilder() {
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_20px_70px_rgba(15,61,86,0.12)] sm:p-7">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2 text-sm font-semibold text-[#0F3D56]">
-                Client name
+                {t.estimate.clientName}
                 <input
                   {...register("clientName")}
                   className="min-h-12 rounded-lg border border-slate-200 px-4 text-slate-900 outline-none focus:border-[#0F3D56]"
                 />
               </label>
               <label className="grid gap-2 text-sm font-semibold text-[#0F3D56]">
-                Client email
+                {t.estimate.clientEmail}
                 <input
                   {...register("clientEmail")}
                   className="min-h-12 rounded-lg border border-slate-200 px-4 text-slate-900 outline-none focus:border-[#0F3D56]"
                 />
               </label>
               <label className="grid gap-2 text-sm font-semibold text-[#0F3D56]">
-                Project type
+                {t.estimate.projectType}
                 <input
                   {...register("projectType")}
                   className="min-h-12 rounded-lg border border-slate-200 px-4 text-slate-900 outline-none focus:border-[#0F3D56]"
                 />
               </label>
               <label className="grid gap-2 text-sm font-semibold text-[#0F3D56]">
-                Property city
+                {t.estimate.propertyCity}
                 <input
                   {...register("propertyCity")}
                   className="min-h-12 rounded-lg border border-slate-200 px-4 text-slate-900 outline-none focus:border-[#0F3D56]"
@@ -260,10 +248,10 @@ export default function EstimateBuilder() {
               <table className="w-full min-w-[620px] border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                    <th className="border-b border-slate-200 pb-3">Item</th>
-                    <th className="border-b border-slate-200 pb-3 text-right">Qty</th>
-                    <th className="border-b border-slate-200 pb-3 text-right">Unit</th>
-                    <th className="border-b border-slate-200 pb-3 text-right">Total</th>
+                    <th className="border-b border-slate-200 pb-3">{t.estimate.item}</th>
+                    <th className="border-b border-slate-200 pb-3 text-right">{t.estimate.qty}</th>
+                    <th className="border-b border-slate-200 pb-3 text-right">{t.estimate.unit}</th>
+                    <th className="border-b border-slate-200 pb-3 text-right">{t.estimate.total}</th>
                     <th className="border-b border-slate-200 pb-3" />
                   </tr>
                 </thead>
@@ -303,7 +291,7 @@ export default function EstimateBuilder() {
                           type="button"
                           onClick={() => removeItem(item.id)}
                           className="grid size-10 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label="Remove item"
+                          aria-label={t.estimate.removeItem}
                         >
                           <Trash2 size={17} />
                         </button>
@@ -316,26 +304,26 @@ export default function EstimateBuilder() {
 
             <div className="mt-5 flex flex-col gap-5 border-t border-slate-200 pt-5 sm:flex-row sm:items-start sm:justify-between">
               <Button type="button" variant="secondary" onClick={addItem}>
-                <Plus size={18} /> Add item
+                <Plus size={18} /> {t.estimate.addItem}
               </Button>
               <div className="min-w-56 space-y-2 text-sm">
                 <div className="flex justify-between gap-8 text-slate-600">
-                  <span>Subtotal</span>
+                  <span>{t.estimate.subtotal}</span>
                   <strong>{currencyFormatter.format(subtotal)}</strong>
                 </div>
                 <div className="flex justify-between gap-8 text-slate-600">
-                  <span>Contingency</span>
+                  <span>{t.estimate.contingency}</span>
                   <strong>{currencyFormatter.format(contingency)}</strong>
                 </div>
                 <div className="flex justify-between gap-8 border-t border-slate-200 pt-2 text-lg font-bold text-[#0F3D56]">
-                  <span>Total</span>
+                  <span>{t.estimate.total}</span>
                   <span>{currencyFormatter.format(total)}</span>
                 </div>
               </div>
             </div>
 
             <label className="mt-6 grid gap-2 text-sm font-semibold text-[#0F3D56]">
-              Notes
+              {t.estimate.notes}
               <textarea
                 {...register("notes")}
                 rows={3}

@@ -3,14 +3,9 @@
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Play } from "lucide-react";
 
+import { useLanguage } from "@/src/context/LanguageContext";
 import Button from "../ui/Button";
 import Container from "../ui/Container";
-
-const projectStats = [
-  { value: "120+", label: "premium remodels" },
-  { value: "18", label: "Florida cities served" },
-  { value: "360", label: "tour-ready showcases" },
-];
 
 const galleryImages = [
   {
@@ -24,6 +19,8 @@ const galleryImages = [
 ];
 
 export default function Hero() {
+  const { t } = useLanguage();
+
   return (
     <section
       id="home"
@@ -38,30 +35,28 @@ export default function Hero() {
           className="max-w-3xl"
         >
           <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#0F3D56]/75 sm:text-sm">
-            Luxury remodeling in Florida
+            {t.hero.eyebrow}
           </p>
 
           <h1 className="text-5xl font-bold leading-[0.98] text-[#0F3D56] sm:text-6xl lg:text-7xl">
-            Transforming spaces into luxury experiences
+            {t.hero.title}
           </h1>
 
           <p className="mt-7 max-w-2xl text-base leading-8 text-slate-700 sm:text-lg">
-            Premium residential and commercial remodeling with curated design,
-            precise construction, and sales-ready project showcases for Florida
-            properties.
+            {t.hero.description}
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Button href="#estimate">
-              Get Estimate <ArrowRight size={18} />
+              {t.hero.primaryCta} <ArrowRight size={18} />
             </Button>
             <Button href="#tours" variant="secondary">
-              <Play size={18} /> View Virtual Tour
+              <Play size={18} /> {t.hero.secondaryCta}
             </Button>
           </div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            {projectStats.map((stat) => (
+            {t.hero.stats.map((stat) => (
               <div key={stat.label} className="border-l border-[#0F3D56]/20 pl-4">
                 <span className="block text-2xl font-bold">{stat.value}</span>
                 <span className="mt-1 block text-sm text-slate-600">{stat.label}</span>
@@ -70,14 +65,12 @@ export default function Hero() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-slate-700">
-            {["Design-build workflow", "Before/after storytelling", "Lead-ready estimates"].map(
-              (item) => (
+            {t.hero.proof.map((item) => (
                 <span key={item} className="inline-flex items-center gap-2">
                   <CheckCircle2 size={17} className="text-[#0F3D56]" />
                   {item}
                 </span>
-              ),
-            )}
+            ))}
           </div>
         </motion.div>
 
@@ -103,10 +96,10 @@ export default function Hero() {
           </div>
           <div className="absolute bottom-10 right-4 max-w-[260px] rounded-lg bg-white/92 p-5 shadow-[0_18px_55px_rgba(15,61,86,0.18)] backdrop-blur">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
-              Current focus
+              {t.hero.currentFocusLabel}
             </p>
             <p className="mt-2 text-xl font-bold leading-tight text-[#0F3D56]">
-              Kitchens, interiors, commercial upgrades
+              {t.hero.currentFocus}
             </p>
           </div>
         </motion.div>

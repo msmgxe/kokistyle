@@ -1,17 +1,22 @@
+"use client";
+
 import { Mail, MapPin, Phone } from "lucide-react";
 import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
 
 import { branding } from "@/src/config/branding";
+import { useLanguage } from "@/src/context/LanguageContext";
 import Container from "../ui/Container";
 
 const footerLinks = [
-  { label: "Services", href: "#services" },
-  { label: "Before / After", href: "#before-after" },
-  { label: "Virtual Tours", href: "#tours" },
-  { label: "Estimates", href: "#estimate" },
+  { href: "#services" },
+  { href: "#before-after" },
+  { href: "#tours" },
+  { href: "#estimate" },
 ];
 
 export default function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer id="contact" className="bg-slate-950 py-14 text-white">
       <Container>
@@ -27,23 +32,22 @@ export default function Footer() {
               </div>
             </div>
             <p className="mt-6 max-w-md leading-7 text-white/65">
-              Premium remodeling and construction presentation platform for
-              Florida residential and commercial projects.
+              {t.footer.description}
             </p>
           </div>
 
           <div>
             <h3 className="text-sm font-bold uppercase tracking-[0.24em] text-[#F5E9DA]">
-              Explore
+              {t.footer.explore}
             </h3>
             <div className="mt-5 grid gap-3">
-              {footerLinks.map((link) => (
+              {footerLinks.map((link, index) => (
                 <a
                   key={link.href}
                   href={link.href}
                   className="text-white/65 transition hover:text-white"
                 >
-                  {link.label}
+                  {t.footer.links[index]}
                 </a>
               ))}
             </div>
@@ -51,7 +55,7 @@ export default function Footer() {
 
           <div>
             <h3 className="text-sm font-bold uppercase tracking-[0.24em] text-[#F5E9DA]">
-              Contact
+              {t.footer.contact}
             </h3>
             <div className="mt-5 grid gap-3 text-white/70">
               <a href={`tel:${branding.phone}`} className="flex items-center gap-3 hover:text-white">
@@ -70,7 +74,7 @@ export default function Footer() {
                   key={index}
                   href="#contact"
                   className="grid size-10 place-items-center rounded-lg border border-white/15 text-white/70 transition hover:border-white/40 hover:text-white"
-                  aria-label="Social profile"
+                  aria-label={t.footer.socialProfile}
                 >
                   <Icon size={18} />
                 </a>
@@ -80,7 +84,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 border-t border-white/10 pt-6 text-sm text-white/45">
-          © 2026 KokiStyle Remodeling. Built for premium project showcases.
+          {t.footer.copyright}
         </div>
       </Container>
     </footer>
