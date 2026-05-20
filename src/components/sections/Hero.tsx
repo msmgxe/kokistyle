@@ -14,8 +14,8 @@ const projectStats = [
 
 const galleryImages = [
   {
-    src: "https://images.unsplash.com/photo-1600585154340-445c12c6a3f3?auto=format&fit=crop&w=900&q=85",
-    alt: "Luxury Florida exterior remodel with warm lighting",
+    src: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1000&q=90",
+    alt: "Luxury interior remodel with warm natural light",
   },
   {
     src: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=700&q=85",
@@ -91,7 +91,7 @@ export default function Hero() {
             <img
               src={galleryImages[0].src}
               alt={galleryImages[0].alt}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-center"
             />
           </div>
           <div className="absolute bottom-0 left-0 h-[46%] w-[54%] overflow-hidden rounded-lg border-8 border-[#F5E9DA] shadow-[0_24px_70px_rgba(15,61,86,0.2)]">
