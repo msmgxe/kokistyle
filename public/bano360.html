@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Baño 360° — KokiStyle Remodeling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0F3D56;--navy2:#1a5a7a;--cream:#F5E9DA;
+  --sage:#8BA890;--brass:#C9A840;--wood:#7D5A3C;--white:#F9F7F4;
+}
+html,body{height:100%;overflow-x:hidden}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#f0ede8}
+
+/* ── Header ── */
+.hdr{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(15,61,86,.94);backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(245,233,218,.1);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:62px;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-badge{
+  width:36px;height:36px;background:var(--cream);color:var(--navy);
+  border-radius:8px;display:grid;place-items:center;
+  font-size:11px;font-weight:700;letter-spacing:.03em;
+}
+.logo-name{font-size:16px;font-weight:600;color:#fff;line-height:1.1}
+.logo-sub{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.45)}
+.back{
+  display:flex;align-items:center;gap:6px;text-decoration:none;
+  font-size:13px;font-weight:500;color:rgba(255,255,255,.6);
+  transition:color .2s;
+}
+.back:hover{color:#fff}
+.back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── Hero ── */
+.hero{
+  background:linear-gradient(145deg,#0F3D56 0%,#1a5a7a 60%,#0F3D56 100%);
+  padding:56px 28px 44px;text-align:center;margin-top:62px;
+}
+.eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3em;color:var(--cream);opacity:.7;margin-bottom:14px}
+.hero h1{
+  font-family:'Playfair Display',serif;font-size:clamp(26px,4vw,42px);
+  font-weight:600;color:#fff;line-height:1.2;margin-bottom:14px;
+}
+.hero p{font-size:15px;color:rgba(255,255,255,.6);max-width:540px;margin:0 auto;line-height:1.75}
+
+/* ── Tabs ── */
+.tabs{display:flex;justify-content:center;padding:28px 28px 0;background:#111;gap:0}
+.tab{
+  padding:11px 28px;background:transparent;
+  border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.5);font-family:'Inter',sans-serif;
+  font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .22s;letter-spacing:.04em;
+}
+.tab:first-child{border-radius:8px 0 0 8px}
+.tab:last-child{border-radius:0 8px 8px 0;border-left:none}
+.tab.on{background:var(--sage);border-color:var(--sage);color:#fff;font-weight:600}
+
+/* ── Viewer ── */
+.vwrap{background:#111;padding:14px 28px 28px}
+.vbox{
+  width:100%;max-width:1140px;margin:0 auto;
+  position:relative;border-radius:14px;overflow:hidden;
+  box-shadow:0 32px 100px rgba(0,0,0,.55);
+}
+#cv{display:block;width:100%;height:580px;cursor:grab;touch-action:none}
+#cv:active{cursor:grabbing}
+.badge{
+  position:absolute;top:14px;left:14px;
+  background:rgba(0,0,0,.52);backdrop-filter:blur(8px);
+  color:rgba(255,255,255,.88);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.15em;
+  padding:6px 14px;border-radius:20px;pointer-events:none;
+}
+#hint{
+  position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  color:rgba(255,255,255,.7);font-size:12px;
+  padding:7px 18px;border-radius:20px;pointer-events:none;
+  white-space:nowrap;transition:opacity .7s;
+}
+#compass{position:absolute;top:14px;right:14px;pointer-events:none}
+
+/* ── Info panels ── */
+.info{background:#0d0d0d;padding:48px 28px}
+.igrid{
+  max-width:1140px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;
+}
+.icard{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;padding:20px 22px;
+}
+.swatch{
+  width:44px;height:44px;border-radius:50%;margin-bottom:14px;
+  border:2px solid rgba(255,255,255,.1);
+}
+.ilabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.38);margin-bottom:4px}
+.ival{font-size:14px;font-weight:500;color:rgba(255,255,255,.85)}
+.isub{font-size:11px;color:rgba(255,255,255,.38);margin-top:3px}
+
+.layouts{
+  max-width:1140px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;gap:24px;
+  padding-top:28px;
+}
+@media(max-width:600px){.layouts{grid-template-columns:1fr}}
+
+.lcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:22px 24px}
+.ltag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;margin-bottom:10px}
+.ltitle{font-family:'Playfair Display',serif;font-size:20px;color:rgba(255,255,255,.9);margin-bottom:10px}
+.ldesc{font-size:13px;line-height:1.8;color:rgba(255,255,255,.5)}
+
+/* ── Footer ── */
+footer{
+  background:var(--navy);padding:28px 28px;text-align:center;
+  font-size:13px;color:rgba(255,255,255,.45);
+}
+footer a{color:var(--cream);text-decoration:none}
+
+@media(max-width:768px){
+  #cv{height:400px}
+  .hdr{padding:0 16px}
+  .hero{padding:40px 16px 32px}
+  .vwrap{padding:10px 12px 20px}
+  .igrid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <a href="/" class="logo">
+    <div class="logo-badge">KS</div>
+    <div>
+      <div class="logo-name">KokiStyle</div>
+      <div class="logo-sub">Florida</div>
+    </div>
+  </a>
+  <a href="/" class="back">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Volver al inicio
+  </a>
+</header>
+
+<div class="hero">
+  <p class="eyebrow">Cliente 01 · Renovación Baño</p>
+  <h1>Tour Virtual 360° — Diseño Propuesto</h1>
+  <p>Explora el espacio rediseñado con azulejo subway verde salvia, herrajes en bronce y mueble en madera cálida. Arrastra para girar · rueda para hacer zoom.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="switchLayout(1,this)">Vista Actual</button>
+  <button class="tab"   onclick="switchLayout(2,this)">Vista Propuesta</button>
+</div>
+
+<div class="vwrap">
+  <div class="vbox">
+    <canvas id="cv"></canvas>
+    <div class="badge" id="badge">Distribución Actual</div>
+    <div id="hint">Arrastra para girar · Rueda para zoom</div>
+    <canvas id="compass" width="68" height="68"></canvas>
+  </div>
+</div>
+
+<div class="info">
+  <div class="igrid">
+    <div class="icard">
+      <div class="swatch" style="background:#8BA890"></div>
+      <div class="ilabel">Paredes</div>
+      <div class="ival">Subway Verde Salvia</div>
+      <div class="isub">Formato vertical 10×20 cm</div>
+    </div>
+    <div class="icard">
+      <div class="swatch" style="background:#E8E4D8"></div>
+      <div class="ilabel">Piso</div>
+      <div class="ival">Porcelana Calacatta</div>
+      <div class="isub">Gran formato 60×60 cm</div>
+    </div>
+    <div class="icard">
+      <div class="swatch" style="background:#C9A840"></div>
+      <div class="ilabel">Herrajes</div>
+      <div class="ival">Bronce Pulido</div>
+      <div class="isub">Grifería · Toallero · Ducha</div>
+    </div>
+    <div class="icard">
+      <div class="swatch" style="background:#7D5A3C"></div>
+      <div class="ilabel">Vanidad</div>
+      <div class="ival">Roble Cálido</div>
+      <div class="isub">Mueble bajo con espejo Hollywood</div>
+    </div>
+    <div class="icard">
+      <div class="swatch" style="background:#F5F3EF;border-color:rgba(255,255,255,.2)"></div>
+      <div class="ilabel">Sanitarios</div>
+      <div class="ival">Porcelana Blanca</div>
+      <div class="isub">Inodoro · Lavabo</div>
+    </div>
+    <div class="icard">
+      <div class="swatch" style="background:rgba(200,240,235,.55);border-color:rgba(200,240,235,.25)"></div>
+      <div class="ilabel">Ducha</div>
+      <div class="ival">Vidrio Templado</div>
+      <div class="isub">Cabina o ducha italiana</div>
+    </div>
+  </div>
+
+  <div class="layouts">
+    <div class="lcard">
+      <div class="ltag" style="color:var(--sage)">Distribución Actual</div>
+      <div class="ltitle">Layout Original</div>
+      <div class="ldesc">Cabina de ducha esquinera con vidrio templado y marco de bronce. Vanidad con espejo Hollywood en pared lateral izquierda. Inodoro en pared derecha. Diseño clásico y funcional que maximiza el espacio disponible.</div>
+    </div>
+    <div class="lcard">
+      <div class="ltag" style="color:var(--brass)">Distribución Propuesta</div>
+      <div class="ltitle">Nueva Distribución</div>
+      <div class="ldesc">Ducha italiana a ras de piso en pared trasera sin cabina de vidrio, creando mayor amplitud visual. Doble lavabo en pared derecha con espejo de bronce. Inodoro en esquina privada. Estética spa de alta gama.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Presentación exclusiva · <a href="/">KokiStyle Remodeling</a> · Florida 2026
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ═══════════════════════════════════════════════════
+   ROOM CONSTANTS
+═══════════════════════════════════════════════════ */
+var RW=2.4, RH=2.5, RD=2.2;   // width, height, depth
+
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
+var renderer, scene, camera;
+var yaw=Math.PI+0.3, pitch=-0.06;
+var autoSpin=true, isDrag=false;
+var animId, spinId;
+
+/* ═══════════════════════════════════════════════════
+   TEXTURE HELPERS
+═══════════════════════════════════════════════════ */
+function subwayTex(){
+  var c=document.createElement('canvas');
+  c.width=128; c.height=256;
+  var x=c.getContext('2d');
+  // grout
+  x.fillStyle='#C4D2C6'; x.fillRect(0,0,128,256);
+  // tile body
+  x.fillStyle='#8BA890'; x.fillRect(5,5,118,246);
+  // specular sheen
+  var g=x.createLinearGradient(5,5,123,251);
+  g.addColorStop(0,'rgba(255,255,255,0.22)');
+  g.addColorStop(0.35,'rgba(255,255,255,0.05)');
+  g.addColorStop(1,'rgba(0,0,0,0.12)');
+  x.fillStyle=g; x.fillRect(5,5,118,246);
+  // subtle edge shadow
+  x.strokeStyle='rgba(0,0,0,0.08)'; x.lineWidth=1;
+  x.strokeRect(5,5,118,246);
+  var t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  return t;
+}
+
+var _swTex=null;
+function wallMat(w,h){
+  if(!_swTex) _swTex=subwayTex();
+  var tex=_swTex.clone(); tex.needsUpdate=true;
+  // 10cm wide × 20cm tall subway tile
+  tex.repeat.set(w/0.10, h/0.20);
+  return new THREE.MeshStandardMaterial({map:tex,roughness:0.28,metalness:0.04});
+}
+
+function marbleTex(){
+  var c=document.createElement('canvas'); c.width=512; c.height=512;
+  var x=c.getContext('2d');
+  x.fillStyle='#E8E4D8'; x.fillRect(0,0,512,512);
+  // veins
+  var veins=[
+    [0.05,0,0.25,0.3,0.15,0.7,0.3,1],
+    [0.6,0,0.55,0.4,0.7,0.6,0.8,1],
+    [0.35,0,0.5,0.5,0.4,0.75,0.55,1],
+    [0.8,0,0.7,0.35,0.85,0.65,0.75,1]
+  ];
+  veins.forEach(function(v){
+    x.beginPath();
+    x.moveTo(v[0]*512,v[1]*512);
+    x.bezierCurveTo(v[2]*512,v[3]*512,v[4]*512,v[5]*512,v[6]*512,v[7]*512);
+    x.strokeStyle='rgba(150,140,125,0.18)'; x.lineWidth=1.5; x.stroke();
+    x.strokeStyle='rgba(150,140,125,0.08)'; x.lineWidth=4; x.stroke();
+  });
+  // grout grid (60cm tiles = 512/2.4*0.6≈128px)
+  x.strokeStyle='rgba(180,170,155,0.55)'; x.lineWidth=2;
+  for(var i=0;i<=512;i+=128){
+    x.beginPath();x.moveTo(i,0);x.lineTo(i,512);x.stroke();
+    x.beginPath();x.moveTo(0,i);x.lineTo(512,i);x.stroke();
+  }
+  var t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(RW/0.6, RD/0.6);
+  return t;
+}
+
+function woodTex(){
+  var c=document.createElement('canvas'); c.width=256; c.height=256;
+  var x=c.getContext('2d');
+  var g=x.createLinearGradient(0,0,256,0);
+  g.addColorStop(0,'#7D5A3C'); g.addColorStop(0.12,'#8E6A4A');
+  g.addColorStop(0.28,'#7D5A3C'); g.addColorStop(0.45,'#6B4D33');
+  g.addColorStop(0.60,'#7D5A3C'); g.addColorStop(0.78,'#8A6448');
+  g.addColorStop(1,'#6B4D33');
+  x.fillStyle=g; x.fillRect(0,0,256,256);
+  // grain lines
+  x.strokeStyle='rgba(35,18,6,0.1)'; x.lineWidth=0.8;
+  for(var y=0;y<256;y+=5){
+    x.beginPath();
+    x.moveTo(0,y+Math.sin(y*0.09)*1.8);
+    x.lineTo(256,y+Math.sin(y*0.09+3.5)*1.8);
+    x.stroke();
+  }
+  var t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  return t;
+}
+
+/* ═══════════════════════════════════════════════════
+   MATERIALS (created once, reused)
+═══════════════════════════════════════════════════ */
+var M={};
+function mkMats(){
+  var mTex=marbleTex();
+  var wTex=woodTex();
+  M.marble = new THREE.MeshStandardMaterial({map:mTex,roughness:0.15,metalness:0.05});
+  M.wood   = new THREE.MeshStandardMaterial({map:wTex,roughness:0.65,metalness:0.02});
+  M.white  = new THREE.MeshStandardMaterial({color:0xF5F3EF,roughness:0.22,metalness:0.02});
+  M.brass  = new THREE.MeshStandardMaterial({color:0xC9A840,roughness:0.14,metalness:0.88});
+  M.glass  = new THREE.MeshPhysicalMaterial({
+    color:0xC8F0EB, transparent:true, opacity:0.2,
+    roughness:0.02, metalness:0.1, side:THREE.DoubleSide
+  });
+  M.mirror = new THREE.MeshStandardMaterial({color:0xADD8D0,roughness:0.02,metalness:0.95});
+  M.frame  = new THREE.MeshStandardMaterial({color:0x1A1A1A,roughness:0.35,metalness:0.35});
+  M.bulb   = new THREE.MeshStandardMaterial({
+    color:0xFFF8E0, emissive:0xFFE080, emissiveIntensity:1.4, roughness:0.4
+  });
+  M.ceil   = new THREE.MeshStandardMaterial({color:0xF7F5F2,roughness:0.92,metalness:0});
+  M.towel  = new THREE.MeshStandardMaterial({color:0xE0D8C8,roughness:0.9,metalness:0});
+}
+
+/* ═══════════════════════════════════════════════════
+   MESH HELPER
+═══════════════════════════════════════════════════ */
+function mk(geo,mat,x,y,z,rx,ry,rz){
+  var m=new THREE.Mesh(geo,mat);
+  m.position.set(x||0,y||0,z||0);
+  if(rx)m.rotation.x=rx; if(ry)m.rotation.y=ry; if(rz)m.rotation.z=rz;
+  m.castShadow=true; m.receiveShadow=true;
+  return m;
+}
+
+/* ═══════════════════════════════════════════════════
+   ROOM SHELL
+═══════════════════════════════════════════════════ */
+function buildRoom(s){
+  var hw=RW/2, hd=RD/2, hh=RH/2;
+  // Floor
+  s.add(mk(new THREE.PlaneGeometry(RW,RD), M.marble, 0,0,0, -Math.PI/2));
+  // Ceiling
+  s.add(mk(new THREE.PlaneGeometry(RW,RD), M.ceil,   0,RH,0,  Math.PI/2));
+  // Back wall (z=-hd) → faces +z
+  s.add(mk(new THREE.PlaneGeometry(RW,RH), wallMat(RW,RH), 0,hh,-hd));
+  // Left wall (x=-hw) → faces +x
+  s.add(mk(new THREE.PlaneGeometry(RD,RH), wallMat(RD,RH), -hw,hh,0, 0,Math.PI/2));
+  // Right wall (x=+hw) → faces -x
+  s.add(mk(new THREE.PlaneGeometry(RD,RH), wallMat(RD,RH), hw,hh,0, 0,-Math.PI/2));
+  // Front partial wall left segment
+  s.add(mk(new THREE.PlaneGeometry(0.7,RH), wallMat(0.7,RH), -hw+0.35,hh,hd, 0,Math.PI));
+  // Front partial wall right segment
+  s.add(mk(new THREE.PlaneGeometry(0.7,RH), wallMat(0.7,RH), hw-0.35,hh,hd, 0,Math.PI));
+  // Front wall header (above door)
+  s.add(mk(new THREE.PlaneGeometry(1.0,0.5), wallMat(1.0,0.5), 0,RH-0.25,hd, 0,Math.PI));
+}
+
+/* ═══════════════════════════════════════════════════
+   VANITY + HOLLYWOOD MIRROR  (left wall, opening +x)
+═══════════════════════════════════════════════════ */
+function addVanity(s, cz, vanW){
+  vanW = vanW || 0.88;
+  var vanD=0.48, vanH=0.86;
+  var vx = -RW/2 + vanD/2 + 0.01;
+
+  // Cabinet
+  s.add(mk(new THREE.BoxGeometry(vanD,vanH,vanW), M.wood, vx,vanH/2,cz));
+  // Countertop
+  s.add(mk(new THREE.BoxGeometry(vanD+0.04,0.04,vanW+0.04), M.marble, vx,vanH+0.02,cz));
+  // Sink bowl
+  s.add(mk(new THREE.CylinderGeometry(0.17,0.14,0.13,28), M.white, vx,vanH+0.03,cz));
+  // Drain dot
+  s.add(mk(new THREE.CylinderGeometry(0.02,0.02,0.01,12), M.brass, vx,vanH+0.04,cz));
+
+  // Faucet (brass)
+  var fz=cz-0.065;
+  s.add(mk(new THREE.CylinderGeometry(0.022,0.022,0.055,14), M.brass, vx,vanH+0.145,fz));
+  var arm=mk(new THREE.CylinderGeometry(0.012,0.012,0.13,10), M.brass, vx+0.05,vanH+0.18,fz);
+  arm.rotation.z=Math.PI/2; s.add(arm);
+  s.add(mk(new THREE.CylinderGeometry(0.016,0.022,0.035,14), M.brass, vx+0.115,vanH+0.18,fz, Math.PI/2,0,0));
+
+  // Hollywood mirror frame
+  var mH=0.78, mW=vanW*0.85;
+  var my=vanH+0.06+mH/2;
+  s.add(mk(new THREE.BoxGeometry(0.028,mH+0.07,mW+0.07), M.frame, -RW/2+0.018,my,cz));
+  // Mirror glass
+  s.add(mk(new THREE.BoxGeometry(0.012,mH,mW), M.mirror, -RW/2+0.034,my,cz));
+
+  // Bulbs around mirror
+  var cols=5, rows=3, br=0.026;
+  for(var ci=-cols;ci<=cols;ci++){
+    var bz=cz+ci*(mW/(cols*2+1))*0.85;
+    [-1,1].forEach(function(side){
+      s.add(mk(new THREE.SphereGeometry(br,10,10), M.bulb, -RW/2+0.07, my+side*(mH/2+0.04), bz));
+    });
+  }
+  for(var ri=-rows;ri<=rows;ri++){
+    var by2=my+ri*(mH/(rows*2+1))*0.85;
+    [-1,1].forEach(function(side){
+      s.add(mk(new THREE.SphereGeometry(br,10,10), M.bulb, -RW/2+0.07, by2, cz+side*(mW/2+0.04)));
+    });
+  }
+
+  // Mirror warm light
+  var ml=new THREE.PointLight(0xFFE5A0,2.2,3.0,1.4);
+  ml.position.set(-RW/2+0.45,my,cz); s.add(ml);
+
+  // Towel ring (brass)
+  var tr=mk(new THREE.TorusGeometry(0.055,0.008,10,24), M.brass, -RW/2+0.08,1.05,cz+(vanW/2)+0.12, Math.PI/2,0,Math.PI/2);
+  s.add(tr);
+}
+
+/* ═══════════════════════════════════════════════════
+   TOILET
+═══════════════════════════════════════════════════ */
+function addToilet(s, x, z, ry){
+  var g=new THREE.Group();
+  g.add(mk(new THREE.BoxGeometry(0.40,0.40,0.30),   M.white, 0,0.20,0));
+  g.add(mk(new THREE.CylinderGeometry(0.22,0.18,0.16,24), M.white, 0,0.48,0.01));
+  var seat=mk(new THREE.CylinderGeometry(0.21,0.21,0.025,24),
+    new THREE.MeshStandardMaterial({color:0xEFEDEB,roughness:0.28}), 0,0.575,0.015);
+  g.add(seat);
+  g.add(mk(new THREE.BoxGeometry(0.36,0.30,0.20), M.white, 0,0.72,-0.055));
+  g.add(mk(new THREE.BoxGeometry(0.37,0.026,0.21), M.white, 0,0.875,-0.055));
+  // flush button
+  g.add(mk(new THREE.CylinderGeometry(0.018,0.018,0.012,12), M.brass, 0,0.89,-0.055, Math.PI/2));
+  g.rotation.y=ry||0;
+  g.position.set(x,0,z);
+  s.add(g);
+}
+
+/* ═══════════════════════════════════════════════════
+   SHOWER CABIN  (glass enclosure)
+═══════════════════════════════════════════════════ */
+function addShowerCabin(s, cx, cz){
+  var SW=0.88, SD=0.88;
+  // Tray
+  s.add(mk(new THREE.BoxGeometry(SW,0.07,SD), M.marble, cx,0.035,cz));
+  // Tray lip
+  s.add(mk(new THREE.BoxGeometry(SW+0.03,0.025,SD+0.03), M.brass, cx,0.082,cz));
+
+  // Glass walls (2 sides visible from inside room)
+  var SH=RH-0.07;
+  s.add(mk(new THREE.PlaneGeometry(SW,SH), M.glass, cx, SH/2+0.07, cz+SD/2)); // front
+  var gSide=mk(new THREE.PlaneGeometry(SD,SH), M.glass, cx-SW/2, SH/2+0.07, cz);
+  gSide.rotation.y=Math.PI/2; s.add(gSide);
+
+  // Brass frame
+  var FR=0.02;
+  // top front bar
+  s.add(mk(new THREE.BoxGeometry(SW+0.02,FR,FR), M.brass, cx,RH-0.01,cz+SD/2));
+  // top side bar
+  s.add(mk(new THREE.BoxGeometry(FR,FR,SD+0.02), M.brass, cx-SW/2,RH-0.01,cz));
+  // vertical corner bar
+  s.add(mk(new THREE.BoxGeometry(FR,RH,FR), M.brass, cx-SW/2,RH/2,cz+SD/2));
+  // door handle
+  s.add(mk(new THREE.CylinderGeometry(0.012,0.012,0.14,10), M.brass, cx-SW/2+0.04,1.05,cz+SD/2+0.015, 0,0,Math.PI/2));
+
+  // Shower head (wall-mounted)
+  var shX=cx+SW/2-0.18, shZ=cz-SD/2+0.18;
+  var pipe=mk(new THREE.CylinderGeometry(0.015,0.015,0.55,12), M.brass, shX,RH-0.28,shZ);
+  pipe.rotation.x=-0.25; s.add(pipe);
+  s.add(mk(new THREE.CylinderGeometry(0.055,0.055,0.022,20), M.brass, shX,RH-0.54,shZ, Math.PI/2));
+  // control valve
+  s.add(mk(new THREE.CylinderGeometry(0.025,0.025,0.07,14), M.brass, cx+SW/2-0.12,1.02,cz-SD/2+0.1, 0,0,Math.PI/2));
+
+  // Niche in back wall
+  s.add(mk(new THREE.BoxGeometry(0.28,0.12,0.08), M.marble, cx, 1.35, -RD/2+0.05));
+}
+
+/* ═══════════════════════════════════════════════════
+   TOWEL BAR
+═══════════════════════════════════════════════════ */
+function addTowelBar(s, x, y, z, len, ry){
+  var bar=mk(new THREE.CylinderGeometry(0.013,0.013,len,12), M.brass, x,y,z);
+  bar.rotation.z=Math.PI/2; if(ry)bar.rotation.y=ry; s.add(bar);
+  var end1=mk(new THREE.CylinderGeometry(0.025,0.025,0.03,12), M.brass, x-len/2,y,z);
+  if(ry)end1.rotation.y=ry; s.add(end1);
+  var end2=mk(new THREE.CylinderGeometry(0.025,0.025,0.03,12), M.brass, x+len/2,y,z);
+  if(ry)end2.rotation.y=ry; s.add(end2);
+  // towel
+  var tw=mk(new THREE.BoxGeometry(0.022,0.46,len*0.9), M.towel, x,y-0.22-0.01,z);
+  s.add(tw);
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT 1  — Original distribution
+═══════════════════════════════════════════════════ */
+function buildL1(s){
+  buildRoom(s);
+
+  // Vanity — left wall, centered
+  addVanity(s, 0.0, 0.88);
+
+  // Toilet — right wall, front-center zone
+  addToilet(s, RW/2-0.23, 0.38, -Math.PI/2);
+
+  // Toilet paper holder
+  var tp=mk(new THREE.CylinderGeometry(0.022,0.022,0.12,12), M.brass, RW/2-0.07,0.86,0.7);
+  tp.rotation.z=Math.PI/2; s.add(tp);
+  s.add(mk(new THREE.CylinderGeometry(0.04,0.04,0.012,16), M.white, RW/2-0.07,0.86,0.7, 0,0,Math.PI/2));
+
+  // Shower cabin — back-right corner
+  addShowerCabin(s, RW/2-0.46, -RD/2+0.46);
+
+  // Towel bar — right wall
+  addTowelBar(s, RW/2-0.065, 1.18, -0.38, 0.52, -Math.PI/2);
+
+  // Ceiling light
+  addCeilingLight(s, 0, -0.1);
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT 2  — Proposed open layout
+═══════════════════════════════════════════════════ */
+function buildL2(s){
+  buildRoom(s);
+
+  // ── Walk-in shower (open, back wall, left zone) ──
+  var SAW=1.5, SAD=0.62; // shower area width, depth
+  var SAX=-RW/2+SAW/2, SAZ=-RD/2+SAD/2;
+
+  // Shower floor (slightly raised, different tone)
+  var shFloor=mk(new THREE.BoxGeometry(SAW,0.08,SAD),
+    new THREE.MeshStandardMaterial({map:marbleTex(),roughness:0.12,metalness:0.05}),
+    SAX, 0.04, SAZ);
+  s.add(shFloor);
+
+  // Step/curb at front
+  s.add(mk(new THREE.BoxGeometry(SAW,0.08,0.055), M.marble, SAX,0.04,-RD/2+SAD));
+  // Half-divider wall (right side of shower area)
+  s.add(mk(new THREE.BoxGeometry(0.09,1.0,SAD), wallMat(SAD,1.0), SAX+SAW/2+0.045,0.5,SAZ));
+
+  // Ceiling rain shower
+  var rshX=SAX, rshZ=SAZ+0.08;
+  s.add(mk(new THREE.CylinderGeometry(0.012,0.012,0.28,12), M.brass, rshX,RH-0.14,rshZ));
+  s.add(mk(new THREE.CylinderGeometry(0.115,0.115,0.022,28), M.brass, rshX,RH-0.41,rshZ));
+  // Rain head holes (visual detail)
+  s.add(mk(new THREE.CylinderGeometry(0.108,0.108,0.01,28),
+    new THREE.MeshStandardMaterial({color:0x7A6030,roughness:0.3,metalness:0.8}),
+    rshX, RH-0.43, rshZ));
+
+  // Wall shower (secondary)
+  s.add(mk(new THREE.CylinderGeometry(0.013,0.013,0.42,12), M.brass, SAX-SAW/2+0.2,RH-0.38,SAZ-SAD/2+0.15, -0.3));
+  s.add(mk(new THREE.CylinderGeometry(0.048,0.048,0.018,18), M.brass, SAX-SAW/2+0.2,RH-0.6,SAZ-SAD/2+0.18, Math.PI/2));
+  // Shower controls
+  s.add(mk(new THREE.CylinderGeometry(0.022,0.022,0.065,14), M.brass, -RW/2+0.12,1.02,-RD/2+0.12, 0,0,Math.PI/2));
+  s.add(mk(new THREE.CylinderGeometry(0.022,0.022,0.065,14), M.brass, -RW/2+0.12,1.02,-RD/2+0.22, 0,0,Math.PI/2));
+  // Niche in back wall (shower area)
+  s.add(mk(new THREE.BoxGeometry(0.32,0.14,0.09), M.marble, SAX-0.1,1.28,-RD/2+0.05));
+
+  // ── Double vanity (right wall) ──
+  var vanW2=1.05, vanD2=0.50, vanH2=0.86;
+  var vx2=RW/2-vanD2/2-0.01, vcz=0.12;
+  s.add(mk(new THREE.BoxGeometry(vanD2,vanH2,vanW2), M.wood, vx2,vanH2/2,vcz));
+  s.add(mk(new THREE.BoxGeometry(vanD2+0.04,0.04,vanW2+0.04), M.marble, vx2,vanH2+0.02,vcz));
+  // two basins
+  [-0.26,0.26].forEach(function(dz){
+    s.add(mk(new THREE.CylinderGeometry(0.155,0.13,0.11,26), M.white, vx2,vanH2+0.03,vcz+dz));
+    s.add(mk(new THREE.CylinderGeometry(0.018,0.018,0.05,12), M.brass, vx2,vanH2+0.13,vcz+dz-0.065));
+    var fa=mk(new THREE.CylinderGeometry(0.01,0.01,0.10,10), M.brass, vx2+0.045,vanH2+0.165,vcz+dz-0.065);
+    fa.rotation.z=Math.PI/2; s.add(fa);
+    s.add(mk(new THREE.CylinderGeometry(0.014,0.018,0.028,12), M.brass, vx2+0.095,vanH2+0.165,vcz+dz-0.065, Math.PI/2));
+  });
+  // Large brass-framed mirror
+  var mH2=0.88, mW2=vanW2*0.92;
+  var my2=vanH2+0.07+mH2/2;
+  s.add(mk(new THREE.BoxGeometry(0.025,mH2+0.06,mW2+0.06), M.brass, RW/2-0.014,my2,vcz));
+  s.add(mk(new THREE.BoxGeometry(0.01,mH2,mW2), M.mirror, RW/2-0.025,my2,vcz));
+  // LED strip top
+  s.add(mk(new THREE.BoxGeometry(0.018,0.032,mW2+0.04),
+    new THREE.MeshStandardMaterial({color:0xFFF8F0,emissive:0xFFE8B0,emissiveIntensity:0.9,roughness:0.5}),
+    RW/2-0.025, my2+mH2/2+0.025, vcz));
+  var ml2=new THREE.PointLight(0xFFE5A0,2.0,3.0,1.3);
+  ml2.position.set(RW/2-0.5,my2,vcz); s.add(ml2);
+
+  // ── Toilet (left wall, back corner) ──
+  addToilet(s, -RW/2+0.24, -0.58, Math.PI/2);
+  // toilet paper holder
+  var tp2=mk(new THREE.CylinderGeometry(0.02,0.02,0.1,12), M.brass, -RW/2+0.07,0.84,-0.28);
+  tp2.rotation.z=Math.PI/2; s.add(tp2);
+  s.add(mk(new THREE.CylinderGeometry(0.036,0.036,0.01,14), M.white, -RW/2+0.07,0.84,-0.28, 0,0,Math.PI/2));
+
+  // ── Towel bar (right wall, front zone) ──
+  addTowelBar(s, RW/2-0.06, 1.16, 0.72, 0.58, -Math.PI/2);
+
+  // Ceiling light
+  addCeilingLight(s, 0.05, -0.05);
+}
+
+/* ═══════════════════════════════════════════════════
+   CEILING LIGHT FIXTURE
+═══════════════════════════════════════════════════ */
+function addCeilingLight(s, ox, oz){
+  // Recessed light ring
+  s.add(mk(new THREE.TorusGeometry(0.09,0.015,10,28), M.brass, ox,RH-0.015,oz, Math.PI/2));
+  s.add(mk(new THREE.CylinderGeometry(0.075,0.075,0.01,24),
+    new THREE.MeshStandardMaterial({color:0xFFF8F0,emissive:0xFFF0D0,emissiveIntensity:1.2}),
+    ox,RH-0.022,oz));
+}
+
+/* ═══════════════════════════════════════════════════
+   LIGHTING SETUP
+═══════════════════════════════════════════════════ */
+function addLights(s){
+  s.add(new THREE.AmbientLight(0xFFF5E8,0.50));
+
+  // Ceiling directional
+  var sun=new THREE.DirectionalLight(0xFFF8F0,1.0);
+  sun.position.set(0,5,1); sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024); s.add(sun);
+
+  // Overhead warm point
+  var top=new THREE.PointLight(0xFFE8D0,2.4,6,1.4);
+  top.position.set(0,RH-0.05,0); s.add(top);
+
+  // Front fill (cool-neutral, simulates window/door)
+  var front=new THREE.PointLight(0xD8ECF2,0.7,5,2);
+  front.position.set(0,1.6,RD/2+0.5); s.add(front);
+
+  // Back fill
+  var back=new THREE.PointLight(0xFFEED0,0.4,4,2);
+  back.position.set(0,1.8,-RD/2+0.3); s.add(back);
+}
+
+/* ═══════════════════════════════════════════════════
+   COMPASS
+═══════════════════════════════════════════════════ */
+function drawCompass(){
+  var c=document.getElementById('compass');
+  if(!c)return;
+  var x=c.getContext('2d');
+  x.clearRect(0,0,68,68);
+  x.fillStyle='rgba(0,0,0,0.42)';
+  x.beginPath(); x.arc(34,34,30,0,Math.PI*2); x.fill();
+  x.strokeStyle='rgba(255,255,255,0.18)'; x.lineWidth=1;
+  x.beginPath(); x.arc(34,34,30,0,Math.PI*2); x.stroke();
+  // cardinal marks
+  x.fillStyle='rgba(255,255,255,0.28)'; x.font='8px Inter,sans-serif'; x.textAlign='center';
+  x.fillText('N',34,13); x.fillText('S',34,58); x.fillText('E',58,37); x.fillText('W',10,37);
+  // needle
+  x.save(); x.translate(34,34); x.rotate(-yaw+Math.PI);
+  x.fillStyle='#C9A840';
+  x.beginPath(); x.moveTo(0,-17); x.lineTo(5,6); x.lineTo(0,3); x.lineTo(-5,6); x.closePath(); x.fill();
+  x.fillStyle='rgba(255,255,255,0.35)';
+  x.beginPath(); x.moveTo(0,17); x.lineTo(5,-6); x.lineTo(0,-3); x.lineTo(-5,-6); x.closePath(); x.fill();
+  x.restore();
+}
+
+/* ═══════════════════════════════════════════════════
+   CAMERA
+═══════════════════════════════════════════════════ */
+function updateCam(){
+  var pl=Math.PI/2.15;
+  pitch=Math.max(-pl,Math.min(pl,pitch));
+  var lx=Math.sin(yaw)*Math.cos(pitch);
+  var ly=Math.sin(pitch);
+  var lz=Math.cos(yaw)*Math.cos(pitch);
+  camera.lookAt(camera.position.x+lx, camera.position.y+ly, camera.position.z+lz);
+  drawCompass();
+}
+
+/* ═══════════════════════════════════════════════════
+   CONTROLS
+═══════════════════════════════════════════════════ */
+function setupControls(){
+  var cv=document.getElementById('cv');
+  var prev=null;
+  cv.addEventListener('mousedown',function(e){
+    isDrag=true; prev={x:e.clientX,y:e.clientY};
+    autoSpin=false; document.getElementById('hint').style.opacity='0';
+    e.preventDefault();
+  });
+  window.addEventListener('mouseup',function(){ isDrag=false; prev=null; });
+  window.addEventListener('mousemove',function(e){
+    if(!isDrag||!prev)return;
+    yaw  +=(e.clientX-prev.x)*0.004;
+    pitch-=(e.clientY-prev.y)*0.003;
+    prev={x:e.clientX,y:e.clientY};
+    updateCam();
+  });
+  // Touch
+  var pt=null;
+  cv.addEventListener('touchstart',function(e){
+    autoSpin=false; pt={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    document.getElementById('hint').style.opacity='0';
+    e.preventDefault();
+  },{passive:false});
+  cv.addEventListener('touchmove',function(e){
+    if(!pt)return;
+    yaw  +=(e.touches[0].clientX-pt.x)*0.005;
+    pitch-=(e.touches[0].clientY-pt.y)*0.004;
+    pt={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    updateCam(); e.preventDefault();
+  },{passive:false});
+  cv.addEventListener('touchend',function(){ pt=null; });
+  // Scroll zoom
+  cv.addEventListener('wheel',function(e){
+    autoSpin=false;
+    camera.fov=Math.max(32,Math.min(90,camera.fov+e.deltaY*0.03));
+    camera.updateProjectionMatrix();
+  },{passive:true});
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT / DESTROY / SWITCH
+═══════════════════════════════════════════════════ */
+function init(layout){
+  var cv=document.getElementById('cv');
+  var W=cv.clientWidth, H=cv.clientHeight;
+
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W,H,false);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.05;
+  renderer.outputEncoding=THREE.sRGBEncoding;
+
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x111111);
+  scene.fog=new THREE.Fog(0x111111,6,14);
+
+  camera=new THREE.PerspectiveCamera(70,W/H,0.04,20);
+  camera.position.set(0,1.62,0.78);
+
+  mkMats();
+  addLights(scene);
+  layout===1 ? buildL1(scene) : buildL2(scene);
+  updateCam();
+
+  function loop(){
+    animId=requestAnimationFrame(loop);
+    if(autoSpin){ yaw+=0.0038; updateCam(); }
+    renderer.render(scene,camera);
+  }
+  loop();
+}
+
+function destroy(){
+  cancelAnimationFrame(animId);
+  if(scene){
+    scene.traverse(function(o){
+      if(o.geometry) o.geometry.dispose();
+      if(o.material){
+        var mm=Array.isArray(o.material)?o.material:[o.material];
+        mm.forEach(function(m){
+          if(m.map) m.map.dispose();
+          m.dispose();
+        });
+      }
+    });
+  }
+  if(renderer) renderer.dispose();
+  M={}; _swTex=null;
+}
+
+window.switchLayout=function(n,btn){
+  destroy();
+  autoSpin=true; yaw=Math.PI+0.3; pitch=-0.06;
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  document.getElementById('badge').textContent=
+    n===1?'Distribución Actual':'Distribución Propuesta';
+  document.getElementById('hint').style.opacity='1';
+  init(n);
+};
+
+/* ═══════════════════════════════════════════════════
+   RESIZE
+═══════════════════════════════════════════════════ */
+window.addEventListener('resize',function(){
+  if(!renderer||!camera)return;
+  var cv=document.getElementById('cv');
+  var W=cv.clientWidth, H=cv.clientHeight;
+  renderer.setSize(W,H,false);
+  camera.aspect=W/H; camera.updateProjectionMatrix();
+});
+
+/* ═══════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════ */
+setupControls();
+init(1);
+
+})();
+</script>
+</body>
+</html>

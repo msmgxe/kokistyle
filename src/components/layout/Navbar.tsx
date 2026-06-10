@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Menu } from "lucide-react";
 
 import { branding } from "@/src/config/branding";
@@ -9,10 +10,11 @@ import Button from "../ui/Button";
 import Container from "../ui/Container";
 
 const navItems = [
-  { labelKey: "services", href: "#services" },
-  { labelKey: "beforeAfter", href: "#before-after" },
-  { labelKey: "tours", href: "#tours" },
-  { labelKey: "estimate", href: "#estimate" },
+  { labelKey: "services", href: "/#services" },
+  { labelKey: "beforeAfter", href: "/#before-after" },
+  { labelKey: "tours", href: "/#tours" },
+  { labelKey: "estimate", href: "/#estimate" },
+  { labelKey: "bath360", href: "/proyectos/cliente-01" },
 ] as const;
 
 const languages: Language[] = ["en", "es"];
@@ -60,12 +62,13 @@ export default function Navbar() {
     beforeAfter: t.nav.beforeAfter,
     tours: t.nav.tours,
     estimate: t.nav.estimate,
+    bath360: t.nav.bath360,
   };
 
   return (
     <nav className="fixed left-0 top-0 z-50 w-full border-b border-white/50 bg-white/85 backdrop-blur-xl">
       <Container className="flex items-center justify-between py-4">
-        <a href="#home" className="flex items-center gap-3" aria-label="KokiStyle home">
+        <Link href="/" className="flex items-center gap-3" aria-label="KokiStyle home">
           <span className="grid size-10 place-items-center rounded-lg bg-[#0F3D56] text-sm font-bold text-white">
             KS
           </span>
@@ -77,17 +80,17 @@ export default function Navbar() {
               Florida
             </span>
           </span>
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-8 lg:flex">
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
               className="text-sm font-medium text-slate-700 transition hover:text-[#0F3D56]"
             >
               {navLabels[item.labelKey]}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -96,7 +99,7 @@ export default function Navbar() {
           <a className="text-sm font-semibold text-[#0F3D56]" href={`tel:${branding.phone}`}>
             {branding.phone}
           </a>
-          <Button href="#estimate" className="min-h-11 px-5 py-2.5">
+          <Button href="/#estimate" className="min-h-11 px-5 py-2.5">
             {t.nav.startEstimate}
           </Button>
         </div>

@@ -9,6 +9,7 @@ export const translations = {
       estimate: "Estimate",
       startEstimate: "Start Estimate",
       openNavigation: "Open navigation",
+      bath360: "Bathroom 360°",
     },
     hero: {
       eyebrow: "Luxury remodeling in Florida",
@@ -142,6 +143,7 @@ export const translations = {
       estimate: "Presupuesto",
       startEstimate: "Crear Presupuesto",
       openNavigation: "Abrir navegación",
+      bath360: "Baño 360°",
     },
     hero: {
       eyebrow: "Remodelación de lujo en Florida",
