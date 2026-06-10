@@ -9,6 +9,7 @@ export const translations = {
       estimate: "Estimate",
       startEstimate: "Start Estimate",
       openNavigation: "Open navigation",
+      closeNavigation: "Close navigation",
       bath360: "Bathroom 360°",
     },
     hero: {
@@ -143,6 +144,7 @@ export const translations = {
       estimate: "Presupuesto",
       startEstimate: "Crear Presupuesto",
       openNavigation: "Abrir navegación",
+      closeNavigation: "Cerrar navegación",
       bath360: "Baño 360°",
     },
     hero: {

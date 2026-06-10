@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { branding } from "@/src/config/branding";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -56,6 +57,7 @@ function MobileLanguageSwitch() {
 
 export default function Navbar() {
   const { t } = useLanguage();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const navLabels = {
     services: t.nav.services,
@@ -104,16 +106,55 @@ export default function Navbar() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
           <MobileLanguageSwitch />
           <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
             className="grid size-11 place-items-center rounded-lg border border-[#0F3D56]/15 text-[#0F3D56]"
-            aria-label={t.nav.openNavigation}
+            aria-label={menuOpen ? t.nav.closeNavigation : t.nav.openNavigation}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
           >
-            <Menu size={22} />
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </Container>
+
+      {menuOpen ? (
+        <div
+          id="mobile-menu"
+          className="border-t border-[#0F3D56]/10 bg-white/95 backdrop-blur-xl lg:hidden"
+        >
+          <Container className="flex flex-col gap-1 py-4">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition hover:bg-[#F5E9DA] hover:text-[#0F3D56]"
+              >
+                {navLabels[item.labelKey]}
+              </Link>
+            ))}
+            <div className="mt-3 flex flex-col gap-3 border-t border-[#0F3D56]/10 pt-4 md:hidden">
+              <a
+                className="px-3 text-base font-semibold text-[#0F3D56]"
+                href={`tel:${branding.phone}`}
+              >
+                {branding.phone}
+              </a>
+              <Button
+                href="/#estimate"
+                className="min-h-12 w-full justify-center"
+                onClick={() => setMenuOpen(false)}
+              >
+                {t.nav.startEstimate}
+              </Button>
+            </div>
+          </Container>
+        </div>
+      ) : null}
     </nav>
   );
 }

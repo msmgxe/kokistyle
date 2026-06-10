@@ -182,7 +182,7 @@ export default function EstimateBuilder() {
     <section id="estimate" className="bg-white py-20 sm:py-24">
       <Container>
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#0F3D56]/70">
               {t.estimate.eyebrow}
             </p>
@@ -212,7 +212,7 @@ export default function EstimateBuilder() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_20px_70px_rgba(15,61,86,0.12)] sm:p-7">
+          <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_20px_70px_rgba(15,61,86,0.12)] sm:p-7">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2 text-sm font-semibold text-[#0F3D56]">
                 {t.estimate.clientName}
