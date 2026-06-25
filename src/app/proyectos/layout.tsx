@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
@@ -90,9 +90,8 @@ export default function ProyectosLayout({
 
 /** Componente de tab de navegación del panel */
 function PanelTab({ href, label }: { href: string; label: string }) {
-  // Detectar si la ruta actual coincide con el tab
-  const isActive =
-    typeof window !== "undefined" && window.location.pathname === href;
+  const pathname = usePathname();
+  const isActive = pathname === href;
 
   return (
     <Link
