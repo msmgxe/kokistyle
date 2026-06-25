@@ -1,107 +1,85 @@
 /**
  * POST /api/voice
- * Asistente conversacional "Koki" para KokiStyle.
- * Recibe historial de mensajes + contexto → devuelve pregunta o acción.
- * Usa Vercel AI Gateway + Anthropic Claude Haiku (OIDC, sin API keys en código).
+ * Una sola llamada: detecta intención y extrae todos los datos posibles.
+ * Las preguntas de seguimiento se manejan client-side (sin más API calls).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 
 const TODAY = () => new Date().toISOString().split("T")[0];
 
-const SYSTEM_PROMPT = (context: string, contacts: string[], today: string) => `
-Eres "Katy", una asistente virtual femenina, amable y profesional, integrada en el sistema de gestión de proyectos de remodelación KokiStyle (Florida, USA).
+const SYSTEM = (context: string, contacts: string[], today: string) => `
+Eres un extractor de datos para el sistema KokiStyle (gestión de obras en Florida).
+Contexto activo: "${context}". Hoy: ${today}.
+Contactos conocidos: ${contacts.length ? contacts.join(", ") : "ninguno"}.
 
-Tu trabajo es recopilar datos del usuario mediante conversación natural para registrarlos en el sistema.
-Haz UNA sola pregunta a la vez. Sé breve y directa. Hablas en español, tutea al usuario.
+Devuelve SOLO un JSON válido. Sin markdown. Sin explicaciones.
 
-━━━ RESPUESTA JSON ━━━
-Devuelve SIEMPRE un JSON válido (sin markdown) en UNA de estas dos formas:
+Estructura:
+{
+  "action": "<acción>",
+  "data": { <solo los campos que el usuario mencionó explícitamente> }
+}
 
-1. Si faltan datos → pide el siguiente campo:
-{"type": "question", "text": "¿De cuánto es el pago?"}
+Acciones según contexto:
+- dashboard             → "create_project"
+- project.workflow      → "create_task"
+- project.materiales    → "create_material"
+- project.presupuesto   → "create_budget_item"
+- project.pagos.ingresos→ "create_payment"
+- project.pagos.egresos → "create_expense"
+- contactos             → "create_contact"
+- Si el usuario lo dice explícitamente, úsalo aunque no coincida con el contexto.
+- Si no se entiende → "unknown"
 
-2. Cuando tienes TODOS los datos O el usuario confirma con sí/ok/dale/adelante:
-{"type": "action", "action": "<nombre>", "data": {...}, "confirmMessage": "<resumen en español>"}
+Campos por acción (incluye SOLO los mencionados, omite el resto):
+create_project:     title, client, address, budget(número), start_date(YYYY-MM-DD)
+create_task:        name, assignee_name, hours(número), semanas(número)
+create_material:    name, supplier, cost(número)
+create_budget_item: description, type("mano"|"material"), amount(número)
+create_payment:     amount(número), method("Efectivo"|"Zelle"|"Transferencia"|"Cheque"|"Tarjeta"), type("anticipo"|"abono"|"final"), date(YYYY-MM-DD)
+create_expense:     payee_name, concept, amount(número), method, date(YYYY-MM-DD)
+create_contact:     name, specialty, phone, rate(número)
 
-━━━ CONTEXTO ACTIVO: ${context} ━━━
-━━━ ACCIONES DISPONIBLES ━━━
-- create_project    → data: {title, client, address, budget (número), start_date (YYYY-MM-DD)}
-- create_task       → data: {name, hours (número), semanas (número), assignee_name (de la lista o "Equipo propio"), status: "pend"}
-- create_material   → data: {name, supplier, cost (número)}
-- create_budget_item→ data: {description, type ("mano"|"material"), amount (número)}
-- create_payment    → data: {amount (número), date (YYYY-MM-DD), method ("Efectivo"|"Transferencia"|"Zelle"|"Cheque"|"Tarjeta"), type ("anticipo"|"abono"|"final")}
-- create_expense    → data: {amount (número), date (YYYY-MM-DD), method, payee_name (de la lista o "Equipo propio"), concept}
-- create_contact    → data: {name, specialty, phone, rate (número por hora)}
-
-━━━ REGLAS DE INFERENCIA ━━━
-- Hoy es ${today}. Sin fecha → usar hoy.
-- "15 mil" / "15k" / "quince mil" → 15000
-- Sin método → pregunta ("¿En efectivo, Zelle, transferencia, cheque o tarjeta?")
-- "mano de obra / instalación / plomería / electricidad" → type "mano"
-- "material / gabinetes / azulejo / pintura / grifo" → type "material"
-- Sin tipo de ingreso → pregunta ("¿Es anticipo, abono o pago final?")
-- Contactos disponibles: ${contacts.length ? contacts.join(", ") : "ninguno aún"}
-- Si el usuario dice "no / cancela / para / olvídalo" → {"type": "question", "text": "Entendido. ¿Algo más en lo que te pueda ayudar?"}
-- Si el usuario dice "sí / ok / dale / confirma / correcto / adelante / perfecto" Y ya tienes todos los datos → devuelve la acción inmediatamente.
-
-━━━ CONFIRMACIÓN ━━━
-El confirmMessage debe ser claro: "Voy a registrar un anticipo de $8,000 por Zelle, hoy ${today}."
-Usa formato de moneda con $ y comas: $8,000.
-
-Responde ÚNICAMENTE el JSON. Cero texto adicional.
+Conversión numérica: "15 mil"→15000, "8k"→8000, "1,500"→1500.
+Método de pago: "transferencia"→"Transferencia", "zelé/zelle"→"Zelle", "efectivo/cash"→"Efectivo".
+Tipo ingreso: "anticipo/adelanto/depósito"→"anticipo", "final/último"→"final", "abono/pago"→"abono".
+Tipo presupuesto: "mano de obra/instalación/plomería/electricidad"→"mano", "material/gabinetes/pintura"→"material".
 `.trim();
-
-interface Message { role: "user" | "assistant"; text: string; }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as {
-      messages: Message[];
+    const { transcript, context = "dashboard", contacts = [] } = await req.json() as {
+      transcript: string;
       context: string;
       contacts?: string[];
     };
 
-    const { messages, context, contacts = [] } = body;
-
-    if (!messages?.length) {
-      return NextResponse.json({
-        type: "question",
-        text: "Hola, soy Koki. ¿Qué quieres registrar?",
-      });
+    if (!transcript?.trim()) {
+      return NextResponse.json({ action: "unknown", data: {} });
     }
-
-    // Build prompt from conversation history
-    const conversation = messages
-      .map(m => `${m.role === "user" ? "Usuario" : "Koki"}: ${m.text}`)
-      .join("\n");
 
     const { text } = await generateText({
       model: "anthropic/claude-haiku-4.5",
-      system: SYSTEM_PROMPT(context, contacts, TODAY()),
-      prompt: conversation + "\nKaty:",
+      system: SYSTEM(context, contacts, TODAY()),
+      prompt: `Usuario dijo: "${transcript}"`,
     });
 
-    // Parse JSON response
-    const raw = text.trim().replace(/^```json?\s*/i, "").replace(/```\s*$/i, "");
-    const parsed = JSON.parse(raw);
+    // Strip markdown fences if present
+    const raw = text.trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
+    // Extract first JSON object found (tolerant parsing)
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("no-json: " + raw.slice(0, 100));
+
+    const parsed = JSON.parse(match[0]);
     return NextResponse.json(parsed);
 
   } catch (err) {
-    console.error("[/api/voice]", err);
-
-    // Distinguish auth/gateway errors
-    const msg = err instanceof Error ? err.message : "";
-    if (msg.includes("auth") || msg.includes("401") || msg.includes("403")) {
-      return NextResponse.json({
-        type: "question",
-        text: "No pude conectarme al asistente de IA. Verifica la configuración del AI Gateway (vercel env pull).",
-      });
-    }
-
-    return NextResponse.json({
-      type: "question",
-      text: "Tuve un problema al procesar eso. ¿Puedes repetirlo?",
-    });
+    console.error("[/api/voice] error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ action: "unknown", data: {} });
   }
 }
