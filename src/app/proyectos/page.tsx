@@ -22,6 +22,7 @@ import {
 import type { Project, Payment, Expense, Task } from "@/src/types/project";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
 import UsersPanel from "@/src/components/ui/UsersPanel";
+import AdminSettings from "@/src/components/ui/AdminSettings";
 import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
 
@@ -308,8 +309,19 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Panel de equipo — solo superadmin */}
-      {isSuperAdmin && <UsersPanel projects={projects} />}
+      {/* Panel de equipo y configuración — solo superadmin */}
+      {isSuperAdmin && (
+        <>
+          <UsersPanel projects={projects} />
+          <div className="mt-8">
+            <div className="mb-4">
+              <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">Seguridad</h2>
+              <p className="text-[11px] text-[#97A1A0]">Cambia tu PIN y configura la recuperación por correo</p>
+            </div>
+            <AdminSettings />
+          </div>
+        </>
+      )}
 
       {/* Toast */}
       {toast && (

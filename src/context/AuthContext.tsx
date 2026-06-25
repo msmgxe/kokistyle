@@ -8,27 +8,24 @@ import { supabase } from "@/src/lib/supabase";
 import type { AppUser, PermissionSection, PermissionAction } from "@/src/types/auth";
 import { FULL_PERMISSIONS } from "@/src/types/auth";
 
-// ── Superadmin hardcoded — nunca en DB ────────────────────────────────────
-const SUPERADMIN_PIN = "2260223";
-const SUPERADMIN: AppUser = {
+const SUPERADMIN_TEMPLATE: Omit<AppUser, "pin"> = {
   id:          "superadmin",
   name:        "Marco",
-  pin:         SUPERADMIN_PIN,
   role:        "superadmin",
   permissions: FULL_PERMISSIONS,
   active:      true,
 };
-
 const SESSION_KEY = "kokistyle-session";
 
-// ── Context type ─────────────────────────────────────────────────────────
 interface AuthContextType {
   currentUser:   AppUser | null;
   isAdmin:       boolean;
   isSuperAdmin:  boolean;
   login:         (pin: string) => Promise<boolean>;
   logout:        () => void;
-  verifyPin:     (pin: string) => boolean;
+  verifyPin:     (pin: string) => Promise<boolean>;
+  changePin:     (currentPin: string, newPin: string) => Promise<{ ok: boolean; error?: string }>;
+  setRecoveryEmail: (pin: string, email: string) => Promise<{ ok: boolean; error?: string }>;
   hasPermission: (section: PermissionSection, action: PermissionAction) => boolean;
 }
 
@@ -39,7 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading,   setIsLoading]   = useState(true);
   const router = useRouter();
 
-  // Restore session from localStorage
   useEffect(() => {
     if (typeof window === "undefined") { setIsLoading(false); return; }
     const stored = localStorage.getItem(SESSION_KEY);
@@ -49,15 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  // ── Login ──────────────────────────────────────────────────────────────
+  // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async (pin: string): Promise<boolean> => {
-    // 1. Superadmin
-    if (pin === SUPERADMIN_PIN) {
-      setCurrentUser(SUPERADMIN);
-      localStorage.setItem(SESSION_KEY, JSON.stringify(SUPERADMIN));
-      return true;
-    }
-    // 2. DB users
+    // 1. Check superadmin via secure API route
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      });
+      const { isSuperAdmin } = await res.json();
+      if (isSuperAdmin) {
+        const user: AppUser = { ...SUPERADMIN_TEMPLATE, pin };
+        setCurrentUser(user);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        return true;
+      }
+    } catch { /* API unavailable — continue to collaborator check */ }
+
+    // 2. Check collaborator in DB
     const { data, error } = await supabase
       .from("app_users")
       .select("*")
@@ -71,20 +77,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   }, []);
 
-  // ── Logout ─────────────────────────────────────────────────────────────
+  // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     setCurrentUser(null);
     localStorage.removeItem(SESSION_KEY);
     router.push("/");
   }, [router]);
 
-  // ── Sync PIN verification (for in-app confirmations, e.g. Notas) ───────
-  const verifyPin = useCallback((pin: string): boolean => {
+  // ── Verify PIN (async — superadmin checks against DB via API) ──────────────
+  const verifyPin = useCallback(async (pin: string): Promise<boolean> => {
     if (!currentUser) return false;
-    return pin === currentUser.pin || pin === SUPERADMIN_PIN;
+    if (currentUser.role === "superadmin") {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin }),
+        });
+        const { isSuperAdmin } = await res.json();
+        return isSuperAdmin;
+      } catch { return false; }
+    }
+    return pin === currentUser.pin;
   }, [currentUser]);
 
-  // ── Permission check ───────────────────────────────────────────────────
+  // ── Change PIN ─────────────────────────────────────────────────────────────
+  const changePin = useCallback(async (
+    currentPin: string,
+    newPin: string
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const res = await fetch("/api/auth/change-pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPin, newPin }),
+    });
+    const data = await res.json();
+    if (data.ok && currentUser?.role === "superadmin") {
+      // Update pin in session so verifyPin still works for non-API checks
+      const updated = { ...currentUser, pin: newPin };
+      setCurrentUser(updated);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    }
+    return data;
+  }, [currentUser]);
+
+  // ── Set recovery email ─────────────────────────────────────────────────────
+  const setRecoveryEmail = useCallback(async (
+    pin: string,
+    email: string
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const res = await fetch("/api/auth/set-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin, email }),
+    });
+    return res.json();
+  }, []);
+
+  // ── Permission check ───────────────────────────────────────────────────────
   const hasPermission = useCallback(
     (section: PermissionSection, action: PermissionAction): boolean => {
       if (!currentUser) return false;
@@ -94,13 +144,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [currentUser]
   );
 
-  const isAdmin    = !!currentUser;
-  const isSuperAdmin = currentUser?.role === "superadmin";
-
   return (
     <AuthContext.Provider value={{
-      currentUser, isAdmin, isSuperAdmin,
-      login, logout, verifyPin, hasPermission,
+      currentUser,
+      isAdmin:      !!currentUser,
+      isSuperAdmin: currentUser?.role === "superadmin",
+      login, logout, verifyPin, changePin, setRecoveryEmail, hasPermission,
     }}>
       {!isLoading && children}
     </AuthContext.Provider>

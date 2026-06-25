@@ -1274,8 +1274,8 @@ function NotasTab({
   };
 
   // ── PIN verification before edit/delete ──────────────────────────────────────
-  const verifyPin = () => {
-    const ok = checkPin(pinValue);
+  const verifyPin = async () => {
+    const ok = await checkPin(pinValue);
     if (!ok) { setPinError("PIN incorrecto"); setPinValue(""); return; }
     const p = pinPrompt!;
     setPinPrompt(null); setPinValue(""); setPinError("");
