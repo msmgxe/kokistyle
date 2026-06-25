@@ -106,12 +106,11 @@ export default function Navbar() {
           <Button href="/#estimate" className="min-h-11 px-5 py-2.5">
             {t.nav.startEstimate}
           </Button>
-          {/* Botón de acceso al panel de administración */}
           <button
             id="navbar-admin-btn"
             type="button"
             onClick={() => setAdminOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-[#0F3D56] bg-white px-4 py-2.5 text-sm font-bold text-[#0F3D56] transition hover:bg-[#F5E9DA] active:scale-95"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#7B1838] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#641430] active:scale-95"
             aria-label="Acceso administrador"
           >
             <Lock size={14} />
@@ -121,6 +120,16 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2 lg:hidden">
           <MobileLanguageSwitch />
+          {/* Admin visible directo en la barra móvil */}
+          <button
+            type="button"
+            onClick={() => setAdminOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#7B1838] px-3 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#641430] active:scale-95"
+            aria-label="Acceso administrador"
+          >
+            <Lock size={14} />
+            Admin
+          </button>
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
@@ -167,7 +176,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); setAdminOpen(true); }}
-                className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-[#0F3D56] bg-white px-4 py-3 text-sm font-bold text-[#0F3D56] transition hover:bg-[#F5E9DA]"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#7B1838] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#641430] active:scale-95"
               >
                 <Lock size={14} />
                 Admin
