@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Lock } from "lucide-react";
 
 import { branding } from "@/src/config/branding";
 import { useLanguage } from "@/src/context/LanguageContext";
 import type { Language } from "@/src/config/translations";
 import Button from "../ui/Button";
 import Container from "../ui/Container";
+import AdminModal from "../ui/AdminModal";
 
 const navItems = [
   { labelKey: "services", href: "/#services" },
@@ -58,6 +59,7 @@ function MobileLanguageSwitch() {
 export default function Navbar() {
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   const navLabels = {
     services: t.nav.services,
@@ -104,6 +106,17 @@ export default function Navbar() {
           <Button href="/#estimate" className="min-h-11 px-5 py-2.5">
             {t.nav.startEstimate}
           </Button>
+          {/* Botón de acceso al panel de administración */}
+          <button
+            id="navbar-admin-btn"
+            type="button"
+            onClick={() => setAdminOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-[#0F3D56] bg-white px-4 py-2.5 text-sm font-bold text-[#0F3D56] transition hover:bg-[#F5E9DA] active:scale-95"
+            aria-label="Acceso administrador"
+          >
+            <Lock size={14} />
+            Admin
+          </button>
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
@@ -155,6 +168,9 @@ export default function Navbar() {
           </Container>
         </div>
       ) : null}
+
+      {/* Modal de acceso administrador */}
+      <AdminModal isOpen={adminOpen} onClose={() => setAdminOpen(false)} />
     </nav>
   );
 }
