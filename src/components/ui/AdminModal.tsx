@@ -1,12 +1,7 @@
-/**
- * AdminModal — Modal de acceso administrador con PIN.
- * Se muestra al presionar el botón "Admin" en el Navbar de KokiStyle.
- * En producción, el PIN se puede reemplazar por Supabase Auth (email + password).
- */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Lock } from "lucide-react";
+import { Lock, X } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -23,7 +18,6 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
   const { login } = useAuth();
   const router = useRouter();
 
-  // Focus the PIN input when the modal opens
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => pinRef.current?.focus(), 60);
@@ -39,7 +33,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
       onClose();
       router.push("/proyectos");
     } else {
-      setError("PIN incorrecto. Intenta de nuevo.");
+      setError("PIN incorrecto");
       setPin("");
       pinRef.current?.focus();
     }
@@ -47,85 +41,95 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSubmit();
+    if (e.key === "Enter" && pin.length === 4) handleSubmit();
   };
 
   if (!isOpen) return null;
 
   return (
-    /* Backdrop */
-    <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="admin-modal-title"
-    >
-      {/* Modal card */}
-      <div className="w-full max-w-[460px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl animate-in slide-in-from-bottom-4 duration-300 sm:rounded-[20px]">
-        {/* Header */}
-        <div className="mb-1 flex items-center gap-3">
-          <span className="grid size-9 flex-none place-items-center rounded-[10px] bg-[#16323D] text-white">
-            <Lock size={18} />
-          </span>
-          <h2 id="admin-modal-title" className="font-[Manrope] text-xl font-bold text-[#16323D]">
-            Acceso de administrador
-          </h2>
-        </div>
-        <p className="mb-5 text-sm text-[#5C6A6E]">
-          Esta información no es pública. Ingresa tu PIN para entrar a tu zona de proyectos.
-        </p>
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-[99]" onClick={onClose} />
 
-        {/* PIN Input */}
-        <div className="mb-1 flex justify-center">
-          <input
-            ref={pinRef}
-            id="admin-pin-input"
-            type="password"
-            inputMode="numeric"
-            maxLength={4}
-            value={pin}
-            onChange={(e) => {
-              setPin(e.target.value);
-              setError("");
-            }}
-            onKeyDown={handleKeyDown}
-            className="h-16 w-36 rounded-[13px] border border-[#E6DDCB] bg-white text-center font-mono text-3xl tracking-[0.8em] text-[#16323D] placeholder:text-[#97A1A0] focus:border-[#16323D] focus:outline-none focus:ring-2 focus:ring-[#16323D]/20"
-            placeholder="••••"
-            autoComplete="off"
-          />
-        </div>
+      {/* Floating card — top-right, below navbar */}
+      <div className="fixed right-3 top-[66px] z-[100] w-[272px] animate-in slide-in-from-top-2 duration-200 sm:right-5">
+        <div className="overflow-hidden rounded-[18px] border border-[#E6DDCB] bg-white shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#F7F3EA] px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="grid size-6 place-items-center rounded-md bg-[#7B1838] text-white">
+                <Lock size={11} />
+              </span>
+              <span className="text-[13px] font-bold text-[#16323D]">Acceso admin</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="grid size-6 place-items-center rounded-md text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+            >
+              <X size={14} />
+            </button>
+          </div>
 
-        {/* Error */}
-        <p className="mb-1 min-h-[18px] text-center text-xs font-semibold text-[#B0492F]">
-          {error}
-        </p>
+          <div className="p-4">
+            {/* PIN dots */}
+            <div className="mb-3 flex justify-center gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={`size-3 rounded-full transition-all duration-100 ${
+                    pin.length > i ? "scale-110 bg-[#16323D]" : "bg-[#E6DDCB]"
+                  }`}
+                />
+              ))}
+            </div>
 
-        {/* Demo hint */}
-        <p className="mb-5 text-center text-xs text-[#5C6A6E]">
-          PIN demo: <b className="font-bold text-[#16323D]">1234</b>
-        </p>
+            {/* PIN input */}
+            <input
+              ref={pinRef}
+              id="admin-pin-input"
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => {
+                setPin(e.target.value.replace(/\D/g, "").slice(0, 4));
+                setError("");
+              }}
+              onKeyDown={handleKeyDown}
+              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] text-center font-mono text-xl tracking-[1.5em] text-[#16323D] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[#16323D] focus:outline-none focus:ring-2 focus:ring-[#16323D]/15"
+              placeholder="••••"
+              autoComplete="off"
+            />
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-xl bg-[#ECE3D1] px-4 py-3 font-bold text-[#5C6A6E] transition hover:bg-[#D7CBB3]"
-          >
-            Cancelar
-          </button>
-          <button
-            id="admin-login-btn"
-            onClick={handleSubmit}
-            disabled={loading || pin.length < 4}
-            className="flex-1 rounded-xl bg-[#16323D] px-4 py-3 font-bold text-white transition hover:bg-[#0E2630] disabled:opacity-50"
-          >
-            {loading ? "Verificando…" : "Entrar"}
-          </button>
+            {/* Error / hint */}
+            {error ? (
+              <p className="mb-2 text-center text-[11px] font-semibold text-[#B0492F]">{error}</p>
+            ) : (
+              <p className="mb-2 text-center text-[11px] text-[#97A1A0]">
+                Demo: <b className="text-[#5C6A6E]">1234</b>
+              </p>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={onClose}
+                className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#D7CBB3]"
+              >
+                Cancelar
+              </button>
+              <button
+                id="admin-login-btn"
+                onClick={handleSubmit}
+                disabled={loading || pin.length < 4}
+                className="flex-1 rounded-xl bg-[#7B1838] py-2.5 text-sm font-bold text-white transition hover:bg-[#641430] disabled:opacity-40"
+              >
+                {loading ? "…" : "Entrar"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

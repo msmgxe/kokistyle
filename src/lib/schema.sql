@@ -79,6 +79,20 @@ CREATE TABLE IF NOT EXISTS payments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 9b. Notas de proyecto con adjuntos (imágenes, PDFs)
+-- SETUP REQUERIDO en Supabase:
+--   1. Ejecuta este SQL en el editor de Supabase
+--   2. Ve a Storage → Crear bucket "kokistyle-files" → marcar como PUBLIC
+--   3. En bucket settings activa "Public bucket" para acceso sin auth
+CREATE TABLE IF NOT EXISTS project_notes (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id   UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
+  content      TEXT NOT NULL DEFAULT '',
+  attachments  JSONB DEFAULT '[]'::jsonb,
+  created_at   TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at   TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
 -- 9. Tabla de Egresos (Pagos a especialistas o proveedores)
 CREATE TABLE IF NOT EXISTS expenses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

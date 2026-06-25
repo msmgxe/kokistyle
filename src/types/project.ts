@@ -72,3 +72,19 @@ export interface Expense {
   concept: string;
   created_at?: string;
 }
+
+export interface NoteAttachment {
+  name: string;
+  url: string;
+  type: "image" | "pdf" | "other";
+  size?: number;
+}
+
+export interface ProjectNote {
+  id: string;
+  project_id: string;
+  content: string;
+  attachments: NoteAttachment[];
+  created_at?: string;
+  updated_at?: string;
+}

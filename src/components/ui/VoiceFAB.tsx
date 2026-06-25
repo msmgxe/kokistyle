@@ -57,7 +57,7 @@ function parseBudgetType(t: string): string | null {
 }
 function fmt(n: number) { return "$" + n.toLocaleString("en-US"); }
 
-// ── Local intent fallback (when API returns unknown) ───────────────────────
+// ── Local intent fallback ──────────────────────────────────────────────────
 function localDetect(text: string, context: string): string {
   const t = text.toLowerCase();
   if (/\b(pago|ingreso|cobr|recib|pagó|cobré)\b/i.test(t))         return "create_payment";
@@ -76,13 +76,13 @@ function localDetect(text: string, context: string): string {
   return "create_project";
 }
 
-// ── Required fields per action ─────────────────────────────────────────────
+// ── Required fields per action (for voice Q&A) ────────────────────────────
 const ACTION_FIELDS: Record<string, FieldDef[]> = {
   create_project: [
-    { key: "title",  question: "¿Cómo se llama el proyecto?",      parse: (t) => t.trim() || null },
-    { key: "client", question: "¿Nombre del cliente?",             parse: (t) => t.trim() || null },
-    { key: "budget", question: "¿Cuál es el presupuesto?",         parse: parseMoney },
-    { key: "address",question: "¿La dirección? o di sin dirección",parse: (t) => /sin\s*direc/i.test(t) ? "Sin dirección" : t.trim() || null },
+    { key: "title",  question: "¿Cómo se llama el proyecto?",       parse: (t) => t.trim() || null },
+    { key: "client", question: "¿Nombre del cliente?",              parse: (t) => t.trim() || null },
+    { key: "budget", question: "¿Cuál es el presupuesto?",          parse: parseMoney },
+    { key: "address",question: "¿La dirección? o di sin dirección", parse: (t) => /sin\s*direc/i.test(t) ? "Sin dirección" : t.trim() || null },
   ],
   create_payment: [
     { key: "amount", question: "¿Cuánto recibiste?",                              parse: parseMoney },
@@ -101,7 +101,7 @@ const ACTION_FIELDS: Record<string, FieldDef[]> = {
   create_material: [
     { key: "name",     question: "¿Qué material?",              parse: (t) => t.trim() || null },
     { key: "cost",     question: "¿Cuánto cuesta?",             parse: parseMoney },
-    { key: "supplier", question: "¿En qué tienda o proveedor?", parse: (t) => t.trim() || null },
+    { key: "supplier", question: "¿Proveedor o tienda?",        parse: (t) => t.trim() || null },
   ],
   create_budget_item: [
     { key: "description", question: "¿Descripción de la línea?", parse: (t) => t.trim() || null },
@@ -114,6 +114,7 @@ const ACTION_FIELDS: Record<string, FieldDef[]> = {
     { key: "phone",     question: "¿Número de teléfono?",      parse: (t) => t.trim() || null },
   ],
 };
+
 const ACTION_LABELS: Record<string, string> = {
   create_project: "nuevo proyecto", create_payment: "ingreso",
   create_expense: "egreso",         create_task:    "tarea",
@@ -121,39 +122,37 @@ const ACTION_LABELS: Record<string, string> = {
   create_contact: "contacto",
 };
 
+// ── Editable fields shown in confirm phase ─────────────────────────────────
+const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "text" | "number" | "date" }>> = {
+  create_project:     [{ key:"title", label:"Nombre", type:"text" }, { key:"client", label:"Cliente", type:"text" }, { key:"budget", label:"Presupuesto", type:"number" }, { key:"address", label:"Dirección", type:"text" }],
+  create_payment:     [{ key:"amount", label:"Monto", type:"number" }, { key:"method", label:"Método", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"date", label:"Fecha", type:"date" }],
+  create_expense:     [{ key:"payee_name", label:"A quién", type:"text" }, { key:"amount", label:"Monto", type:"number" }, { key:"concept", label:"Concepto", type:"text" }, { key:"method", label:"Método", type:"text" }, { key:"date", label:"Fecha", type:"date" }],
+  create_task:        [{ key:"name", label:"Actividad", type:"text" }],
+  create_material:    [{ key:"name", label:"Material", type:"text" }, { key:"cost", label:"Costo", type:"number" }, { key:"supplier", label:"Proveedor", type:"text" }],
+  create_budget_item: [{ key:"description", label:"Descripción", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"amount", label:"Monto", type:"number" }],
+  create_contact:     [{ key:"name", label:"Nombre", type:"text" }, { key:"specialty", label:"Especialidad", type:"text" }, { key:"phone", label:"Teléfono", type:"text" }],
+};
+
 // ── Supabase direct save ───────────────────────────────────────────────────
-async function saveAction(
-  action: string,
-  data: Record<string, unknown>,
-  meta: VoiceMeta
-): Promise<string> {
+async function saveAction(action: string, data: Record<string, unknown>, meta: VoiceMeta): Promise<string> {
   const pid  = meta.projectId;
   const date = String(data.date ?? TODAY());
 
   switch (action) {
     case "create_project": {
-      const { data: row, error } = await supabase
-        .from("projects")
-        .insert({
-          title:      String(data.title      ?? "Nuevo proyecto"),
-          client:     String(data.client     ?? ""),
-          address:    String(data.address    ?? "Sin dirección"),
-          budget:     Number(data.budget     ?? 0),
-          status:     "presupuesto",
-          start_date: String(data.start_date ?? TODAY()),
-        })
-        .select("title").single();
+      const { data: row, error } = await supabase.from("projects").insert({
+        title: String(data.title ?? "Nuevo proyecto"), client: String(data.client ?? ""),
+        address: String(data.address ?? "Sin dirección"), budget: Number(data.budget ?? 0),
+        status: "presupuesto", start_date: String(data.start_date ?? TODAY()),
+      }).select("title").single();
       if (error) throw error;
       return `Proyecto "${row.title}" creado`;
     }
     case "create_payment": {
       if (!pid) throw new Error("Abre un proyecto primero");
       const { error } = await supabase.from("payments").insert({
-        project_id: pid,
-        amount:     Number(data.amount ?? 0),
-        date,
-        method:     String(data.method ?? "Efectivo"),
-        type:       String(data.type   ?? "abono"),
+        project_id: pid, amount: Number(data.amount ?? 0), date,
+        method: String(data.method ?? "Efectivo"), type: String(data.type ?? "abono"),
       });
       if (error) throw error;
       return `Ingreso de ${fmt(Number(data.amount ?? 0))} guardado`;
@@ -161,12 +160,9 @@ async function saveAction(
     case "create_expense": {
       if (!pid) throw new Error("Abre un proyecto primero");
       const { error } = await supabase.from("expenses").insert({
-        project_id: pid,
-        amount:     Number(data.amount     ?? 0),
-        date,
-        method:     String(data.method     ?? "Efectivo"),
-        payee_name: String(data.payee_name ?? ""),
-        concept:    String(data.concept    ?? ""),
+        project_id: pid, amount: Number(data.amount ?? 0), date,
+        method: String(data.method ?? "Efectivo"),
+        payee_name: String(data.payee_name ?? ""), concept: String(data.concept ?? ""),
       });
       if (error) throw error;
       return `Egreso de ${fmt(Number(data.amount ?? 0))} guardado`;
@@ -174,13 +170,9 @@ async function saveAction(
     case "create_task": {
       if (!pid) throw new Error("Abre un proyecto primero");
       const { error } = await supabase.from("tasks").insert({
-        project_id:          pid,
-        name:                String(data.name ?? "Nueva tarea"),
-        hours:               Number(data.hours ?? 8),
-        duration_weeks:      Number(data.duration_weeks ?? 1),
-        status:              "pend",
-        sort_order:          9999,
-        assigned_contact_id: null,
+        project_id: pid, name: String(data.name ?? "Nueva tarea"),
+        hours: Number(data.hours ?? 8), duration_weeks: Number(data.duration_weeks ?? 1),
+        status: "pend", sort_order: 9999, assigned_contact_id: null,
       });
       if (error) throw error;
       return `Tarea "${data.name ?? "Nueva tarea"}" creada`;
@@ -188,11 +180,8 @@ async function saveAction(
     case "create_material": {
       if (!pid) throw new Error("Abre un proyecto primero");
       const { error } = await supabase.from("materials").insert({
-        project_id: pid,
-        name:       String(data.name     ?? ""),
-        supplier:   String(data.supplier ?? ""),
-        cost:       Number(data.cost     ?? 0),
-        bought:     false,
+        project_id: pid, name: String(data.name ?? ""), supplier: String(data.supplier ?? ""),
+        cost: Number(data.cost ?? 0), bought: false,
       });
       if (error) throw error;
       return `Material "${data.name}" agregado`;
@@ -200,20 +189,16 @@ async function saveAction(
     case "create_budget_item": {
       if (!pid) throw new Error("Abre un proyecto primero");
       const { error } = await supabase.from("budget_items").insert({
-        project_id:  pid,
-        type:        String(data.type        ?? "material"),
-        description: String(data.description ?? ""),
-        amount:      Number(data.amount      ?? 0),
+        project_id: pid, type: String(data.type ?? "material"),
+        description: String(data.description ?? ""), amount: Number(data.amount ?? 0),
       });
       if (error) throw error;
-      return `Línea "${data.description}" agregada al presupuesto`;
+      return `Línea "${data.description}" agregada`;
     }
     case "create_contact": {
       const { error } = await supabase.from("contacts").insert({
-        name:      String(data.name      ?? ""),
-        specialty: String(data.specialty ?? ""),
-        phone:     String(data.phone     ?? ""),
-        rate:      String(data.rate      ?? "0"),
+        name: String(data.name ?? ""), specialty: String(data.specialty ?? ""),
+        phone: String(data.phone ?? ""), rate: String(data.rate ?? "0"),
       });
       if (error) throw error;
       return `Contacto "${data.name}" creado`;
@@ -253,39 +238,16 @@ function loadVoices(): Promise<void> {
 }
 function pickVoice(): SpeechSynthesisVoice | null {
   const vs   = window.speechSynthesis.getVoices();
-  const prefs = ["Paulina", "Mónica", "Monica", "Luciana", "Penélope", "Penelope",
-                 "Google español de Estados Unidos", "Google español"];
+  const prefs = ["Paulina","Mónica","Monica","Luciana","Penélope","Penelope",
+                 "Google español de Estados Unidos","Google español"];
   for (const p of prefs) { const v = vs.find(v => v.name.includes(p)); if (v) return v; }
   return vs.find(v => v.lang.startsWith("es")) ?? null;
 }
 
 /**
- * Speak text.
- * 3000ms post-TTS delay: Android Chrome needs ~2.5s to switch audio routing
- * from speaker back to microphone after speechSynthesis plays audio.
- */
-async function tts(text: string): Promise<void> {
-  if (!("speechSynthesis" in window)) return;
-  await loadVoices();
-  window.speechSynthesis.cancel();
-  await new Promise<void>((resolve) => {
-    const utt  = new SpeechSynthesisUtterance(text);
-    utt.lang   = "es-US";
-    utt.rate   = 0.95;
-    utt.pitch  = 1.1;
-    const voice = pickVoice();
-    if (voice) utt.voice = voice;
-    utt.onend   = () => setTimeout(resolve, 3000);
-    utt.onerror = () => setTimeout(resolve, 500);
-    window.speechSynthesis.speak(utt);
-  });
-}
-
-// ── Speech recognition ─────────────────────────────────────────────────────
-/**
- * Prime the microphone path on Android by opening and immediately releasing
- * a getUserMedia stream. This forces the audio routing to switch from
- * speaker→microphone mode BEFORE speech recognition starts.
+ * Prime mic immediately after TTS ends to switch Android audio routing
+ * from speaker → microphone (~300 ms) then a short buffer (600 ms).
+ * Total post-TTS delay ≈ 900 ms vs the previous 3000 ms.
  */
 async function primeMic(): Promise<void> {
   try {
@@ -293,14 +255,32 @@ async function primeMic(): Promise<void> {
     await new Promise<void>(r => setTimeout(r, 200));
     s.getTracks().forEach(t => t.stop());
     await new Promise<void>(r => setTimeout(r, 100));
-  } catch { /* mic permission denied or already active */ }
+  } catch { /* permission denied or already active */ }
 }
 
+async function tts(text: string): Promise<void> {
+  if (!("speechSynthesis" in window)) return;
+  await loadVoices();
+  window.speechSynthesis.cancel();
+  await new Promise<void>((resolve) => {
+    const utt  = new SpeechSynthesisUtterance(text);
+    utt.lang   = "es-US";
+    utt.rate   = 1.0;
+    utt.pitch  = 1.1;
+    const voice = pickVoice();
+    if (voice) utt.voice = voice;
+    // Route audio switch: primeMic immediately after TTS, then 600 ms buffer
+    utt.onend   = () => { primeMic().then(() => setTimeout(resolve, 600)); };
+    utt.onerror = () => setTimeout(resolve, 300);
+    window.speechSynthesis.speak(utt);
+  });
+}
+
+// ── Speech recognition ─────────────────────────────────────────────────────
 /**
- * Listen once for speech.
- * - Desktop Chrome: resolves on first isFinal result (fast)
- * - Android Chrome: resolves after 2s silence following last interim result
- * - Hard timeout: 12s
+ * 1200 ms silence timeout (vs previous 2000 ms) for faster conversation feel.
+ * On Android: isFinal rarely fires → silence timer triggers resolution.
+ * Hard timeout: 10 s.
  */
 function listenOnce(recRef: { current: SR | null }): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -337,7 +317,8 @@ function listenOnce(recRef: { current: SR | null }): Promise<string> {
       if (all.some(r => r.isFinal) && text) {
         finish(text);
       } else if (text) {
-        silenceT = setTimeout(() => finish(best || null), 2000);
+        // 1200 ms silence → resolve (faster than previous 2000 ms)
+        silenceT = setTimeout(() => finish(best || null), 1200);
       }
     };
 
@@ -347,10 +328,24 @@ function listenOnce(recRef: { current: SR | null }): Promise<string> {
     };
 
     rec.onend = () => { finish(best || null); };
-    hardT = setTimeout(() => finish(best || null), 12000);
+    hardT = setTimeout(() => finish(best || null), 10000);
 
     try { rec.start(); } catch (e) { reject(e); }
   });
+}
+
+// ── Summary builder ────────────────────────────────────────────────────────
+function buildSummary(action: string, data: Record<string, unknown>): string {
+  switch (action) {
+    case "create_payment":     return `${data.type ?? ""} de ${fmt(Number(data.amount ?? 0))} por ${data.method ?? ""}`;
+    case "create_expense":     return `${fmt(Number(data.amount ?? 0))} a ${data.payee_name ?? ""} (${data.concept ?? ""})`;
+    case "create_project":     return `"${data.title ?? ""}" para ${data.client ?? ""}, ${fmt(Number(data.budget ?? 0))}`;
+    case "create_task":        return `"${data.name ?? ""}"`;
+    case "create_material":    return `${data.name ?? ""}, ${fmt(Number(data.cost ?? 0))} en ${data.supplier ?? ""}`;
+    case "create_budget_item": return `${data.description ?? ""}, ${fmt(Number(data.amount ?? 0))}`;
+    case "create_contact":     return `${data.name ?? ""}, ${data.specialty ?? ""}`;
+    default:                   return JSON.stringify(data);
+  }
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -362,8 +357,8 @@ export default function VoiceFAB() {
   const [phase,         setPhase]         = useState<Phase>("idle");
   const [messages,      setMessages]      = useState<Msg[]>([]);
   const [pendingAction, setPendingAction] = useState<{ action: string; data: Record<string, unknown> } | null>(null);
-  const [confirmText,   setConfirmText]   = useState("");
-  const [statusMsg,     setStatusMsg]     = useState(""); // error or success text
+  const [editableData,  setEditableData]  = useState<Record<string, unknown>>({});
+  const [statusMsg,     setStatusMsg]     = useState("");
 
   const activeRef  = useRef(false);
   const recRef     = useRef<SR | null>(null);
@@ -394,8 +389,7 @@ export default function VoiceFAB() {
   const listen = useCallback(async (): Promise<string | null> => {
     if (!activeRef.current) return null;
     setPhase("listening");
-    // Prime mic path on Android after TTS
-    await primeMic();
+    // primeMic is now called inside tts() after each utterance
     if (!activeRef.current) return null;
     try {
       return await listenOnce(recRef);
@@ -416,7 +410,7 @@ export default function VoiceFAB() {
     setPhase("idle");
     setMessages([]);
     setPendingAction(null);
-    setConfirmText("");
+    setEditableData({});
     setStatusMsg("");
   }, []);
 
@@ -429,15 +423,14 @@ export default function VoiceFAB() {
     setPhase("error");
   }, []);
 
-  // ── Confirm = save directly to Supabase ───────────────────────────────────
+  // ── Confirm → save with editableData ────────────────────────────────────
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
     setPhase("saving");
     try {
-      const msg = await saveAction(pendingAction.action, pendingAction.data, metaRef.current);
+      const msg = await saveAction(pendingAction.action, editableData, metaRef.current);
       setStatusMsg(msg);
       setPhase("success");
-      // Notify pages to refresh their data
       window.dispatchEvent(new CustomEvent("kokivoice_saved", {
         detail: { action: pendingAction.action, projectId: metaRef.current.projectId }
       }));
@@ -445,14 +438,14 @@ export default function VoiceFAB() {
     } catch (e) {
       showError(e instanceof Error ? e.message : "Error al guardar. Intenta de nuevo.");
     }
-  }, [pendingAction, closeClean, showError]);
+  }, [pendingAction, editableData, closeClean, showError]);
 
   // ── Main conversation flow ────────────────────────────────────────────────
   const start = useCallback(() => {
     if (phase !== "idle" || startedRef.current) return;
     startedRef.current = true;
     activeRef.current  = true;
-    setMessages([]); setPendingAction(null); setConfirmText(""); setStatusMsg("");
+    setMessages([]); setPendingAction(null); setEditableData({}); setStatusMsg("");
 
     (async () => {
       // ① Permission check
@@ -465,29 +458,29 @@ export default function VoiceFAB() {
       }
 
       // ② Greet
-      const alive = await say("Hola, soy Katy. ¿Qué necesitas?");
+      const alive = await say("¿Qué registramos?");
       if (!alive) return;
 
-      // ③ Listen for intent
+      // ③ Intent
       let rawIntent = await listen();
       if (rawIntent === null) { showError("No pude acceder al micrófono. Intenta de nuevo."); return; }
       if (!rawIntent) {
-        const a2 = await say("No te escuché. Habla cuando quieras.");
+        const a2 = await say("No te escuché. Habla ahora.");
         if (!a2) return;
         rawIntent = await listen();
-        if (!rawIntent) { await say("Cuando estés listo, toca el micrófono de nuevo."); closeClean(); return; }
+        if (!rawIntent) { await say("Cuando estés listo, toca el micrófono."); closeClean(); return; }
       }
 
       push("user", rawIntent);
       if (!activeRef.current) return;
       setPhase("thinking");
 
-      // ④ API call with 10s timeout
+      // ④ API — 8 s timeout
       let action = "unknown";
       let data: Record<string, unknown> = {};
       try {
         const ctrl = new AbortController();
-        const tid  = setTimeout(() => ctrl.abort(), 10_000);
+        const tid  = setTimeout(() => ctrl.abort(), 8_000);
         const res  = await fetch("/api/voice", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -511,17 +504,15 @@ export default function VoiceFAB() {
       }
       if (!activeRef.current) return;
 
-      // ⑤ Ask for missing required fields
+      // ⑤ Ask missing fields
       for (const field of ACTION_FIELDS[action]) {
         if (data[field.key] != null) continue;
-
         const aField = await say(field.question);
         if (!aField) return;
         const answer = await listen();
         if (!activeRef.current) return;
         if (answer === null) { showError("Perdí el micrófono. Intenta de nuevo."); return; }
         if (!answer) continue;
-
         push("user", answer);
         const parsed = field.parse(answer);
         if (parsed != null) {
@@ -545,7 +536,7 @@ export default function VoiceFAB() {
       const conf    = `Voy a guardar ${label}: ${summary}. ¿Confirmamos?`;
 
       setPendingAction({ action, data });
-      setConfirmText(conf);
+      setEditableData({ ...data });
       const aConf = await say(conf);
       if (!aConf) return;
       setPhase("confirm");
@@ -562,7 +553,7 @@ export default function VoiceFAB() {
   // ── UI ────────────────────────────────────────────────────────────────────
   const headerLabel: Record<Phase, string> = {
     idle: "", listening: "Escuchando…", thinking: "Procesando…",
-    speaking: `${ASSISTANT} habla…`, confirm: "¿Confirmamos?",
+    speaking: `${ASSISTANT} habla…`, confirm: "Revisa y confirma",
     saving: "Guardando…", success: "¡Guardado!", error: "Error",
   };
   const dotCls: Record<Phase, string> = {
@@ -576,11 +567,11 @@ export default function VoiceFAB() {
     error:    "bg-[#B0492F]",
   };
   const fabBg =
-    phase === "listening"                         ? "animate-pulse bg-[#B0492F]" :
-    phase === "success"                           ? "bg-[#4F8A63]"              :
+    phase === "listening"                          ? "animate-pulse bg-[#B0492F]" :
+    phase === "success"                            ? "bg-[#4F8A63]"               :
     phase === "thinking" || phase === "speaking" || phase === "saving"
-                                                  ? "bg-[#4E7A82]"              :
-                                                    "bg-[#16323D] hover:bg-[#0e2630]";
+                                                   ? "bg-[#4E7A82]"               :
+                                                     "bg-[#16323D] hover:bg-[#0e2630]";
 
   return (
     <>
@@ -603,7 +594,7 @@ export default function VoiceFAB() {
           </div>
 
           {/* Messages */}
-          <div className="flex max-h-[260px] flex-col gap-2 overflow-y-auto p-3">
+          <div className="flex max-h-[220px] flex-col gap-2 overflow-y-auto p-3">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 {m.role === "assistant" && (
@@ -655,17 +646,51 @@ export default function VoiceFAB() {
             </div>
           )}
 
-          {/* Confirm */}
-          {phase === "confirm" && (
-            <div className="flex gap-2 border-t border-[#E6DDCB] p-3">
-              <button onClick={closeClean}
-                className="flex-1 rounded-xl bg-[#ECE3D1] py-3 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#DDD3BB]">
-                Cancelar
-              </button>
-              <button onClick={handleConfirm}
-                className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white transition hover:bg-[#0e2630]">
-                ✓ Confirmar
-              </button>
+          {/* ── Confirm: editable fields + buttons ── */}
+          {phase === "confirm" && pendingAction && (
+            <div className="max-h-[280px] overflow-y-auto border-t border-[#E6DDCB] p-3">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">
+                Corrige si es necesario
+              </p>
+              <div className="space-y-2">
+                {(EDIT_FIELDS[pendingAction.action] ?? []).map(f => (
+                  <div key={f.key} className="flex items-center gap-2">
+                    <label className="w-[72px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#5C6A6E]">
+                      {f.label}
+                    </label>
+                    <input
+                      type={f.type === "number" ? "text" : f.type}
+                      inputMode={f.type === "number" ? "decimal" : undefined}
+                      value={
+                        f.type === "number"
+                          ? (editableData[f.key] === 0 || editableData[f.key] == null ? "" : String(editableData[f.key]))
+                          : String(editableData[f.key] ?? "")
+                      }
+                      onChange={e => {
+                        const v = e.target.value;
+                        setEditableData(prev => ({
+                          ...prev,
+                          [f.key]: f.type === "number"
+                            ? (v === "" ? 0 : parseFloat(v.replace(/[^0-9.]/g, "")) || 0)
+                            : v,
+                        }));
+                      }}
+                      placeholder={f.type === "number" ? "0" : ""}
+                      className="flex-1 min-w-0 rounded-lg border border-[#D7CBB3] bg-white px-2 py-1.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button onClick={closeClean}
+                  className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#DDD3BB]">
+                  Cancelar
+                </button>
+                <button onClick={handleConfirm}
+                  className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white transition hover:bg-[#0e2630]">
+                  ✓ Guardar
+                </button>
+              </div>
             </div>
           )}
 
@@ -706,18 +731,4 @@ export default function VoiceFAB() {
       </button>
     </>
   );
-}
-
-// ── Summary builder ────────────────────────────────────────────────────────
-function buildSummary(action: string, data: Record<string, unknown>): string {
-  switch (action) {
-    case "create_payment":     return `${data.type ?? ""} de ${fmt(Number(data.amount ?? 0))} por ${data.method ?? ""}`;
-    case "create_expense":     return `${fmt(Number(data.amount ?? 0))} a ${data.payee_name ?? ""} (${data.concept ?? ""})`;
-    case "create_project":     return `"${data.title ?? ""}" para ${data.client ?? ""}, ${fmt(Number(data.budget ?? 0))}`;
-    case "create_task":        return `"${data.name ?? ""}"`;
-    case "create_material":    return `${data.name ?? ""}, ${fmt(Number(data.cost ?? 0))} en ${data.supplier ?? ""}`;
-    case "create_budget_item": return `${data.description ?? ""}, ${fmt(Number(data.amount ?? 0))}`;
-    case "create_contact":     return `${data.name ?? ""}, ${data.specialty ?? ""}`;
-    default:                   return JSON.stringify(data);
-  }
 }

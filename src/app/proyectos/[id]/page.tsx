@@ -6,10 +6,10 @@
 "use client";
 
 import {
-  useEffect, useState, useCallback,
+  useEffect, useState, useCallback, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Lock, GripVertical } from "lucide-react";
+import { ArrowLeft, Lock, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -39,8 +39,10 @@ import {
 } from "@/src/lib/utils";
 import { exportCotizacion, exportEstadoCuenta } from "@/src/lib/pdf";
 import type {
-  Project, Task, Material, BudgetItem, Payment, Expense, Contact,
+  Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment,
 } from "@/src/types/project";
+import { useVoice } from "@/src/context/VoiceContext";
+import { useAuth } from "@/src/context/AuthContext";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface ProjectFull extends Project {
@@ -50,9 +52,10 @@ interface ProjectFull extends Project {
   payments: Payment[];
   expenses: Expense[];
   contacts: Contact[];
+  project_notes: ProjectNote[];
 }
 
-type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "pagos" | "plan";
+type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "pagos" | "plan" | "notas";
 type PaySubTab = "ingresos" | "egresos";
 
 const TABS: { id: TabId; label: string }[] = [
@@ -62,6 +65,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "presupuesto", label: "Presupuesto" },
   { id: "pagos",       label: "Pagos" },
   { id: "plan",        label: "Plan" },
+  { id: "notas",       label: "Notas 📎" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -147,9 +151,21 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
                     className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
                     {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
+                ) : f.type === "number" ? (
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={vals[f.key] === 0 ? "" : String(vals[f.key])}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9.]/g, "");
+                      set(f.key, raw === "" ? 0 : parseFloat(raw) || 0);
+                    }}
+                    placeholder="0"
+                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  />
                 ) : (
-                  <input type={f.type} value={vals[f.key] as string | number}
-                    onChange={(e) => set(f.key, f.type === "number" ? parseFloat(e.target.value) || 0 : e.target.value)}
+                  <input type={f.type} value={vals[f.key] as string}
+                    onChange={(e) => set(f.key, e.target.value)}
                     className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
                 )}
               </div>
@@ -306,14 +322,16 @@ function WorkflowTab({
       ],
       onSave: async (vals) => {
         const assignee = contacts.find((c) => c.name === vals.assignee_name);
-        await supabase.from("tasks").update({
+        const { error } = await supabase.from("tasks").update({
           name: vals.name, hours: vals.hours, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
           status: vals.status, assigned_contact_id: assignee?.id ?? null,
         }).eq("id", t.id);
+        if (error) { toast("Error al guardar: " + error.message); return; }
         onRefresh(); toast("Actividad actualizada.");
       },
       onDelete: async () => {
-        await supabase.from("tasks").delete().eq("id", t.id);
+        const { error } = await supabase.from("tasks").delete().eq("id", t.id);
+        if (error) { toast("Error al eliminar: " + error.message); return; }
         onRefresh(); toast("Actividad eliminada.");
       },
     });
@@ -356,11 +374,12 @@ function WorkflowTab({
       ],
       onSave: async (vals) => {
         const assignee = contacts.find((c) => c.name === vals.assignee_name);
-        await supabase.from("tasks").insert({
+        const { error } = await supabase.from("tasks").insert({
           project_id: project.id, name: vals.name || "Actividad",
           hours: vals.hours || 0, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
           status: "pend", sort_order: items.length, assigned_contact_id: assignee?.id ?? null,
         });
+        if (error) { toast("Error al guardar: " + error.message); return; }
         onRefresh(); toast("Actividad agregada.");
       },
     });
@@ -451,7 +470,6 @@ function MaterialesTab({
   const [items, setItems] = useState<Material[]>(materials);
   const [editor, setEditor] = useState<EditorOpts | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const persist = usePersistOrder("materials");
 
   useEffect(() => { setItems(materials); }, [materials]);
 
@@ -484,8 +502,6 @@ function MaterialesTab({
     const newIdx = items.findIndex((m) => m.id === over.id);
     const next = arrayMove(items, oldIdx, newIdx);
     setItems(next);
-    await persist(next);
-    toast("Orden actualizado.");
   };
 
   const openEdit = (m: Material) => {
@@ -498,11 +514,13 @@ function MaterialesTab({
         { key: "bought",   label: "¿Comprado?",         type: "select", options: ["No", "Sí"], value: m.bought ? "Sí" : "No" },
       ],
       onSave: async (vals) => {
-        await supabase.from("materials").update({ name: vals.name, supplier: vals.supplier, cost: vals.cost, bought: vals.bought === "Sí" }).eq("id", m.id);
+        const { error } = await supabase.from("materials").update({ name: vals.name, supplier: vals.supplier, cost: vals.cost, bought: vals.bought === "Sí" }).eq("id", m.id);
+        if (error) { toast("Error al guardar: " + error.message); return; }
         onRefresh(); toast("Material actualizado.");
       },
       onDelete: async () => {
-        await supabase.from("materials").delete().eq("id", m.id);
+        const { error } = await supabase.from("materials").delete().eq("id", m.id);
+        if (error) { toast("Error al eliminar: " + error.message); return; }
         onRefresh(); toast("Material eliminado.");
       },
     });
@@ -568,7 +586,8 @@ function MaterialesTab({
             { key: "cost", label: "Costo (USD)", type: "number", value: 0 },
           ],
           onSave: async (vals) => {
-            await supabase.from("materials").insert({ project_id: project.id, name: vals.name || "Material", supplier: vals.supplier || "", cost: vals.cost || 0, bought: false, sort_order: items.length });
+            const { error } = await supabase.from("materials").insert({ project_id: project.id, name: vals.name || "Material", supplier: vals.supplier || "", cost: vals.cost || 0, bought: false });
+            if (error) { toast("Error al guardar: " + error.message); return; }
             onRefresh(); toast("Material agregado.");
           },
         })}
@@ -599,11 +618,13 @@ function ContactosTab({
     setBusy(cid);
     const isOn = assignedIds.has(cid);
     if (isOn) {
-      await supabase.from("project_contacts").delete()
+      const { error } = await supabase.from("project_contacts").delete()
         .eq("project_id", project.id).eq("contact_id", cid);
+      if (error) { toast("Error: " + error.message); setBusy(null); return; }
       toast("Especialista quitado del proyecto.");
     } else {
-      await supabase.from("project_contacts").insert({ project_id: project.id, contact_id: cid });
+      const { error } = await supabase.from("project_contacts").insert({ project_id: project.id, contact_id: cid });
+      if (error) { toast("Error: " + error.message); setBusy(null); return; }
       toast("Especialista asignado al proyecto.");
     }
     setBusy(null);
@@ -680,7 +701,6 @@ function PresupuestoTab({
   const [editor, setEditor] = useState<EditorOpts | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [activeId, setActiveId]     = useState<string | null>(null);
-  const persist = usePersistOrder("budget_items");
 
   useEffect(() => { setItems(budgetItems); }, [budgetItems]);
 
@@ -691,14 +711,12 @@ function PresupuestoTab({
   );
 
   const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
-  const handleDragEnd   = async (e: DragEndEvent) => {
+  const handleDragEnd   = (e: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const next = arrayMove(items, items.findIndex((b) => b.id === active.id), items.findIndex((b) => b.id === over.id));
     setItems(next);
-    await persist(next);
-    toast("Orden actualizado.");
   };
 
   const sum = items.reduce((s, b) => s + b.amount, 0);
@@ -714,11 +732,13 @@ function PresupuestoTab({
         { key: "amount",      label: "Monto (USD)",   type: "number", value: b.amount },
       ],
       onSave: async (vals) => {
-        await supabase.from("budget_items").update({ description: vals.description, type: vals.type, amount: vals.amount }).eq("id", b.id);
+        const { error } = await supabase.from("budget_items").update({ description: vals.description, type: vals.type, amount: vals.amount }).eq("id", b.id);
+        if (error) { toast("Error al guardar: " + error.message); return; }
         onRefresh(); toast("Línea actualizada.");
       },
       onDelete: async () => {
-        await supabase.from("budget_items").delete().eq("id", b.id);
+        const { error } = await supabase.from("budget_items").delete().eq("id", b.id);
+        if (error) { toast("Error al eliminar: " + error.message); return; }
         onRefresh(); toast("Línea eliminada.");
       },
     });
@@ -787,7 +807,8 @@ function PresupuestoTab({
               { key: "amount",      label: "Monto (USD)",   type: "number", value: 0 },
             ],
             onSave: async (vals) => {
-              await supabase.from("budget_items").insert({ project_id: project.id, description: vals.description || "Línea", type: vals.type, amount: vals.amount || 0, sort_order: items.length });
+              const { error } = await supabase.from("budget_items").insert({ project_id: project.id, description: vals.description || "Línea", type: vals.type, amount: vals.amount || 0 });
+              if (error) { toast("Error al guardar: " + error.message); return; }
               onRefresh(); toast("Línea agregada.");
             },
           })}
@@ -813,12 +834,14 @@ function PresupuestoTab({
 // TAB: PAGOS con DnD en cada sub-lista
 // ═══════════════════════════════════════════════════════════════════════════════
 function PagosTab({
-  project, payments, expenses, contacts, onRefresh, toast,
+  project, payments, expenses, contacts, onRefresh, toast, onSubTabChange,
 }: {
   project: Project; payments: Payment[]; expenses: Expense[]; contacts: Contact[];
   onRefresh: () => void; toast: (m: string) => void;
+  onSubTabChange?: (sub: PaySubTab) => void;
 }) {
-  const [subTab, setSubTab]         = useState<PaySubTab>("ingresos");
+  const [subTab, setSubTab] = useState<PaySubTab>("ingresos");
+  const changeSubTab = (t: PaySubTab) => { setSubTab(t); onSubTabChange?.(t); };
   const [payItems, setPayItems]     = useState<Payment[]>([...payments].reverse());
   const [expItems, setExpItems]     = useState<Expense[]>([...expenses].reverse());
   const [editor, setEditor]         = useState<EditorOpts | null>(null);
@@ -871,8 +894,16 @@ function PagosTab({
       { key: "method", label: "Método",      type: "select", options: methodOptions, value: x.method },
       { key: "type",   label: "Concepto",    type: "select", options: ["anticipo", "abono", "final"],  value: x.type },
     ],
-    onSave: async (vals) => { await supabase.from("payments").update(vals).eq("id", x.id); onRefresh(); toast("Ingreso actualizado."); },
-    onDelete: async () => { await supabase.from("payments").delete().eq("id", x.id); onRefresh(); toast("Ingreso eliminado."); },
+    onSave: async (vals) => {
+      const { error } = await supabase.from("payments").update(vals).eq("id", x.id);
+      if (error) { toast("Error al guardar: " + error.message); return; }
+      onRefresh(); toast("Ingreso actualizado.");
+    },
+    onDelete: async () => {
+      const { error } = await supabase.from("payments").delete().eq("id", x.id);
+      if (error) { toast("Error al eliminar: " + error.message); return; }
+      onRefresh(); toast("Ingreso eliminado.");
+    },
   });
 
   const openExpEdit = (x: Expense) => setEditor({
@@ -884,8 +915,16 @@ function PagosTab({
       { key: "date",       label: "Fecha",    type: "date",   value: x.date },
       { key: "method",     label: "Método",   type: "select", options: methodOptions, value: x.method },
     ],
-    onSave: async (vals) => { await supabase.from("expenses").update(vals).eq("id", x.id); onRefresh(); toast("Egreso actualizado."); },
-    onDelete: async () => { await supabase.from("expenses").delete().eq("id", x.id); onRefresh(); toast("Egreso eliminado."); },
+    onSave: async (vals) => {
+      const { error } = await supabase.from("expenses").update(vals).eq("id", x.id);
+      if (error) { toast("Error al guardar: " + error.message); return; }
+      onRefresh(); toast("Egreso actualizado.");
+    },
+    onDelete: async () => {
+      const { error } = await supabase.from("expenses").delete().eq("id", x.id);
+      if (error) { toast("Error al eliminar: " + error.message); return; }
+      onRefresh(); toast("Egreso eliminado.");
+    },
   });
 
   const activePay = activePayId ? payItems.find((p) => p.id === activePayId) : null;
@@ -906,7 +945,7 @@ function PagosTab({
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-xl border border-[#E6DDCB] bg-[#ECE3D1] p-1">
           {(["ingresos", "egresos"] as PaySubTab[]).map((t) => (
-            <button key={t} onClick={() => setSubTab(t)} className={`rounded-lg px-5 py-2 text-sm font-bold transition capitalize ${subTab === t ? "bg-white text-[#16323D] shadow-sm" : "text-[#5C6A6E]"}`}>
+            <button key={t} onClick={() => changeSubTab(t)} className={`rounded-lg px-5 py-2 text-sm font-bold transition capitalize ${subTab === t ? "bg-white text-[#16323D] shadow-sm" : "text-[#5C6A6E]"}`}>
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
@@ -964,7 +1003,10 @@ function PagosTab({
                 { key: "type",   label: "Concepto",    type: "select", options: ["anticipo", "abono", "final"], value: "abono" },
               ],
               onSave: async (vals) => {
-                if (Number(vals.amount) > 0) { await supabase.from("payments").insert({ project_id: project.id, ...vals }); onRefresh(); toast("Ingreso registrado."); }
+                if (Number(vals.amount) <= 0) { toast("El monto debe ser mayor a 0."); return; }
+                const { error } = await supabase.from("payments").insert({ project_id: project.id, ...vals });
+                if (error) { toast("Error al guardar: " + error.message); return; }
+                onRefresh(); toast("Ingreso registrado.");
               },
             })}
             className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
@@ -1020,7 +1062,10 @@ function PagosTab({
                 { key: "method",     label: "Método",   type: "select", options: methodOptions, value: "Transferencia" },
               ],
               onSave: async (vals) => {
-                if (Number(vals.amount) > 0) { await supabase.from("expenses").insert({ project_id: project.id, ...vals }); onRefresh(); toast("Egreso registrado."); }
+                if (Number(vals.amount) <= 0) { toast("El monto debe ser mayor a 0."); return; }
+                const { error } = await supabase.from("expenses").insert({ project_id: project.id, ...vals });
+                if (error) { toast("Error al guardar: " + error.message); return; }
+                onRefresh(); toast("Egreso registrado.");
               },
             })}
             className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
@@ -1093,7 +1138,8 @@ function PlanTab({
   };
 
   const deleteTask = async (id: string) => {
-    await supabase.from("tasks").delete().eq("id", id);
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    if (error) { toast("Error al eliminar: " + error.message); setConfirmDel(null); return; }
     setConfirmDel(null); onRefresh(); toast("Actividad eliminada.");
   };
 
@@ -1171,6 +1217,318 @@ function PlanTab({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// TAB: NOTAS — comentarios + adjuntos (imágenes, PDFs)
+// ═══════════════════════════════════════════════════════════════════════════════
+function NotasTab({
+  project, notes, onRefresh, toast,
+}: {
+  project: Project; notes: ProjectNote[];
+  onRefresh: () => void; toast: (m: string) => void;
+}) {
+  const { login } = useAuth();
+  const fileRef   = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
+
+  const [adding,     setAdding]     = useState(false);
+  const [newContent, setNewContent] = useState("");
+  const [newFiles,   setNewFiles]   = useState<File[]>([]);
+  const [uploading,  setUploading]  = useState(false);
+
+  const [editingNote,    setEditingNote]    = useState<ProjectNote | null>(null);
+  const [editContent,    setEditContent]    = useState("");
+  const [editFiles,      setEditFiles]      = useState<File[]>([]);
+
+  const [pinPrompt, setPinPrompt] = useState<{ action: "delete" | "edit"; note: ProjectNote } | null>(null);
+  const [pinValue,  setPinValue]  = useState("");
+  const [pinError,  setPinError]  = useState("");
+
+  // ── upload files → Supabase Storage bucket "kokistyle-files" ────────────────
+  const uploadFiles = async (noteId: string, files: File[]): Promise<NoteAttachment[]> => {
+    const out: NoteAttachment[] = [];
+    for (const file of files) {
+      const path = `notes/${noteId}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from("kokistyle-files").upload(path, file, { upsert: true });
+      if (error) { toast(`Sin bucket de almacenamiento — crea "kokistyle-files" en Supabase Storage`); continue; }
+      const { data: { publicUrl } } = supabase.storage.from("kokistyle-files").getPublicUrl(path);
+      const type = file.type.startsWith("image/") ? "image" : file.type === "application/pdf" ? "pdf" : "other";
+      out.push({ name: file.name, url: publicUrl, type, size: file.size });
+    }
+    return out;
+  };
+
+  // ── Add note ─────────────────────────────────────────────────────────────────
+  const handleAdd = async () => {
+    if (!newContent.trim() && newFiles.length === 0) return;
+    setUploading(true);
+    const { data: row, error } = await supabase
+      .from("project_notes")
+      .insert({ project_id: project.id, content: newContent.trim(), attachments: [] })
+      .select("id").single();
+    if (error || !row) { toast("Error al guardar la nota: " + (error?.message ?? "")); setUploading(false); return; }
+    const attachments = await uploadFiles(row.id, newFiles);
+    if (attachments.length > 0) {
+      await supabase.from("project_notes").update({ attachments }).eq("id", row.id);
+    }
+    setAdding(false); setNewContent(""); setNewFiles([]);
+    setUploading(false); onRefresh(); toast("Nota guardada.");
+  };
+
+  // ── PIN verification before edit/delete ──────────────────────────────────────
+  const verifyPin = () => {
+    const ok = login(pinValue);
+    if (!ok) { setPinError("PIN incorrecto"); setPinValue(""); return; }
+    const p = pinPrompt!;
+    setPinPrompt(null); setPinValue(""); setPinError("");
+    if (p.action === "delete") execDelete(p.note.id);
+    else execEdit(p.note);
+  };
+
+  const execDelete = async (id: string) => {
+    const { error } = await supabase.from("project_notes").delete().eq("id", id);
+    if (error) { toast("Error al eliminar: " + error.message); return; }
+    onRefresh(); toast("Nota eliminada.");
+  };
+
+  const execEdit = (note: ProjectNote) => {
+    setEditingNote(note);
+    setEditContent(note.content);
+    setEditFiles([]);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingNote) return;
+    setUploading(true);
+    const newAttachments = await uploadFiles(editingNote.id, editFiles);
+    const merged = [...(editingNote.attachments ?? []), ...newAttachments];
+    const { error } = await supabase.from("project_notes")
+      .update({ content: editContent.trim(), attachments: merged, updated_at: new Date().toISOString() })
+      .eq("id", editingNote.id);
+    if (error) { toast("Error al guardar: " + error.message); setUploading(false); return; }
+    setEditingNote(null); setEditContent(""); setEditFiles([]);
+    setUploading(false); onRefresh(); toast("Nota actualizada.");
+  };
+
+  const removeAttachment = async (note: ProjectNote, idx: number) => {
+    const updated = note.attachments.filter((_, i) => i !== idx);
+    await supabase.from("project_notes").update({ attachments: updated }).eq("id", note.id);
+    onRefresh();
+  };
+
+  const sorted = [...notes].sort((a, b) =>
+    new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+  );
+
+  return (
+    <div className="max-w-[760px] space-y-4">
+      {/* Add note button */}
+      {!adding && (
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+        >
+          <Plus size={14} /> Agregar nota
+        </button>
+      )}
+
+      {/* New note form */}
+      {adding && (
+        <div className="rounded-2xl border border-[#4E7A82] bg-white p-4 shadow-sm">
+          <textarea
+            value={newContent}
+            onChange={(e) => setNewContent(e.target.value)}
+            placeholder="Escribe tu nota, observación o comentario…"
+            rows={3}
+            className="mb-3 w-full resize-none rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[#16323D] placeholder:text-[#97A1A0] focus:border-[#16323D] focus:outline-none"
+          />
+          {/* File preview */}
+          {newFiles.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {newFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1 text-[11px] text-[#5C6A6E]">
+                  {f.type.startsWith("image/") ? <ImageIcon size={11} /> : <FileText size={11} />}
+                  <span className="max-w-[120px] truncate">{f.name}</span>
+                  <button onClick={() => setNewFiles(prev => prev.filter((_, j) => j !== i))} className="ml-0.5 text-[#B0492F]"><X size={10} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-xs font-semibold text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+            >
+              <Paperclip size={12} /> Adjuntar
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,application/pdf"
+              capture="environment"
+              multiple
+              className="hidden"
+              onChange={(e) => { if (e.target.files) setNewFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+            />
+            <div className="ml-auto flex gap-2">
+              <button onClick={() => { setAdding(false); setNewContent(""); setNewFiles([]); }}
+                className="rounded-xl bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+                Cancelar
+              </button>
+              <button
+                onClick={handleAdd}
+                disabled={uploading || (!newContent.trim() && newFiles.length === 0)}
+                className="rounded-xl bg-[#16323D] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {uploading ? "Guardando…" : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notes list */}
+      {sorted.length === 0 && !adding && (
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#97A1A0]">
+          Sin notas aún. Usa el botón para agregar comentarios o adjuntar archivos.
+        </div>
+      )}
+
+      {sorted.map((note) => (
+        <div key={note.id} className="rounded-2xl border border-[#E6DDCB] bg-white p-4 shadow-sm">
+          {/* Editing inline */}
+          {editingNote?.id === note.id ? (
+            <>
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={3}
+                className="mb-3 w-full resize-none rounded-xl border border-[#4E7A82] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[#16323D] focus:outline-none"
+              />
+              {/* Existing attachments */}
+              {note.attachments?.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {note.attachments.map((a, i) => (
+                    <div key={i} className="group relative">
+                      {a.type === "image"
+                        ? <img src={a.url} alt={a.name} className="h-14 w-14 rounded-lg object-cover border border-[#E6DDCB]" />
+                        : <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1 text-[11px] text-[#4E7A82]"><FileText size={11}/>{a.name}</a>
+                      }
+                      <button
+                        onClick={() => removeAttachment(note, i)}
+                        className="absolute -right-1.5 -top-1.5 hidden size-4 place-items-center rounded-full bg-[#B0492F] text-white group-hover:grid"
+                      ><X size={9}/></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* New files to add */}
+              {editFiles.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {editFiles.map((f, i) => (
+                    <div key={i} className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1 text-[11px] text-[#5C6A6E]">
+                      {f.type.startsWith("image/") ? <ImageIcon size={10}/> : <FileText size={10}/>}
+                      <span className="max-w-[100px] truncate">{f.name}</span>
+                      <button onClick={() => setEditFiles(p => p.filter((_, j) => j !== i))}><X size={9} className="text-[#B0492F]"/></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <button onClick={() => editFileRef.current?.click()} className="flex items-center gap-1 rounded-xl border border-[#D7CBB3] px-3 py-2 text-xs font-semibold text-[#5C6A6E]">
+                  <Paperclip size={11}/> Adjuntar más
+                </button>
+                <input ref={editFileRef} type="file" accept="image/*,application/pdf" capture="environment" multiple className="hidden"
+                  onChange={(e) => { if (e.target.files) setEditFiles(p => [...p, ...Array.from(e.target.files!)]); }} />
+                <div className="ml-auto flex gap-2">
+                  <button onClick={() => setEditingNote(null)} className="rounded-xl bg-[#ECE3D1] px-3 py-2 text-sm font-bold text-[#5C6A6E]">Cancelar</button>
+                  <button onClick={handleSaveEdit} disabled={uploading} className="rounded-xl bg-[#16323D] px-3 py-2 text-sm font-bold text-white disabled:opacity-50">
+                    {uploading ? "…" : "Guardar"}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Note content */}
+              {note.content && <p className="mb-3 whitespace-pre-wrap text-sm text-[#16323D]">{note.content}</p>}
+              {/* Attachments */}
+              {note.attachments?.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {note.attachments.map((a, i) => (
+                    a.type === "image"
+                      ? <a key={i} href={a.url} target="_blank" rel="noopener noreferrer">
+                          <img src={a.url} alt={a.name} className="h-16 w-16 rounded-xl object-cover border border-[#E6DDCB] transition hover:opacity-90" />
+                        </a>
+                      : <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-[12px] font-medium text-[#4E7A82] transition hover:bg-[#DCE8E9]">
+                          <FileText size={13}/>{a.name}
+                        </a>
+                  ))}
+                </div>
+              )}
+              {/* Footer */}
+              <div className="flex items-center justify-between border-t border-[#F0EBE0] pt-2">
+                <span className="text-[11px] text-[#97A1A0]">{dateFmt(note.created_at ?? "")}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setPinPrompt({ action: "edit", note }); setPinValue(""); setPinError(""); }}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#4E7A82] transition hover:bg-[#DCE8E9]"
+                  >
+                    <Pencil size={11}/> Editar
+                  </button>
+                  <button
+                    onClick={() => { setPinPrompt({ action: "delete", note }); setPinValue(""); setPinError(""); }}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#B0492F] transition hover:bg-[#F0DBD2]"
+                  >
+                    <Trash2 size={11}/> Eliminar
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+
+      {/* PIN confirmation modal */}
+      {pinPrompt && (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-[360px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
+            <h3 className="mb-1 font-[Manrope] text-base font-bold text-[#16323D]">
+              {pinPrompt.action === "delete" ? "¿Eliminar esta nota?" : "Confirmar edición"}
+            </h3>
+            <p className="mb-4 text-sm text-[#5C6A6E]">Ingresa tu PIN de administrador para continuar.</p>
+            <div className="mb-1 flex justify-center gap-3">
+              {[0,1,2,3].map(i => (
+                <div key={i} className={`size-3 rounded-full transition ${pinValue.length > i ? "bg-[#16323D]" : "bg-[#D7CBB3]"}`} />
+              ))}
+            </div>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              autoFocus
+              value={pinValue}
+              onChange={(e) => { setPinValue(e.target.value.replace(/\D/g,"").slice(0,4)); setPinError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && pinValue.length === 4 && verifyPin()}
+              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-white text-center font-mono text-xl tracking-[1.5em] text-[#16323D] focus:border-[#16323D] focus:outline-none"
+              placeholder="••••"
+            />
+            {pinError && <p className="mb-2 text-center text-xs font-semibold text-[#B0492F]">{pinError}</p>}
+            <div className="flex gap-3 mt-2">
+              <button onClick={() => { setPinPrompt(null); setPinValue(""); setPinError(""); }}
+                className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
+              <button onClick={verifyPin} disabled={pinValue.length < 4}
+                className={`flex-1 rounded-xl py-3 font-bold text-white disabled:opacity-40 ${pinPrompt.action === "delete" ? "bg-[#B0492F]" : "bg-[#16323D]"}`}>
+                {pinPrompt.action === "delete" ? "Eliminar" : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PÁGINA PRINCIPAL: Detalle del Proyecto
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function ProjectDetailPage() {
@@ -1182,11 +1540,12 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState<TabId>("workflow");
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
+  const { setMeta } = useVoice();
 
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
       .from("projects")
-      .select(`*, tasks(*), materials(*), budget_items(*), payments(*), expenses(*), project_contacts(contact_id, contacts(*))`)
+      .select(`*, tasks(*), materials(*), budget_items(*), payments(*), expenses(*), project_contacts(contact_id, contacts(*)), project_notes(*)`)
       .eq("id", id)
       .single();
 
@@ -1197,9 +1556,37 @@ export default function ProjectDetailPage() {
   }, [id, router]);
 
   useEffect(() => { fetchProject(); }, [fetchProject]);
+
   useEffect(() => {
     supabase.from("contacts").select("*").then(({ data }) => { if (data) setAllContacts(data as Contact[]); });
   }, []);
+
+  // Wire voice context — FAB sabe qué tab/proyecto está activo
+  useEffect(() => {
+    if (!project) return;
+    const ctxMap: Record<TabId, string> = {
+      workflow:    "project.workflow",
+      materiales:  "project.materiales",
+      contactos:   "project.contactos",
+      presupuesto: "project.presupuesto",
+      pagos:       "project.pagos.ingresos",
+      plan:        "project.plan",
+      notas:       "project.notas",
+    };
+    setMeta({
+      context:      ctxMap[activeTab],
+      projectId:    project.id,
+      projectTitle: project.title,
+      contacts:     project.contacts?.map((c) => c.name) ?? [],
+    });
+  }, [project, activeTab, setMeta]);
+
+  // Refresh cuando VoiceFAB guarda algo
+  useEffect(() => {
+    const h = () => fetchProject();
+    window.addEventListener("kokivoice_saved", h);
+    return () => window.removeEventListener("kokivoice_saved", h);
+  }, [fetchProject]);
 
   if (loading) {
     return (
@@ -1246,8 +1633,13 @@ export default function ProjectDetailPage() {
       {activeTab === "materiales"  && <MaterialesTab  project={project} materials={project.materials} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "contactos"   && <ContactosTab   project={project} contacts={project.contacts} allContacts={allContacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "presupuesto" && <PresupuestoTab project={project} budgetItems={project.budget_items} onRefresh={fetchProject} toast={showToast} />}
-      {activeTab === "pagos"       && <PagosTab       project={project} payments={project.payments} expenses={project.expenses} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "pagos"       && <PagosTab
+        project={project} payments={project.payments} expenses={project.expenses}
+        contacts={project.contacts} onRefresh={fetchProject} toast={showToast}
+        onSubTabChange={(sub) => setMeta({ context: `project.pagos.${sub}`, projectId: project.id, projectTitle: project.title, contacts: project.contacts?.map((c) => c.name) ?? [] })}
+      />}
       {activeTab === "plan"        && <PlanTab        project={project} tasks={tasks} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "notas"       && <NotasTab       project={project} notes={project.project_notes ?? []} onRefresh={fetchProject} toast={showToast} />}
 
       {/* Toast */}
       <div className={`fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 max-w-sm w-full rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}>
