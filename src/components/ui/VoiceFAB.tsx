@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, X, Loader2 } from "lucide-react";
-import { useVoice, dispatchVoiceAction } from "@/src/context/VoiceContext";
+import { Mic, X, Loader2, CheckCircle } from "lucide-react";
+import { useVoice } from "@/src/context/VoiceContext";
+import type { VoiceMeta } from "@/src/context/VoiceContext";
+import { supabase } from "@/src/lib/supabase";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Phase = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "error";
+type Phase = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error";
 interface Msg     { role: "user" | "assistant"; text: string; }
 interface FieldDef { key: string; question: string; parse: (t: string) => unknown; }
 
@@ -55,6 +57,25 @@ function parseBudgetType(t: string): string | null {
 }
 function fmt(n: number) { return "$" + n.toLocaleString("en-US"); }
 
+// ── Local intent fallback (when API returns unknown) ───────────────────────
+function localDetect(text: string, context: string): string {
+  const t = text.toLowerCase();
+  if (/\b(pago|ingreso|cobr|recib|pagó|cobré)\b/i.test(t))         return "create_payment";
+  if (/\b(egreso|gasto|gasté|pagué|compré|pagu)\b/i.test(t))       return "create_expense";
+  if (/\b(proyecto|obra|remodelaci|construc)\b/i.test(t))           return "create_project";
+  if (/\b(tarea|actividad|labor|pendiente)\b/i.test(t))             return "create_task";
+  if (/\b(material|compra|product|suministro)\b/i.test(t))          return "create_material";
+  if (/\b(presupuesto|cotiza|línea|partida)\b/i.test(t))            return "create_budget_item";
+  if (/\b(contacto|subcontrat|especiali|proveedor)\b/i.test(t))     return "create_contact";
+  if (context.includes("pagos.ingresos"))  return "create_payment";
+  if (context.includes("pagos.egresos"))   return "create_expense";
+  if (context.includes("workflow"))        return "create_task";
+  if (context.includes("materiales"))      return "create_material";
+  if (context.includes("presupuesto"))     return "create_budget_item";
+  if (context.includes("contactos"))       return "create_contact";
+  return "create_project";
+}
+
 // ── Required fields per action ─────────────────────────────────────────────
 const ACTION_FIELDS: Record<string, FieldDef[]> = {
   create_project: [
@@ -75,8 +96,7 @@ const ACTION_FIELDS: Record<string, FieldDef[]> = {
     { key: "method",     question: "¿Cómo pagaste? Zelle, efectivo o transferencia.", parse: parseMethod },
   ],
   create_task: [
-    { key: "name",          question: "¿Qué actividad?",    parse: (t) => t.trim() || null },
-    { key: "assignee_name", question: "¿Quién la realiza?", parse: (t) => t.trim() || null },
+    { key: "name", question: "¿Qué actividad?", parse: (t) => t.trim() || null },
   ],
   create_material: [
     { key: "name",     question: "¿Qué material?",              parse: (t) => t.trim() || null },
@@ -101,24 +121,106 @@ const ACTION_LABELS: Record<string, string> = {
   create_contact: "contacto",
 };
 
-// ── Local intent detection (fallback when API fails or returns unknown) ───
-function localDetect(text: string, context: string): string {
-  const t = text.toLowerCase();
-  if (/\b(pago|ingreso|cobr|recib|pagó|cobré)\b/i.test(t))          return "create_payment";
-  if (/\b(egreso|gasto|gasté|pagué|compré|pagu)\b/i.test(t))        return "create_expense";
-  if (/\b(proyecto|obra|trabajo|remodelaci|construc)\b/i.test(t))    return "create_project";
-  if (/\b(tarea|actividad|labor|pendiente)\b/i.test(t))              return "create_task";
-  if (/\b(material|compra|product|suministro)\b/i.test(t))           return "create_material";
-  if (/\b(presupuesto|cotiza|línea|partida|costo\s+de)\b/i.test(t)) return "create_budget_item";
-  if (/\b(contacto|subcontrat|especiali|proveedor)\b/i.test(t))     return "create_contact";
-  // Fall back to whatever tab the user is on
-  if (context.includes("pagos.ingresos"))  return "create_payment";
-  if (context.includes("pagos.egresos"))   return "create_expense";
-  if (context.includes("workflow"))        return "create_task";
-  if (context.includes("materiales"))      return "create_material";
-  if (context.includes("presupuesto"))     return "create_budget_item";
-  if (context.includes("contactos"))       return "create_contact";
-  return "create_project";
+// ── Supabase direct save ───────────────────────────────────────────────────
+async function saveAction(
+  action: string,
+  data: Record<string, unknown>,
+  meta: VoiceMeta
+): Promise<string> {
+  const pid  = meta.projectId;
+  const date = String(data.date ?? TODAY());
+
+  switch (action) {
+    case "create_project": {
+      const { data: row, error } = await supabase
+        .from("projects")
+        .insert({
+          title:      String(data.title      ?? "Nuevo proyecto"),
+          client:     String(data.client     ?? ""),
+          address:    String(data.address    ?? "Sin dirección"),
+          budget:     Number(data.budget     ?? 0),
+          status:     "presupuesto",
+          start_date: String(data.start_date ?? TODAY()),
+        })
+        .select("title").single();
+      if (error) throw error;
+      return `Proyecto "${row.title}" creado`;
+    }
+    case "create_payment": {
+      if (!pid) throw new Error("Abre un proyecto primero");
+      const { error } = await supabase.from("payments").insert({
+        project_id: pid,
+        amount:     Number(data.amount ?? 0),
+        date,
+        method:     String(data.method ?? "Efectivo"),
+        type:       String(data.type   ?? "abono"),
+      });
+      if (error) throw error;
+      return `Ingreso de ${fmt(Number(data.amount ?? 0))} guardado`;
+    }
+    case "create_expense": {
+      if (!pid) throw new Error("Abre un proyecto primero");
+      const { error } = await supabase.from("expenses").insert({
+        project_id: pid,
+        amount:     Number(data.amount     ?? 0),
+        date,
+        method:     String(data.method     ?? "Efectivo"),
+        payee_name: String(data.payee_name ?? ""),
+        concept:    String(data.concept    ?? ""),
+      });
+      if (error) throw error;
+      return `Egreso de ${fmt(Number(data.amount ?? 0))} guardado`;
+    }
+    case "create_task": {
+      if (!pid) throw new Error("Abre un proyecto primero");
+      const { error } = await supabase.from("tasks").insert({
+        project_id:          pid,
+        name:                String(data.name ?? "Nueva tarea"),
+        hours:               Number(data.hours ?? 8),
+        duration_weeks:      Number(data.duration_weeks ?? 1),
+        status:              "pend",
+        sort_order:          9999,
+        assigned_contact_id: null,
+      });
+      if (error) throw error;
+      return `Tarea "${data.name ?? "Nueva tarea"}" creada`;
+    }
+    case "create_material": {
+      if (!pid) throw new Error("Abre un proyecto primero");
+      const { error } = await supabase.from("materials").insert({
+        project_id: pid,
+        name:       String(data.name     ?? ""),
+        supplier:   String(data.supplier ?? ""),
+        cost:       Number(data.cost     ?? 0),
+        bought:     false,
+      });
+      if (error) throw error;
+      return `Material "${data.name}" agregado`;
+    }
+    case "create_budget_item": {
+      if (!pid) throw new Error("Abre un proyecto primero");
+      const { error } = await supabase.from("budget_items").insert({
+        project_id:  pid,
+        type:        String(data.type        ?? "material"),
+        description: String(data.description ?? ""),
+        amount:      Number(data.amount      ?? 0),
+      });
+      if (error) throw error;
+      return `Línea "${data.description}" agregada al presupuesto`;
+    }
+    case "create_contact": {
+      const { error } = await supabase.from("contacts").insert({
+        name:      String(data.name      ?? ""),
+        specialty: String(data.specialty ?? ""),
+        phone:     String(data.phone     ?? ""),
+        rate:      String(data.rate      ?? "0"),
+      });
+      if (error) throw error;
+      return `Contacto "${data.name}" creado`;
+    }
+    default:
+      throw new Error(`Acción desconocida: ${action}`);
+  }
 }
 
 // ── Web Speech API types ───────────────────────────────────────────────────
@@ -138,7 +240,7 @@ declare global {
   }
 }
 
-// ── TTS ────────────────────────────────────────────────────────────────────
+// ── TTS ───────────────────────────────────────────────────────────────────
 let _voicesLoaded = false;
 function loadVoices(): Promise<void> {
   if (_voicesLoaded) return Promise.resolve();
@@ -159,9 +261,8 @@ function pickVoice(): SpeechSynthesisVoice | null {
 
 /**
  * Speak text.
- * The 2000ms post-TTS delay is critical on Android Chrome:
- * the OS needs ~1.5-2s to switch the audio path from speaker → microphone.
- * Without it, speech recognition starts while the mic is still inactive.
+ * 3000ms post-TTS delay: Android Chrome needs ~2.5s to switch audio routing
+ * from speaker back to microphone after speechSynthesis plays audio.
  */
 async function tts(text: string): Promise<void> {
   if (!("speechSynthesis" in window)) return;
@@ -174,7 +275,7 @@ async function tts(text: string): Promise<void> {
     utt.pitch  = 1.1;
     const voice = pickVoice();
     if (voice) utt.voice = voice;
-    utt.onend   = () => setTimeout(resolve, 2000); // Android needs ~1.5-2s to switch audio routing
+    utt.onend   = () => setTimeout(resolve, 3000);
     utt.onerror = () => setTimeout(resolve, 500);
     window.speechSynthesis.speak(utt);
   });
@@ -182,14 +283,24 @@ async function tts(text: string): Promise<void> {
 
 // ── Speech recognition ─────────────────────────────────────────────────────
 /**
- * Listen once. Requires an open MediaStream (micStreamRef) to keep Android
- * in "microphone mode" — without it, Android's audio system is in speaker
- * mode after TTS and the recognition fires no-speech immediately.
- *
- * Resolution strategy:
- *   • isFinal result → resolve immediately (desktop Chrome fast path)
- *   • 2s silence after last interim → resolve with best transcript (Android path)
- *   • 12s hard timeout → resolve with whatever was captured, or reject
+ * Prime the microphone path on Android by opening and immediately releasing
+ * a getUserMedia stream. This forces the audio routing to switch from
+ * speaker→microphone mode BEFORE speech recognition starts.
+ */
+async function primeMic(): Promise<void> {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await new Promise<void>(r => setTimeout(r, 200));
+    s.getTracks().forEach(t => t.stop());
+    await new Promise<void>(r => setTimeout(r, 100));
+  } catch { /* mic permission denied or already active */ }
+}
+
+/**
+ * Listen once for speech.
+ * - Desktop Chrome: resolves on first isFinal result (fast)
+ * - Android Chrome: resolves after 2s silence following last interim result
+ * - Hard timeout: 12s
  */
 function listenOnce(recRef: { current: SR | null }): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -198,7 +309,7 @@ function listenOnce(recRef: { current: SR | null }): Promise<string> {
 
     const rec = new SRClass();
     rec.lang            = "es-US";
-    rec.continuous      = true;   // Prevents Android from auto-stopping on silence
+    rec.continuous      = true;
     rec.interimResults  = true;
     rec.maxAlternatives = 1;
 
@@ -222,26 +333,20 @@ function listenOnce(recRef: { current: SR | null }): Promise<string> {
       const all  = Array.from(e.results);
       const text = all.map(r => r[0].transcript).join(" ").trim();
       if (text) best = text;
-
       if (silenceT) clearTimeout(silenceT);
-
       if (all.some(r => r.isFinal) && text) {
-        finish(text); // Desktop: final result → done
+        finish(text);
       } else if (text) {
-        // Android: wait 2s of silence after last interim result
         silenceT = setTimeout(() => finish(best || null), 2000);
       }
     };
 
     rec.onerror = (e) => {
-      // no-speech: resolve with whatever we captured (may be empty)
       if (e.error === "no-speech") { finish(best || null); return; }
       if (!settled) { settled = true; recRef.current = null; reject(new Error(e.error)); }
     };
 
     rec.onend = () => { finish(best || null); };
-
-    // 12s hard timeout
     hardT = setTimeout(() => finish(best || null), 12000);
 
     try { rec.start(); } catch (e) { reject(e); }
@@ -258,13 +363,12 @@ export default function VoiceFAB() {
   const [messages,      setMessages]      = useState<Msg[]>([]);
   const [pendingAction, setPendingAction] = useState<{ action: string; data: Record<string, unknown> } | null>(null);
   const [confirmText,   setConfirmText]   = useState("");
-  const [errorMsg,      setErrorMsg]      = useState("");
+  const [statusMsg,     setStatusMsg]     = useState(""); // error or success text
 
-  const activeRef    = useRef(false);
-  const recRef       = useRef<SR | null>(null);
-  const startedRef   = useRef(false);
-  const micStreamRef = useRef<MediaStream | null>(null); // kept alive = Android stays in mic mode
-  const msgEndRef    = useRef<HTMLDivElement>(null);
+  const activeRef  = useRef(false);
+  const recRef     = useRef<SR | null>(null);
+  const startedRef = useRef(false);
+  const msgEndRef  = useRef<HTMLDivElement>(null);
 
   const supported =
     typeof window !== "undefined" &&
@@ -290,19 +394,17 @@ export default function VoiceFAB() {
   const listen = useCallback(async (): Promise<string | null> => {
     if (!activeRef.current) return null;
     setPhase("listening");
+    // Prime mic path on Android after TTS
+    await primeMic();
+    if (!activeRef.current) return null;
     try {
       return await listenOnce(recRef);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
-      if (msg === "no-speech") return ""; // non-fatal empty
+      if (msg === "no-speech") return "";
       console.error("[Katy]", msg);
-      return null; // fatal error
+      return null;
     }
-  }, []);
-
-  const releaseMic = useCallback(() => {
-    micStreamRef.current?.getTracks().forEach(t => t.stop());
-    micStreamRef.current = null;
   }, []);
 
   const closeClean = useCallback(() => {
@@ -311,45 +413,52 @@ export default function VoiceFAB() {
     try { window.speechSynthesis?.cancel(); } catch { /* noop */ }
     recRef.current?.abort();
     recRef.current = null;
-    releaseMic();
     setPhase("idle");
     setMessages([]);
     setPendingAction(null);
     setConfirmText("");
-    setErrorMsg("");
-  }, [releaseMic]);
+    setStatusMsg("");
+  }, []);
 
   const showError = useCallback((msg: string) => {
     activeRef.current  = false;
     startedRef.current = false;
     recRef.current?.abort();
     recRef.current = null;
-    releaseMic();
-    setErrorMsg(msg);
+    setStatusMsg(msg);
     setPhase("error");
-  }, [releaseMic]);
+  }, []);
 
-  const handleConfirm = useCallback(() => {
+  // ── Confirm = save directly to Supabase ───────────────────────────────────
+  const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
-    dispatchVoiceAction({ ...pendingAction, confirmMessage: confirmText });
-    closeClean();
-  }, [pendingAction, confirmText, closeClean]);
+    setPhase("saving");
+    try {
+      const msg = await saveAction(pendingAction.action, pendingAction.data, metaRef.current);
+      setStatusMsg(msg);
+      setPhase("success");
+      // Notify pages to refresh their data
+      window.dispatchEvent(new CustomEvent("kokivoice_saved", {
+        detail: { action: pendingAction.action, projectId: metaRef.current.projectId }
+      }));
+      setTimeout(closeClean, 2500);
+    } catch (e) {
+      showError(e instanceof Error ? e.message : "Error al guardar. Intenta de nuevo.");
+    }
+  }, [pendingAction, closeClean, showError]);
 
-  // ── Main flow ─────────────────────────────────────────────────────────────
+  // ── Main conversation flow ────────────────────────────────────────────────
   const start = useCallback(() => {
     if (phase !== "idle" || startedRef.current) return;
     startedRef.current = true;
     activeRef.current  = true;
-    setMessages([]); setPendingAction(null); setConfirmText(""); setErrorMsg("");
+    setMessages([]); setPendingAction(null); setConfirmText(""); setStatusMsg("");
 
     (async () => {
-      // ① Open mic stream and keep it alive the whole session.
-      //    This keeps Android in "microphone mode" — TTS can still play
-      //    through the speaker while the stream is open, but the mic path
-      //    is already active so recognition starts instantly.
+      // ① Permission check
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        micStreamRef.current = stream;
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        s.getTracks().forEach(t => t.stop());
       } catch {
         showError("Sin permiso de micrófono. Actívalo en ajustes del navegador.");
         return;
@@ -362,31 +471,25 @@ export default function VoiceFAB() {
       // ③ Listen for intent
       let rawIntent = await listen();
       if (rawIntent === null) { showError("No pude acceder al micrófono. Intenta de nuevo."); return; }
-
       if (!rawIntent) {
-        // Retry once with shorter prompt
         const a2 = await say("No te escuché. Habla cuando quieras.");
         if (!a2) return;
         rawIntent = await listen();
-        if (!rawIntent) {
-          await say("Cuando estés listo, toca el micrófono de nuevo.");
-          closeClean(); return;
-        }
+        if (!rawIntent) { await say("Cuando estés listo, toca el micrófono de nuevo."); closeClean(); return; }
       }
 
       push("user", rawIntent);
       if (!activeRef.current) return;
       setPhase("thinking");
 
-      // ④ API call — detect intent and extract data (10s timeout)
+      // ④ API call with 10s timeout
       let action = "unknown";
       let data: Record<string, unknown> = {};
       try {
         const ctrl = new AbortController();
         const tid  = setTimeout(() => ctrl.abort(), 10_000);
         const res  = await fetch("/api/voice", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             transcript: rawIntent,
             context:    metaRef.current.context,
@@ -396,30 +499,26 @@ export default function VoiceFAB() {
         });
         clearTimeout(tid);
         const j = await res.json();
-        action  = j.action ?? "unknown";
-        data    = j.data   ?? {};
+        action   = j.action ?? "unknown";
+        data     = j.data   ?? {};
       } catch (err) {
         console.error("[Katy API]", err);
         action = localDetect(rawIntent, metaRef.current.context);
       }
 
-      // API returned unknown → apply local keyword detection before giving up
       if (action === "unknown" || !ACTION_FIELDS[action]) {
         action = localDetect(rawIntent, metaRef.current.context);
       }
-
       if (!activeRef.current) return;
 
-      // ⑤ Ask only for missing required fields
-      const fields = ACTION_FIELDS[action];
-      for (const field of fields) {
+      // ⑤ Ask for missing required fields
+      for (const field of ACTION_FIELDS[action]) {
         if (data[field.key] != null) continue;
 
         const aField = await say(field.question);
         if (!aField) return;
         const answer = await listen();
         if (!activeRef.current) return;
-
         if (answer === null) { showError("Perdí el micrófono. Intenta de nuevo."); return; }
         if (!answer) continue;
 
@@ -427,7 +526,7 @@ export default function VoiceFAB() {
         const parsed = field.parse(answer);
         if (parsed != null) {
           data[field.key] = parsed;
-        } else if (["amount", "cost", "budget", "rate"].includes(field.key)) {
+        } else if (["amount", "cost", "budget"].includes(field.key)) {
           const aRetry = await say("No entendí el monto. ¿Cuánto?");
           if (!aRetry) return;
           const r2 = await listen();
@@ -437,8 +536,7 @@ export default function VoiceFAB() {
 
       // Defaults
       if (!data.date) data.date = TODAY();
-      if (action === "create_task" && !data.assignee_name) data.assignee_name = "Equipo propio";
-      if (action === "create_task" && !data.hours)         data.hours = 8;
+      if (action === "create_task" && !data.hours) data.hours = 8;
 
       // ⑥ Confirm
       if (!activeRef.current) return;
@@ -464,7 +562,8 @@ export default function VoiceFAB() {
   // ── UI ────────────────────────────────────────────────────────────────────
   const headerLabel: Record<Phase, string> = {
     idle: "", listening: "Escuchando…", thinking: "Procesando…",
-    speaking: `${ASSISTANT} habla…`, confirm: "¿Confirmamos?", error: "Error",
+    speaking: `${ASSISTANT} habla…`, confirm: "¿Confirmamos?",
+    saving: "Guardando…", success: "¡Guardado!", error: "Error",
   };
   const dotCls: Record<Phase, string> = {
     idle:     "",
@@ -472,11 +571,15 @@ export default function VoiceFAB() {
     thinking: "animate-pulse bg-[#4E7A82]",
     speaking: "animate-pulse bg-[#4F8A63]",
     confirm:  "bg-[#16323D]",
+    saving:   "animate-pulse bg-[#4E7A82]",
+    success:  "bg-[#4F8A63]",
     error:    "bg-[#B0492F]",
   };
   const fabBg =
     phase === "listening"                         ? "animate-pulse bg-[#B0492F]" :
-    phase === "thinking" || phase === "speaking"  ? "bg-[#4E7A82]"              :
+    phase === "success"                           ? "bg-[#4F8A63]"              :
+    phase === "thinking" || phase === "speaking" || phase === "saving"
+                                                  ? "bg-[#4E7A82]"              :
                                                     "bg-[#16323D] hover:bg-[#0e2630]";
 
   return (
@@ -492,9 +595,11 @@ export default function VoiceFAB() {
                 {ASSISTANT} — {headerLabel[phase]}
               </span>
             </div>
-            <button onClick={closeClean} className="rounded-lg p-1 text-[#5C6A6E] hover:bg-[#ECE3D1]">
-              <X size={16} />
-            </button>
+            {phase !== "saving" && phase !== "success" && (
+              <button onClick={closeClean} className="rounded-lg p-1 text-[#5C6A6E] hover:bg-[#ECE3D1]">
+                <X size={16} />
+              </button>
+            )}
           </div>
 
           {/* Messages */}
@@ -515,7 +620,7 @@ export default function VoiceFAB() {
                 </div>
               </div>
             ))}
-            {phase === "thinking" && (
+            {(phase === "thinking" || phase === "saving") && (
               <div className="flex items-center gap-2">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
                   {ASSISTANT[0]}
@@ -550,7 +655,7 @@ export default function VoiceFAB() {
             </div>
           )}
 
-          {/* Confirm buttons */}
+          {/* Confirm */}
           {phase === "confirm" && (
             <div className="flex gap-2 border-t border-[#E6DDCB] p-3">
               <button onClick={closeClean}
@@ -564,10 +669,18 @@ export default function VoiceFAB() {
             </div>
           )}
 
+          {/* Success */}
+          {phase === "success" && (
+            <div className="flex items-center gap-2 border-t border-[#E6DDCB] bg-[#F0F9F3] px-4 py-3">
+              <CheckCircle size={16} className="shrink-0 text-[#4F8A63]" />
+              <span className="text-sm font-semibold text-[#4F8A63]">{statusMsg}</span>
+            </div>
+          )}
+
           {/* Error */}
           {phase === "error" && (
             <div className="flex flex-col gap-2 border-t border-[#E6DDCB] p-3">
-              <p className="rounded-lg bg-[#FFF0EE] px-3 py-2 text-sm text-[#B0492F]">{errorMsg}</p>
+              <p className="rounded-lg bg-[#FFF0EE] px-3 py-2 text-sm text-[#B0492F]">{statusMsg}</p>
               <button onClick={() => { setPhase("idle"); startedRef.current = false; start(); }}
                 className="w-full rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white">
                 Reintentar
@@ -577,14 +690,16 @@ export default function VoiceFAB() {
         </div>
       )}
 
-      {/* FAB button */}
+      {/* FAB */}
       <button
         type="button"
         onClick={phase === "idle" ? start : undefined}
         aria-label={phase === "idle" ? `Iniciar asistente ${ASSISTANT}` : headerLabel[phase]}
         className={`fixed bottom-6 right-6 z-[150] grid size-14 place-items-center rounded-full text-white shadow-2xl transition-all duration-200 active:scale-95 ${fabBg}`}
       >
-        {phase === "thinking" || phase === "speaking"
+        {phase === "success"
+          ? <CheckCircle size={22} />
+          : phase === "thinking" || phase === "speaking" || phase === "saving"
           ? <Loader2 size={22} className="animate-spin" />
           : <Mic size={22} className={phase === "listening" ? "animate-pulse" : ""} />
         }
@@ -593,13 +708,13 @@ export default function VoiceFAB() {
   );
 }
 
-
+// ── Summary builder ────────────────────────────────────────────────────────
 function buildSummary(action: string, data: Record<string, unknown>): string {
   switch (action) {
     case "create_payment":     return `${data.type ?? ""} de ${fmt(Number(data.amount ?? 0))} por ${data.method ?? ""}`;
     case "create_expense":     return `${fmt(Number(data.amount ?? 0))} a ${data.payee_name ?? ""} (${data.concept ?? ""})`;
     case "create_project":     return `"${data.title ?? ""}" para ${data.client ?? ""}, ${fmt(Number(data.budget ?? 0))}`;
-    case "create_task":        return `"${data.name ?? ""}" — ${data.assignee_name ?? "Equipo propio"}`;
+    case "create_task":        return `"${data.name ?? ""}"`;
     case "create_material":    return `${data.name ?? ""}, ${fmt(Number(data.cost ?? 0))} en ${data.supplier ?? ""}`;
     case "create_budget_item": return `${data.description ?? ""}, ${fmt(Number(data.amount ?? 0))}`;
     case "create_contact":     return `${data.name ?? ""}, ${data.specialty ?? ""}`;

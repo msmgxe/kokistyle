@@ -22,7 +22,6 @@ import {
 import type { Project, Payment, Expense, Task } from "@/src/types/project";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
 import { useVoice } from "@/src/context/VoiceContext";
-import type { VoiceAction } from "@/src/context/VoiceContext";
 
 // ─── Tipos auxiliares con relaciones ───────────────────────────────────────
 interface ProjectWithData extends Project {
@@ -199,18 +198,12 @@ export default function DashboardPage() {
     setMeta({ context: "dashboard" });
   }, [setMeta]);
 
-  // Escuchar acciones de voz del VoiceFAB
+  // Refrescar datos cuando el VoiceFAB guarda algo
   useEffect(() => {
-    const handler = (e: Event) => {
-      const va = (e as CustomEvent<VoiceAction>).detail;
-      if (va.action === "create_project") {
-        setVoicePrefill(va.data as Partial<Project>);
-        setShowModal(true);
-      }
-    };
-    window.addEventListener("kokivoice", handler);
-    return () => window.removeEventListener("kokivoice", handler);
-  }, []);
+    const handler = () => fetchData();
+    window.addEventListener("kokivoice_saved", handler);
+    return () => window.removeEventListener("kokivoice_saved", handler);
+  }, [fetchData]);
 
   // ── Métricas globales del portafolio ──────────────────────────────────────
   const allPayments = projects.flatMap((p) => p.payments);
