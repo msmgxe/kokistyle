@@ -1225,7 +1225,7 @@ function NotasTab({
   project: Project; notes: ProjectNote[];
   onRefresh: () => void; toast: (m: string) => void;
 }) {
-  const { login } = useAuth();
+  const { verifyPin: checkPin } = useAuth();
   const fileRef   = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
@@ -1275,7 +1275,7 @@ function NotasTab({
 
   // ── PIN verification before edit/delete ──────────────────────────────────────
   const verifyPin = () => {
-    const ok = login(pinValue);
+    const ok = checkPin(pinValue);
     if (!ok) { setPinError("PIN incorrecto"); setPinValue(""); return; }
     const p = pinPrompt!;
     setPinPrompt(null); setPinValue(""); setPinError("");
@@ -1541,6 +1541,14 @@ export default function ProjectDetailPage() {
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
   const { setMeta } = useVoice();
+  const { isSuperAdmin, hasPermission } = useAuth();
+
+  // Filter tabs the user is allowed to view
+  const visibleTabs = TABS.filter(t => {
+    if (isSuperAdmin) return true;
+    const sec = t.id === "pagos" ? "pagos" : t.id === "plan" ? "workflow" : t.id as import("@/src/types/auth").PermissionSection;
+    return hasPermission(sec, "view");
+  });
 
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
@@ -1620,7 +1628,7 @@ export default function ProjectDetailPage() {
 
       {/* Tabs */}
       <div className="mb-5 flex gap-0.5 overflow-x-auto border-b border-[#E6DDCB] [scrollbar-width:none]">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             className={`relative whitespace-nowrap px-3 py-2.5 text-sm font-semibold transition ${activeTab === t.id ? "text-[#16323D] after:absolute after:inset-x-2 after:-bottom-px after:h-[2.5px] after:rounded-full after:bg-[#16323D]" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
             {t.label}

@@ -26,9 +26,9 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
     }
   }, [isOpen]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setLoading(true);
-    const success = login(pin);
+    const success = await login(pin);
     if (success) {
       onClose();
       router.push("/proyectos");

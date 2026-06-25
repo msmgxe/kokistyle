@@ -21,7 +21,9 @@ import {
 } from "@/src/lib/utils";
 import type { Project, Payment, Expense, Task } from "@/src/types/project";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
+import UsersPanel from "@/src/components/ui/UsersPanel";
 import { useVoice } from "@/src/context/VoiceContext";
+import { useAuth } from "@/src/context/AuthContext";
 
 // ─── Tipos auxiliares con relaciones ───────────────────────────────────────
 interface ProjectWithData extends Project {
@@ -168,6 +170,7 @@ export default function DashboardPage() {
   const [voicePrefill, setVoicePrefill] = useState<Partial<Project> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const { setMeta } = useVoice();
+  const { currentUser, isSuperAdmin, hasPermission } = useAuth();
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -175,19 +178,35 @@ export default function DashboardPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
+    if (!currentUser) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("projects")
-      .select(`*, payments(*), expenses(*), tasks(*)`)
-      .order("created_at", { ascending: false });
-    if (error) {
-      setError("Error al cargar los proyectos.");
-      console.error(error);
+
+    if (isSuperAdmin) {
+      // Superadmin ve todos los proyectos
+      const { data, error } = await supabase
+        .from("projects")
+        .select(`*, payments(*), expenses(*), tasks(*)`)
+        .order("created_at", { ascending: false });
+      if (error) { setError("Error al cargar los proyectos."); }
+      else        { setProjects(data as ProjectWithData[]); }
     } else {
-      setProjects(data as ProjectWithData[]);
+      // Colaborador ve solo proyectos asignados
+      const { data: access } = await supabase
+        .from("user_project_access")
+        .select("project_id")
+        .eq("user_id", currentUser.id);
+      const ids = access?.map(r => r.project_id) ?? [];
+      if (ids.length === 0) { setProjects([]); setLoading(false); return; }
+      const { data, error } = await supabase
+        .from("projects")
+        .select(`*, payments(*), expenses(*), tasks(*)`)
+        .in("id", ids)
+        .order("created_at", { ascending: false });
+      if (error) { setError("Error al cargar los proyectos."); }
+      else        { setProjects(data as ProjectWithData[]); }
     }
     setLoading(false);
-  }, []);
+  }, [currentUser, isSuperAdmin]);
 
   useEffect(() => {
     fetchData();
@@ -237,42 +256,49 @@ export default function DashboardPage() {
     );
   }
 
+  const canSeePagos   = isSuperAdmin || hasPermission("pagos",   "view");
+  const canCreateProj = isSuperAdmin || hasPermission("workflow", "create");
+
   return (
     <div className="animate-in fade-in duration-300">
       {/* Encabezado */}
       <h1 className="font-[Manrope] text-[25px] font-extrabold leading-tight tracking-tight text-[#16323D]">
-        Hola, Marco
+        Hola, {currentUser?.name ?? ""}
       </h1>
       <p className="mb-6 mt-1 text-sm text-[#5C6A6E]">
-        Resumen de tu portafolio · avance promedio {avgAdv}%
+        {isSuperAdmin ? "Panel de administración" : "Tus proyectos asignados"} · avance promedio {avgAdv}%
       </p>
 
-      {/* KPIs globales */}
+      {/* KPIs globales — financieros solo si tiene permiso pagos */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label="Proyectos" value={projects.length} sub="activos" />
         <KpiCard label="Presupuestado" value={money(totalBudget)} sub="total contratado" />
-        <KpiCard label="Ingresos" value={money(totalInc)} sub="cobrado a clientes" variant="up" />
-        <KpiCard label="Egresos" value={money(totalExp)} sub="pagado a especialistas" variant="down" />
-        <KpiCard label="Por cobrar" value={money(totalDue)} sub="saldo de clientes" />
-        <KpiCard label="Caja (ing − egr)" value={money(cashFlow(allPayments, allExpenses))} sub="flujo neto" variant="up" />
+        {canSeePagos && <>
+          <KpiCard label="Ingresos"      value={money(totalInc)}  sub="cobrado a clientes"     variant="up"   />
+          <KpiCard label="Egresos"       value={money(totalExp)}  sub="pagado a especialistas"  variant="down" />
+          <KpiCard label="Por cobrar"    value={money(totalDue)}  sub="saldo de clientes"                      />
+          <KpiCard label="Caja (ing − egr)" value={money(cashFlow(allPayments, allExpenses))} sub="flujo neto" variant="up" />
+        </>}
       </div>
 
       {/* Lista de proyectos */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">Proyectos</h2>
-        <button
-          id="add-project-btn"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
-          onClick={() => { setVoicePrefill(null); setShowModal(true); }}
-        >
-          <Plus size={14} />
-          Nuevo proyecto
-        </button>
+        {canCreateProj && (
+          <button
+            id="add-project-btn"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+            onClick={() => { setVoicePrefill(null); setShowModal(true); }}
+          >
+            <Plus size={14} />
+            Nuevo proyecto
+          </button>
+        )}
       </div>
 
       {projects.length === 0 ? (
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-12 text-center text-sm text-[#5C6A6E]">
-          No hay proyectos aún. Crea el primero.
+          {isSuperAdmin ? "No hay proyectos aún. Crea el primero." : "No tienes proyectos asignados aún."}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -281,6 +307,9 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {/* Panel de equipo — solo superadmin */}
+      {isSuperAdmin && <UsersPanel projects={projects} />}
 
       {/* Toast */}
       {toast && (
