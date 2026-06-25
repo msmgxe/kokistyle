@@ -164,6 +164,14 @@ export default function Navbar() {
               >
                 {t.nav.startEstimate}
               </Button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); setAdminOpen(true); }}
+                className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-[#0F3D56] bg-white px-4 py-3 text-sm font-bold text-[#0F3D56] transition hover:bg-[#F5E9DA]"
+              >
+                <Lock size={14} />
+                Admin
+              </button>
             </div>
           </Container>
         </div>

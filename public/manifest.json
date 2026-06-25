@@ -1,0 +1,26 @@
+{
+  "name": "KokiStyle Panel",
+  "short_name": "KokiStyle",
+  "description": "Panel de gestión de proyectos de remodelación — KokiStyle Florida",
+  "start_url": "/proyectos",
+  "display": "standalone",
+  "background_color": "#F7F3EA",
+  "theme_color": "#16323D",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "es"
+}

@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Plus, MapPin, User } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
@@ -20,6 +20,9 @@ import {
   STATUS_LABELS,
 } from "@/src/lib/utils";
 import type { Project, Payment, Expense, Task } from "@/src/types/project";
+import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
+import { useVoice } from "@/src/context/VoiceContext";
+import type { VoiceAction } from "@/src/context/VoiceContext";
 
 // ─── Tipos auxiliares con relaciones ───────────────────────────────────────
 interface ProjectWithData extends Project {
@@ -162,26 +165,51 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<ProjectWithData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [voicePrefill, setVoicePrefill] = useState<Partial<Project> | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const { setMeta } = useVoice();
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("projects")
+      .select(`*, payments(*), expenses(*), tasks(*)`)
+      .order("created_at", { ascending: false });
+    if (error) {
+      setError("Error al cargar los proyectos.");
+      console.error(error);
+    } else {
+      setProjects(data as ProjectWithData[]);
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("projects")
-        .select(
-          `*, payments(*), expenses(*), tasks(*)`
-        )
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        setError("Error al cargar los proyectos.");
-        console.error(error);
-      } else {
-        setProjects(data as ProjectWithData[]);
-      }
-      setLoading(false);
-    };
     fetchData();
+  }, [fetchData]);
+
+  // Registrar contexto de voz para que el FAB sepa que estamos en el dashboard
+  useEffect(() => {
+    setMeta({ context: "dashboard" });
+  }, [setMeta]);
+
+  // Escuchar acciones de voz del VoiceFAB
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const va = (e as CustomEvent<VoiceAction>).detail;
+      if (va.action === "create_project") {
+        setVoicePrefill(va.data as Partial<Project>);
+        setShowModal(true);
+      }
+    };
+    window.addEventListener("kokivoice", handler);
+    return () => window.removeEventListener("kokivoice", handler);
   }, []);
 
   // ── Métricas globales del portafolio ──────────────────────────────────────
@@ -242,7 +270,7 @@ export default function DashboardPage() {
         <button
           id="add-project-btn"
           className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
-          onClick={() => alert("Agregar proyecto — próximamente con formulario completo")}
+          onClick={() => { setVoicePrefill(null); setShowModal(true); }}
         >
           <Plus size={14} />
           Nuevo proyecto
@@ -259,6 +287,23 @@ export default function DashboardPage() {
             <ProjectCard key={p.id} project={p} />
           ))}
         </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-[#16323D] px-5 py-3 text-sm font-semibold text-white shadow-xl">
+          {toast}
+        </div>
+      )}
+
+      {/* Modal nuevo proyecto */}
+      {showModal && (
+        <ProjectFormModal
+          initialValues={voicePrefill ?? undefined}
+          onClose={() => { setShowModal(false); setVoicePrefill(null); }}
+          onSaved={fetchData}
+          toast={showToast}
+        />
       )}
     </div>
   );

@@ -37,6 +37,7 @@ import {
   money, dateFmt, totalIncome, totalExpense, balanceDue, cashFlow,
   addDays, dShort, initials, STATUS_LABELS, PAYMENT_TYPE_LABELS,
 } from "@/src/lib/utils";
+import { exportCotizacion, exportEstadoCuenta } from "@/src/lib/pdf";
 import type {
   Project, Task, Material, BudgetItem, Payment, Expense, Contact,
 } from "@/src/types/project";
@@ -794,6 +795,12 @@ function PresupuestoTab({
         >
           + Agregar línea
         </button>
+        <button
+          onClick={() => exportCotizacion(project, items)}
+          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-3 text-sm font-bold text-[#16323D] transition hover:bg-[#F7F3EA]"
+        >
+          ↓ Exportar cotización
+        </button>
       </div>
 
       {confirming && <ConfirmModal title="Aprobar presupuesto" body="Pasa el proyecto a En obra y activa el workflow y materiales." label="Aprobar" danger={false} onConfirm={approveProject} onCancel={() => setConfirming(false)} />}
@@ -895,13 +902,21 @@ function PagosTab({
       </div>
       {paid && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#DCEBDD] bg-[#E7F1E6] px-4 py-3 text-sm font-semibold text-[#4F8A63]">🎉 Cliente pagó por completo.</div>}
 
-      {/* Sub-tabs */}
-      <div className="mb-4 inline-flex rounded-xl border border-[#E6DDCB] bg-[#ECE3D1] p-1">
-        {(["ingresos", "egresos"] as PaySubTab[]).map((t) => (
-          <button key={t} onClick={() => setSubTab(t)} className={`rounded-lg px-5 py-2 text-sm font-bold transition capitalize ${subTab === t ? "bg-white text-[#16323D] shadow-sm" : "text-[#5C6A6E]"}`}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+      {/* Sub-tabs + export */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl border border-[#E6DDCB] bg-[#ECE3D1] p-1">
+          {(["ingresos", "egresos"] as PaySubTab[]).map((t) => (
+            <button key={t} onClick={() => setSubTab(t)} className={`rounded-lg px-5 py-2 text-sm font-bold transition capitalize ${subTab === t ? "bg-white text-[#16323D] shadow-sm" : "text-[#5C6A6E]"}`}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => exportEstadoCuenta(project, payments, expenses)}
+          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-2 text-sm font-bold text-[#16323D] transition hover:bg-[#F7F3EA]"
+        >
+          ↓ Estado de cuenta
+        </button>
       </div>
 
       {/* Lista de ingresos */}

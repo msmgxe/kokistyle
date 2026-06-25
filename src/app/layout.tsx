@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   title: "KokiStyle Remodeling | Premium Florida Renovations",
   description:
     "Premium remodeling, before and after transformations, virtual tours, and estimate generation for Florida properties.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
