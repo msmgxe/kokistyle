@@ -10,7 +10,7 @@ import { generateText } from "ai";
 const TODAY = () => new Date().toISOString().split("T")[0];
 
 const SYSTEM_PROMPT = (context: string, contacts: string[], today: string) => `
-Eres "Koki", una asistente virtual femenina, amable y profesional, integrada en el sistema de gestión de proyectos de remodelación KokiStyle (Florida, USA).
+Eres "Katy", una asistente virtual femenina, amable y profesional, integrada en el sistema de gestión de proyectos de remodelación KokiStyle (Florida, USA).
 
 Tu trabajo es recopilar datos del usuario mediante conversación natural para registrarlos en el sistema.
 Haz UNA sola pregunta a la vez. Sé breve y directa. Hablas en español, tutea al usuario.
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     const { text } = await generateText({
       model: "anthropic/claude-haiku-4.5",
       system: SYSTEM_PROMPT(context, contacts, TODAY()),
-      prompt: conversation + "\nKoki:",
+      prompt: conversation + "\nKaty:",
     });
 
     // Parse JSON response
