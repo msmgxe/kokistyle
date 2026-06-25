@@ -47,16 +47,30 @@ Tipo ingreso: "anticipo/adelanto/depósito"→"anticipo", "final/último"→"fin
 Tipo presupuesto: "mano de obra/instalación/plomería/electricidad"→"mano", "material/gabinetes/pintura"→"material".
 `.trim();
 
+function contextDefault(ctx: string): string {
+  if (ctx.includes("pagos.ingresos"))  return "create_payment";
+  if (ctx.includes("pagos.egresos"))   return "create_expense";
+  if (ctx.includes("workflow"))        return "create_task";
+  if (ctx.includes("materiales"))      return "create_material";
+  if (ctx.includes("presupuesto"))     return "create_budget_item";
+  if (ctx.includes("contactos"))       return "create_contact";
+  return "create_project";
+}
+
 export async function POST(req: NextRequest) {
+  let context = "dashboard";
   try {
-    const { transcript, context = "dashboard", contacts = [] } = await req.json() as {
+    const body = await req.json() as {
       transcript: string;
-      context: string;
+      context?: string;
       contacts?: string[];
     };
+    context                   = body.context  ?? "dashboard";
+    const transcript          = body.transcript;
+    const contacts            = body.contacts ?? [];
 
     if (!transcript?.trim()) {
-      return NextResponse.json({ action: "unknown", data: {} });
+      return NextResponse.json({ action: contextDefault(context), data: {} });
     }
 
     const { text } = await generateText({
@@ -76,10 +90,18 @@ export async function POST(req: NextRequest) {
     if (!match) throw new Error("no-json: " + raw.slice(0, 100));
 
     const parsed = JSON.parse(match[0]);
+
+    // If AI returned "unknown", fall back to context — the user clearly said something
+    if (parsed.action === "unknown") {
+      parsed.action = contextDefault(context);
+      parsed._fallback = true;
+    }
+
     return NextResponse.json(parsed);
 
   } catch (err) {
     console.error("[/api/voice] error:", err instanceof Error ? err.message : err);
-    return NextResponse.json({ action: "unknown", data: {} });
+    // Use context as fallback so the client can always proceed to field questions
+    return NextResponse.json({ action: contextDefault(context), data: {}, _fallback: true });
   }
 }

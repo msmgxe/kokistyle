@@ -101,6 +101,26 @@ const ACTION_LABELS: Record<string, string> = {
   create_contact: "contacto",
 };
 
+// ── Local intent detection (fallback when API fails or returns unknown) ───
+function localDetect(text: string, context: string): string {
+  const t = text.toLowerCase();
+  if (/\b(pago|ingreso|cobr|recib|pagó|cobré)\b/i.test(t))          return "create_payment";
+  if (/\b(egreso|gasto|gasté|pagué|compré|pagu)\b/i.test(t))        return "create_expense";
+  if (/\b(proyecto|obra|trabajo|remodelaci|construc)\b/i.test(t))    return "create_project";
+  if (/\b(tarea|actividad|labor|pendiente)\b/i.test(t))              return "create_task";
+  if (/\b(material|compra|product|suministro)\b/i.test(t))           return "create_material";
+  if (/\b(presupuesto|cotiza|línea|partida|costo\s+de)\b/i.test(t)) return "create_budget_item";
+  if (/\b(contacto|subcontrat|especiali|proveedor)\b/i.test(t))     return "create_contact";
+  // Fall back to whatever tab the user is on
+  if (context.includes("pagos.ingresos"))  return "create_payment";
+  if (context.includes("pagos.egresos"))   return "create_expense";
+  if (context.includes("workflow"))        return "create_task";
+  if (context.includes("materiales"))      return "create_material";
+  if (context.includes("presupuesto"))     return "create_budget_item";
+  if (context.includes("contactos"))       return "create_contact";
+  return "create_project";
+}
+
 // ── Web Speech API types ───────────────────────────────────────────────────
 interface SR extends EventTarget {
   lang: string; continuous: boolean; interimResults: boolean; maxAlternatives: number;
@@ -380,44 +400,15 @@ export default function VoiceFAB() {
         data    = j.data   ?? {};
       } catch (err) {
         console.error("[Katy API]", err);
-        action = contextDefault(metaRef.current.context);
+        action = localDetect(rawIntent, metaRef.current.context);
+      }
+
+      // API returned unknown → apply local keyword detection before giving up
+      if (action === "unknown" || !ACTION_FIELDS[action]) {
+        action = localDetect(rawIntent, metaRef.current.context);
       }
 
       if (!activeRef.current) return;
-
-      // Unknown → ask to rephrase, retry once
-      if (action === "unknown" || !ACTION_FIELDS[action]) {
-        const a3 = await say("No entendí bien. Di, por ejemplo: registrar un pago, nuevo proyecto, o nueva tarea.");
-        if (!a3) return;
-        rawIntent = await listen();
-        if (!rawIntent) { closeClean(); return; }
-        push("user", rawIntent);
-        if (!activeRef.current) return;
-        setPhase("thinking");
-
-        try {
-          const ctrl2 = new AbortController();
-          const tid2  = setTimeout(() => ctrl2.abort(), 10_000);
-          const res2  = await fetch("/api/voice", {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transcript: rawIntent, context: metaRef.current.context }),
-            signal: ctrl2.signal,
-          });
-          clearTimeout(tid2);
-          const j2 = await res2.json();
-          action   = j2.action ?? "unknown";
-          data     = j2.data   ?? {};
-        } catch {
-          action = contextDefault(metaRef.current.context);
-        }
-
-        if (!activeRef.current) return;
-        if (action === "unknown" || !ACTION_FIELDS[action]) {
-          await say("No logré entenderte. Intenta de nuevo más tarde.");
-          closeClean(); return;
-        }
-      }
 
       // ⑤ Ask only for missing required fields
       const fields = ACTION_FIELDS[action];
@@ -602,16 +593,6 @@ export default function VoiceFAB() {
   );
 }
 
-// ── Module helpers ─────────────────────────────────────────────────────────
-function contextDefault(ctx: string): string {
-  if (ctx.includes("pagos.ingresos"))  return "create_payment";
-  if (ctx.includes("pagos.egresos"))   return "create_expense";
-  if (ctx.includes("workflow"))        return "create_task";
-  if (ctx.includes("materiales"))      return "create_material";
-  if (ctx.includes("presupuesto"))     return "create_budget_item";
-  if (ctx.includes("contactos"))       return "create_contact";
-  return "create_project";
-}
 
 function buildSummary(action: string, data: Record<string, unknown>): string {
   switch (action) {
