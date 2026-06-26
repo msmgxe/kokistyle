@@ -11,8 +11,9 @@ type Phase = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "savin
 interface Msg     { role: "user" | "assistant"; text: string; }
 interface FieldDef { key: string; question: string; parse: (t: string) => unknown; }
 
-const ASSISTANT = "Katy";
-const TODAY     = () => new Date().toISOString().split("T")[0];
+const ASSISTANT  = "Katy";
+const TODAY      = () => new Date().toISOString().split("T")[0];
+const IS_ANDROID = () => typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 
 // ── Client-side parsers ────────────────────────────────────────────────────
 function parseMoney(t: string): number | null {
@@ -55,11 +56,20 @@ function parseBudgetType(t: string): string | null {
   if (/material|gabinet|azulejo|pintura|grifo|piso/i.test(s))       return "material";
   return null;
 }
+function parseTaskStatus(t: string): string | null {
+  const s = t.toLowerCase();
+  if (/por\s+hacer|pendiente|sin\s+comenzar/.test(s)) return "pend";
+  if (/en\s+proceso|proceso|progreso|haciendo/.test(s)) return "prog";
+  if (/hecho|terminado|completado|listo|acabado|done/.test(s)) return "done";
+  return null;
+}
 function fmt(n: number) { return "$" + n.toLocaleString("en-US"); }
 
 // ── Local intent fallback ──────────────────────────────────────────────────
 function localDetect(text: string, context: string): string {
   const t = text.toLowerCase();
+  if (/\b(pasar|mover|cambiar).*(estado|proceso|hecho|hacer)\b/i.test(t) ||
+      /\b(proceso|hecho|hacer|pend|prog|done).*(pasar|mover)\b/i.test(t)) return "update_task_status";
   if (/\b(pago|ingreso|cobr|recib|pagó|cobré)\b/i.test(t))         return "create_payment";
   if (/\b(egreso|gasto|gasté|pagué|compré|pagu)\b/i.test(t))       return "create_expense";
   if (/\b(proyecto|obra|remodelaci|construc)\b/i.test(t))           return "create_project";
@@ -113,13 +123,17 @@ const ACTION_FIELDS: Record<string, FieldDef[]> = {
     { key: "specialty", question: "¿Cuál es su especialidad?", parse: (t) => t.trim() || null },
     { key: "phone",     question: "¿Número de teléfono?",      parse: (t) => t.trim() || null },
   ],
+  update_task_status: [
+    { key: "task_name", question: "¿Qué actividad quieres mover?",                      parse: (t) => t.trim() || null },
+    { key: "status",    question: "¿A qué estado? Por hacer, en proceso o hecho.",       parse: parseTaskStatus },
+  ],
 };
 
 const ACTION_LABELS: Record<string, string> = {
   create_project: "nuevo proyecto", create_payment: "ingreso",
   create_expense: "egreso",         create_task:    "tarea",
   create_material: "material",      create_budget_item: "línea de presupuesto",
-  create_contact: "contacto",
+  create_contact: "contacto",       update_task_status: "cambio de estado",
 };
 
 // ── Editable fields shown in confirm phase ─────────────────────────────────
@@ -131,6 +145,7 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
   create_material:    [{ key:"name", label:"Material", type:"text" }, { key:"cost", label:"Costo", type:"number" }, { key:"supplier", label:"Proveedor", type:"text" }],
   create_budget_item: [{ key:"description", label:"Descripción", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"amount", label:"Monto", type:"number" }],
   create_contact:     [{ key:"name", label:"Nombre", type:"text" }, { key:"specialty", label:"Especialidad", type:"text" }, { key:"phone", label:"Teléfono", type:"text" }],
+  update_task_status: [{ key:"task_name", label:"Actividad", type:"text" }, { key:"status", label:"Estado", type:"text" }],
 };
 
 // ── Supabase direct save ───────────────────────────────────────────────────
@@ -203,6 +218,25 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
       if (error) throw error;
       return `Contacto "${data.name}" creado`;
     }
+    case "update_task_status": {
+      if (!pid) throw new Error("Abre un proyecto primero");
+      const { data: taskList } = await supabase.from("tasks").select("id, name").eq("project_id", pid);
+      if (!taskList?.length) throw new Error("No hay actividades en este proyecto");
+      const search = String(data.task_name ?? "").toLowerCase().trim();
+      const words  = search.split(/\s+/).filter((w) => w.length > 2);
+      const scored = taskList.map((t) => {
+        const name = t.name.toLowerCase();
+        const score = words.filter((w) => name.includes(w)).length;
+        return { t, score };
+      }).sort((a, b) => b.score - a.score);
+      if (!scored[0] || scored[0].score === 0) throw new Error(`No encontré la actividad "${data.task_name}"`);
+      const match     = scored[0].t;
+      const newStatus = String(data.status ?? "pend");
+      const { error } = await supabase.from("tasks").update({ status: newStatus }).eq("id", match.id);
+      if (error) throw error;
+      const sl: Record<string, string> = { pend: "Por hacer", prog: "En proceso", done: "Hecho" };
+      return `"${match.name}" movida a ${sl[newStatus] ?? newStatus}`;
+    }
     default:
       throw new Error(`Acción desconocida: ${action}`);
   }
@@ -244,17 +278,13 @@ function pickVoice(): SpeechSynthesisVoice | null {
   return vs.find(v => v.lang.startsWith("es")) ?? null;
 }
 
-/**
- * Prime mic immediately after TTS ends to switch Android audio routing
- * from speaker → microphone (~300 ms) then a short buffer (600 ms).
- * Total post-TTS delay ≈ 900 ms vs the previous 3000 ms.
- */
 async function primeMic(): Promise<void> {
+  const android = IS_ANDROID();
   try {
     const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-    await new Promise<void>(r => setTimeout(r, 200));
+    await new Promise<void>(r => setTimeout(r, android ? 500 : 200));
     s.getTracks().forEach(t => t.stop());
-    await new Promise<void>(r => setTimeout(r, 100));
+    await new Promise<void>(r => setTimeout(r, android ? 300 : 100));
   } catch { /* permission denied or already active */ }
 }
 
@@ -269,8 +299,7 @@ async function tts(text: string): Promise<void> {
     utt.pitch  = 1.1;
     const voice = pickVoice();
     if (voice) utt.voice = voice;
-    // Route audio switch: primeMic immediately after TTS, then 600 ms buffer
-    utt.onend   = () => { primeMic().then(() => setTimeout(resolve, 600)); };
+    utt.onend   = () => { primeMic().then(() => setTimeout(resolve, IS_ANDROID() ? 1200 : 600)); };
     utt.onerror = () => setTimeout(resolve, 300);
     window.speechSynthesis.speak(utt);
   });
@@ -288,8 +317,9 @@ function listenOnce(recRef: { current: SR | null }): Promise<string> {
     if (!SRClass) { reject(new Error("unsupported")); return; }
 
     const rec = new SRClass();
-    rec.lang            = "es-US";
-    rec.continuous      = true;
+    const android = IS_ANDROID();
+    rec.lang            = android ? "es" : "es-US";
+    rec.continuous      = !android;
     rec.interimResults  = true;
     rec.maxAlternatives = 1;
 
@@ -344,6 +374,7 @@ function buildSummary(action: string, data: Record<string, unknown>): string {
     case "create_material":    return `${data.name ?? ""}, ${fmt(Number(data.cost ?? 0))} en ${data.supplier ?? ""}`;
     case "create_budget_item": return `${data.description ?? ""}, ${fmt(Number(data.amount ?? 0))}`;
     case "create_contact":     return `${data.name ?? ""}, ${data.specialty ?? ""}`;
+    case "update_task_status": { const sl: Record<string,string> = { pend:"Por hacer", prog:"En proceso", done:"Hecho" }; return `"${data.task_name ?? ""}" → ${sl[String(data.status ?? "")] ?? data.status}`; }
     default:                   return JSON.stringify(data);
   }
 }

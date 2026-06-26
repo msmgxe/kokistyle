@@ -22,24 +22,28 @@ Estructura:
 }
 
 Acciones según contexto:
-- dashboard             → "create_project"
-- project.workflow      → "create_task"
-- project.materiales    → "create_material"
-- project.presupuesto   → "create_budget_item"
-- project.pagos.ingresos→ "create_payment"
-- project.pagos.egresos → "create_expense"
-- contactos             → "create_contact"
+- dashboard              → "create_project"
+- project.workflow       → "create_task"  (si el usuario pide CREAR una tarea)
+- project.workflow       → "update_task_status"  (si el usuario pide MOVER/PASAR/CAMBIAR el estado de una tarea existente)
+- project.materiales     → "create_material"
+- project.presupuesto    → "create_budget_item"
+- project.pagos.ingresos → "create_payment"
+- project.pagos.egresos  → "create_expense"
+- contactos              → "create_contact"
 - Si el usuario lo dice explícitamente, úsalo aunque no coincida con el contexto.
 - Si no se entiende → "unknown"
 
 Campos por acción (incluye SOLO los mencionados, omite el resto):
 create_project:     title, client, address, budget(número), start_date(YYYY-MM-DD)
 create_task:        name, assignee_name, hours(número), semanas(número)
+update_task_status: task_name(texto del nombre de la actividad), status("pend"|"prog"|"done")
 create_material:    name, supplier, cost(número)
 create_budget_item: description, type("mano"|"material"), amount(número)
 create_payment:     amount(número), method("Efectivo"|"Zelle"|"Transferencia"|"Cheque"|"Tarjeta"), type("anticipo"|"abono"|"final"), date(YYYY-MM-DD)
 create_expense:     payee_name, concept, amount(número), method, date(YYYY-MM-DD)
 create_contact:     name, specialty, phone, rate(número)
+
+Conversión de estado para update_task_status: "por hacer/pendiente"→"pend", "en proceso/progreso"→"prog", "hecho/terminado/listo"→"done".
 
 Conversión numérica: "15 mil"→15000, "8k"→8000, "1,500"→1500.
 Método de pago: "transferencia"→"Transferencia", "zelé/zelle"→"Zelle", "efectivo/cash"→"Efectivo".

@@ -22,6 +22,7 @@ import {
   DragStartEvent,
   DragOverlay,
   defaultDropAnimationSideEffects,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -262,7 +263,7 @@ const dropAnimation = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TAB: WORKFLOW (Kanban con DnD en cada columna)
+// TAB: WORKFLOW (Kanban con DnD en cada columna y entre columnas)
 // ═══════════════════════════════════════════════════════════════════════════════
 const KANBAN_COLS = [
   { key: "pend", name: "Por hacer",  color: "#D7CBB3" },
@@ -271,6 +272,62 @@ const KANBAN_COLS = [
 ] as const;
 
 type KanbanStatus = "pend" | "prog" | "done";
+
+function DroppableKanbanCol({
+  col, tasks, contacts, onEdit,
+}: {
+  col: typeof KANBAN_COLS[number];
+  tasks: Task[];
+  contacts: Contact[];
+  onEdit: (t: Task) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: col.key });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-w-[268px] flex-none rounded-2xl border p-3 transition-colors ${
+        isOver ? "border-[#4E7A82] bg-[#D5E5E8]" : "border-[#E6DDCB] bg-[#ECE3D1]"
+      }`}
+    >
+      <h4 className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[#5C6A6E]">
+        <span className="size-2 rounded-full" style={{ background: col.color }} />
+        {col.name}
+        <span className="ml-auto rounded-full border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-0.5 font-mono text-[11px]">
+          {tasks.length}
+        </span>
+      </h4>
+
+      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        {tasks.length === 0 && (
+          <p className="py-5 text-center text-xs text-[#97A1A0]">—</p>
+        )}
+        {tasks.map((t) => (
+          <SortableRow key={t.id} id={t.id}>
+            {({ listeners, attributes }, isDragging) => (
+              <div className={`mb-2 flex items-stretch overflow-hidden rounded-xl border border-[#E6DDCB] bg-white shadow-sm transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""}`}>
+                <DragHandle listeners={listeners} attributes={attributes} />
+                <button onClick={() => onEdit(t)} className="flex-1 py-3 pr-3 text-left">
+                  <div className="text-sm font-semibold leading-snug text-[#16323D]">{t.name}</div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#5C6A6E]">
+                      <span className="grid size-5 place-items-center rounded-full bg-[#16323D] text-[8px] font-bold text-white">
+                        {initials(t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "EP" : "EP")}
+                      </span>
+                      <span className="max-w-[100px] truncate text-[10.5px]">
+                        {t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "Equipo propio" : "Equipo propio"}
+                      </span>
+                    </span>
+                    <span className="font-mono text-[11px] text-[#5C6A6E]">{t.hours}h</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </SortableRow>
+        ))}
+      </SortableContext>
+    </div>
+  );
+}
 
 function WorkflowTab({
   project, tasks, contacts, onRefresh, toast,
@@ -344,23 +401,37 @@ function WorkflowTab({
     const { active, over } = e;
     if (!over || active.id === over.id) return;
 
-    // Determine which column both items belong to
-    const draggedTask = items.find((t) => t.id === active.id);
+    const draggedTask = items.find((t) => t.id === String(active.id));
     if (!draggedTask) return;
-    const col = draggedTask.status as KanbanStatus;
-    const colItems = byStatus(col);
-    const oldIdx = colItems.findIndex((t) => t.id === active.id);
-    const newIdx = colItems.findIndex((t) => t.id === over.id);
-    if (oldIdx === -1 || newIdx === -1) return;
 
-    const reordered = arrayMove(colItems, oldIdx, newIdx);
-    const next = items.map((t) => {
-      const idx = reordered.findIndex((r) => r.id === t.id);
-      return idx !== -1 ? { ...t, sort_order: idx } : t;
-    });
-    setItems(next);
-    await persist(reordered);
-    toast("Orden actualizado.");
+    const overId       = String(over.id);
+    const overIsCol    = KANBAN_COLS.some((c) => c.key === overId);
+    const overTask     = overIsCol ? null : items.find((t) => t.id === overId);
+    const targetStatus = (overIsCol ? overId : (overTask?.status ?? draggedTask.status)) as KanbanStatus;
+
+    if (targetStatus !== draggedTask.status) {
+      // Cross-column move: update status only
+      const next = items.map((t) => t.id === draggedTask.id ? { ...t, status: targetStatus } : t);
+      setItems(next);
+      const { error } = await supabase.from("tasks").update({ status: targetStatus }).eq("id", draggedTask.id);
+      if (error) { toast("Error al mover: " + error.message); onRefresh(); return; }
+      const colName = KANBAN_COLS.find((c) => c.key === targetStatus)?.name;
+      toast(`Actividad movida a "${colName}"`);
+    } else if (overTask) {
+      // Same-column reorder
+      const colItems = byStatus(targetStatus);
+      const oldIdx   = colItems.findIndex((t) => t.id === String(active.id));
+      const newIdx   = colItems.findIndex((t) => t.id === overId);
+      if (oldIdx === -1 || newIdx === -1) return;
+      const reordered = arrayMove(colItems, oldIdx, newIdx);
+      const next = items.map((t) => {
+        const idx = reordered.findIndex((r) => r.id === t.id);
+        return idx !== -1 ? { ...t, sort_order: idx } : t;
+      });
+      setItems(next);
+      await persist(reordered);
+      toast("Orden actualizado.");
+    }
   };
 
   const addTask = () => {
@@ -393,52 +464,18 @@ function WorkflowTab({
       onDragEnd={handleDragEnd}
     >
       <p className="mb-4 text-[11.5px] text-[#5C6A6E]">
-        Arrastra ⠿ para reordenar dentro de cada columna. Toca una tarjeta para editar.
+        Arrastra ⠿ para reordenar o mover entre columnas. Toca una tarjeta para editar.
       </p>
       <div className="flex gap-3 overflow-x-auto pb-3">
-        {KANBAN_COLS.map((col) => {
-          const colTasks = byStatus(col.key);
-          return (
-            <div key={col.key} className="min-w-[268px] flex-none rounded-2xl border border-[#E6DDCB] bg-[#ECE3D1] p-3">
-              <h4 className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[#5C6A6E]">
-                <span className="size-2 rounded-full" style={{ background: col.color }} />
-                {col.name}
-                <span className="ml-auto rounded-full border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-0.5 font-mono text-[11px]">
-                  {colTasks.length}
-                </span>
-              </h4>
-
-              <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                {colTasks.length === 0 && (
-                  <p className="py-5 text-center text-xs text-[#97A1A0]">—</p>
-                )}
-                {colTasks.map((t) => (
-                  <SortableRow key={t.id} id={t.id}>
-                    {({ listeners, attributes }, isDragging) => (
-                      <div className={`mb-2 flex items-stretch overflow-hidden rounded-xl border border-[#E6DDCB] bg-white shadow-sm transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""}`}>
-                        <DragHandle listeners={listeners} attributes={attributes} />
-                        <button onClick={() => openEdit(t)} className="flex-1 py-3 pr-3 text-left">
-                          <div className="text-sm font-semibold leading-snug text-[#16323D]">{t.name}</div>
-                          <div className="mt-2 flex items-center justify-between gap-2">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#5C6A6E]">
-                              <span className="grid size-5 place-items-center rounded-full bg-[#16323D] text-[8px] font-bold text-white">
-                                {initials(t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "EP" : "EP")}
-                              </span>
-                              <span className="max-w-[100px] truncate text-[10.5px]">
-                                {t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "Equipo propio" : "Equipo propio"}
-                              </span>
-                            </span>
-                            <span className="font-mono text-[11px] text-[#5C6A6E]">{t.hours}h</span>
-                          </div>
-                        </button>
-                      </div>
-                    )}
-                  </SortableRow>
-                ))}
-              </SortableContext>
-            </div>
-          );
-        })}
+        {KANBAN_COLS.map((col) => (
+          <DroppableKanbanCol
+            key={col.key}
+            col={col}
+            tasks={byStatus(col.key)}
+            contacts={contacts}
+            onEdit={openEdit}
+          />
+        ))}
       </div>
 
       <DragOverlay dropAnimation={dropAnimation}>
