@@ -979,9 +979,9 @@ function PagosTab({
       {/* Sub-tabs + export */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-xl border border-[#E6DDCB] bg-[#ECE3D1] p-1">
-          {(["ingresos", "egresos"] as PaySubTab[]).map((t) => (
-            <button key={t} onClick={() => changeSubTab(t)} className={`rounded-lg px-5 py-2 text-sm font-bold transition capitalize ${subTab === t ? "bg-white text-[#16323D] shadow-sm" : "text-[#5C6A6E]"}`}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+          {(["ingresos", "egresos"] as PaySubTab[]).map((sub) => (
+            <button key={sub} onClick={() => changeSubTab(sub)} className={`rounded-lg px-5 py-2 text-sm font-bold transition ${subTab === sub ? "bg-white text-[#16323D] shadow-sm" : "text-[#5C6A6E]"}`}>
+              {sub === "ingresos" ? tp.payments.incomeTab : tp.payments.expensesTab}
             </button>
           ))}
         </div>
