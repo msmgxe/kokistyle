@@ -64,25 +64,31 @@ function parseTaskStatus(t: string): string | null {
   return null;
 }
 function fmt(n: number) { return "$" + n.toLocaleString("en-US"); }
+function norm(s: string) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
 
 // ── Local intent fallback ──────────────────────────────────────────────────
 function localDetect(text: string, context: string): string {
-  const t = text.toLowerCase();
-  if (/\b(pasar|mover|cambiar).*(estado|proceso|hecho|hacer)\b/i.test(t) ||
-      /\b(proceso|hecho|hacer|pend|prog|done).*(pasar|mover)\b/i.test(t)) return "update_task_status";
-  if (/\b(pago|ingreso|cobr|recib|pagó|cobré)\b/i.test(t))         return "create_payment";
-  if (/\b(egreso|gasto|gasté|pagué|compré|pagu)\b/i.test(t))       return "create_expense";
-  if (/\b(proyecto|obra|remodelaci|construc)\b/i.test(t))           return "create_project";
-  if (/\b(tarea|actividad|labor|pendiente)\b/i.test(t))             return "create_task";
-  if (/\b(material|compra|product|suministro)\b/i.test(t))          return "create_material";
-  if (/\b(presupuesto|cotiza|línea|partida)\b/i.test(t))            return "create_budget_item";
-  if (/\b(contacto|subcontrat|especiali|proveedor)\b/i.test(t))     return "create_contact";
+  const t = norm(text);
+  // Status change — detect BEFORE "tarea/actividad" keywords
+  // Matches: pasala, pasar, pásala, moverla, mover, cambiar + state word
+  if (/\bpas[ao]r?|mover?|cambiar?/.test(t) && /\bproceso|hecho|hacer|estado/.test(t)) return "update_task_status";
+  // Payment keywords
+  if (/\bpago|ingreso|cobr|recib/.test(t))        return "create_payment";
+  if (/\begreso|gasto|gaste|pague|compre/.test(t)) return "create_expense";
+  // Context-based (inside a project tab) — BEFORE keyword-only fallbacks
+  // so "create_project" is never the fallback when inside a project
   if (context.includes("pagos.ingresos"))  return "create_payment";
   if (context.includes("pagos.egresos"))   return "create_expense";
   if (context.includes("workflow"))        return "create_task";
   if (context.includes("materiales"))      return "create_material";
   if (context.includes("presupuesto"))     return "create_budget_item";
   if (context.includes("contactos"))       return "create_contact";
+  // Keyword fallbacks — mainly for dashboard
+  if (/\bproyecto|obra|remodelaci/.test(t))    return "create_project";
+  if (/\btarea|actividad|labor/.test(t))        return "create_task";
+  if (/\bmaterial|suministro/.test(t))          return "create_material";
+  if (/\bpresupuesto|cotiza|linea/.test(t))     return "create_budget_item";
+  if (/\bcontacto|especiali|proveedor/.test(t)) return "create_contact";
   return "create_project";
 }
 
@@ -488,8 +494,28 @@ export default function VoiceFAB() {
         return;
       }
 
-      // ② Greet
-      const alive = await say("¿Qué registramos?");
+      // ② Greet — context-aware so Katy never asks about the project when ya estás en uno
+      const ctx    = metaRef.current.context;
+      const hasPid = !!metaRef.current.projectId;
+      const CTX_GREET: Record<string, string> = {
+        "project.workflow":       "¿Crear actividad o mover una existente?",
+        "project.materiales":     "¿Qué material?",
+        "project.pagos.ingresos": "¿Cuánto recibiste?",
+        "project.pagos.egresos":  "¿A quién le pagaste?",
+        "project.presupuesto":    "¿Qué línea de presupuesto?",
+        "project.contactos":      "¿Nombre del especialista?",
+        "project.notas":          "¿Qué nota registramos?",
+      };
+      // Preset action: for unambiguous tabs we skip the API call
+      const PRESET_ACTION: Record<string, string> = {
+        "project.materiales":     "create_material",
+        "project.pagos.ingresos": "create_payment",
+        "project.pagos.egresos":  "create_expense",
+        "project.presupuesto":    "create_budget_item",
+        "project.contactos":      "create_contact",
+      };
+      const greet = CTX_GREET[ctx] ?? "¿Qué registramos?";
+      const alive = await say(greet);
       if (!alive) return;
 
       // ③ Intent
@@ -504,34 +530,47 @@ export default function VoiceFAB() {
 
       push("user", rawIntent);
       if (!activeRef.current) return;
-      setPhase("thinking");
 
-      // ④ API — 8 s timeout
-      let action = "unknown";
+      // ④ Determine action
+      let action = PRESET_ACTION[ctx] ?? "unknown";
       let data: Record<string, unknown> = {};
-      try {
-        const ctrl = new AbortController();
-        const tid  = setTimeout(() => ctrl.abort(), 8_000);
-        const res  = await fetch("/api/voice", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transcript: rawIntent,
-            context:    metaRef.current.context,
-            contacts:   metaRef.current.contacts ?? [],
-          }),
-          signal: ctrl.signal,
-        });
-        clearTimeout(tid);
-        const j = await res.json();
-        action   = j.action ?? "unknown";
-        data     = j.data   ?? {};
-      } catch (err) {
-        console.error("[Katy API]", err);
-        action = localDetect(rawIntent, metaRef.current.context);
-      }
 
-      if (action === "unknown" || !ACTION_FIELDS[action]) {
-        action = localDetect(rawIntent, metaRef.current.context);
+      if (!PRESET_ACTION[ctx]) {
+        // Ambiguous context (workflow, dashboard) → call API
+        setPhase("thinking");
+        try {
+          const ctrl = new AbortController();
+          const tid  = setTimeout(() => ctrl.abort(), 8_000);
+          const res  = await fetch("/api/voice", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              transcript: rawIntent,
+              context:    ctx,
+              contacts:   metaRef.current.contacts ?? [],
+            }),
+            signal: ctrl.signal,
+          });
+          clearTimeout(tid);
+          const j = await res.json();
+          action   = j.action ?? "unknown";
+          data     = j.data   ?? {};
+        } catch (err) {
+          console.error("[Katy API]", err);
+          action = localDetect(rawIntent, ctx);
+        }
+        if (action === "unknown" || !ACTION_FIELDS[action]) {
+          action = localDetect(rawIntent, ctx);
+        }
+        // Never create a project when already inside one
+        if (action === "create_project" && hasPid) {
+          action = localDetect(rawIntent, ctx);
+        }
+      } else {
+        // Pre-parse rawIntent for preset action (user may have already answered the first question)
+        for (const field of ACTION_FIELDS[action]) {
+          const parsed = field.parse(rawIntent);
+          if (parsed != null) data[field.key] = parsed;
+        }
       }
       if (!activeRef.current) return;
 
