@@ -13,6 +13,8 @@ import { ArrowLeft, Lock, GripVertical, Plus, X, Paperclip, Trash2, Pencil, File
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
   PointerSensor,
   TouchSensor,
   KeyboardSensor,
@@ -60,12 +62,12 @@ type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "pagos" |
 type PaySubTab = "ingresos" | "egresos";
 
 const TABS: { id: TabId; label: string }[] = [
+  { id: "plan",        label: "Plan" },
   { id: "workflow",    label: "Workflow" },
-  { id: "materiales",  label: "Materiales" },
-  { id: "contactos",   label: "Contactos" },
   { id: "presupuesto", label: "Presupuesto" },
   { id: "pagos",       label: "Pagos" },
-  { id: "plan",        label: "Plan" },
+  { id: "materiales",  label: "Materiales" },
+  { id: "contactos",   label: "Contactos" },
   { id: "notas",       label: "Notas 📎" },
 ];
 
@@ -192,18 +194,11 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
 }
 
 // ─── DragHandle ──────────────────────────────────────────────────────────────
-function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
+function DragHandle() {
   return (
-    <button
-      type="button"
-      className="flex h-full cursor-grab touch-none items-center justify-center px-1 text-[#C4B89A] transition hover:text-[#16323D] active:cursor-grabbing"
-      {...(listeners ?? {})}
-      {...(attributes ?? {})}
-      tabIndex={-1}
-      aria-label="Arrastrar para reordenar"
-    >
-      <GripVertical size={16} />
-    </button>
+    <div className="flex items-center justify-center px-1.5 text-[#C4B89A] select-none" aria-hidden>
+      <GripVertical size={15} />
+    </div>
   );
 }
 
@@ -226,10 +221,8 @@ function SortableRow({
   id, children,
 }: {
   id: string;
-  children: (
-    handleProps: { listeners?: object; attributes?: object },
-    isDragging: boolean
-  ) => React.ReactNode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  children: (handleProps: { listeners?: any; attributes?: any }, isDragging: boolean) => React.ReactNode;
 }) {
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
@@ -298,9 +291,13 @@ function DroppableKanbanCol({
         {tasks.map((t) => (
           <SortableRow key={t.id} id={t.id}>
             {({ listeners, attributes }, isDragging) => (
-              <div className={`mb-2 flex items-stretch overflow-hidden rounded-xl border border-[#E6DDCB] bg-white shadow-sm transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""}`}>
-                <DragHandle listeners={listeners} attributes={attributes} />
-                <button onClick={() => onEdit(t)} className="flex-1 py-3 pr-3 text-left">
+              <div
+                {...listeners} {...attributes}
+                onClick={() => onEdit(t)}
+                className={`mb-2 flex cursor-pointer select-none items-stretch overflow-hidden rounded-xl border border-[#E6DDCB] bg-white shadow-sm transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""}`}
+              >
+                <DragHandle />
+                <div className="flex-1 py-3 pr-3">
                   <div className="text-sm font-semibold leading-snug text-[#16323D]">{t.name}</div>
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#5C6A6E]">
@@ -313,7 +310,7 @@ function DroppableKanbanCol({
                     </span>
                     <span className="font-mono text-[11px] text-[#5C6A6E]">{t.hours}h</span>
                   </div>
-                </button>
+                </div>
               </div>
             )}
           </SortableRow>
@@ -450,15 +447,20 @@ function WorkflowTab({
     });
   };
 
+  const kanbanCollision = useCallback((args: Parameters<typeof pointerWithin>[0]) => {
+    const pw = pointerWithin(args);
+    return pw.length ? pw : rectIntersection(args);
+  }, []);
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={kanbanCollision}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <p className="mb-4 text-[11.5px] text-[#5C6A6E]">
-        Arrastra ⠿ para reordenar o mover entre columnas. Toca una tarjeta para editar.
+        Arrastra para reordenar o mover entre columnas. Toca una tarjeta para editar.
       </p>
       <div className="flex gap-3 overflow-x-auto pb-3">
         {KANBAN_COLS.map((col) => (
@@ -579,9 +581,13 @@ function MaterialesTab({
             {items.map((m) => (
               <SortableRow key={m.id} id={m.id}>
                 {({ listeners, attributes }, isDragging) => (
-                  <div className={`flex items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""} ${m.bought ? "opacity-70" : ""}`}>
-                    <DragHandle listeners={listeners} attributes={attributes} />
-                    <button onClick={() => openEdit(m)} className="flex flex-1 items-center gap-3 py-3 pr-3 text-left">
+                  <div
+                    {...listeners} {...attributes}
+                    onClick={() => openEdit(m)}
+                    className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""} ${m.bought ? "opacity-70" : ""}`}
+                  >
+                    <DragHandle />
+                    <div className="flex flex-1 items-center gap-3 py-3 pr-3">
                       <span className={`grid size-6 flex-none place-items-center rounded-lg border-2 ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3]"}`}>
                         {m.bought && <span className="text-[10px] font-bold text-white">✓</span>}
                       </span>
@@ -590,7 +596,7 @@ function MaterialesTab({
                         <span className="block text-[11px] text-[#97A1A0]">{m.supplier}</span>
                       </span>
                       <span className="font-mono text-sm font-semibold text-[#16323D]">{money(m.cost)}</span>
-                    </button>
+                    </div>
                   </div>
                 )}
               </SortableRow>
@@ -788,9 +794,13 @@ function PresupuestoTab({
             {items.map((b) => (
               <SortableRow key={b.id} id={b.id}>
                 {({ listeners, attributes }, isDragging) => (
-                  <div className={`flex items-center border-b border-[#E6DDCB] last:border-0 transition ${isDragging ? "bg-[#F7F3EA] shadow-md" : "hover:bg-[#F7F3EA]"}`}>
-                    <DragHandle listeners={listeners} attributes={attributes} />
-                    <button onClick={() => openEdit(b)} className="flex flex-1 items-center justify-between gap-2 py-3 pr-4 text-left">
+                  <div
+                    {...listeners} {...attributes}
+                    onClick={() => openEdit(b)}
+                    className={`flex cursor-pointer select-none items-center border-b border-[#E6DDCB] last:border-0 transition ${isDragging ? "bg-[#F7F3EA] shadow-md" : "hover:bg-[#F7F3EA]"}`}
+                  >
+                    <DragHandle />
+                    <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] ${b.type === "mano" ? "bg-[#DCE8E9] text-[#4E7A82]" : "bg-[#DCE6E6] text-[#0E2630]"}`}>
                           {b.type === "mano" ? "Mano obra" : "Material"}
@@ -798,7 +808,7 @@ function PresupuestoTab({
                         <span className="truncate text-sm font-medium text-[#16323D]">{b.description}</span>
                       </div>
                       <span className="font-mono text-sm font-semibold text-[#16323D]">{money(b.amount)}</span>
-                    </button>
+                    </div>
                   </div>
                 )}
               </SortableRow>
@@ -998,9 +1008,13 @@ function PagosTab({
               {payItems.map((x) => (
                 <SortableRow key={x.id} id={x.id}>
                   {({ listeners, attributes }, isDragging) => (
-                    <div className={`flex items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}>
-                      <DragHandle listeners={listeners} attributes={attributes} />
-                      <button onClick={() => openPayEdit(x)} className="flex flex-1 items-center justify-between gap-2 py-3 pr-4 text-left">
+                    <div
+                      {...listeners} {...attributes}
+                      onClick={() => openPayEdit(x)}
+                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}
+                    >
+                      <DragHandle />
+                      <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                         <div>
                           <div className="flex items-center gap-2 text-sm font-semibold text-[#16323D]">
                             {x.method}
@@ -1009,7 +1023,7 @@ function PagosTab({
                           <div className="text-[11px] text-[#5C6A6E]">{dateFmt(x.date)}</div>
                         </div>
                         <span className="font-mono text-base font-semibold text-[#4F8A63]">+{money(x.amount)}</span>
-                      </button>
+                      </div>
                     </div>
                   )}
                 </SortableRow>
@@ -1056,9 +1070,13 @@ function PagosTab({
               {expItems.map((x) => (
                 <SortableRow key={x.id} id={x.id}>
                   {({ listeners, attributes }, isDragging) => (
-                    <div className={`flex items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}>
-                      <DragHandle listeners={listeners} attributes={attributes} />
-                      <button onClick={() => openExpEdit(x)} className="flex flex-1 items-center justify-between gap-2 py-3 pr-4 text-left">
+                    <div
+                      {...listeners} {...attributes}
+                      onClick={() => openExpEdit(x)}
+                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}
+                    >
+                      <DragHandle />
+                      <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                         <div>
                           <div className="flex items-center gap-2 text-sm font-semibold text-[#16323D]">
                             {x.payee_name}
@@ -1067,7 +1085,7 @@ function PagosTab({
                           <div className="text-[11px] text-[#5C6A6E]">{x.concept} · {dateFmt(x.date)}</div>
                         </div>
                         <span className="font-mono text-base font-semibold text-[#B0492F]">−{money(x.amount)}</span>
-                      </button>
+                      </div>
                     </div>
                   )}
                 </SortableRow>
@@ -1191,15 +1209,15 @@ function PlanTab({
                 <SortableRow key={t.id} id={t.id}>
                   {({ listeners, attributes }, isDragging) => (
                     <div
-                      className={`grid items-center gap-3 overflow-hidden rounded-xl border bg-white transition-shadow ${isDragging ? "border-[#16323D] shadow-lg" : "border-[#E6DDCB]"}`}
+                      {...listeners} {...attributes}
+                      className={`grid select-none items-center gap-3 overflow-hidden rounded-xl border bg-white transition-shadow ${isDragging ? "border-[#16323D] shadow-lg" : "border-[#E6DDCB]"}`}
                       style={{ gridTemplateColumns: "auto minmax(110px,170px) 1fr 34px" }}
                     >
-                      <DragHandle listeners={listeners} attributes={attributes} />
+                      <DragHandle />
                       <div className="py-2">
                         <div className="truncate text-[13px] font-semibold text-[#16323D]">{t.name}</div>
                         <div className="font-mono text-[10.5px] text-[#5C6A6E]">{dShort(start)}–{dShort(end)} · {t.hours}h</div>
                       </div>
-                      {/* Gantt bar */}
                       <div className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1]">
                         <div
                           className={`absolute top-0.5 h-4 rounded-[5px] px-1.5 text-[9.5px] font-bold ${COLORS[t.status]}`}
@@ -1208,7 +1226,7 @@ function PlanTab({
                           S{weekStart + 1}
                         </div>
                       </div>
-                      <button onClick={() => setConfirmDel(t.id)} className="mr-2 grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]" aria-label="Eliminar">🗑</button>
+                      <button onClick={(e) => { e.stopPropagation(); setConfirmDel(t.id); }} className="mr-2 grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]" aria-label="Eliminar">🗑</button>
                     </div>
                   )}
                 </SortableRow>
