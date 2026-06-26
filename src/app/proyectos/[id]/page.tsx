@@ -1646,7 +1646,7 @@ export default function ProjectDetailPage() {
       </button>
 
       {/* Blue header */}
-      <div className="-mx-6 bg-[#395886] px-6 py-5">
+      <div className="mb-2 rounded-2xl bg-[#395886] px-6 py-5">
         <h1 className="font-[Manrope] text-xl font-extrabold tracking-tight text-white">{project.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
           <StatusChipOnBlue status={project.status} />
@@ -1656,7 +1656,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Pill tabs */}
-      <div className="mb-6 -mx-6 flex gap-2 overflow-x-auto bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">
+      <div className="mb-6 flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">
         {visibleTabs.map((t) => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${

@@ -263,7 +263,7 @@ export default function DashboardPage() {
   return (
     <div className="animate-in fade-in duration-300">
       {/* Blue header */}
-      <div className="-mx-6 -mt-7 mb-6 bg-[#395886] px-6 pt-7 pb-5">
+      <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
         <h1 className="font-[Manrope] text-[22px] font-extrabold leading-tight tracking-tight text-white">
           Hola, {currentUser?.name ?? ""}
         </h1>

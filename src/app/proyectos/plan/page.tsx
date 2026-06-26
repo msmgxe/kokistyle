@@ -217,7 +217,7 @@ export default function PlanPage() {
   }
 
   const BlueHeader = () => (
-    <div className="-mx-6 -mt-7 mb-6 bg-[#395886] px-6 pt-7 pb-5">
+    <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
       <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">Plan del portafolio</h1>
       <p className="mt-1 text-sm text-[#B1C9EF]">
         Cronograma de todos los proyectos. Arrastra ⠿ para priorizar.
