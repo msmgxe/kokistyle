@@ -9,7 +9,7 @@ import {
   useEffect, useState, useCallback, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -22,6 +22,7 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  DragOverEvent,
   DragOverlay,
   defaultDropAnimationSideEffects,
   useDroppable,
@@ -381,33 +382,50 @@ function WorkflowTab({
 
   const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
 
+  const handleDragOver = (e: DragOverEvent) => {
+    const { active, over } = e;
+    if (!over) return;
+    const draggedId = String(active.id);
+    const overId    = String(over.id);
+    if (draggedId === overId) return;
+
+    const overIsCol    = KANBAN_COLS.some((c) => c.key === overId);
+    const overTask     = overIsCol ? null : items.find((t) => t.id === overId);
+    const targetStatus = (overIsCol ? overId : (overTask?.status ?? null)) as KanbanStatus | null;
+    if (!targetStatus) return;
+
+    setItems((prev) =>
+      prev.map((t) => (t.id === draggedId ? { ...t, status: targetStatus } : t))
+    );
+  };
+
   const handleDragEnd = async (e: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = e;
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
-    const draggedTask = items.find((t) => t.id === String(active.id));
+    const draggedId   = String(active.id);
+    const overId      = String(over.id);
+
+    const draggedTask = items.find((t) => t.id === draggedId);
     if (!draggedTask) return;
 
-    const overId       = String(over.id);
-    const overIsCol    = KANBAN_COLS.some((c) => c.key === overId);
-    const overTask     = overIsCol ? null : items.find((t) => t.id === overId);
-    const targetStatus = (overIsCol ? overId : (overTask?.status ?? draggedTask.status)) as KanbanStatus;
+    const originalStatus = tasks.find((t) => t.id === draggedId)?.status ?? draggedTask.status;
 
-    if (targetStatus !== draggedTask.status) {
-      // Cross-column move: update status only
-      const next = items.map((t) => t.id === draggedTask.id ? { ...t, status: targetStatus } : t);
-      setItems(next);
-      const { error } = await supabase.from("tasks").update({ status: targetStatus }).eq("id", draggedTask.id);
-      if (error) { toast(tp.common.errorSaving + error.message); onRefresh(); return; }
-      const colName = KANBAN_COLS.find((c) => c.key === targetStatus)?.name;
+    if (draggedTask.status !== originalStatus) {
+      const { error } = await supabase.from("tasks").update({ status: draggedTask.status }).eq("id", draggedId);
+      if (error) {
+        setItems(tasks);
+        toast(tp.common.errorSaving + error.message);
+        return;
+      }
+      const colName = KANBAN_COLS.find((c) => c.key === draggedTask.status)?.name ?? draggedTask.status;
       toast(`${tp.workflow.taskMoved} "${colName}"`);
-    } else if (overTask) {
-      // Same-column reorder
-      const colItems = byStatus(targetStatus);
-      const oldIdx   = colItems.findIndex((t) => t.id === String(active.id));
+    } else if (draggedId !== overId) {
+      const colItems = items.filter((t) => t.status === draggedTask.status).sort((a, b) => a.sort_order - b.sort_order);
+      const oldIdx   = colItems.findIndex((t) => t.id === draggedId);
       const newIdx   = colItems.findIndex((t) => t.id === overId);
-      if (oldIdx === -1 || newIdx === -1) return;
+      if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
       const reordered = arrayMove(colItems, oldIdx, newIdx);
       const next = items.map((t) => {
         const idx = reordered.findIndex((r) => r.id === t.id);
@@ -451,6 +469,7 @@ function WorkflowTab({
       sensors={sensors}
       collisionDetection={kanbanCollision}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <p className="mb-4 text-[11.5px] text-[#5C6A6E]">
@@ -470,9 +489,9 @@ function WorkflowTab({
 
       <DragOverlay dropAnimation={dropAnimation}>
         {activeTask && (
-          <div className="rounded-xl border border-[#16323D] bg-white px-3 py-3 shadow-2xl ring-1 ring-[#16323D]">
+          <div className="rounded-xl border border-[#395886] bg-white px-4 py-3 shadow-2xl ring-1 ring-[#395886] opacity-90">
             <div className="text-sm font-semibold text-[#16323D]">{activeTask.name}</div>
-            <div className="mt-1 font-mono text-[11px] text-[#5C6A6E]">{activeTask.hours}h</div>
+            <div className="font-mono text-[11px] text-[#5C6A6E]">{activeTask.hours}h</div>
           </div>
         )}
       </DragOverlay>
@@ -549,6 +568,18 @@ function MaterialesTab({
 
   const activeMat = activeId ? items.find((m) => m.id === activeId) : null;
 
+  const duplicateMaterial = async (m: Material) => {
+    const { error } = await supabase.from("materials").insert({
+      project_id: m.project_id,
+      name: m.name,
+      supplier: m.supplier,
+      cost: m.cost,
+      bought: false,
+    });
+    if (error) { toast(tp.common.errorSaving + error.message); return; }
+    onRefresh(); toast(tp.materials.materialAdded);
+  };
+
   return (
     <div className="max-w-[760px]">
       {/* Resumen */}
@@ -584,6 +615,13 @@ function MaterialesTab({
                         <span className="block text-[11px] text-[#97A1A0]">{m.supplier}</span>
                       </span>
                       <span className="font-mono text-sm font-semibold text-[#16323D]">{money(m.cost)}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); duplicateMaterial(m); }}
+                        className="grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+                        aria-label="Duplicate"
+                      >
+                        <Copy size={13} />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1190,6 +1228,67 @@ function PagosTab({
   );
 }
 
+// ─── PlanTaskForm ────────────────────────────────────────────────────────────
+function PlanTaskForm({
+  task, startDate, endDate, onSave, onClose,
+}: {
+  task: Task;
+  startDate: Date;
+  endDate: Date;
+  onSave: (vals: { name: string; hours: number; durationDays: number; status: string }) => void;
+  onClose: () => void;
+}) {
+  const toDateInput = (d: Date) => d.toISOString().split("T")[0];
+  const [name,   setName]   = useState(task.name);
+  const [hours,  setHours]  = useState(task.hours);
+  const [status, setStatus] = useState<"pend" | "prog" | "done">(task.status);
+  const [sDate,  setSDate]  = useState(toDateInput(startDate));
+  const [eDate,  setEDate]  = useState(toDateInput(endDate));
+
+  const durationDays = Math.max(7, Math.round((new Date(eDate).getTime() - new Date(sDate).getTime()) / 86400000));
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Activity</label>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Start date</label>
+          <input type="date" value={sDate} onChange={(e) => setSDate(e.target.value)}
+            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">End date</label>
+          <input type="date" value={eDate} onChange={(e) => setEDate(e.target.value)}
+            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+        </div>
+      </div>
+      <div className="text-xs text-[#5C6A6E]">Duration: ~{Math.round(durationDays / 7)} weeks ({durationDays} days)</div>
+      <div>
+        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Estimated hours</label>
+        <input type="number" min={0} value={hours} onChange={(e) => setHours(Number(e.target.value))}
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+      </div>
+      <div>
+        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Status</label>
+        <select value={status} onChange={(e) => setStatus(e.target.value as "pend" | "prog" | "done")}
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
+          <option value="pend">To do</option>
+          <option value="prog">In progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div className="mt-5 flex gap-3">
+        <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancel</button>
+        <button onClick={() => onSave({ name, hours, durationDays, status })} className="flex-1 rounded-xl bg-[#395886] py-3 font-bold text-white">Save</button>
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: PLAN GANTT con DnD (@dnd-kit)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1203,6 +1302,8 @@ function PlanTab({
   const [items, setItems] = useState<Task[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [ganttUnit, setGanttUnit] = useState<"week" | "day">("week");
+  const [editTask, setEditTask] = useState<{ task: { task: Task; start: Date; end: Date; weekStart: number }; startDate: Date; endDate: Date } | null>(null);
   const persist = usePersistOrder("tasks");
 
   useEffect(() => {
@@ -1230,6 +1331,35 @@ function PlanTab({
   const total = Math.max(6, items.reduce((s, t) => s + t.duration_weeks, 0));
   const rows  = schedule();
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
+
+  const projectStart = new Date(project.start_date + "T00:00:00");
+  const totalDays    = total * 7;
+
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const monthLabels: { label: string; pct: number }[] = [];
+  {
+    const d = new Date(projectStart);
+    d.setDate(1);
+    while (d < new Date(projectStart.getTime() + totalDays * 86400000)) {
+      const pct = ((d.getTime() - projectStart.getTime()) / (totalDays * 86400000)) * 100;
+      monthLabels.push({ label: monthNames[d.getMonth()], pct: Math.max(0, pct) });
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(1);
+    }
+  }
+
+  const unitLabels: { label: string; pct: number }[] = [];
+  if (ganttUnit === "week") {
+    for (let w = 0; w < total; w++) {
+      unitLabels.push({ label: `W${w + 1}`, pct: (w / total) * 100 });
+    }
+  } else {
+    const step = totalDays > 30 ? 3 : totalDays > 14 ? 2 : 1;
+    for (let d = 0; d < totalDays; d += step) {
+      const date = new Date(projectStart.getTime() + d * 86400000);
+      unitLabels.push({ label: `${date.getDate()}`, pct: (d / totalDays) * 100 });
+    }
+  }
 
   const COLORS: Record<string, string> = {
     done: "bg-gradient-to-r from-[#4F8A63] to-[#69a67e] text-white",
@@ -1261,6 +1391,49 @@ function PlanTab({
         {tp.plan.hint}
       </p>
 
+      {/* Gantt unit toggle */}
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-[#5C6A6E]">
+          {ganttUnit === "week" ? "Weeks" : "Days"} view
+        </span>
+        <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+          {(["week", "day"] as const).map((u) => (
+            <button key={u} onClick={() => setGanttUnit(u)}
+              className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+              {u === "week" ? "Weeks" : "Days"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Month header */}
+      <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6DDCB] bg-[#395886]"
+        style={{ paddingLeft: "196px" }}>
+        <div className="relative h-6">
+          {monthLabels.map(({ label, pct }) => (
+            <span key={label + pct}
+              className="absolute top-1 text-[10px] font-bold text-white/80"
+              style={{ left: `${pct}%` }}>
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Week/Day header */}
+      <div className="mb-2 overflow-hidden rounded-b-xl border border-[#E6DDCB] bg-[#ECE3D1]"
+        style={{ paddingLeft: "196px" }}>
+        <div className="relative h-5">
+          {unitLabels.map(({ label, pct }) => (
+            <span key={label + pct}
+              className="absolute top-1 text-[9px] font-semibold text-[#5C6A6E]"
+              style={{ left: `${pct}%` }}>
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
@@ -1274,11 +1447,11 @@ function PlanTab({
                     <div
                       {...listeners} {...attributes}
                       className={`grid select-none items-center gap-3 overflow-hidden rounded-xl border bg-white transition-shadow ${isDragging ? "border-[#16323D] shadow-lg" : "border-[#E6DDCB]"}`}
-                      style={{ gridTemplateColumns: "auto minmax(110px,170px) 1fr 34px" }}
+                      style={{ gridTemplateColumns: "auto minmax(110px,170px) 1fr auto" }}
                     >
                       <DragHandle />
                       <div className="py-2">
-                        <div className="truncate text-[13px] font-semibold text-[#16323D]">{t.name}</div>
+                        <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-[#16323D]">{t.name}</div>
                         <div className="font-mono text-[10.5px] text-[#5C6A6E]">{dShort(start)}–{dShort(end)} · {t.hours}h</div>
                       </div>
                       <div className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1]">
@@ -1289,7 +1462,16 @@ function PlanTab({
                           S{weekStart + 1}
                         </div>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); setConfirmDel(t.id); }} className="mr-2 grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]" aria-label="Eliminar">🗑</button>
+                      <div className="mr-2 flex gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditTask({ task: { task: t, start, end, weekStart }, startDate: start, endDate: end }); }}
+                          className="grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+                          aria-label="Edit"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setConfirmDel(t.id); }} className="grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]" aria-label="Delete">🗑</button>
+                      </div>
                     </div>
                   )}
                 </SortableRow>
@@ -1323,6 +1505,31 @@ function PlanTab({
           onConfirm={() => deleteTask(confirmDel)}
           onCancel={() => setConfirmDel(null)}
         />
+      )}
+
+      {editTask && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditTask(null); }}>
+          <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[90vh]">
+            <h3 className="mb-4 font-[Manrope] text-xl font-bold text-[#16323D]">Edit task</h3>
+            <PlanTaskForm
+              task={editTask.task.task}
+              startDate={editTask.startDate}
+              endDate={editTask.endDate}
+              onSave={async (vals) => {
+                const { error } = await supabase.from("tasks").update({
+                  name: vals.name,
+                  hours: Number(vals.hours),
+                  duration_weeks: Math.max(1, Math.round(vals.durationDays / 7)),
+                  status: vals.status,
+                }).eq("id", editTask.task.task.id);
+                if (error) { toast("Error: " + error.message); return; }
+                setEditTask(null); onRefresh(); toast("Task updated.");
+              }}
+              onClose={() => setEditTask(null)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
