@@ -7,62 +7,13 @@ import type { VoiceMeta } from "@/src/context/VoiceContext";
 import { supabase } from "@/src/lib/supabase";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Phase = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error";
-interface Msg     { role: "user" | "assistant"; text: string; }
-interface FieldDef { key: string; question: string; parse: (t: string) => unknown; }
+type Phase  = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error";
+type ApiMsg = { role: "user" | "assistant"; content: string };
+interface Msg { role: "user" | "assistant"; text: string; }
 
 const ASSISTANT  = "Katy";
 const TODAY      = () => new Date().toISOString().split("T")[0];
 const IS_ANDROID = () => typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-
-// ── Client-side parsers ────────────────────────────────────────────────────
-function parseMoney(t: string): number | null {
-  const s = t.toLowerCase().replace(/[$,]/g, "").trim();
-  const km = s.match(/(\d+(?:\.\d+)?)\s*(mil|k\b)/i);
-  if (km) return parseFloat(km[1]) * 1000;
-  const mm = s.match(/(\d+(?:\.\d+)?)\s*(mill?[oó]n?)/i);
-  if (mm) return parseFloat(mm[1]) * 1_000_000;
-  const nm = s.match(/\d+(?:\.\d+)?/);
-  if (nm) return parseFloat(nm[0]);
-  const words: [RegExp, number][] = [
-    [/nueve\s*mil/, 9000], [/ocho\s*mil/, 8000], [/siete\s*mil/, 7000],
-    [/seis\s*mil/,  6000], [/cinco\s*mil/, 5000], [/cuatro\s*mil/, 4000],
-    [/tres\s*mil/,  3000], [/dos\s*mil/,   2000], [/\bmil\b/,      1000],
-    [/quinientos/,  500],  [/cuatrocientos/, 400], [/trescientos/, 300],
-    [/doscientos/,  200],  [/cien(to)?/,     100],
-  ];
-  for (const [re, v] of words) if (re.test(s)) return v;
-  return null;
-}
-function parseMethod(t: string): string | null {
-  const s = t.toLowerCase();
-  if (/zelh?e|zelle/i.test(s))                       return "Zelle";
-  if (/efectivo|cash|contado/i.test(s))              return "Efectivo";
-  if (/transfer|banco|deposito|depósito/i.test(s))   return "Transferencia";
-  if (/cheque|check/i.test(s))                       return "Cheque";
-  if (/tarjeta|card|cr[eé]dito|d[eé]bito/i.test(s)) return "Tarjeta";
-  return null;
-}
-function parsePayType(t: string): string | null {
-  const s = t.toLowerCase();
-  if (/anticipo|adelanto|dep[oó]sito/i.test(s)) return "anticipo";
-  if (/final|[uú]ltimo|[uú]ltima/i.test(s))     return "final";
-  if (/abono|pago/i.test(s))                    return "abono";
-  return null;
-}
-function parseBudgetType(t: string): string | null {
-  const s = t.toLowerCase();
-  if (/mano|obra|labor|install|plom|elect|pintur|carpint/i.test(s)) return "mano";
-  if (/material|gabinet|azulejo|pintura|grifo|piso/i.test(s))       return "material";
-  return null;
-}
-function parseTaskStatus(t: string): string | null {
-  const s = t.toLowerCase();
-  if (/por\s+hacer|pendiente|sin\s+comenzar/.test(s)) return "pend";
-  if (/en\s+proceso|proceso|progreso|haciendo/.test(s)) return "prog";
-  if (/hecho|terminado|completado|listo|acabado|done/.test(s)) return "done";
-  return null;
-}
 function fmt(n: number) { return "$" + n.toLocaleString("en-US"); }
 function norm(s: string) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
 
@@ -91,49 +42,6 @@ function localDetect(text: string, context: string): string {
   if (/\bcontacto|especiali|proveedor/.test(t)) return "create_contact";
   return "create_project";
 }
-
-// ── Required fields per action (for voice Q&A) ────────────────────────────
-const ACTION_FIELDS: Record<string, FieldDef[]> = {
-  create_project: [
-    { key: "title",  question: "¿Cómo se llama el proyecto?",       parse: (t) => t.trim() || null },
-    { key: "client", question: "¿Nombre del cliente?",              parse: (t) => t.trim() || null },
-    { key: "budget", question: "¿Cuál es el presupuesto?",          parse: parseMoney },
-    { key: "address",question: "¿La dirección? o di sin dirección", parse: (t) => /sin\s*direc/i.test(t) ? "Sin dirección" : t.trim() || null },
-  ],
-  create_payment: [
-    { key: "amount", question: "¿Cuánto recibiste?",                              parse: parseMoney },
-    { key: "method", question: "¿Cómo pagó? Zelle, efectivo o transferencia.",    parse: parseMethod },
-    { key: "type",   question: "¿Anticipo, abono o pago final?",                  parse: parsePayType },
-  ],
-  create_expense: [
-    { key: "payee_name", question: "¿A quién le pagaste?",                            parse: (t) => t.trim() || null },
-    { key: "amount",     question: "¿Cuánto?",                                        parse: parseMoney },
-    { key: "concept",    question: "¿Por qué concepto?",                              parse: (t) => t.trim() || null },
-    { key: "method",     question: "¿Cómo pagaste? Zelle, efectivo o transferencia.", parse: parseMethod },
-  ],
-  create_task: [
-    { key: "name", question: "¿Qué actividad?", parse: (t) => t.trim() || null },
-  ],
-  create_material: [
-    { key: "name",     question: "¿Qué material?",              parse: (t) => t.trim() || null },
-    { key: "cost",     question: "¿Cuánto cuesta?",             parse: parseMoney },
-    { key: "supplier", question: "¿Proveedor o tienda?",        parse: (t) => t.trim() || null },
-  ],
-  create_budget_item: [
-    { key: "description", question: "¿Descripción de la línea?", parse: (t) => t.trim() || null },
-    { key: "type",        question: "¿Mano de obra o material?",  parse: parseBudgetType },
-    { key: "amount",      question: "¿Cuánto?",                   parse: parseMoney },
-  ],
-  create_contact: [
-    { key: "name",      question: "¿Nombre completo?",         parse: (t) => t.trim() || null },
-    { key: "specialty", question: "¿Cuál es su especialidad?", parse: (t) => t.trim() || null },
-    { key: "phone",     question: "¿Número de teléfono?",      parse: (t) => t.trim() || null },
-  ],
-  update_task_status: [
-    { key: "task_name", question: "¿Qué actividad quieres mover?",                      parse: (t) => t.trim() || null },
-    { key: "status",    question: "¿A qué estado? Por hacer, en proceso o hecho.",       parse: parseTaskStatus },
-  ],
-};
 
 const ACTION_LABELS: Record<string, string> = {
   create_project: "nuevo proyecto", create_payment: "ingreso",
@@ -477,12 +385,21 @@ export default function VoiceFAB() {
     }
   }, [pendingAction, editableData, closeClean, showError]);
 
-  // ── Main conversation flow ────────────────────────────────────────────────
+  // ── Main conversation flow (Claude-driven) ──────────────────────────────
   const start = useCallback(() => {
     if (phase !== "idle" || startedRef.current) return;
     startedRef.current = true;
     activeRef.current  = true;
     setMessages([]); setPendingAction(null); setEditableData({}); setStatusMsg("");
+
+    const OPENERS: Record<string, string> = {
+      "project.workflow":       "¿Qué hacemos?",
+      "project.materiales":     "¿Qué material?",
+      "project.pagos.ingresos": "¿Cuánto recibiste?",
+      "project.pagos.egresos":  "¿A quién pagaste?",
+      "project.presupuesto":    "¿Qué partida?",
+      "project.contactos":      "¿Nombre del especialista?",
+    };
 
     (async () => {
       // ① Permission check
@@ -494,122 +411,93 @@ export default function VoiceFAB() {
         return;
       }
 
-      // ② Greet — context-aware so Katy never asks about the project when ya estás en uno
-      const ctx    = metaRef.current.context;
-      const hasPid = !!metaRef.current.projectId;
-      const CTX_GREET: Record<string, string> = {
-        "project.workflow":       "¿Crear actividad o mover una existente?",
-        "project.materiales":     "¿Qué material?",
-        "project.pagos.ingresos": "¿Cuánto recibiste?",
-        "project.pagos.egresos":  "¿A quién le pagaste?",
-        "project.presupuesto":    "¿Qué línea de presupuesto?",
-        "project.contactos":      "¿Nombre del especialista?",
-        "project.notas":          "¿Qué nota registramos?",
-      };
-      // Preset action: for unambiguous tabs we skip the API call
-      const PRESET_ACTION: Record<string, string> = {
-        "project.materiales":     "create_material",
-        "project.pagos.ingresos": "create_payment",
-        "project.pagos.egresos":  "create_expense",
-        "project.presupuesto":    "create_budget_item",
-        "project.contactos":      "create_contact",
-      };
-      const greet = CTX_GREET[ctx] ?? "¿Qué registramos?";
-      const alive = await say(greet);
+      const ctx      = metaRef.current.context;
+      const apiHist: ApiMsg[] = [];
+
+      // ② Short contextual opener
+      const opener = OPENERS[ctx] ?? "¿En qué te ayudo?";
+      apiHist.push({ role: "assistant", content: opener });
+      const alive = await say(opener);
       if (!alive) return;
 
-      // ③ Intent
-      let rawIntent = await listen();
-      if (rawIntent === null) { showError("No pude acceder al micrófono. Intenta de nuevo."); return; }
-      if (!rawIntent) {
+      // ③ First user input
+      let userInput = await listen();
+      if (userInput === null) { showError("No pude acceder al micrófono. Intenta de nuevo."); return; }
+      if (!userInput) {
         const a2 = await say("No te escuché. Habla ahora.");
         if (!a2) return;
-        rawIntent = await listen();
-        if (!rawIntent) { await say("Cuando estés listo, toca el micrófono."); closeClean(); return; }
+        userInput = await listen();
+        if (!userInput) { await say("Cuando estés listo, toca el micrófono."); closeClean(); return; }
       }
-
-      push("user", rawIntent);
+      push("user", userInput);
+      apiHist.push({ role: "user", content: userInput });
       if (!activeRef.current) return;
 
-      // ④ Determine action
-      let action = PRESET_ACTION[ctx] ?? "unknown";
-      let data: Record<string, unknown> = {};
-
-      if (!PRESET_ACTION[ctx]) {
-        // Ambiguous context (workflow, dashboard) → call API
+      // ④ Claude-driven conversation loop
+      const converse = async (): Promise<void> => {
+        if (!activeRef.current) return;
         setPhase("thinking");
+
+        let result: { type: string; text?: string; action?: string; data?: Record<string, unknown> };
         try {
           const ctrl = new AbortController();
-          const tid  = setTimeout(() => ctrl.abort(), 8_000);
+          const tid  = setTimeout(() => ctrl.abort(), 12_000);
           const res  = await fetch("/api/voice", {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              transcript: rawIntent,
-              context:    ctx,
-              contacts:   metaRef.current.contacts ?? [],
+              messages:     apiHist,
+              context:      ctx,
+              contacts:     metaRef.current.contacts     ?? [],
+              projectTitle: metaRef.current.projectTitle ?? "",
             }),
             signal: ctrl.signal,
           });
           clearTimeout(tid);
-          const j = await res.json();
-          action   = j.action ?? "unknown";
-          data     = j.data   ?? {};
-        } catch (err) {
-          console.error("[Katy API]", err);
-          action = localDetect(rawIntent, ctx);
+          result = await res.json();
+        } catch {
+          const lastUser = [...apiHist].reverse().find(m => m.role === "user")?.content ?? "";
+          result = { type: "action", action: localDetect(lastUser, ctx), data: {} };
         }
-        if (action === "unknown" || !ACTION_FIELDS[action]) {
-          action = localDetect(rawIntent, ctx);
-        }
-        // Never create a project when already inside one
-        if (action === "create_project" && hasPid) {
-          action = localDetect(rawIntent, ctx);
-        }
-      } else {
-        // Pre-parse rawIntent for preset action (user may have already answered the first question)
-        for (const field of ACTION_FIELDS[action]) {
-          const parsed = field.parse(rawIntent);
-          if (parsed != null) data[field.key] = parsed;
-        }
-      }
-      if (!activeRef.current) return;
 
-      // ⑤ Ask missing fields
-      for (const field of ACTION_FIELDS[action]) {
-        if (data[field.key] != null) continue;
-        const aField = await say(field.question);
-        if (!aField) return;
-        const answer = await listen();
-        if (!activeRef.current) return;
-        if (answer === null) { showError("Perdí el micrófono. Intenta de nuevo."); return; }
-        if (!answer) continue;
-        push("user", answer);
-        const parsed = field.parse(answer);
-        if (parsed != null) {
-          data[field.key] = parsed;
-        } else if (["amount", "cost", "budget"].includes(field.key)) {
-          const aRetry = await say("No entendí el monto. ¿Cuánto?");
-          if (!aRetry) return;
-          const r2 = await listen();
-          if (r2) { push("user", r2); const p2 = parseMoney(r2); if (p2 != null) data[field.key] = p2; }
+        if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
+          // ⑤ Ready → show confirm
+          const action = result.action;
+          const data: Record<string, unknown> = { ...result.data };
+          if (!data.date) data.date = TODAY();
+          if (action === "create_task" && !data.hours) data.hours = 8;
+
+          setPendingAction({ action, data });
+          setEditableData({ ...data });
+
+          const summary = buildSummary(action, data);
+          const label   = ACTION_LABELS[action] ?? "registro";
+          await say(`Voy a guardar ${label}: ${summary}. ¿Confirmamos?`);
+          if (!activeRef.current) return;
+          setPhase("confirm");
+
+        } else {
+          // ⑤ Claude asks a question
+          const question = result.text ?? "¿Algo más?";
+          apiHist.push({ role: "assistant", content: question });
+          const stillAlive = await say(question);
+          if (!stillAlive) return;
+
+          let answer = await listen();
+          if (!activeRef.current) return;
+          if (answer === null) { showError("Perdí el micrófono. Intenta de nuevo."); return; }
+          if (!answer) {
+            await say("No te escuché. ¿Repites?");
+            answer = await listen();
+            if (!answer || !activeRef.current) { closeClean(); return; }
+          }
+          push("user", answer);
+          apiHist.push({ role: "user", content: answer });
+          await converse();
         }
-      }
+      };
 
-      // Defaults
-      if (!data.date) data.date = TODAY();
-      if (action === "create_task" && !data.hours) data.hours = 8;
-
-      // ⑥ Confirm
-      if (!activeRef.current) return;
-      const summary = buildSummary(action, data);
-      const label   = ACTION_LABELS[action] ?? "registro";
-      const conf    = `Voy a guardar ${label}: ${summary}. ¿Confirmamos?`;
-
-      setPendingAction({ action, data });
-      setEditableData({ ...data });
-      const aConf = await say(conf);
-      if (!aConf) return;
-      setPhase("confirm");
+      await converse();
 
     })().catch(err => {
       console.error("[VoiceFAB]", err);

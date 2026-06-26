@@ -262,13 +262,15 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      {/* Encabezado */}
-      <h1 className="font-[Manrope] text-[25px] font-extrabold leading-tight tracking-tight text-[#16323D]">
-        Hola, {currentUser?.name ?? ""}
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-[#5C6A6E]">
-        {isSuperAdmin ? "Panel de administración" : "Tus proyectos asignados"} · avance promedio {avgAdv}%
-      </p>
+      {/* Blue header */}
+      <div className="-mx-6 -mt-7 mb-6 bg-[#395886] px-6 pt-7 pb-5">
+        <h1 className="font-[Manrope] text-[22px] font-extrabold leading-tight tracking-tight text-white">
+          Hola, {currentUser?.name ?? ""}
+        </h1>
+        <p className="mt-1 text-sm text-[#B1C9EF]">
+          {isSuperAdmin ? "Panel de administración" : "Tus proyectos asignados"} · avance promedio {avgAdv}%
+        </p>
+      </div>
 
       {/* KPIs globales — financieros solo si tiene permiso pagos */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

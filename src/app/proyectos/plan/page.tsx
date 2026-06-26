@@ -216,11 +216,20 @@ export default function PlanPage() {
     );
   }
 
+  const BlueHeader = () => (
+    <div className="-mx-6 -mt-7 mb-6 bg-[#395886] px-6 pt-7 pb-5">
+      <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">Plan del portafolio</h1>
+      <p className="mt-1 text-sm text-[#B1C9EF]">
+        Cronograma de todos los proyectos. Arrastra ⠿ para priorizar.
+      </p>
+    </div>
+  );
+
   if (projects.length === 0) {
     return (
       <div>
-        <h1 className="font-[Manrope] text-[25px] font-extrabold tracking-tight text-[#16323D]">Plan del portafolio</h1>
-        <div className="mt-6 rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
+        <BlueHeader />
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
           Sin proyectos aún. Créalos desde el Dashboard.
         </div>
       </div>
@@ -229,12 +238,7 @@ export default function PlanPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <h1 className="font-[Manrope] text-[25px] font-extrabold tracking-tight text-[#16323D]">
-        Plan del portafolio
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-[#5C6A6E]">
-        Cronograma de todos los proyectos. Arrastra ⠿ para priorizar y usa la papelera para eliminar.
-      </p>
+      <BlueHeader />
 
       {/* Month labels */}
       <div className="relative mb-2 h-4" style={{ paddingLeft: "192px" }}>

@@ -70,16 +70,10 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function StatusChip({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-    aprobado:    "bg-[#DCE8E9] text-[#4E7A82]",
-    en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
-    terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
-  };
+function StatusChipOnBlue({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${styles[status] ?? "bg-gray-100 text-gray-600"}`}>
-      <span className="size-1.5 rounded-full bg-current" />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white">
+      <span className="size-1.5 rounded-full bg-white/70" />
       {STATUS_LABELS[status] ?? status}
     </span>
   );
@@ -1646,28 +1640,30 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      {/* Cabecera */}
-      <div className="mb-4">
-        <button onClick={() => router.push("/proyectos")} className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C6A6E] transition hover:text-[#16323D]">
-          <ArrowLeft size={15} /> Dashboard
-        </button>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="font-[Manrope] text-2xl font-extrabold tracking-tight text-[#16323D]">{project.title}</h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12.5px] text-[#5C6A6E]">
-              <StatusChip status={project.status} />
-              <span>· {project.client}</span>
-              <span>· {money(project.budget)}</span>
-            </div>
-          </div>
+      {/* Back button */}
+      <button onClick={() => router.push("/proyectos")} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C6A6E] transition hover:text-[#16323D]">
+        <ArrowLeft size={15} /> Dashboard
+      </button>
+
+      {/* Blue header */}
+      <div className="-mx-6 bg-[#395886] px-6 py-5">
+        <h1 className="font-[Manrope] text-xl font-extrabold tracking-tight text-white">{project.title}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
+          <StatusChipOnBlue status={project.status} />
+          <span>· {project.client}</span>
+          <span>· {money(project.budget)}</span>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-5 flex gap-0.5 overflow-x-auto border-b border-[#E6DDCB] [scrollbar-width:none]">
+      {/* Pill tabs */}
+      <div className="mb-6 -mx-6 flex gap-2 overflow-x-auto bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">
         {visibleTabs.map((t) => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`relative whitespace-nowrap px-3 py-2.5 text-sm font-semibold transition ${activeTab === t.id ? "text-[#16323D] after:absolute after:inset-x-2 after:-bottom-px after:h-[2.5px] after:rounded-full after:bg-[#16323D]" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
+              activeTab === t.id
+                ? "bg-[#395886] text-white shadow-sm"
+                : "text-[#628ECB] hover:text-[#395886]"
+            }`}>
             {t.label}
           </button>
         ))}

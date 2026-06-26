@@ -173,12 +173,12 @@ export default function ContactosPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <h1 className="font-[Manrope] text-[25px] font-extrabold tracking-tight text-[#16323D]">
-        Contactos
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-[#5C6A6E]">
-        Directorio de especialistas. Toca un proyecto en cada tarjeta para asignar o quitar.
-      </p>
+      <div className="-mx-6 -mt-7 mb-6 bg-[#395886] px-6 pt-7 pb-5">
+        <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">Contactos</h1>
+        <p className="mt-1 text-sm text-[#B1C9EF]">
+          Directorio de especialistas. Toca un proyecto para asignar o quitar.
+        </p>
+      </div>
 
       {contacts.length === 0 ? (
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">

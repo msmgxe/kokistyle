@@ -18,7 +18,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F7F3EA]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F3EB]">
         <p className="text-sm font-semibold text-[#5C6A6E]">Verificando acceso…</p>
       </div>
     );
@@ -26,9 +26,9 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
   return (
     <VoiceProvider>
-      <div className="min-h-screen bg-[#F7F3EA]">
+      <div className="min-h-screen bg-[#F7F3EB]">
         <nav
-          className="sticky top-0 z-30 border-b border-[#E6DDCB] bg-[#F7F3EA]"
+          className="sticky top-0 z-30 border-b border-[#D5DEEF] bg-[#F7F3EB]"
           aria-label="Panel de administración"
         >
           <div className="mx-auto flex max-w-[1180px] items-center gap-4 px-6 py-3">
@@ -75,10 +75,10 @@ function PanelTab({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-bold transition ${
+      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
         isActive
-          ? "bg-[#16323D] text-white"
-          : "text-[#5C6A6E] hover:bg-[#ECE3D1] hover:text-[#16323D]"
+          ? "bg-[#395886] text-white shadow-sm"
+          : "text-[#628ECB] hover:bg-[#F0F3FA] hover:text-[#395886]"
       }`}
     >
       {label}

@@ -1,111 +1,80 @@
-/**
- * POST /api/voice
- * Una sola llamada: detecta intención y extrae todos los datos posibles.
- * Las preguntas de seguimiento se manejan client-side (sin más API calls).
- */
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 
 const TODAY = () => new Date().toISOString().split("T")[0];
 
-const SYSTEM = (context: string, contacts: string[], today: string) => `
-Eres un extractor de datos para el sistema KokiStyle (gestión de obras en Florida).
-Contexto activo: "${context}". Hoy: ${today}.
-Contactos conocidos: ${contacts.length ? contacts.join(", ") : "ninguno"}.
+type ApiMsg = { role: "user" | "assistant"; content: string };
 
-Devuelve SOLO un JSON válido. Sin markdown. Sin explicaciones.
+const SYSTEM = (ctx: string, contacts: string[], project: string, today: string) => `
+Eres Katy, asistente de voz de KokiStyle (gestión de obras en Florida).
+Hablas español. Sé muy concisa: máximo 10 palabras por respuesta.
+Módulo activo: "${ctx}". Proyecto: "${project || "ninguno"}". Hoy: ${today}.
+Contactos disponibles: ${contacts.length ? contacts.join(", ") : "ninguno"}.
 
-Estructura:
-{
-  "action": "<acción>",
-  "data": { <solo los campos que el usuario mencionó explícitamente> }
-}
+ACCIONES Y CAMPOS OBLIGATORIOS:
+update_task_status → task_name, status ("pend"|"prog"|"done")
+create_task        → name
+create_payment     → amount(número), method("Efectivo"|"Zelle"|"Transferencia"|"Cheque"|"Tarjeta"), type("anticipo"|"abono"|"final")
+create_expense     → payee_name, amount(número), concept, method
+create_material    → name, cost(número), supplier
+create_budget_item → description, type("mano"|"material"), amount(número)
+create_contact     → name, specialty, phone
+create_project     → title, client, budget(número), address
 
-Acciones según contexto:
-- dashboard              → "create_project"
-- project.workflow       → "create_task"  (si el usuario pide CREAR una tarea)
-- project.workflow       → "update_task_status"  (si el usuario pide MOVER/PASAR/CAMBIAR el estado de una tarea existente)
-- project.materiales     → "create_material"
-- project.presupuesto    → "create_budget_item"
-- project.pagos.ingresos → "create_payment"
-- project.pagos.egresos  → "create_expense"
-- contactos              → "create_contact"
-- Si el usuario lo dice explícitamente, úsalo aunque no coincida con el contexto.
-- Si no se entiende → "unknown"
+CONVERSIONES:
+- estado: "por hacer/pendiente"→"pend", "en proceso/progreso/proceso"→"prog", "hecho/terminado/listo/done"→"done"
+- monto: "15 mil"→15000, "1.5k"→1500, "quinientos"→500
+- método: "zelle/zelé"→"Zelle", "efectivo/cash"→"Efectivo", "transferencia/banco"→"Transferencia"
+- tipo pago: "anticipo/adelanto/depósito"→"anticipo", "final/último"→"final", "abono"→"abono"
 
-Campos por acción (incluye SOLO los mencionados, omite el resto):
-create_project:     title, client, address, budget(número), start_date(YYYY-MM-DD)
-create_task:        name, assignee_name, hours(número), semanas(número)
-update_task_status: task_name(texto del nombre de la actividad), status("pend"|"prog"|"done")
-create_material:    name, supplier, cost(número)
-create_budget_item: description, type("mano"|"material"), amount(número)
-create_payment:     amount(número), method("Efectivo"|"Zelle"|"Transferencia"|"Cheque"|"Tarjeta"), type("anticipo"|"abono"|"final"), date(YYYY-MM-DD)
-create_expense:     payee_name, concept, amount(número), method, date(YYYY-MM-DD)
-create_contact:     name, specialty, phone, rate(número)
+REGLAS:
+1. "pasar/mover/cambiar/poner en estado" una actividad → update_task_status
+2. Módulo "workflow": "crear/agregar/nueva" → create_task; "mover/pasar/cambiar" → update_task_status
+3. Si ya hay proyecto activo, NO preguntes por el proyecto
+4. Haz UNA sola pregunta a la vez, corta y directa
+5. En cuanto tengas TODOS los campos obligatorios → devuelve acción inmediatamente
+6. Convierte montos en palabras a número automáticamente
 
-Conversión de estado para update_task_status: "por hacer/pendiente"→"pend", "en proceso/progreso"→"prog", "hecho/terminado/listo"→"done".
-
-Conversión numérica: "15 mil"→15000, "8k"→8000, "1,500"→1500.
-Método de pago: "transferencia"→"Transferencia", "zelé/zelle"→"Zelle", "efectivo/cash"→"Efectivo".
-Tipo ingreso: "anticipo/adelanto/depósito"→"anticipo", "final/último"→"final", "abono/pago"→"abono".
-Tipo presupuesto: "mano de obra/instalación/plomería/electricidad"→"mano", "material/gabinetes/pintura"→"material".
+RESPONDE ÚNICAMENTE CON JSON VÁLIDO (sin markdown, sin texto adicional):
+Si necesitas más info: {"type":"question","text":"¿pregunta?"}
+Con toda la info:      {"type":"action","action":"nombre_accion","data":{...campos...}}
 `.trim();
 
-function contextDefault(ctx: string): string {
-  if (ctx.includes("pagos.ingresos"))  return "create_payment";
-  if (ctx.includes("pagos.egresos"))   return "create_expense";
-  if (ctx.includes("workflow"))        return "create_task";
-  if (ctx.includes("materiales"))      return "create_material";
-  if (ctx.includes("presupuesto"))     return "create_budget_item";
-  if (ctx.includes("contactos"))       return "create_contact";
-  return "create_project";
-}
-
 export async function POST(req: NextRequest) {
-  let context = "dashboard";
   try {
     const body = await req.json() as {
-      transcript: string;
+      messages: ApiMsg[];
       context?: string;
       contacts?: string[];
+      projectTitle?: string;
     };
-    context                   = body.context  ?? "dashboard";
-    const transcript          = body.transcript;
-    const contacts            = body.contacts ?? [];
+    const messages     = body.messages     ?? [];
+    const context      = body.context      ?? "dashboard";
+    const contacts     = body.contacts     ?? [];
+    const projectTitle = body.projectTitle ?? "";
 
-    if (!transcript?.trim()) {
-      return NextResponse.json({ action: contextDefault(context), data: {} });
+    if (!messages.length) {
+      return NextResponse.json({ type: "question", text: "¿En qué te ayudo?" });
     }
 
     const { text } = await generateText({
       model: "anthropic/claude-haiku-4.5",
-      system: SYSTEM(context, contacts, TODAY()),
-      prompt: `Usuario dijo: "${transcript}"`,
+      system: SYSTEM(context, contacts, projectTitle, TODAY()),
+      messages: messages.map(m => ({
+        role:    m.role as "user" | "assistant",
+        content: m.content,
+      })),
     });
 
-    // Strip markdown fences if present
-    const raw = text.trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
-
-    // Extract first JSON object found (tolerant parsing)
+    const raw   = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
     const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("no-json: " + raw.slice(0, 100));
+    if (!match) return NextResponse.json({ type: "question", text: "¿Puedes repetirlo?" });
 
     const parsed = JSON.parse(match[0]);
-
-    // If AI returned "unknown", fall back to context — the user clearly said something
-    if (parsed.action === "unknown") {
-      parsed.action = contextDefault(context);
-      parsed._fallback = true;
-    }
-
     return NextResponse.json(parsed);
 
   } catch (err) {
-    console.error("[/api/voice] error:", err instanceof Error ? err.message : err);
-    // Use context as fallback so the client can always proceed to field questions
-    return NextResponse.json({ action: contextDefault(context), data: {}, _fallback: true });
+    console.error("[/api/voice]", err instanceof Error ? err.message : err);
+    return NextResponse.json({ type: "question", text: "No pude procesar. ¿Repites?" });
   }
 }
