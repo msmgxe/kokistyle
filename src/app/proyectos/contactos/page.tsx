@@ -1,16 +1,11 @@
-/**
- * Panel global de Contactos (/proyectos/contactos).
- * Muestra el directorio de especialistas y permite asignarlos a proyectos
- * mediante chips por proyecto en cada tarjeta.
- */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/src/lib/supabase";
 import { initials } from "@/src/lib/utils";
 import type { Contact, Project } from "@/src/types/project";
+import { useLanguage } from "@/src/context/LanguageContext";
 
-// ─── Editor modal ─────────────────────────────────────────────────────────────
 type FieldDef = { key: string; label: string; value: string };
 
 function EditorModal({
@@ -22,6 +17,8 @@ function EditorModal({
   onDelete?: () => void;
   onClose: () => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const [vals, setVals] = useState<Record<string, string>>(
     Object.fromEntries(fields.map((f) => [f.key, f.value]))
   );
@@ -53,15 +50,15 @@ function EditorModal({
           </div>
           <div className="mt-5 flex gap-3">
             <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">
-              Cancelar
+              {tp.common.cancel}
             </button>
             <button onClick={() => setConfirmSave(true)} className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white">
-              Guardar
+              {tp.common.save}
             </button>
           </div>
           {onDelete && (
             <button onClick={() => setConfirmDel(true)} className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-bold text-[#B0492F]">
-              Eliminar contacto
+              {tp.globalContacts.deleteContact}
             </button>
           )}
         </div>
@@ -70,11 +67,11 @@ function EditorModal({
       {confirmSave && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">Confirmar cambios</h3>
-            <p className="mb-5 text-sm text-[#5C6A6E]">¿Guardar los cambios?</p>
+            <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">{tp.common.confirmChanges}</h3>
+            <p className="mb-5 text-sm text-[#5C6A6E]">{tp.common.confirmSaveQ}</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmSave(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
-              <button onClick={() => { setConfirmSave(false); onSave(vals); onClose(); }} className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white">Guardar</button>
+              <button onClick={() => setConfirmSave(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
+              <button onClick={() => { setConfirmSave(false); onSave(vals); onClose(); }} className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white">{tp.common.save}</button>
             </div>
           </div>
         </div>
@@ -83,11 +80,11 @@ function EditorModal({
       {confirmDel && onDelete && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">Eliminar contacto</h3>
-            <p className="mb-5 text-sm text-[#5C6A6E]">Esta acción no se puede deshacer.</p>
+            <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">{tp.globalContacts.deleteContact}</h3>
+            <p className="mb-5 text-sm text-[#5C6A6E]">{tp.globalContacts.deleteBody}</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
-              <button onClick={() => { setConfirmDel(false); onDelete(); onClose(); }} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">Eliminar</button>
+              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
+              <button onClick={() => { setConfirmDel(false); onDelete(); onClose(); }} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">{tp.common.delete}</button>
             </div>
           </div>
         </div>
@@ -96,7 +93,6 @@ function EditorModal({
   );
 }
 
-// ─── Página principal ──────────────────────────────────────────────────────────
 export default function ContactosPage() {
   const [contacts, setContacts]       = useState<Contact[]>([]);
   const [projects, setProjects]       = useState<Project[]>([]);
@@ -104,6 +100,8 @@ export default function ContactosPage() {
   const [editor, setEditor]           = useState<{ contact?: Contact } | null>(null);
   const [toast, setToast]             = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const { t } = useLanguage();
+  const tp = t.panel;
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -142,47 +140,47 @@ export default function ContactosPage() {
       await supabase.from("project_contacts").insert({ contact_id: contactId, project_id: projectId });
     }
     await fetchAll();
-    showToast(isOn ? "Quitado del proyecto." : "Asignado al proyecto.");
+    showToast(isOn ? tp.globalContacts.removed : tp.globalContacts.assigned);
   };
 
   const contactFields = (c?: Contact): FieldDef[] => [
-    { key: "name",      label: "Nombre",       value: c?.name      ?? "" },
-    { key: "specialty", label: "Especialidad",  value: c?.specialty ?? "" },
-    { key: "phone",     label: "Teléfono",      value: c?.phone     ?? "" },
-    { key: "rate",      label: "Tarifa",        value: c?.rate      ?? "" },
+    { key: "name",      label: tp.globalContacts.name,      value: c?.name      ?? "" },
+    { key: "specialty", label: tp.globalContacts.specialty,  value: c?.specialty ?? "" },
+    { key: "phone",     label: tp.globalContacts.phone,      value: c?.phone     ?? "" },
+    { key: "rate",      label: tp.globalContacts.rate,       value: c?.rate      ?? "" },
   ];
 
   const saveContact = async (id: string | undefined, vals: Record<string, string>) => {
     if (id) {
       await supabase.from("contacts").update(vals).eq("id", id);
-      showToast("Contacto actualizado.");
+      showToast(tp.globalContacts.contactUpdated);
     } else {
       await supabase.from("contacts").insert(vals);
-      showToast("Contacto agregado.");
+      showToast(tp.globalContacts.contactAdded);
     }
     fetchAll();
   };
 
   const deleteContact = async (id: string) => {
     await supabase.from("contacts").delete().eq("id", id);
-    showToast("Contacto eliminado.");
+    showToast(tp.globalContacts.contactDeleted);
     fetchAll();
   };
 
-  const shortTitle = (t: string) => t.split(" — ")[0];
+  const shortTitle = (title: string) => title.split(" — ")[0];
 
   return (
     <div className="animate-in fade-in duration-300">
       <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">Contactos</h1>
+        <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">{tp.globalContacts.title}</h1>
         <p className="mt-1 text-sm text-[#B1C9EF]">
-          Directorio de especialistas. Toca un proyecto para asignar o quitar.
+          {tp.globalContacts.subtitle}
         </p>
       </div>
 
       {contacts.length === 0 ? (
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
-          Sin contactos todavía. Agrega el primero.
+          {tp.globalContacts.noContacts}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -193,12 +191,10 @@ export default function ContactosPage() {
                 key={c.id}
                 className="flex items-start gap-4 rounded-2xl border border-[#E6DDCB] bg-white p-4 shadow-sm"
               >
-                {/* Avatar */}
                 <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] font-[Manrope] text-sm font-bold text-white">
                   {initials(c.name)}
                 </span>
 
-                {/* Info + project chips */}
                 <div className="min-w-0 flex-1">
                   <button
                     onClick={() => setEditor({ contact: c })}
@@ -208,7 +204,6 @@ export default function ContactosPage() {
                   </button>
                   <div className="text-xs text-[#5C6A6E]">{c.specialty} · {c.rate}</div>
 
-                  {/* Chips de proyectos */}
                   {projects.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {projects.map((p) => {
@@ -231,13 +226,12 @@ export default function ContactosPage() {
                   )}
                 </div>
 
-                {/* Acciones */}
                 <div className="flex flex-col items-end gap-2">
                   <a
                     href={`tel:${c.phone}`}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-[#DCEBDD] px-3 py-2 text-xs font-bold text-[#4F8A63]"
                   >
-                    📞 Llamar
+                    {tp.globalContacts.call}
                   </a>
                   <button
                     onClick={() => setEditor({ contact: c })}
@@ -253,18 +247,16 @@ export default function ContactosPage() {
         </div>
       )}
 
-      {/* Botón agregar */}
       <button
         onClick={() => setEditor({})}
         className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
       >
-        + Agregar contacto
+        {tp.globalContacts.add}
       </button>
 
-      {/* Editor modal */}
       {editor !== null && (
         <EditorModal
-          title={editor.contact ? "Editar contacto" : "Nuevo contacto"}
+          title={editor.contact ? tp.globalContacts.editContact : tp.globalContacts.newContact}
           fields={contactFields(editor.contact)}
           onSave={(vals) => saveContact(editor.contact?.id, vals)}
           onDelete={editor.contact ? () => deleteContact(editor.contact!.id) : undefined}
@@ -272,7 +264,6 @@ export default function ContactosPage() {
         />
       )}
 
-      {/* Toast */}
       <div
         className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}
       >

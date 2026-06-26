@@ -1,8 +1,3 @@
-/**
- * Dashboard principal de proyectos (/proyectos).
- * Muestra KPIs globales del portafolio y tarjetas de cada proyecto.
- * Al hacer clic en una tarjeta se navega al detalle del proyecto.
- */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -17,7 +12,6 @@ import {
   cashFlow,
   paymentPct,
   advancePct,
-  STATUS_LABELS,
 } from "@/src/lib/utils";
 import type { Project, Payment, Expense, Task } from "@/src/types/project";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
@@ -25,15 +19,14 @@ import UsersPanel from "@/src/components/ui/UsersPanel";
 import AdminSettings from "@/src/components/ui/AdminSettings";
 import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
+import { useLanguage } from "@/src/context/LanguageContext";
 
-// ─── Tipos auxiliares con relaciones ───────────────────────────────────────
 interface ProjectWithData extends Project {
   payments: Payment[];
   expenses: Expense[];
   tasks: Task[];
 }
 
-// ─── Componente KPI card ────────────────────────────────────────────────────
 function KpiCard({
   label,
   value,
@@ -63,25 +56,26 @@ function KpiCard({
   );
 }
 
-// ─── Chip de estado del proyecto ────────────────────────────────────────────
 function StatusChip({ status }: { status: string }) {
+  const { t } = useLanguage();
   const styles: Record<string, string> = {
     presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
     aprobado: "bg-[#DCE8E9] text-[#4E7A82]",
     en_obra: "bg-[#EDE3CF] text-[#7A6230]",
     terminado: "bg-[#DCEBDD] text-[#4F8A63]",
   };
+  const statusLabels = t.panel.status;
+  const label = statusLabels[status as keyof typeof statusLabels] ?? status;
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${styles[status] ?? "bg-gray-100 text-gray-600"}`}
     >
       <span className="size-1.5 rounded-full bg-current" />
-      {STATUS_LABELS[status] ?? status}
+      {label}
     </span>
   );
 }
 
-// ─── Barra de progreso ──────────────────────────────────────────────────────
 function ProgressBar({
   label,
   pct,
@@ -109,8 +103,9 @@ function ProgressBar({
   );
 }
 
-// ─── Tarjeta de proyecto ────────────────────────────────────────────────────
 function ProjectCard({ project }: { project: ProjectWithData }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const inc = totalIncome(project.payments);
   const adv = advancePct(project.tasks);
   const pp = paymentPct(project.budget, project.payments);
@@ -122,7 +117,6 @@ function ProjectCard({ project }: { project: ProjectWithData }) {
       className="block rounded-[18px] border border-[#E6DDCB] bg-white p-[17px] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
       aria-label={`Ver detalle de ${project.title}`}
     >
-      {/* Header */}
       <div className="mb-3 flex items-start justify-between gap-2">
         <StatusChip status={project.status} />
         <span className="font-mono text-[17px] font-semibold text-[#16323D]">
@@ -130,7 +124,6 @@ function ProjectCard({ project }: { project: ProjectWithData }) {
         </span>
       </div>
 
-      {/* Title */}
       <h3 className="font-[Manrope] text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
         {project.title}
       </h3>
@@ -143,16 +136,15 @@ function ProjectCard({ project }: { project: ProjectWithData }) {
         {project.address}
       </div>
 
-      {/* Barras de progreso */}
       <div className="mt-4 flex flex-col gap-2.5">
         <ProgressBar
-          label="Avance"
+          label={tp.dashboard.progress}
           pct={adv}
           valueLabel={`${adv}%`}
           color="bg-gradient-to-r from-[#4E7A82] to-[#5e8c94]"
         />
         <ProgressBar
-          label="Cobrado"
+          label={tp.dashboard.collected}
           pct={pp}
           valueLabel={`${money(inc)} / ${money(project.budget)}`}
           color={paid ? "bg-[#4F8A63]" : "bg-gradient-to-r from-[#4F8A63] to-[#63a079]"}
@@ -162,7 +154,6 @@ function ProjectCard({ project }: { project: ProjectWithData }) {
   );
 }
 
-// ─── Página principal del Dashboard ────────────────────────────────────────
 export default function DashboardPage() {
   const [projects, setProjects] = useState<ProjectWithData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,6 +163,8 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<string | null>(null);
   const { setMeta } = useVoice();
   const { currentUser, isSuperAdmin, hasPermission } = useAuth();
+  const { t } = useLanguage();
+  const tp = t.panel;
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -183,7 +176,6 @@ export default function DashboardPage() {
     setLoading(true);
 
     if (isSuperAdmin) {
-      // Superadmin ve todos los proyectos
       const { data, error } = await supabase
         .from("projects")
         .select(`*, payments(*), expenses(*), tasks(*)`)
@@ -191,7 +183,6 @@ export default function DashboardPage() {
       if (error) { setError("Error al cargar los proyectos."); }
       else        { setProjects(data as ProjectWithData[]); }
     } else {
-      // Colaborador ve solo proyectos asignados
       const { data: access } = await supabase
         .from("user_project_access")
         .select("project_id")
@@ -213,19 +204,16 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  // Registrar contexto de voz para que el FAB sepa que estamos en el dashboard
   useEffect(() => {
     setMeta({ context: "dashboard" });
   }, [setMeta]);
 
-  // Refrescar datos cuando el VoiceFAB guarda algo
   useEffect(() => {
     const handler = () => fetchData();
     window.addEventListener("kokivoice_saved", handler);
     return () => window.removeEventListener("kokivoice_saved", handler);
   }, [fetchData]);
 
-  // ── Métricas globales del portafolio ──────────────────────────────────────
   const allPayments = projects.flatMap((p) => p.payments);
   const allExpenses = projects.flatMap((p) => p.expenses);
   const totalBudget = projects.reduce((s, p) => s + p.budget, 0);
@@ -262,31 +250,28 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      {/* Blue header */}
       <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
         <h1 className="font-[Manrope] text-[22px] font-extrabold leading-tight tracking-tight text-white">
-          Hola, {currentUser?.name ?? ""}
+          {tp.dashboard.greeting}, {currentUser?.name ?? ""}
         </h1>
         <p className="mt-1 text-sm text-[#B1C9EF]">
-          {isSuperAdmin ? "Panel de administración" : "Tus proyectos asignados"} · avance promedio {avgAdv}%
+          {isSuperAdmin ? tp.dashboard.adminPanel : tp.dashboard.assignedProjects} · {tp.dashboard.avgProgress} {avgAdv}%
         </p>
       </div>
 
-      {/* KPIs globales — financieros solo si tiene permiso pagos */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Proyectos" value={projects.length} sub="activos" />
-        <KpiCard label="Presupuestado" value={money(totalBudget)} sub="total contratado" />
+        <KpiCard label={tp.dashboard.kpiProjects}    value={projects.length}   sub={tp.dashboard.kpiActive} />
+        <KpiCard label={tp.dashboard.kpiBudgeted}    value={money(totalBudget)} sub={tp.dashboard.kpiTotalContracted} />
         {canSeePagos && <>
-          <KpiCard label="Ingresos"      value={money(totalInc)}  sub="cobrado a clientes"     variant="up"   />
-          <KpiCard label="Egresos"       value={money(totalExp)}  sub="pagado a especialistas"  variant="down" />
-          <KpiCard label="Por cobrar"    value={money(totalDue)}  sub="saldo de clientes"                      />
-          <KpiCard label="Caja (ing − egr)" value={money(cashFlow(allPayments, allExpenses))} sub="flujo neto" variant="up" />
+          <KpiCard label={tp.dashboard.kpiIncome}      value={money(totalInc)}  sub={tp.dashboard.kpiCollected}     variant="up"   />
+          <KpiCard label={tp.dashboard.kpiExpenses}    value={money(totalExp)}  sub={tp.dashboard.kpiPaid}          variant="down" />
+          <KpiCard label={tp.dashboard.kpiOutstanding} value={money(totalDue)}  sub={tp.dashboard.kpiClientBalance}                />
+          <KpiCard label={tp.dashboard.kpiCashFlow}    value={money(cashFlow(allPayments, allExpenses))} sub={tp.dashboard.kpiNetFlow} variant="up" />
         </>}
       </div>
 
-      {/* Lista de proyectos */}
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">Proyectos</h2>
+        <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">{tp.dashboard.projectsTitle}</h2>
         {canCreateProj && (
           <button
             id="add-project-btn"
@@ -294,14 +279,14 @@ export default function DashboardPage() {
             onClick={() => { setVoicePrefill(null); setShowModal(true); }}
           >
             <Plus size={14} />
-            Nuevo proyecto
+            {tp.dashboard.newProject}
           </button>
         )}
       </div>
 
       {projects.length === 0 ? (
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-12 text-center text-sm text-[#5C6A6E]">
-          {isSuperAdmin ? "No hay proyectos aún. Crea el primero." : "No tienes proyectos asignados aún."}
+          {isSuperAdmin ? tp.dashboard.noProjectsAdmin : tp.dashboard.noProjectsUser}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -311,28 +296,25 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Panel de equipo y configuración — solo superadmin */}
       {isSuperAdmin && (
         <>
           <UsersPanel projects={projects} />
           <div className="mt-8">
             <div className="mb-4">
-              <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">Seguridad</h2>
-              <p className="text-[11px] text-[#97A1A0]">Cambia tu PIN y configura la recuperación por correo</p>
+              <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">{tp.dashboard.security}</h2>
+              <p className="text-[11px] text-[#97A1A0]">{tp.dashboard.securityDesc}</p>
             </div>
             <AdminSettings />
           </div>
         </>
       )}
 
-      {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-[#16323D] px-5 py-3 text-sm font-semibold text-white shadow-xl">
           {toast}
         </div>
       )}
 
-      {/* Modal nuevo proyecto */}
       {showModal && (
         <ProjectFormModal
           initialValues={voicePrefill ?? undefined}

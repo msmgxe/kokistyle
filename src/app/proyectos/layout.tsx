@@ -7,9 +7,25 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
 import VoiceFAB from "@/src/components/ui/VoiceFAB";
+import { useLanguage } from "@/src/context/LanguageContext";
+
+function LangSwitch() {
+  const { language, setLanguage } = useLanguage();
+  return (
+    <div className="flex rounded-lg border border-[#D5DEEF] bg-[#F0F3FA] p-0.5">
+      {(["en", "es"] as const).map((l) => (
+        <button key={l} onClick={() => setLanguage(l)}
+          className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide transition ${language === l ? "bg-[#395886] text-white" : "text-[#628ECB] hover:text-[#395886]"}`}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function ProyectosLayout({ children }: { children: React.ReactNode }) {
   const { isAdmin, logout } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
 
   useEffect(() => {
@@ -38,24 +54,26 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               </span>
               <span>
                 <span className="block text-base font-bold leading-none text-[#16323D]">KokiStyle</span>
-                <span className="mt-0.5 block text-[10px] uppercase tracking-[0.22em] text-[#5C6A6E]">Panel</span>
+                <span className="mt-0.5 block text-[10px] uppercase tracking-[0.22em] text-[#5C6A6E]">{t.panel.nav.panelLabel}</span>
               </span>
             </Link>
 
             <nav className="flex flex-1 gap-1 overflow-x-auto [scrollbar-width:none]">
-              <PanelTab href="/proyectos" label="Dashboard" />
-              <PanelTab href="/proyectos/contactos" label="Contactos" />
-              <PanelTab href="/proyectos/plan" label="Plan" />
+              <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
+              <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
+              <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
             </nav>
+
+            <LangSwitch />
 
             <button
               id="panel-logout-btn"
               onClick={logout}
               className="inline-flex flex-none items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1]"
-              aria-label="Cerrar sesión"
+              aria-label={t.panel.nav.signOut}
             >
               <LogOut size={14} />
-              Salir
+              {t.panel.nav.signOut}
             </button>
           </div>
         </nav>

@@ -5,8 +5,8 @@ import { Mic, X, Loader2, CheckCircle } from "lucide-react";
 import { useVoice } from "@/src/context/VoiceContext";
 import type { VoiceMeta } from "@/src/context/VoiceContext";
 import { supabase } from "@/src/lib/supabase";
+import { useLanguage } from "@/src/context/LanguageContext";
 
-// ── Types ──────────────────────────────────────────────────────────────────
 type Phase  = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error";
 type ApiMsg = { role: "user" | "assistant"; content: string };
 interface Msg { role: "user" | "assistant"; text: string; }
@@ -17,24 +17,17 @@ const IS_ANDROID = () => typeof navigator !== "undefined" && /Android/i.test(nav
 function fmt(n: number) { return "$" + n.toLocaleString("en-US"); }
 function norm(s: string) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
 
-// ── Local intent fallback ──────────────────────────────────────────────────
 function localDetect(text: string, context: string): string {
   const t = norm(text);
-  // Status change — detect BEFORE "tarea/actividad" keywords
-  // Matches: pasala, pasar, pásala, moverla, mover, cambiar + state word
   if (/\bpas[ao]r?|mover?|cambiar?/.test(t) && /\bproceso|hecho|hacer|estado/.test(t)) return "update_task_status";
-  // Payment keywords
   if (/\bpago|ingreso|cobr|recib/.test(t))        return "create_payment";
   if (/\begreso|gasto|gaste|pague|compre/.test(t)) return "create_expense";
-  // Context-based (inside a project tab) — BEFORE keyword-only fallbacks
-  // so "create_project" is never the fallback when inside a project
   if (context.includes("pagos.ingresos"))  return "create_payment";
   if (context.includes("pagos.egresos"))   return "create_expense";
   if (context.includes("workflow"))        return "create_task";
   if (context.includes("materiales"))      return "create_material";
   if (context.includes("presupuesto"))     return "create_budget_item";
   if (context.includes("contactos"))       return "create_contact";
-  // Keyword fallbacks — mainly for dashboard
   if (/\bproyecto|obra|remodelaci/.test(t))    return "create_project";
   if (/\btarea|actividad|labor/.test(t))        return "create_task";
   if (/\bmaterial|suministro/.test(t))          return "create_material";
@@ -50,7 +43,6 @@ const ACTION_LABELS: Record<string, string> = {
   create_contact: "contacto",       update_task_status: "cambio de estado",
 };
 
-// ── Editable fields shown in confirm phase ─────────────────────────────────
 const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "text" | "number" | "date" }>> = {
   create_project:     [{ key:"title", label:"Nombre", type:"text" }, { key:"client", label:"Cliente", type:"text" }, { key:"budget", label:"Presupuesto", type:"number" }, { key:"address", label:"Dirección", type:"text" }],
   create_payment:     [{ key:"amount", label:"Monto", type:"number" }, { key:"method", label:"Método", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"date", label:"Fecha", type:"date" }],
@@ -62,7 +54,6 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
   update_task_status: [{ key:"task_name", label:"Actividad", type:"text" }, { key:"status", label:"Estado", type:"text" }],
 };
 
-// ── Supabase direct save ───────────────────────────────────────────────────
 async function saveAction(action: string, data: Record<string, unknown>, meta: VoiceMeta): Promise<string> {
   const pid  = meta.projectId;
   const date = String(data.date ?? TODAY());
@@ -156,7 +147,6 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
   }
 }
 
-// ── Web Speech API types ───────────────────────────────────────────────────
 interface SR extends EventTarget {
   lang: string; continuous: boolean; interimResults: boolean; maxAlternatives: number;
   start(): void; stop(): void; abort(): void;
@@ -173,7 +163,6 @@ declare global {
   }
 }
 
-// ── TTS ───────────────────────────────────────────────────────────────────
 let _voicesLoaded = false;
 function loadVoices(): Promise<void> {
   if (_voicesLoaded) return Promise.resolve();
@@ -184,11 +173,17 @@ function loadVoices(): Promise<void> {
     setTimeout(() => { if (!_voicesLoaded) { _voicesLoaded = true; resolve(); } }, 800);
   });
 }
-function pickVoice(): SpeechSynthesisVoice | null {
-  const vs   = window.speechSynthesis.getVoices();
-  const prefs = ["Paulina","Mónica","Monica","Luciana","Penélope","Penelope",
-                 "Google español de Estados Unidos","Google español"];
-  for (const p of prefs) { const v = vs.find(v => v.name.includes(p)); if (v) return v; }
+
+function pickVoice(lang: "en" | "es"): SpeechSynthesisVoice | null {
+  const vs = window.speechSynthesis.getVoices();
+  if (lang === "en") {
+    const enPrefs = ["Samantha", "Google US English", "Karen", "Victoria"];
+    for (const p of enPrefs) { const v = vs.find(v => v.name.includes(p)); if (v) return v; }
+    return vs.find(v => v.lang.startsWith("en")) ?? null;
+  }
+  const esPrefs = ["Paulina","Mónica","Monica","Luciana","Penélope","Penelope",
+                   "Google español de Estados Unidos","Google español"];
+  for (const p of esPrefs) { const v = vs.find(v => v.name.includes(p)); if (v) return v; }
   return vs.find(v => v.lang.startsWith("es")) ?? null;
 }
 
@@ -202,16 +197,16 @@ async function primeMic(): Promise<void> {
   } catch { /* permission denied or already active */ }
 }
 
-async function tts(text: string): Promise<void> {
+async function tts(text: string, lang: "en" | "es"): Promise<void> {
   if (!("speechSynthesis" in window)) return;
   await loadVoices();
   window.speechSynthesis.cancel();
   await new Promise<void>((resolve) => {
     const utt  = new SpeechSynthesisUtterance(text);
-    utt.lang   = "es-US";
+    utt.lang   = lang === "en" ? "en-US" : "es-US";
     utt.rate   = 1.0;
     utt.pitch  = 1.1;
-    const voice = pickVoice();
+    const voice = pickVoice(lang);
     if (voice) utt.voice = voice;
     utt.onend   = () => { primeMic().then(() => setTimeout(resolve, IS_ANDROID() ? 1200 : 600)); };
     utt.onerror = () => setTimeout(resolve, 300);
@@ -219,20 +214,14 @@ async function tts(text: string): Promise<void> {
   });
 }
 
-// ── Speech recognition ─────────────────────────────────────────────────────
-/**
- * 1200 ms silence timeout (vs previous 2000 ms) for faster conversation feel.
- * On Android: isFinal rarely fires → silence timer triggers resolution.
- * Hard timeout: 10 s.
- */
-function listenOnce(recRef: { current: SR | null }): Promise<string> {
+function listenOnce(recRef: { current: SR | null }, lang: "en" | "es"): Promise<string> {
   return new Promise((resolve, reject) => {
     const SRClass = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!SRClass) { reject(new Error("unsupported")); return; }
 
     const rec = new SRClass();
     const android = IS_ANDROID();
-    rec.lang            = android ? "es" : "es-US";
+    rec.lang            = android ? lang : `${lang}-US`;
     rec.continuous      = !android;
     rec.interimResults  = true;
     rec.maxAlternatives = 1;
@@ -261,7 +250,6 @@ function listenOnce(recRef: { current: SR | null }): Promise<string> {
       if (all.some(r => r.isFinal) && text) {
         finish(text);
       } else if (text) {
-        // 1200 ms silence → resolve (faster than previous 2000 ms)
         silenceT = setTimeout(() => finish(best || null), 1200);
       }
     };
@@ -278,7 +266,6 @@ function listenOnce(recRef: { current: SR | null }): Promise<string> {
   });
 }
 
-// ── Summary builder ────────────────────────────────────────────────────────
 function buildSummary(action: string, data: Record<string, unknown>): string {
   switch (action) {
     case "create_payment":     return `${data.type ?? ""} de ${fmt(Number(data.amount ?? 0))} por ${data.method ?? ""}`;
@@ -293,11 +280,12 @@ function buildSummary(action: string, data: Record<string, unknown>): string {
   }
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
 export default function VoiceFAB() {
   const { meta } = useVoice();
   const metaRef  = useRef(meta);
   useEffect(() => { metaRef.current = meta; }, [meta]);
+
+  const { language, t } = useLanguage();
 
   const [phase,         setPhase]         = useState<Phase>("idle");
   const [messages,      setMessages]      = useState<Msg[]>([]);
@@ -318,7 +306,6 @@ export default function VoiceFAB() {
     msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ── helpers ───────────────────────────────────────────────────────────────
   const push = useCallback((role: Msg["role"], text: string) => {
     setMessages(prev => [...prev, { role, text }]);
   }, []);
@@ -327,24 +314,23 @@ export default function VoiceFAB() {
     if (!activeRef.current) return false;
     setPhase("speaking");
     push("assistant", text);
-    await tts(text);
+    await tts(text, language);
     return activeRef.current;
-  }, [push]);
+  }, [push, language]);
 
   const listen = useCallback(async (): Promise<string | null> => {
     if (!activeRef.current) return null;
     setPhase("listening");
-    // primeMic is now called inside tts() after each utterance
     if (!activeRef.current) return null;
     try {
-      return await listenOnce(recRef);
+      return await listenOnce(recRef, language);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       if (msg === "no-speech") return "";
       console.error("[Katy]", msg);
       return null;
     }
-  }, []);
+  }, [language]);
 
   const closeClean = useCallback(() => {
     activeRef.current  = false;
@@ -368,7 +354,6 @@ export default function VoiceFAB() {
     setPhase("error");
   }, []);
 
-  // ── Confirm → save with editableData ────────────────────────────────────
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
     setPhase("saving");
@@ -381,59 +366,56 @@ export default function VoiceFAB() {
       }));
       setTimeout(closeClean, 2500);
     } catch (e) {
-      showError(e instanceof Error ? e.message : "Error al guardar. Intenta de nuevo.");
+      showError(e instanceof Error ? e.message : t.panel.voice.errorSaving);
     }
-  }, [pendingAction, editableData, closeClean, showError]);
+  }, [pendingAction, editableData, closeClean, showError, t]);
 
-  // ── Main conversation flow (Claude-driven) ──────────────────────────────
   const start = useCallback(() => {
     if (phase !== "idle" || startedRef.current) return;
     startedRef.current = true;
     activeRef.current  = true;
     setMessages([]); setPendingAction(null); setEditableData({}); setStatusMsg("");
 
-    const OPENERS: Record<string, string> = {
-      "project.workflow":       "¿Qué hacemos?",
-      "project.materiales":     "¿Qué material?",
-      "project.pagos.ingresos": "¿Cuánto recibiste?",
-      "project.pagos.egresos":  "¿A quién pagaste?",
-      "project.presupuesto":    "¿Qué partida?",
-      "project.contactos":      "¿Nombre del especialista?",
-    };
+    const tpVoice = t.panel.voice;
 
     (async () => {
-      // ① Permission check
       try {
         const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-        s.getTracks().forEach(t => t.stop());
+        s.getTracks().forEach(track => track.stop());
       } catch {
-        showError("Sin permiso de micrófono. Actívalo en ajustes del navegador.");
+        showError(tpVoice.noMic);
         return;
       }
 
       const ctx      = metaRef.current.context;
       const apiHist: ApiMsg[] = [];
 
-      // ② Short contextual opener
-      const opener = OPENERS[ctx] ?? "¿En qué te ayudo?";
+      const OPENERS: Record<string, string> = {
+        "project.workflow":       tpVoice.openerWorkflow,
+        "project.materiales":     tpVoice.openerMaterials,
+        "project.pagos.ingresos": tpVoice.openerIncome,
+        "project.pagos.egresos":  tpVoice.openerExpenses,
+        "project.presupuesto":    tpVoice.openerBudget,
+        "project.contactos":      tpVoice.openerContacts,
+      };
+
+      const opener = OPENERS[ctx] ?? tpVoice.openerDefault;
       apiHist.push({ role: "assistant", content: opener });
       const alive = await say(opener);
       if (!alive) return;
 
-      // ③ First user input
       let userInput = await listen();
-      if (userInput === null) { showError("No pude acceder al micrófono. Intenta de nuevo."); return; }
+      if (userInput === null) { showError(tpVoice.noMicAccess); return; }
       if (!userInput) {
-        const a2 = await say("No te escuché. Habla ahora.");
+        const a2 = await say(tpVoice.didntHear);
         if (!a2) return;
         userInput = await listen();
-        if (!userInput) { await say("Cuando estés listo, toca el micrófono."); closeClean(); return; }
+        if (!userInput) { await say(tpVoice.whenReady); closeClean(); return; }
       }
       push("user", userInput);
       apiHist.push({ role: "user", content: userInput });
       if (!activeRef.current) return;
 
-      // ④ Claude-driven conversation loop
       const converse = async (): Promise<void> => {
         if (!activeRef.current) return;
         setPhase("thinking");
@@ -450,6 +432,7 @@ export default function VoiceFAB() {
               context:      ctx,
               contacts:     metaRef.current.contacts     ?? [],
               projectTitle: metaRef.current.projectTitle ?? "",
+              language,
             }),
             signal: ctrl.signal,
           });
@@ -461,7 +444,6 @@ export default function VoiceFAB() {
         }
 
         if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
-          // ⑤ Ready → show confirm
           const action = result.action;
           const data: Record<string, unknown> = { ...result.data };
           if (!data.date) data.date = TODAY();
@@ -477,7 +459,6 @@ export default function VoiceFAB() {
           setPhase("confirm");
 
         } else {
-          // ⑤ Claude asks a question
           const question = result.text ?? "¿Algo más?";
           apiHist.push({ role: "assistant", content: question });
           const stillAlive = await say(question);
@@ -504,11 +485,10 @@ export default function VoiceFAB() {
       if (activeRef.current) showError("Error inesperado. Toca para reintentar.");
       else startedRef.current = false;
     });
-  }, [phase, say, listen, push, closeClean, showError]);
+  }, [phase, say, listen, push, closeClean, showError, language, t]);
 
   if (!supported) return null;
 
-  // ── UI ────────────────────────────────────────────────────────────────────
   const headerLabel: Record<Phase, string> = {
     idle: "", listening: "Escuchando…", thinking: "Procesando…",
     speaking: `${ASSISTANT} habla…`, confirm: "Revisa y confirma",
@@ -536,7 +516,6 @@ export default function VoiceFAB() {
       {phase !== "idle" && (
         <div className="fixed bottom-24 right-4 z-[150] flex w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl">
 
-          {/* Header */}
           <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#F7F3EA] px-4 py-3">
             <div className="flex items-center gap-2">
               <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotCls[phase]}`} />
@@ -551,7 +530,6 @@ export default function VoiceFAB() {
             )}
           </div>
 
-          {/* Messages */}
           <div className="flex max-h-[220px] flex-col gap-2 overflow-y-auto p-3">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -585,7 +563,6 @@ export default function VoiceFAB() {
             <div ref={msgEndRef} />
           </div>
 
-          {/* Listening bar */}
           {phase === "listening" && (
             <div className="flex items-center justify-center gap-1.5 border-t border-[#E6DDCB] bg-[#FFF5F5] py-3 px-4">
               {[10,16,13,18,11].map((h,i) => (
@@ -596,7 +573,6 @@ export default function VoiceFAB() {
             </div>
           )}
 
-          {/* Speaking bar */}
           {phase === "speaking" && (
             <div className="flex items-center justify-center gap-2 border-t border-[#E6DDCB] bg-[#F0F7F5] py-2.5">
               <Loader2 size={13} className="animate-spin text-[#4F8A63]" />
@@ -604,7 +580,6 @@ export default function VoiceFAB() {
             </div>
           )}
 
-          {/* ── Confirm: editable fields + buttons ── */}
           {phase === "confirm" && pendingAction && (
             <div className="max-h-[280px] overflow-y-auto border-t border-[#E6DDCB] p-3">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">
@@ -652,7 +627,6 @@ export default function VoiceFAB() {
             </div>
           )}
 
-          {/* Success */}
           {phase === "success" && (
             <div className="flex items-center gap-2 border-t border-[#E6DDCB] bg-[#F0F9F3] px-4 py-3">
               <CheckCircle size={16} className="shrink-0 text-[#4F8A63]" />
@@ -660,7 +634,6 @@ export default function VoiceFAB() {
             </div>
           )}
 
-          {/* Error */}
           {phase === "error" && (
             <div className="flex flex-col gap-2 border-t border-[#E6DDCB] p-3">
               <p className="rounded-lg bg-[#FFF0EE] px-3 py-2 text-sm text-[#B0492F]">{statusMsg}</p>
@@ -673,7 +646,6 @@ export default function VoiceFAB() {
         </div>
       )}
 
-      {/* FAB */}
       <button
         type="button"
         onClick={phase === "idle" ? start : undefined}

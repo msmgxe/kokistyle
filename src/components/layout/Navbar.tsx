@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, Lock } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { branding } from "@/src/config/branding";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -110,25 +110,22 @@ export default function Navbar() {
             id="navbar-admin-btn"
             type="button"
             onClick={() => setAdminOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#7B1838] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#641430] active:scale-95"
-            aria-label="Acceso administrador"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] px-4 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF] hover:text-[#395886]"
+            aria-label="Login"
           >
-            <Lock size={14} />
-            Admin
+            Login
           </button>
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
           <MobileLanguageSwitch />
-          {/* Admin visible directo en la barra móvil */}
           <button
             type="button"
             onClick={() => setAdminOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#7B1838] px-3 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#641430] active:scale-95"
-            aria-label="Acceso administrador"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] px-3 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF]"
+            aria-label="Login"
           >
-            <Lock size={14} />
-            Admin
+            Login
           </button>
           <button
             type="button"
@@ -176,17 +173,15 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); setAdminOpen(true); }}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#7B1838] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#641430] active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] px-4 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF] hover:text-[#395886]"
               >
-                <Lock size={14} />
-                Admin
+                Login
               </button>
             </div>
           </Container>
         </div>
       ) : null}
 
-      {/* Modal de acceso administrador */}
       <AdminModal isOpen={adminOpen} onClose={() => setAdminOpen(false)} />
     </nav>
   );

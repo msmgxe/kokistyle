@@ -38,7 +38,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
 import {
   money, dateFmt, totalIncome, totalExpense, balanceDue, cashFlow,
-  addDays, dShort, initials, STATUS_LABELS, PAYMENT_TYPE_LABELS,
+  addDays, dShort, initials,
 } from "@/src/lib/utils";
 import { exportCotizacion, exportEstadoCuenta } from "@/src/lib/pdf";
 import type {
@@ -46,6 +46,7 @@ import type {
 } from "@/src/types/project";
 import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
+import { useLanguage } from "@/src/context/LanguageContext";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface ProjectFull extends Project {
@@ -61,22 +62,14 @@ interface ProjectFull extends Project {
 type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "pagos" | "plan" | "notas";
 type PaySubTab = "ingresos" | "egresos";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "plan",        label: "Plan" },
-  { id: "workflow",    label: "Workflow" },
-  { id: "presupuesto", label: "Presupuesto" },
-  { id: "pagos",       label: "Pagos" },
-  { id: "materiales",  label: "Materiales" },
-  { id: "contactos",   label: "Contactos" },
-  { id: "notas",       label: "Notas 📎" },
-];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function StatusChipOnBlue({ status }: { status: string }) {
+  const { t } = useLanguage();
+  const statusLabels = t.panel.status;
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white">
       <span className="size-1.5 rounded-full bg-white/70" />
-      {STATUS_LABELS[status] ?? status}
+      {statusLabels[status as keyof typeof statusLabels] ?? status}
     </span>
   );
 }
@@ -252,10 +245,10 @@ const dropAnimation = {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: WORKFLOW (Kanban con DnD en cada columna y entre columnas)
 // ═══════════════════════════════════════════════════════════════════════════════
-const KANBAN_COLS = [
-  { key: "pend", name: "Por hacer",  color: "#D7CBB3" },
-  { key: "prog", name: "En proceso", color: "#4E7A82" },
-  { key: "done", name: "Hecho",      color: "#4F8A63" },
+const KANBAN_COLS_BASE = [
+  { key: "pend", color: "#D7CBB3" },
+  { key: "prog", color: "#4E7A82" },
+  { key: "done", color: "#4F8A63" },
 ] as const;
 
 type KanbanStatus = "pend" | "prog" | "done";
@@ -263,11 +256,13 @@ type KanbanStatus = "pend" | "prog" | "done";
 function DroppableKanbanCol({
   col, tasks, contacts, onEdit,
 }: {
-  col: typeof KANBAN_COLS[number];
+  col: { key: KanbanStatus; name: string; color: string };
   tasks: Task[];
   contacts: Contact[];
   onEdit: (t: Task) => void;
 }) {
+  const { t: trans } = useLanguage();
+  const ownTeamLabel = trans.panel.workflow.ownTeam;
   const { setNodeRef, isOver } = useDroppable({ id: col.key });
   return (
     <div
@@ -305,7 +300,7 @@ function DroppableKanbanCol({
                         {initials(t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "EP" : "EP")}
                       </span>
                       <span className="max-w-[100px] truncate text-[10.5px]">
-                        {t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "Equipo propio" : "Equipo propio"}
+                        {t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? ownTeamLabel : ownTeamLabel}
                       </span>
                     </span>
                     <span className="font-mono text-[11px] text-[#5C6A6E]">{t.hours}h</span>
@@ -326,10 +321,18 @@ function WorkflowTab({
   project: Project; tasks: Task[]; contacts: Contact[];
   onRefresh: () => void; toast: (m: string) => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const [items, setItems]   = useState<Task[]>(tasks);
   const [editor, setEditor] = useState<EditorOpts | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const persist = usePersistOrder("tasks");
+
+  const KANBAN_COLS = [
+    { key: "pend" as const, name: tp.workflow.todo,       color: "#D7CBB3" },
+    { key: "prog" as const, name: tp.workflow.inProgress, color: "#4E7A82" },
+    { key: "done" as const, name: tp.workflow.done,       color: "#4F8A63" },
+  ];
 
   useEffect(() => { setItems(tasks); }, [tasks]);
 
@@ -343,19 +346,20 @@ function WorkflowTab({
     items.filter((t) => t.status === s).sort((a, b) => a.sort_order - b.sort_order);
 
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
-  const whoOptions = ["Equipo propio", ...contacts.map((c) => c.name)];
+  const ownTeamLabel = tp.workflow.ownTeam;
+  const whoOptions = [ownTeamLabel, ...contacts.map((c) => c.name)];
 
   const openEdit = (t: Task) => {
     setEditor({
-      title: "Editar actividad",
+      title: tp.workflow.editTask,
       fields: [
-        { key: "name",           label: "Actividad",           type: "text",   value: t.name },
-        { key: "hours",          label: "Horas estimadas",      type: "number", value: t.hours },
-        { key: "duration_weeks", label: "Duración (semanas)",   type: "number", value: t.duration_weeks },
-        { key: "status",         label: "Estado",               type: "select", options: ["pend", "prog", "done"], value: t.status },
+        { key: "name",           label: tp.workflow.activity,       type: "text",   value: t.name },
+        { key: "hours",          label: tp.workflow.estHours,        type: "number", value: t.hours },
+        { key: "duration_weeks", label: tp.workflow.durationWeeks,   type: "number", value: t.duration_weeks },
+        { key: "status",         label: tp.workflow.status,          type: "select", options: ["pend", "prog", "done"], value: t.status },
         {
-          key: "assignee_name", label: "Responsable", type: "select", options: whoOptions,
-          value: t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "Equipo propio" : "Equipo propio",
+          key: "assignee_name", label: tp.workflow.responsible, type: "select", options: whoOptions,
+          value: t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? ownTeamLabel : ownTeamLabel,
         },
       ],
       onSave: async (vals) => {
@@ -364,13 +368,13 @@ function WorkflowTab({
           name: vals.name, hours: vals.hours, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
           status: vals.status, assigned_contact_id: assignee?.id ?? null,
         }).eq("id", t.id);
-        if (error) { toast("Error al guardar: " + error.message); return; }
-        onRefresh(); toast("Actividad actualizada.");
+        if (error) { toast(tp.common.errorSaving + error.message); return; }
+        onRefresh(); toast(tp.workflow.taskUpdated);
       },
       onDelete: async () => {
         const { error } = await supabase.from("tasks").delete().eq("id", t.id);
-        if (error) { toast("Error al eliminar: " + error.message); return; }
-        onRefresh(); toast("Actividad eliminada.");
+        if (error) { toast(tp.common.errorDeleting + error.message); return; }
+        onRefresh(); toast(tp.workflow.taskDeleted);
       },
     });
   };
@@ -395,9 +399,9 @@ function WorkflowTab({
       const next = items.map((t) => t.id === draggedTask.id ? { ...t, status: targetStatus } : t);
       setItems(next);
       const { error } = await supabase.from("tasks").update({ status: targetStatus }).eq("id", draggedTask.id);
-      if (error) { toast("Error al mover: " + error.message); onRefresh(); return; }
+      if (error) { toast(tp.common.errorSaving + error.message); onRefresh(); return; }
       const colName = KANBAN_COLS.find((c) => c.key === targetStatus)?.name;
-      toast(`Actividad movida a "${colName}"`);
+      toast(`${tp.workflow.taskMoved} "${colName}"`);
     } else if (overTask) {
       // Same-column reorder
       const colItems = byStatus(targetStatus);
@@ -411,28 +415,28 @@ function WorkflowTab({
       });
       setItems(next);
       await persist(reordered);
-      toast("Orden actualizado.");
+      toast(tp.common.orderUpdated);
     }
   };
 
   const addTask = () => {
     setEditor({
-      title: "Nueva actividad",
+      title: tp.workflow.newTask,
       fields: [
-        { key: "name",           label: "Actividad",         type: "text",   value: "" },
-        { key: "hours",          label: "Horas estimadas",    type: "number", value: 8 },
-        { key: "duration_weeks", label: "Duración (semanas)", type: "number", value: 1 },
-        { key: "assignee_name",  label: "Responsable",        type: "select", options: whoOptions, value: "Equipo propio" },
+        { key: "name",           label: tp.workflow.activity,       type: "text",   value: "" },
+        { key: "hours",          label: tp.workflow.estHours,        type: "number", value: 8 },
+        { key: "duration_weeks", label: tp.workflow.durationWeeks,   type: "number", value: 1 },
+        { key: "assignee_name",  label: tp.workflow.responsible,     type: "select", options: whoOptions, value: ownTeamLabel },
       ],
       onSave: async (vals) => {
         const assignee = contacts.find((c) => c.name === vals.assignee_name);
         const { error } = await supabase.from("tasks").insert({
-          project_id: project.id, name: vals.name || "Actividad",
+          project_id: project.id, name: vals.name || tp.workflow.activity,
           hours: vals.hours || 0, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
           status: "pend", sort_order: items.length, assigned_contact_id: assignee?.id ?? null,
         });
-        if (error) { toast("Error al guardar: " + error.message); return; }
-        onRefresh(); toast("Actividad agregada.");
+        if (error) { toast(tp.common.errorSaving + error.message); return; }
+        onRefresh(); toast(tp.workflow.taskAdded);
       },
     });
   };
@@ -450,7 +454,7 @@ function WorkflowTab({
       onDragEnd={handleDragEnd}
     >
       <p className="mb-4 text-[11.5px] text-[#5C6A6E]">
-        Arrastra para reordenar o mover entre columnas. Toca una tarjeta para editar.
+        {tp.workflow.hint}
       </p>
       <div className="flex gap-3 overflow-x-auto pb-3">
         {KANBAN_COLS.map((col) => (
@@ -474,7 +478,7 @@ function WorkflowTab({
       </DragOverlay>
 
       <button onClick={addTask} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]">
-        + Agregar actividad
+        + {tp.workflow.addTask}
       </button>
 
       {editor && <EditorModal opts={editor} onClose={() => setEditor(null)} />}
@@ -490,6 +494,8 @@ function MaterialesTab({
 }: {
   project: Project; materials: Material[]; onRefresh: () => void; toast: (m: string) => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const [items, setItems] = useState<Material[]>(materials);
   const [editor, setEditor] = useState<EditorOpts | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -518,23 +524,25 @@ function MaterialesTab({
   };
 
   const openEdit = (m: Material) => {
+    const yesLabel = tp.materials.yes;
+    const noLabel  = tp.materials.no;
     setEditor({
-      title: "Editar material",
+      title: tp.materials.editMaterial,
       fields: [
-        { key: "name",     label: "Material",         type: "text",   value: m.name },
-        { key: "supplier", label: "Proveedor",         type: "text",   value: m.supplier },
-        { key: "cost",     label: "Costo (USD)",        type: "number", value: m.cost },
-        { key: "bought",   label: "¿Comprado?",         type: "select", options: ["No", "Sí"], value: m.bought ? "Sí" : "No" },
+        { key: "name",     label: tp.materials.material,  type: "text",   value: m.name },
+        { key: "supplier", label: tp.materials.supplier,   type: "text",   value: m.supplier },
+        { key: "cost",     label: tp.materials.cost,       type: "number", value: m.cost },
+        { key: "bought",   label: tp.materials.boughtQ,    type: "select", options: [noLabel, yesLabel], value: m.bought ? yesLabel : noLabel },
       ],
       onSave: async (vals) => {
-        const { error } = await supabase.from("materials").update({ name: vals.name, supplier: vals.supplier, cost: vals.cost, bought: vals.bought === "Sí" }).eq("id", m.id);
-        if (error) { toast("Error al guardar: " + error.message); return; }
-        onRefresh(); toast("Material actualizado.");
+        const { error } = await supabase.from("materials").update({ name: vals.name, supplier: vals.supplier, cost: vals.cost, bought: vals.bought === yesLabel }).eq("id", m.id);
+        if (error) { toast(tp.common.errorSaving + error.message); return; }
+        onRefresh(); toast(tp.materials.materialUpdated);
       },
       onDelete: async () => {
         const { error } = await supabase.from("materials").delete().eq("id", m.id);
-        if (error) { toast("Error al eliminar: " + error.message); return; }
-        onRefresh(); toast("Material eliminado.");
+        if (error) { toast(tp.common.errorDeleting + error.message); return; }
+        onRefresh(); toast(tp.materials.materialDeleted);
       },
     });
   };
@@ -546,11 +554,11 @@ function MaterialesTab({
       {/* Resumen */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-[400px]">
         <div className="rounded-[13px] border border-[#E6DDCB] bg-white p-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Por comprar</div>
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.materials.toBuy}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-[#16323D]">{money(por)}</div>
         </div>
         <div className="rounded-[13px] border border-[#E6DDCB] bg-white p-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Comprado</div>
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.materials.bought}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-[#4F8A63]">{money(com)}</div>
         </div>
       </div>
@@ -596,21 +604,21 @@ function MaterialesTab({
 
       <button
         onClick={() => setEditor({
-          title: "Nuevo material",
+          title: tp.materials.newMaterial,
           fields: [
-            { key: "name", label: "Material", type: "text", value: "" },
-            { key: "supplier", label: "Proveedor", type: "text", value: "" },
-            { key: "cost", label: "Costo (USD)", type: "number", value: 0 },
+            { key: "name",     label: tp.materials.material,  type: "text",   value: "" },
+            { key: "supplier", label: tp.materials.supplier,   type: "text",   value: "" },
+            { key: "cost",     label: tp.materials.cost,       type: "number", value: 0 },
           ],
           onSave: async (vals) => {
-            const { error } = await supabase.from("materials").insert({ project_id: project.id, name: vals.name || "Material", supplier: vals.supplier || "", cost: vals.cost || 0, bought: false });
-            if (error) { toast("Error al guardar: " + error.message); return; }
-            onRefresh(); toast("Material agregado.");
+            const { error } = await supabase.from("materials").insert({ project_id: project.id, name: vals.name || tp.materials.material, supplier: vals.supplier || "", cost: vals.cost || 0, bought: false });
+            if (error) { toast(tp.common.errorSaving + error.message); return; }
+            onRefresh(); toast(tp.materials.materialAdded);
           },
         })}
         className="mt-4 inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
       >
-        + Agregar material
+        + {tp.materials.addMaterial}
       </button>
 
       {editor && <EditorModal opts={editor} onClose={() => setEditor(null)} />}
@@ -627,6 +635,8 @@ function ContactosTab({
   project: Project; contacts: Contact[]; allContacts: Contact[];
   onRefresh: () => void; toast: (m: string) => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const [busy, setBusy] = useState<string | null>(null);
   const assignedIds = new Set(contacts.map((c) => c.id));
 
@@ -638,11 +648,11 @@ function ContactosTab({
       const { error } = await supabase.from("project_contacts").delete()
         .eq("project_id", project.id).eq("contact_id", cid);
       if (error) { toast("Error: " + error.message); setBusy(null); return; }
-      toast("Especialista quitado del proyecto.");
+      toast(tp.contacts.removed);
     } else {
       const { error } = await supabase.from("project_contacts").insert({ project_id: project.id, contact_id: cid });
       if (error) { toast("Error: " + error.message); setBusy(null); return; }
-      toast("Especialista asignado al proyecto.");
+      toast(tp.contacts.assigned);
     }
     setBusy(null);
     onRefresh();
@@ -651,7 +661,7 @@ function ContactosTab({
   if (allContacts.length === 0) {
     return (
       <div className="max-w-[760px] rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#5C6A6E]">
-        Sin contactos en el directorio aún. Ve a <strong>Panel → Contactos</strong> para agregar.
+        {tp.contacts.noContacts}
       </div>
     );
   }
@@ -659,7 +669,7 @@ function ContactosTab({
   return (
     <div className="max-w-[760px]">
       <p className="mb-4 text-xs text-[#5C6A6E]">
-        Marca ✓ para asignar o quitar un especialista de este proyecto.
+        {tp.contacts.hint}
       </p>
       <div className="flex flex-col gap-3">
         {allContacts.map((c) => {
@@ -695,7 +705,7 @@ function ContactosTab({
                 href={`tel:${c.phone}`}
                 className="inline-flex flex-none items-center gap-1.5 rounded-xl bg-[#DCEBDD] px-3 py-2 text-xs font-bold text-[#4F8A63]"
               >
-                📞 Llamar
+                📞 {tp.contacts.call}
               </a>
             </div>
           );
@@ -714,6 +724,8 @@ function PresupuestoTab({
   project: Project; budgetItems: BudgetItem[];
   onRefresh: () => void; toast: (m: string) => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const [items, setItems]   = useState<BudgetItem[]>(budgetItems);
   const [editor, setEditor] = useState<EditorOpts | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -742,28 +754,28 @@ function PresupuestoTab({
 
   const openEdit = (b: BudgetItem) => {
     setEditor({
-      title: "Editar línea",
+      title: tp.budget.editLine,
       fields: [
-        { key: "description", label: "Descripción", type: "text",   value: b.description },
-        { key: "type",        label: "Tipo",         type: "select", options: ["mano", "material"], value: b.type },
-        { key: "amount",      label: "Monto (USD)",   type: "number", value: b.amount },
+        { key: "description", label: tp.budget.description, type: "text",   value: b.description },
+        { key: "type",        label: tp.budget.type,         type: "select", options: ["mano", "material"], value: b.type },
+        { key: "amount",      label: tp.budget.amount,       type: "number", value: b.amount },
       ],
       onSave: async (vals) => {
         const { error } = await supabase.from("budget_items").update({ description: vals.description, type: vals.type, amount: vals.amount }).eq("id", b.id);
-        if (error) { toast("Error al guardar: " + error.message); return; }
-        onRefresh(); toast("Línea actualizada.");
+        if (error) { toast(tp.common.errorSaving + error.message); return; }
+        onRefresh(); toast(tp.budget.lineUpdated);
       },
       onDelete: async () => {
         const { error } = await supabase.from("budget_items").delete().eq("id", b.id);
-        if (error) { toast("Error al eliminar: " + error.message); return; }
-        onRefresh(); toast("Línea eliminada.");
+        if (error) { toast(tp.common.errorDeleting + error.message); return; }
+        onRefresh(); toast(tp.budget.lineDeleted);
       },
     });
   };
 
   const approveProject = async () => {
     await supabase.from("projects").update({ status: "en_obra" }).eq("id", project.id);
-    setConfirming(false); onRefresh(); toast("Presupuesto aprobado — ¡Proyecto en obra!");
+    setConfirming(false); onRefresh(); toast(tp.budget.approved);
   };
 
   return (
@@ -783,7 +795,7 @@ function PresupuestoTab({
                     <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] ${b.type === "mano" ? "bg-[#DCE8E9] text-[#4E7A82]" : "bg-[#DCE6E6] text-[#0E2630]"}`}>
-                          {b.type === "mano" ? "Mano obra" : "Material"}
+                          {b.type === "mano" ? tp.budget.labor : tp.budget.material}
                         </span>
                         <span className="truncate text-sm font-medium text-[#16323D]">{b.description}</span>
                       </div>
@@ -807,45 +819,45 @@ function PresupuestoTab({
       </DndContext>
 
       <div className="mt-3 flex items-center justify-between rounded-2xl bg-[#16323D] px-5 py-4">
-        <span className="text-sm font-semibold text-white/80">Total presupuestado</span>
+        <span className="text-sm font-semibold text-white/80">{tp.budget.total}</span>
         <span className="font-mono text-xl font-semibold text-white">{money(sum)}</span>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
         {approved ? (
-          <div className="inline-flex items-center gap-2 rounded-xl bg-[#DCEBDD] px-4 py-3 text-sm font-semibold text-[#4F8A63]">✓ Aprobado por el cliente</div>
+          <div className="inline-flex items-center gap-2 rounded-xl bg-[#DCEBDD] px-4 py-3 text-sm font-semibold text-[#4F8A63]">✓ {tp.budget.approvedByClient}</div>
         ) : (
           <button onClick={() => setConfirming(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#4E7A82] bg-[#DCE8E9] px-4 py-3 text-sm font-bold text-[#4E7A82] transition hover:bg-[#c8dfe0]">
-            Marcar como aprobado
+            {tp.budget.markApproved}
           </button>
         )}
         <button
           onClick={() => setEditor({
-            title: "Nueva línea de presupuesto",
+            title: tp.budget.newLine,
             fields: [
-              { key: "description", label: "Descripción", type: "text",   value: "" },
-              { key: "type",        label: "Tipo",         type: "select", options: ["mano", "material"], value: "material" },
-              { key: "amount",      label: "Monto (USD)",   type: "number", value: 0 },
+              { key: "description", label: tp.budget.description, type: "text",   value: "" },
+              { key: "type",        label: tp.budget.type,         type: "select", options: ["mano", "material"], value: "material" },
+              { key: "amount",      label: tp.budget.amount,       type: "number", value: 0 },
             ],
             onSave: async (vals) => {
-              const { error } = await supabase.from("budget_items").insert({ project_id: project.id, description: vals.description || "Línea", type: vals.type, amount: vals.amount || 0 });
-              if (error) { toast("Error al guardar: " + error.message); return; }
-              onRefresh(); toast("Línea agregada.");
+              const { error } = await supabase.from("budget_items").insert({ project_id: project.id, description: vals.description || tp.budget.description, type: vals.type, amount: vals.amount || 0 });
+              if (error) { toast(tp.common.errorSaving + error.message); return; }
+              onRefresh(); toast(tp.budget.lineAdded);
             },
           })}
           className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
         >
-          + Agregar línea
+          + {tp.budget.addLine}
         </button>
         <button
           onClick={() => exportCotizacion(project, items)}
           className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-3 text-sm font-bold text-[#16323D] transition hover:bg-[#F7F3EA]"
         >
-          ↓ Exportar cotización
+          ↓ {tp.budget.export}
         </button>
       </div>
 
-      {confirming && <ConfirmModal title="Aprobar presupuesto" body="Pasa el proyecto a En obra y activa el workflow y materiales." label="Aprobar" danger={false} onConfirm={approveProject} onCancel={() => setConfirming(false)} />}
+      {confirming && <ConfirmModal title={tp.budget.approveTitle} body={tp.budget.approveBody} label={tp.budget.approve} danger={false} onConfirm={approveProject} onCancel={() => setConfirming(false)} />}
       {editor && <EditorModal opts={editor} onClose={() => setEditor(null)} />}
     </div>
   );
@@ -861,6 +873,8 @@ function PagosTab({
   onRefresh: () => void; toast: (m: string) => void;
   onSubTabChange?: (sub: PaySubTab) => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const [subTab, setSubTab] = useState<PaySubTab>("ingresos");
   const changeSubTab = (t: PaySubTab) => { setSubTab(t); onSubTabChange?.(t); };
   const [payItems, setPayItems]     = useState<Payment[]>([...payments].reverse());
@@ -894,7 +908,7 @@ function PagosTab({
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     setPayItems((prev) => arrayMove(prev, prev.findIndex((p) => p.id === active.id), prev.findIndex((p) => p.id === over.id)));
-    toast("Orden de ingresos actualizado.");
+    toast(tp.common.orderUpdated);
   };
 
   // Drag handlers para egresos
@@ -904,47 +918,47 @@ function PagosTab({
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     setExpItems((prev) => arrayMove(prev, prev.findIndex((x) => x.id === active.id), prev.findIndex((x) => x.id === over.id)));
-    toast("Orden de egresos actualizado.");
+    toast(tp.common.orderUpdated);
   };
 
   const openPayEdit = (x: Payment) => setEditor({
-    title: "Editar ingreso",
+    title: tp.payments.editIncome,
     fields: [
-      { key: "amount", label: "Monto (USD)", type: "number", value: x.amount },
-      { key: "date",   label: "Fecha",       type: "date",   value: x.date },
-      { key: "method", label: "Método",      type: "select", options: methodOptions, value: x.method },
-      { key: "type",   label: "Concepto",    type: "select", options: ["anticipo", "abono", "final"],  value: x.type },
+      { key: "amount", label: tp.payments.amount,  type: "number", value: x.amount },
+      { key: "date",   label: tp.payments.date,    type: "date",   value: x.date },
+      { key: "method", label: tp.payments.method,  type: "select", options: methodOptions, value: x.method },
+      { key: "type",   label: tp.payments.concept, type: "select", options: ["anticipo", "abono", "final"], value: x.type },
     ],
     onSave: async (vals) => {
       const { error } = await supabase.from("payments").update(vals).eq("id", x.id);
-      if (error) { toast("Error al guardar: " + error.message); return; }
-      onRefresh(); toast("Ingreso actualizado.");
+      if (error) { toast(tp.common.errorSaving + error.message); return; }
+      onRefresh(); toast(tp.payments.incomeUpdated);
     },
     onDelete: async () => {
       const { error } = await supabase.from("payments").delete().eq("id", x.id);
-      if (error) { toast("Error al eliminar: " + error.message); return; }
-      onRefresh(); toast("Ingreso eliminado.");
+      if (error) { toast(tp.common.errorDeleting + error.message); return; }
+      onRefresh(); toast(tp.payments.incomeDeleted);
     },
   });
 
   const openExpEdit = (x: Expense) => setEditor({
-    title: "Editar egreso",
+    title: tp.payments.editExpense,
     fields: [
-      { key: "payee_name", label: "Pagado a", type: "select", options: payeeOptions, value: x.payee_name },
-      { key: "concept",    label: "Concepto", type: "text",   value: x.concept },
-      { key: "amount",     label: "Monto (USD)", type: "number", value: x.amount },
-      { key: "date",       label: "Fecha",    type: "date",   value: x.date },
-      { key: "method",     label: "Método",   type: "select", options: methodOptions, value: x.method },
+      { key: "payee_name", label: tp.payments.paidTo,  type: "select", options: payeeOptions, value: x.payee_name },
+      { key: "concept",    label: tp.payments.concept,  type: "text",   value: x.concept },
+      { key: "amount",     label: tp.payments.amount,   type: "number", value: x.amount },
+      { key: "date",       label: tp.payments.date,     type: "date",   value: x.date },
+      { key: "method",     label: tp.payments.method,   type: "select", options: methodOptions, value: x.method },
     ],
     onSave: async (vals) => {
       const { error } = await supabase.from("expenses").update(vals).eq("id", x.id);
-      if (error) { toast("Error al guardar: " + error.message); return; }
-      onRefresh(); toast("Egreso actualizado.");
+      if (error) { toast(tp.common.errorSaving + error.message); return; }
+      onRefresh(); toast(tp.payments.expenseUpdated);
     },
     onDelete: async () => {
       const { error } = await supabase.from("expenses").delete().eq("id", x.id);
-      if (error) { toast("Error al eliminar: " + error.message); return; }
-      onRefresh(); toast("Egreso eliminado.");
+      if (error) { toast(tp.common.errorDeleting + error.message); return; }
+      onRefresh(); toast(tp.payments.expenseDeleted);
     },
   });
 
@@ -955,12 +969,12 @@ function PagosTab({
     <div className="max-w-[760px]">
       {/* KPIs */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Ingresos</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Egresos</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#B0492F]">{money(egr)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Por cobrar</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#16323D]">{money(due)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Caja</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#16323D]">{money(caja)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.income}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.expenses}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#B0492F]">{money(egr)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.outstanding}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#16323D]">{money(due)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.cashFlow}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#16323D]">{money(caja)}</div></div>
       </div>
-      {paid && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#DCEBDD] bg-[#E7F1E6] px-4 py-3 text-sm font-semibold text-[#4F8A63]">🎉 Cliente pagó por completo.</div>}
+      {paid && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#DCEBDD] bg-[#E7F1E6] px-4 py-3 text-sm font-semibold text-[#4F8A63]">🎉 {tp.payments.paidFull}</div>}
 
       {/* Sub-tabs + export */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -975,7 +989,7 @@ function PagosTab({
           onClick={() => exportEstadoCuenta(project, payments, expenses)}
           className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-2 text-sm font-bold text-[#16323D] transition hover:bg-[#F7F3EA]"
         >
-          ↓ Estado de cuenta
+          ↓ {tp.payments.exportStatement}
         </button>
       </div>
 
@@ -984,7 +998,7 @@ function PagosTab({
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handlePayDragStart} onDragEnd={handlePayDragEnd}>
           <SortableContext items={payItems.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
-              {payItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0]">Sin ingresos registrados.</p>}
+              {payItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0]">{tp.payments.noIncome}</p>}
               {payItems.map((x) => (
                 <SortableRow key={x.id} id={x.id}>
                   {({ listeners, attributes }, isDragging) => (
@@ -998,7 +1012,7 @@ function PagosTab({
                         <div>
                           <div className="flex items-center gap-2 text-sm font-semibold text-[#16323D]">
                             {x.method}
-                            <span className="rounded bg-[#ECE3D1] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E]">{PAYMENT_TYPE_LABELS[x.type] ?? x.type}</span>
+                            <span className="rounded bg-[#ECE3D1] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E]">{tp.paymentType[x.type as keyof typeof tp.paymentType] ?? x.type}</span>
                           </div>
                           <div className="text-[11px] text-[#5C6A6E]">{dateFmt(x.date)}</div>
                         </div>
@@ -1020,23 +1034,23 @@ function PagosTab({
           </DragOverlay>
           <button
             onClick={() => setEditor({
-              title: "Nuevo ingreso", sub: "Pago recibido del cliente.",
+              title: tp.payments.newIncome, sub: tp.payments.newIncomeSub,
               fields: [
-                { key: "amount", label: "Monto (USD)", type: "number", value: 0 },
-                { key: "date",   label: "Fecha",       type: "date",   value: new Date().toISOString().split("T")[0] },
-                { key: "method", label: "Método",      type: "select", options: methodOptions, value: "Transferencia" },
-                { key: "type",   label: "Concepto",    type: "select", options: ["anticipo", "abono", "final"], value: "abono" },
+                { key: "amount", label: tp.payments.amount,  type: "number", value: 0 },
+                { key: "date",   label: tp.payments.date,    type: "date",   value: new Date().toISOString().split("T")[0] },
+                { key: "method", label: tp.payments.method,  type: "select", options: methodOptions, value: "Transferencia" },
+                { key: "type",   label: tp.payments.concept, type: "select", options: ["anticipo", "abono", "final"], value: "abono" },
               ],
               onSave: async (vals) => {
-                if (Number(vals.amount) <= 0) { toast("El monto debe ser mayor a 0."); return; }
+                if (Number(vals.amount) <= 0) { toast(tp.payments.amountRequired); return; }
                 const { error } = await supabase.from("payments").insert({ project_id: project.id, ...vals });
-                if (error) { toast("Error al guardar: " + error.message); return; }
-                onRefresh(); toast("Ingreso registrado.");
+                if (error) { toast(tp.common.errorSaving + error.message); return; }
+                onRefresh(); toast(tp.payments.incomeRecorded);
               },
             })}
             className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
           >
-            + Registrar ingreso
+            + {tp.payments.registerIncome}
           </button>
         </DndContext>
       )}
@@ -1046,7 +1060,7 @@ function PagosTab({
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleExpDragStart} onDragEnd={handleExpDragEnd}>
           <SortableContext items={expItems.map((x) => x.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
-              {expItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0]">Sin egresos. Aquí van los pagos a especialistas y proveedores.</p>}
+              {expItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0]">{tp.payments.noExpenses}</p>}
               {expItems.map((x) => (
                 <SortableRow key={x.id} id={x.id}>
                   {({ listeners, attributes }, isDragging) => (
@@ -1082,24 +1096,24 @@ function PagosTab({
           </DragOverlay>
           <button
             onClick={() => setEditor({
-              title: "Nuevo egreso", sub: "Pago a un especialista o proveedor.",
+              title: tp.payments.newExpense, sub: tp.payments.newExpenseSub,
               fields: [
-                { key: "payee_name", label: "Pagado a", type: "select", options: payeeOptions, value: payeeOptions[1] ?? "Equipo propio" },
-                { key: "concept",    label: "Concepto", type: "text",   value: "" },
-                { key: "amount",     label: "Monto (USD)", type: "number", value: 0 },
-                { key: "date",       label: "Fecha",    type: "date",   value: new Date().toISOString().split("T")[0] },
-                { key: "method",     label: "Método",   type: "select", options: methodOptions, value: "Transferencia" },
+                { key: "payee_name", label: tp.payments.paidTo,  type: "select", options: payeeOptions, value: payeeOptions[1] ?? tp.workflow.ownTeam },
+                { key: "concept",    label: tp.payments.concept,  type: "text",   value: "" },
+                { key: "amount",     label: tp.payments.amount,   type: "number", value: 0 },
+                { key: "date",       label: tp.payments.date,     type: "date",   value: new Date().toISOString().split("T")[0] },
+                { key: "method",     label: tp.payments.method,   type: "select", options: methodOptions, value: "Transferencia" },
               ],
               onSave: async (vals) => {
-                if (Number(vals.amount) <= 0) { toast("El monto debe ser mayor a 0."); return; }
+                if (Number(vals.amount) <= 0) { toast(tp.payments.amountRequired); return; }
                 const { error } = await supabase.from("expenses").insert({ project_id: project.id, ...vals });
-                if (error) { toast("Error al guardar: " + error.message); return; }
-                onRefresh(); toast("Egreso registrado.");
+                if (error) { toast(tp.common.errorSaving + error.message); return; }
+                onRefresh(); toast(tp.payments.expenseRecorded);
               },
             })}
             className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
           >
-            + Registrar egreso
+            + {tp.payments.registerExpense}
           </button>
         </DndContext>
       )}
@@ -1117,6 +1131,8 @@ function PlanTab({
 }: {
   project: Project; tasks: Task[]; onRefresh: () => void; toast: (m: string) => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const [items, setItems] = useState<Task[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
@@ -1163,19 +1179,19 @@ function PlanTab({
     setItems(next);
     await persist(next);
     onRefresh();
-    toast("Plan reordenado — fechas recalculadas.");
+    toast(tp.plan.reordered);
   };
 
   const deleteTask = async (id: string) => {
     const { error } = await supabase.from("tasks").delete().eq("id", id);
-    if (error) { toast("Error al eliminar: " + error.message); setConfirmDel(null); return; }
-    setConfirmDel(null); onRefresh(); toast("Actividad eliminada.");
+    if (error) { toast(tp.common.errorDeleting + error.message); setConfirmDel(null); return; }
+    setConfirmDel(null); onRefresh(); toast(tp.workflow.taskDeleted);
   };
 
   return (
     <div className="max-w-[900px]">
       <p className="mb-4 text-xs text-[#5C6A6E]">
-        Arrastra ⠿ para reordenar. Las fechas se recalculan automáticamente.
+        {tp.plan.hint}
       </p>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -1227,16 +1243,16 @@ function PlanTab({
 
       {/* Leyenda */}
       <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E]">
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4F8A63]" /> Terminada</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4E7A82]" /> En curso</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3]" /> Pendiente</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4F8A63]" /> {tp.plan.done}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4E7A82]" /> {tp.plan.inProgress}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3]" /> {tp.plan.pending}</span>
       </div>
 
       {confirmDel && (
         <ConfirmModal
-          title="Eliminar actividad"
-          body={`¿Eliminar "${items.find((t) => t.id === confirmDel)?.name}"?`}
-          label="Eliminar"
+          title={tp.plan.deleteTask}
+          body={`${tp.plan.deleteTaskQ} "${items.find((t) => t.id === confirmDel)?.name}"?`}
+          label={tp.common.delete}
           onConfirm={() => deleteTask(confirmDel)}
           onCancel={() => setConfirmDel(null)}
         />
@@ -1254,6 +1270,8 @@ function NotasTab({
   project: Project; notes: ProjectNote[];
   onRefresh: () => void; toast: (m: string) => void;
 }) {
+  const { t } = useLanguage();
+  const tp = t.panel;
   const { verifyPin: checkPin } = useAuth();
   const fileRef   = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
@@ -1293,19 +1311,19 @@ function NotasTab({
       .from("project_notes")
       .insert({ project_id: project.id, content: newContent.trim(), attachments: [] })
       .select("id").single();
-    if (error || !row) { toast("Error al guardar la nota: " + (error?.message ?? "")); setUploading(false); return; }
+    if (error || !row) { toast(tp.notes.errorSavingNote + (error?.message ?? "")); setUploading(false); return; }
     const attachments = await uploadFiles(row.id, newFiles);
     if (attachments.length > 0) {
       await supabase.from("project_notes").update({ attachments }).eq("id", row.id);
     }
     setAdding(false); setNewContent(""); setNewFiles([]);
-    setUploading(false); onRefresh(); toast("Nota guardada.");
+    setUploading(false); onRefresh(); toast(tp.notes.noteSaved);
   };
 
   // ── PIN verification before edit/delete ──────────────────────────────────────
   const verifyPin = async () => {
     const ok = await checkPin(pinValue);
-    if (!ok) { setPinError("PIN incorrecto"); setPinValue(""); return; }
+    if (!ok) { setPinError(tp.notes.wrongPin); setPinValue(""); return; }
     const p = pinPrompt!;
     setPinPrompt(null); setPinValue(""); setPinError("");
     if (p.action === "delete") execDelete(p.note.id);
@@ -1314,8 +1332,8 @@ function NotasTab({
 
   const execDelete = async (id: string) => {
     const { error } = await supabase.from("project_notes").delete().eq("id", id);
-    if (error) { toast("Error al eliminar: " + error.message); return; }
-    onRefresh(); toast("Nota eliminada.");
+    if (error) { toast(tp.common.errorDeleting + error.message); return; }
+    onRefresh(); toast(tp.notes.noteDeleted);
   };
 
   const execEdit = (note: ProjectNote) => {
@@ -1332,9 +1350,9 @@ function NotasTab({
     const { error } = await supabase.from("project_notes")
       .update({ content: editContent.trim(), attachments: merged, updated_at: new Date().toISOString() })
       .eq("id", editingNote.id);
-    if (error) { toast("Error al guardar: " + error.message); setUploading(false); return; }
+    if (error) { toast(tp.common.errorSaving + error.message); setUploading(false); return; }
     setEditingNote(null); setEditContent(""); setEditFiles([]);
-    setUploading(false); onRefresh(); toast("Nota actualizada.");
+    setUploading(false); onRefresh(); toast(tp.notes.noteUpdated);
   };
 
   const removeAttachment = async (note: ProjectNote, idx: number) => {
@@ -1355,7 +1373,7 @@ function NotasTab({
           onClick={() => setAdding(true)}
           className="flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
         >
-          <Plus size={14} /> Agregar nota
+          <Plus size={14} /> {tp.notes.addNote}
         </button>
       )}
 
@@ -1365,7 +1383,7 @@ function NotasTab({
           <textarea
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
-            placeholder="Escribe tu nota, observación o comentario…"
+            placeholder={tp.notes.placeholder}
             rows={3}
             className="mb-3 w-full resize-none rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[#16323D] placeholder:text-[#97A1A0] focus:border-[#16323D] focus:outline-none"
           />
@@ -1386,7 +1404,7 @@ function NotasTab({
               onClick={() => fileRef.current?.click()}
               className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-xs font-semibold text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
             >
-              <Paperclip size={12} /> Adjuntar
+              <Paperclip size={12} /> {tp.notes.attach}
             </button>
             <input
               ref={fileRef}
@@ -1400,14 +1418,14 @@ function NotasTab({
             <div className="ml-auto flex gap-2">
               <button onClick={() => { setAdding(false); setNewContent(""); setNewFiles([]); }}
                 className="rounded-xl bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
-                Cancelar
+                {tp.common.cancel}
               </button>
               <button
                 onClick={handleAdd}
                 disabled={uploading || (!newContent.trim() && newFiles.length === 0)}
                 className="rounded-xl bg-[#16323D] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
               >
-                {uploading ? "Guardando…" : "Guardar"}
+                {uploading ? tp.notes.saving : tp.common.save}
               </button>
             </div>
           </div>
@@ -1417,7 +1435,7 @@ function NotasTab({
       {/* Notes list */}
       {sorted.length === 0 && !adding && (
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#97A1A0]">
-          Sin notas aún. Usa el botón para agregar comentarios o adjuntar archivos.
+          {tp.notes.empty}
         </div>
       )}
 
@@ -1463,14 +1481,14 @@ function NotasTab({
               )}
               <div className="flex items-center gap-2">
                 <button onClick={() => editFileRef.current?.click()} className="flex items-center gap-1 rounded-xl border border-[#D7CBB3] px-3 py-2 text-xs font-semibold text-[#5C6A6E]">
-                  <Paperclip size={11}/> Adjuntar más
+                  <Paperclip size={11}/> {tp.notes.attachMore}
                 </button>
                 <input ref={editFileRef} type="file" accept="image/*,application/pdf" capture="environment" multiple className="hidden"
                   onChange={(e) => { if (e.target.files) setEditFiles(p => [...p, ...Array.from(e.target.files!)]); }} />
                 <div className="ml-auto flex gap-2">
-                  <button onClick={() => setEditingNote(null)} className="rounded-xl bg-[#ECE3D1] px-3 py-2 text-sm font-bold text-[#5C6A6E]">Cancelar</button>
+                  <button onClick={() => setEditingNote(null)} className="rounded-xl bg-[#ECE3D1] px-3 py-2 text-sm font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
                   <button onClick={handleSaveEdit} disabled={uploading} className="rounded-xl bg-[#16323D] px-3 py-2 text-sm font-bold text-white disabled:opacity-50">
-                    {uploading ? "…" : "Guardar"}
+                    {uploading ? "…" : tp.common.save}
                   </button>
                 </div>
               </div>
@@ -1502,13 +1520,13 @@ function NotasTab({
                     onClick={() => { setPinPrompt({ action: "edit", note }); setPinValue(""); setPinError(""); }}
                     className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#4E7A82] transition hover:bg-[#DCE8E9]"
                   >
-                    <Pencil size={11}/> Editar
+                    <Pencil size={11}/> {tp.common.edit}
                   </button>
                   <button
                     onClick={() => { setPinPrompt({ action: "delete", note }); setPinValue(""); setPinError(""); }}
                     className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#B0492F] transition hover:bg-[#F0DBD2]"
                   >
-                    <Trash2 size={11}/> Eliminar
+                    <Trash2 size={11}/> {tp.common.delete}
                   </button>
                 </div>
               </div>
@@ -1522,9 +1540,9 @@ function NotasTab({
         <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
           <div className="w-full max-w-[360px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
             <h3 className="mb-1 font-[Manrope] text-base font-bold text-[#16323D]">
-              {pinPrompt.action === "delete" ? "¿Eliminar esta nota?" : "Confirmar edición"}
+              {pinPrompt.action === "delete" ? tp.notes.deleteNote : tp.notes.confirmEdit}
             </h3>
-            <p className="mb-4 text-sm text-[#5C6A6E]">Ingresa tu PIN de administrador para continuar.</p>
+            <p className="mb-4 text-sm text-[#5C6A6E]">{tp.notes.pinPrompt}</p>
             <div className="mb-1 flex justify-center gap-3">
               {[0,1,2,3].map(i => (
                 <div key={i} className={`size-3 rounded-full transition ${pinValue.length > i ? "bg-[#16323D]" : "bg-[#D7CBB3]"}`} />
@@ -1544,10 +1562,10 @@ function NotasTab({
             {pinError && <p className="mb-2 text-center text-xs font-semibold text-[#B0492F]">{pinError}</p>}
             <div className="flex gap-3 mt-2">
               <button onClick={() => { setPinPrompt(null); setPinValue(""); setPinError(""); }}
-                className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
+                className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
               <button onClick={verifyPin} disabled={pinValue.length < 4}
                 className={`flex-1 rounded-xl py-3 font-bold text-white disabled:opacity-40 ${pinPrompt.action === "delete" ? "bg-[#B0492F]" : "bg-[#16323D]"}`}>
-                {pinPrompt.action === "delete" ? "Eliminar" : "Confirmar"}
+                {pinPrompt.action === "delete" ? tp.common.delete : tp.notes.confirm}
               </button>
             </div>
           </div>
@@ -1572,6 +1590,18 @@ export default function ProjectDetailPage() {
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
   const { setMeta } = useVoice();
   const { isSuperAdmin, hasPermission } = useAuth();
+  const { t } = useLanguage();
+  const tp = t.panel;
+
+  const TABS: { id: TabId; label: string }[] = [
+    { id: "plan",        label: tp.tabs.plan },
+    { id: "workflow",    label: tp.tabs.workflow },
+    { id: "presupuesto", label: tp.tabs.budget },
+    { id: "pagos",       label: tp.tabs.payments },
+    { id: "materiales",  label: tp.tabs.materials },
+    { id: "contactos",   label: tp.tabs.contacts },
+    { id: "notas",       label: tp.tabs.notes },
+  ];
 
   // Filter tabs the user is allowed to view
   const visibleTabs = TABS.filter(t => {
@@ -1641,7 +1671,7 @@ export default function ProjectDetailPage() {
     <div className="animate-in fade-in duration-300">
       {/* Back button */}
       <button onClick={() => router.push("/proyectos")} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C6A6E] transition hover:text-[#16323D]">
-        <ArrowLeft size={15} /> Dashboard
+        <ArrowLeft size={15} /> {tp.nav.dashboard}
       </button>
 
       {/* Blue header */}
@@ -1694,19 +1724,19 @@ export default function ProjectDetailPage() {
       {editProjectOpen && (
         <EditorModal
           opts={{
-            title: "Editar proyecto",
+            title: tp.project.editProject,
             fields: [
-              { key: "title",      label: "Nombre del proyecto", type: "text",   value: project.title },
-              { key: "client",     label: "Cliente",              type: "text",   value: project.client },
-              { key: "address",    label: "Dirección",            type: "text",   value: project.address },
-              { key: "budget",     label: "Presupuesto (USD)",    type: "number", value: project.budget },
-              { key: "status",     label: "Estado",               type: "select", options: ["presupuesto", "aprobado", "en_obra", "terminado"], value: project.status },
-              { key: "start_date", label: "Fecha de inicio",      type: "date",   value: project.start_date },
+              { key: "title",      label: tp.project.name,       type: "text",   value: project.title },
+              { key: "client",     label: tp.project.client,      type: "text",   value: project.client },
+              { key: "address",    label: tp.project.address,     type: "text",   value: project.address },
+              { key: "budget",     label: tp.project.budget,      type: "number", value: project.budget },
+              { key: "status",     label: tp.project.status,      type: "select", options: ["presupuesto", "aprobado", "en_obra", "terminado"], value: project.status },
+              { key: "start_date", label: tp.project.startDate,   type: "date",   value: project.start_date },
             ],
             onSave: async (vals) => {
               const { error } = await supabase.from("projects").update(vals).eq("id", project.id);
-              if (error) { showToast("Error al guardar: " + error.message); return; }
-              fetchProject(); showToast("Proyecto actualizado.");
+              if (error) { showToast(tp.common.errorSaving + error.message); return; }
+              fetchProject(); showToast(tp.project.projectUpdated);
             },
           }}
           onClose={() => setEditProjectOpen(false)}

@@ -1,8 +1,3 @@
-/**
- * Panel global de Plan (/proyectos/plan).
- * Cronograma Gantt del portafolio completo, con drag & drop para priorizar
- * y opción de eliminar proyectos con confirmación.
- */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -29,15 +24,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
-import { addDays, dShort, STATUS_LABELS } from "@/src/lib/utils";
+import { addDays, dShort } from "@/src/lib/utils";
 import type { Project, Task } from "@/src/types/project";
+import { useLanguage } from "@/src/context/LanguageContext";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
 interface ProjectWithTasks extends Project {
   tasks: Task[];
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 const totalWeeks = (tasks: Task[]) =>
@@ -50,7 +44,6 @@ const BAR_COLORS: Record<string, string> = {
   terminado:   "bg-gradient-to-r from-[#4F8A63] to-[#69a67e] text-white",
 };
 
-// ─── DragHandle ────────────────────────────────────────────────────────────────
 function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
   return (
     <button
@@ -66,7 +59,6 @@ function DragHandle({ listeners, attributes }: { listeners?: object; attributes?
   );
 }
 
-// ─── SortableRow ───────────────────────────────────────────────────────────────
 function SortableRow({
   id,
   children,
@@ -95,7 +87,6 @@ function SortableRow({
   );
 }
 
-// ─── Confirm modal ─────────────────────────────────────────────────────────────
 function ConfirmModal({
   title, body, label, onConfirm, onCancel,
 }: {
@@ -120,7 +111,6 @@ function ConfirmModal({
   );
 }
 
-// ─── Página principal ──────────────────────────────────────────────────────────
 const dropAnimation = {
   sideEffects: defaultDropAnimationSideEffects({
     styles: { active: { opacity: "0.5" } },
@@ -134,6 +124,8 @@ export default function PlanPage() {
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [toast, setToast]       = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const { t } = useLanguage();
+  const tp = t.panel;
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -158,7 +150,6 @@ export default function PlanPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Calcular rango temporal del portafolio
   const spans = projects.map((p) => {
     const wks = totalWeeks(p.tasks);
     const start = new Date(p.start_date + "T00:00:00");
@@ -172,12 +163,10 @@ export default function PlanPage() {
     if (start < minDate) minDate = start;
     if (end   > maxDate) maxDate = end;
   });
-  // Ajustar al primer día del mes / siguiente mes
   minDate = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
   maxDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 1);
   const totalMs = Math.max(maxDate.getTime() - minDate.getTime(), 1);
 
-  // Month labels
   const monthLabels: { label: string; left: number }[] = [];
   let cur = new Date(minDate);
   while (cur < maxDate) {
@@ -198,14 +187,14 @@ export default function PlanPage() {
     const oldIdx = projects.findIndex((p) => p.id === active.id);
     const newIdx = projects.findIndex((p) => p.id === over.id);
     setProjects((prev) => arrayMove(prev, oldIdx, newIdx));
-    showToast("Prioridad de proyectos actualizada.");
+    showToast(tp.globalPlan.priorityUpdated);
   };
 
   const deleteProject = async (id: string) => {
     await supabase.from("projects").delete().eq("id", id);
     setConfirmDel(null);
     setProjects((prev) => prev.filter((p) => p.id !== id));
-    showToast("Proyecto eliminado.");
+    showToast(tp.globalPlan.deleted);
   };
 
   if (loading) {
@@ -218,9 +207,9 @@ export default function PlanPage() {
 
   const BlueHeader = () => (
     <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-      <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">Plan del portafolio</h1>
+      <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">{tp.globalPlan.title}</h1>
       <p className="mt-1 text-sm text-[#B1C9EF]">
-        Cronograma de todos los proyectos. Arrastra ⠿ para priorizar.
+        {tp.globalPlan.subtitle}
       </p>
     </div>
   );
@@ -240,7 +229,6 @@ export default function PlanPage() {
     <div className="animate-in fade-in duration-300">
       <BlueHeader />
 
-      {/* Month labels */}
       <div className="relative mb-2 h-4" style={{ paddingLeft: "192px" }}>
         {monthLabels.map(({ label, left }) => (
           <span
@@ -265,6 +253,8 @@ export default function PlanPage() {
               const sp = spans.find((s) => s.p.id === p.id);
               const left  = sp ? ((sp.start.getTime() - minDate.getTime()) / totalMs) * 100 : 0;
               const width = sp ? ((sp.end.getTime()   - sp.start.getTime()) / totalMs) * 100 : 10;
+              const statusLabels = tp.status;
+              const statusLabel = statusLabels[p.status as keyof typeof statusLabels] ?? p.status;
 
               return (
                 <SortableRow key={p.id} id={p.id}>
@@ -275,7 +265,6 @@ export default function PlanPage() {
                     >
                       <DragHandle listeners={listeners} attributes={attributes} />
 
-                      {/* Nombre y fechas */}
                       <div className="py-2">
                         <div className="truncate text-[13px] font-semibold text-[#16323D]">
                           {p.title.split(" — ")[0]}
@@ -286,21 +275,19 @@ export default function PlanPage() {
                         </div>
                       </div>
 
-                      {/* Barra Gantt */}
                       <div className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1]">
                         <div
                           className={`absolute top-0.5 h-4 rounded-[5px] px-2 text-[9.5px] font-bold leading-4 overflow-hidden whitespace-nowrap ${BAR_COLORS[p.status] ?? "bg-[#D7CBB3] text-[#5C6A6E]"}`}
                           style={{ left: `${left}%`, width: `${Math.max(width, 6)}%` }}
                         >
-                          {STATUS_LABELS[p.status]}
+                          {statusLabel}
                         </div>
                       </div>
 
-                      {/* Eliminar */}
                       <button
                         onClick={() => setConfirmDel(p.id)}
                         className="mr-2 grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]"
-                        aria-label="Eliminar proyecto"
+                        aria-label={tp.globalPlan.deleteProject}
                       >
                         🗑
                       </button>
@@ -324,26 +311,23 @@ export default function PlanPage() {
         </DragOverlay>
       </DndContext>
 
-      {/* Leyenda */}
       <div className="mt-5 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E]">
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#16323D]" /> Aprobado</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4E7A82]" /> En obra</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4F8A63]" /> Terminado</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3]" /> Presupuesto</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#16323D]" /> {tp.status.aprobado}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4E7A82]" /> {tp.status.en_obra}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4F8A63]" /> {tp.status.terminado}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3]" /> {tp.status.presupuesto}</span>
       </div>
 
-      {/* Confirm eliminar */}
       {confirmDel && (
         <ConfirmModal
-          title="Eliminar proyecto"
-          body={`Se eliminará "${projects.find((p) => p.id === confirmDel)?.title}" y todos sus datos. Esta acción no se puede deshacer.`}
-          label="Eliminar"
+          title={tp.globalPlan.deleteProject}
+          body={`"${projects.find((p) => p.id === confirmDel)?.title}" ${tp.globalPlan.deleteBody}`}
+          label={tp.globalPlan.delete}
           onConfirm={() => deleteProject(confirmDel)}
           onCancel={() => setConfirmDel(null)}
         />
       )}
 
-      {/* Toast */}
       <div
         className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}
       >
