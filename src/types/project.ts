@@ -15,8 +15,10 @@ export interface Contact {
   specialty: string;
   phone: string;
   rate: string;
+  type: "friend" | "coworker" | "customer";
+  rate_type: "hour" | "day";
   created_at?: string;
-  projects?: string[]; // Para simplificar la asignación en la UI
+  projects?: string[];
 }
 
 export interface Task {

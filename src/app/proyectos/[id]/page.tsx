@@ -637,80 +637,147 @@ function ContactosTab({
 }) {
   const { t } = useLanguage();
   const tp = t.panel;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const assignedIds = new Set(contacts.map((c) => c.id));
 
-  const toggle = async (cid: string) => {
+  const assignedIds = new Set(contacts.map((c) => c.id));
+  const available = allContacts.filter(
+    (c) =>
+      !assignedIds.has(c.id) &&
+      c.name.toLowerCase().includes(pickerSearch.toLowerCase())
+  );
+
+  const remove = async (cid: string) => {
     if (busy) return;
     setBusy(cid);
-    const isOn = assignedIds.has(cid);
-    if (isOn) {
-      const { error } = await supabase.from("project_contacts").delete()
-        .eq("project_id", project.id).eq("contact_id", cid);
-      if (error) { toast("Error: " + error.message); setBusy(null); return; }
-      toast(tp.contacts.removed);
-    } else {
-      const { error } = await supabase.from("project_contacts").insert({ project_id: project.id, contact_id: cid });
-      if (error) { toast("Error: " + error.message); setBusy(null); return; }
-      toast(tp.contacts.assigned);
-    }
+    const { error } = await supabase.from("project_contacts").delete()
+      .eq("project_id", project.id).eq("contact_id", cid);
+    if (error) { toast("Error: " + error.message); setBusy(null); return; }
+    toast(tp.contacts.removed);
     setBusy(null);
     onRefresh();
   };
 
-  if (allContacts.length === 0) {
-    return (
-      <div className="max-w-[760px] rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#5C6A6E]">
-        {tp.contacts.noContacts}
-      </div>
-    );
-  }
+  const assign = async (cid: string) => {
+    if (busy) return;
+    setBusy(cid);
+    const { error } = await supabase.from("project_contacts").insert({ project_id: project.id, contact_id: cid });
+    if (error) { toast("Error: " + error.message); setBusy(null); return; }
+    toast(tp.contacts.assigned);
+    setBusy(null);
+    setPickerOpen(false);
+    setPickerSearch("");
+    onRefresh();
+  };
 
   return (
     <div className="max-w-[760px]">
-      <p className="mb-4 text-xs text-[#5C6A6E]">
-        {tp.contacts.hint}
-      </p>
-      <div className="flex flex-col gap-3">
-        {allContacts.map((c) => {
-          const on = assignedIds.has(c.id);
-          return (
+      <div className="mb-4 flex items-center justify-between">
+        <span className="text-sm font-semibold text-[#5C6A6E]">{tp.contacts.assigned}</span>
+        <button
+          onClick={() => setPickerOpen(true)}
+          className="rounded-xl bg-[#16323D] px-4 py-2 text-xs font-bold text-white hover:bg-[#1e4455]"
+        >
+          {tp.contacts.addSpecialist}
+        </button>
+      </div>
+
+      {contacts.length === 0 ? (
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-[#D7CBB3] bg-white p-10 text-center">
+          <p className="text-sm text-[#5C6A6E]">{tp.contacts.noAssigned}</p>
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="rounded-xl bg-[#16323D] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1e4455]"
+          >
+            {tp.contacts.addSpecialist}
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {contacts.map((c) => (
             <div
               key={c.id}
-              className={`flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${on ? "border-[#16323D]" : "border-[#E6DDCB]"}`}
+              className="flex items-center gap-3 rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3 shadow-sm"
             >
-              {/* Checkbox izquierdo */}
-              <button
-                onClick={() => toggle(c.id)}
-                disabled={busy === c.id}
-                aria-label={on ? "Quitar del proyecto" : "Agregar al proyecto"}
-                className={`grid size-6 flex-none place-items-center rounded-md border-2 transition disabled:opacity-50 ${on ? "border-[#16323D] bg-[#16323D]" : "border-[#D7CBB3] bg-white hover:border-[#16323D]"}`}
-              >
-                {on && <span className="text-[10px] font-bold leading-none text-white">✓</span>}
-              </button>
-
-              {/* Avatar */}
               <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] font-[Manrope] text-sm font-bold text-white">
                 {initials(c.name)}
               </span>
-
-              {/* Info */}
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold text-[#16323D]">{c.name}</div>
-                <div className="text-xs text-[#5C6A6E]">{c.specialty} · {c.rate}</div>
+                {c.specialty && (
+                  <div className="text-xs text-[#5C6A6E]">
+                    {c.specialty}{c.rate ? ` · ${c.rate} ${c.rate_type === "day" ? t.panel.globalContacts.rateDay : t.panel.globalContacts.rateHour}` : ""}
+                  </div>
+                )}
               </div>
-
-              {/* Llamar */}
               <a
                 href={`tel:${c.phone}`}
                 className="inline-flex flex-none items-center gap-1.5 rounded-xl bg-[#DCEBDD] px-3 py-2 text-xs font-bold text-[#4F8A63]"
               >
                 📞 {tp.contacts.call}
               </a>
+              <button
+                onClick={() => remove(c.id)}
+                disabled={busy === c.id}
+                aria-label={tp.contacts.removeSpecialist}
+                className="grid size-8 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#FBE9E7] disabled:opacity-50"
+              >
+                ×
+              </button>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {pickerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
+          <div className="flex max-h-[80vh] w-full max-w-[460px] flex-col rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
+            <h3 className="mb-4 font-[Manrope] text-xl font-bold text-[#16323D]">
+              {tp.contacts.pickerTitle}
+            </h3>
+            <input
+              type="text"
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              placeholder={tp.contacts.pickerSearch}
+              className="mb-3 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+            />
+            <div className="flex-1 space-y-2 overflow-y-auto">
+              {available.length === 0 ? (
+                <div className="py-8 text-center text-sm text-[#5C6A6E]">
+                  {tp.contacts.pickerEmpty}
+                </div>
+              ) : (
+                available.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => assign(c.id)}
+                    disabled={busy === c.id}
+                    className="flex w-full items-center gap-3 rounded-xl border border-[#E6DDCB] bg-white p-3 text-left transition hover:bg-[#F7F3EA] disabled:opacity-50"
+                  >
+                    <span className="grid size-10 flex-none place-items-center rounded-[12px] bg-[#16323D] font-[Manrope] text-sm font-bold text-white">
+                      {initials(c.name)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-[#16323D]">{c.name}</div>
+                      {c.specialty && (
+                        <div className="text-xs text-[#5C6A6E]">{c.specialty}</div>
+                      )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+            <button
+              onClick={() => { setPickerOpen(false); setPickerSearch(""); }}
+              className="mt-4 w-full rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]"
+            >
+              {tp.common.cancel}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

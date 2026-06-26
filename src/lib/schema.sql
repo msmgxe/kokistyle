@@ -19,13 +19,20 @@ CREATE TABLE IF NOT EXISTS projects (
 
 -- 3. Tabla de Contactos (Especialistas / Proveedores)
 CREATE TABLE IF NOT EXISTS contacts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  specialty TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  rate TEXT NOT NULL,
+  id        UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name      TEXT NOT NULL,
+  specialty TEXT NOT NULL DEFAULT '',
+  phone     TEXT NOT NULL DEFAULT '',
+  rate      TEXT NOT NULL DEFAULT '',
+  type      TEXT NOT NULL DEFAULT 'coworker',
+  rate_type TEXT NOT NULL DEFAULT 'hour',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- MIGRATION: Add type and rate_type to contacts
+-- Run this in Supabase SQL Editor if contacts table already exists:
+-- ALTER TABLE contacts ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'coworker';
+-- ALTER TABLE contacts ADD COLUMN IF NOT EXISTS rate_type TEXT NOT NULL DEFAULT 'hour';
 
 -- 4. Tabla de Relación Proyectos-Contactos (Muchos a Muchos)
 CREATE TABLE IF NOT EXISTS project_contacts (
