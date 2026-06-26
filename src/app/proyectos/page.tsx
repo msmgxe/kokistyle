@@ -131,7 +131,7 @@ function ProjectCard({ project }: { project: ProjectWithData }) {
       </div>
 
       {/* Title */}
-      <h3 className="font-[Manrope] text-lg font-bold leading-tight text-[#16323D]">
+      <h3 className="font-[Manrope] text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
         {project.title}
       </h3>
       <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E]">
