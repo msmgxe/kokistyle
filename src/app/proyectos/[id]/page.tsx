@@ -9,7 +9,7 @@ import {
   useEffect, useState, useCallback, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Lock, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -339,16 +339,6 @@ function WorkflowTab({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  if (project.status === "presupuesto") {
-    return (
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-[#5C6A6E]">
-        <Lock size={32} className="mx-auto mb-3 opacity-30" />
-        <b className="mb-1 block font-bold text-[#16323D]">Workflow bloqueado</b>
-        <p className="text-sm">Se activa al aprobar el presupuesto.</p>
-      </div>
-    );
-  }
-
   const byStatus = (s: KanbanStatus) =>
     items.filter((t) => t.status === s).sort((a, b) => a.sort_order - b.sort_order);
 
@@ -511,16 +501,6 @@ function MaterialesTab({
     useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  if (project.status === "presupuesto") {
-    return (
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-[#5C6A6E]">
-        <Lock size={32} className="mx-auto mb-3 opacity-30" />
-        <b className="mb-1 block font-bold text-[#16323D]">Módulo bloqueado</b>
-        <p className="text-sm">Se activa al aprobar el presupuesto.</p>
-      </div>
-    );
-  }
 
   const por = items.filter((m) => !m.bought).reduce((s, m) => s + m.cost, 0);
   const com = items.filter((m) => m.bought).reduce((s, m) => s + m.cost, 0);
@@ -1586,7 +1566,8 @@ export default function ProjectDetailPage() {
   const id = params?.id as string;
   const [project, setProject] = useState<ProjectFull | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabId>("workflow");
+  const [activeTab, setActiveTab] = useState<TabId>("plan");
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
   const { setMeta } = useVoice();
@@ -1664,13 +1645,22 @@ export default function ProjectDetailPage() {
       </button>
 
       {/* Blue header */}
-      <div className="mb-2 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-[Manrope] text-lg font-bold uppercase tracking-widest text-white">{project.title}</h1>
+      <div className="relative mb-2 rounded-2xl bg-[#395886] px-6 py-5">
+        <h1 className="font-[Manrope] text-lg font-bold uppercase tracking-widest text-white pr-10">{project.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
           <StatusChipOnBlue status={project.status} />
           <span>· {project.client}</span>
           <span>· {money(project.budget)}</span>
         </div>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setEditProjectOpen(true)}
+            className="absolute right-4 top-4 grid size-8 place-items-center rounded-lg bg-white/15 text-white transition hover:bg-white/25"
+            aria-label="Editar proyecto"
+          >
+            <Pencil size={14} />
+          </button>
+        )}
       </div>
 
       {/* Pill tabs */}
@@ -1699,6 +1689,29 @@ export default function ProjectDetailPage() {
       />}
       {activeTab === "plan"        && <PlanTab        project={project} tasks={tasks} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "notas"       && <NotasTab       project={project} notes={project.project_notes ?? []} onRefresh={fetchProject} toast={showToast} />}
+
+      {/* Editar proyecto */}
+      {editProjectOpen && (
+        <EditorModal
+          opts={{
+            title: "Editar proyecto",
+            fields: [
+              { key: "title",      label: "Nombre del proyecto", type: "text",   value: project.title },
+              { key: "client",     label: "Cliente",              type: "text",   value: project.client },
+              { key: "address",    label: "Dirección",            type: "text",   value: project.address },
+              { key: "budget",     label: "Presupuesto (USD)",    type: "number", value: project.budget },
+              { key: "status",     label: "Estado",               type: "select", options: ["presupuesto", "aprobado", "en_obra", "terminado"], value: project.status },
+              { key: "start_date", label: "Fecha de inicio",      type: "date",   value: project.start_date },
+            ],
+            onSave: async (vals) => {
+              const { error } = await supabase.from("projects").update(vals).eq("id", project.id);
+              if (error) { showToast("Error al guardar: " + error.message); return; }
+              fetchProject(); showToast("Proyecto actualizado.");
+            },
+          }}
+          onClose={() => setEditProjectOpen(false)}
+        />
+      )}
 
       {/* Toast */}
       <div className={`fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 max-w-sm w-full rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}>
