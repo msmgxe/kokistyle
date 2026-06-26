@@ -265,6 +265,9 @@ export const translations = {
         materialUpdated: "Material updated.",
         materialDeleted: "Material deleted.",
         materialAdded: "Material added.",
+        duplicateTitle: "Duplicate material",
+        duplicateBody: "Create a copy of",
+        duplicateBtn: "Duplicate",
       },
       budget: {
         description: "Description",
@@ -708,6 +711,9 @@ export const translations = {
         materialUpdated: "Material actualizado.",
         materialDeleted: "Material eliminado.",
         materialAdded: "Material agregado.",
+        duplicateTitle: "Duplicar material",
+        duplicateBody: "Crear una copia de",
+        duplicateBtn: "Duplicar",
       },
       budget: {
         description: "Descripción",

@@ -516,8 +516,9 @@ function MaterialesTab({
   const { t } = useLanguage();
   const tp = t.panel;
   const [items, setItems] = useState<Material[]>(materials);
-  const [editor, setEditor] = useState<EditorOpts | null>(null);
+  const [editor, setEditor]     = useState<EditorOpts | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [confirmDup, setConfirmDup] = useState<Material | null>(null);
 
   useEffect(() => { setItems(materials); }, [materials]);
 
@@ -601,11 +602,17 @@ function MaterialesTab({
               <SortableRow key={m.id} id={m.id}>
                 {({ listeners, attributes }, isDragging) => (
                   <div
-                    {...listeners} {...attributes}
                     onClick={() => openEdit(m)}
                     className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""} ${m.bought ? "opacity-70" : ""}`}
                   >
-                    <DragHandle />
+                    {/* Drag handle — only area that activates DnD */}
+                    <div
+                      {...listeners} {...attributes}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center justify-center px-2 text-[#C4B89A] touch-none cursor-grab active:cursor-grabbing select-none"
+                    >
+                      <GripVertical size={15} />
+                    </div>
                     <div className="flex flex-1 items-center gap-3 py-3 pr-3">
                       <span className={`grid size-6 flex-none place-items-center rounded-lg border-2 ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3]"}`}>
                         {m.bought && <span className="text-[10px] font-bold text-white">✓</span>}
@@ -616,7 +623,7 @@ function MaterialesTab({
                       </span>
                       <span className="font-mono text-sm font-semibold text-[#16323D]">{money(m.cost)}</span>
                       <button
-                        onClick={(e) => { e.stopPropagation(); duplicateMaterial(m); }}
+                        onClick={(e) => { e.stopPropagation(); setConfirmDup(m); }}
                         className="grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
                         aria-label="Duplicate"
                       >
@@ -660,6 +667,16 @@ function MaterialesTab({
       </button>
 
       {editor && <EditorModal opts={editor} onClose={() => setEditor(null)} />}
+
+      {confirmDup && (
+        <ConfirmModal
+          title={tp.materials.duplicateTitle}
+          body={`${tp.materials.duplicateBody} "${confirmDup.name}"?`}
+          label={tp.materials.duplicateBtn}
+          onConfirm={() => { duplicateMaterial(confirmDup); setConfirmDup(null); }}
+          onCancel={() => setConfirmDup(null)}
+        />
+      )}
     </div>
   );
 }
