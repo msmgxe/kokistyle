@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { GripVertical } from "lucide-react";
 import {
   DndContext,
@@ -287,24 +288,32 @@ export default function PlanPage() {
                     >
                       <DragHandle listeners={listeners} attributes={attributes} />
 
-                      <div className="py-2">
-                        <div className="truncate text-[13px] font-semibold text-[#16323D]">
+                      <Link
+                        href={`/proyectos/${p.id}`}
+                        className="group py-2 hover:bg-[#F7F3EA] transition-colors"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div className="truncate text-[13px] font-semibold text-[#16323D] group-hover:text-[#395886] transition-colors">
                           {p.title.split(" — ")[0]}
                         </div>
                         <div className="font-mono text-[10.5px] text-[#5C6A6E]">
                           {sp ? `${dShort(sp.start)}–${dShort(sp.end)}` : "—"}
                           {" · "}{p.client}
                         </div>
-                      </div>
+                      </Link>
 
-                      <div className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1]">
+                      <Link
+                        href={`/proyectos/${p.id}`}
+                        className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1] hover:ring-1 hover:ring-[#395886]/30 transition-all"
+                        onClick={e => e.stopPropagation()}
+                      >
                         <div
                           className={`absolute top-0.5 h-4 rounded-[5px] px-2 text-[9.5px] font-bold leading-4 overflow-hidden whitespace-nowrap ${BAR_COLORS[p.status] ?? "bg-[#D7CBB3] text-[#5C6A6E]"}`}
                           style={{ left: `${left}%`, width: `${Math.max(width, 6)}%` }}
                         >
                           {statusLabel}
                         </div>
-                      </div>
+                      </Link>
 
                       <button
                         onClick={() => setConfirmDel(p.id)}
