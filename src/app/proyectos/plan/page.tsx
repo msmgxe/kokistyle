@@ -119,11 +119,12 @@ const dropAnimation = {
 
 export default function PlanPage() {
   const [projects, setProjects] = useState<ProjectWithTasks[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [activeId, setActiveId]   = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
-  const [toast, setToast]       = useState("");
+  const [toast, setToast]         = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<"all" | "presupuesto" | "aprobado" | "en_obra" | "terminado">("all");
   const { t } = useLanguage();
   const tp = t.panel;
 
@@ -225,9 +226,30 @@ export default function PlanPage() {
     );
   }
 
+  const visibleProjects = filterStatus === "all" ? projects : projects.filter((p) => p.status === filterStatus);
+  const STATUS_FILTER_OPTS = [
+    { key: "all",          label: "All" },
+    { key: "presupuesto",  label: tp.status.presupuesto },
+    { key: "aprobado",     label: tp.status.aprobado },
+    { key: "en_obra",      label: tp.status.en_obra },
+    { key: "terminado",    label: tp.status.terminado },
+  ] as const;
+
   return (
     <div className="animate-in fade-in duration-300">
       <BlueHeader />
+
+      {/* Status filter */}
+      <div className="mb-3 flex justify-end">
+        <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+          {STATUS_FILTER_OPTS.map(({ key, label }) => (
+            <button key={key} onClick={() => setFilterStatus(key)}
+              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="relative mb-2 h-4" style={{ paddingLeft: "192px" }}>
         {monthLabels.map(({ label, left }) => (
@@ -249,7 +271,7 @@ export default function PlanPage() {
       >
         <SortableContext items={projects.map((p) => p.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
-            {projects.map((p) => {
+            {visibleProjects.map((p) => {
               const sp = spans.find((s) => s.p.id === p.id);
               const left  = sp ? ((sp.start.getTime() - minDate.getTime()) / totalMs) * 100 : 0;
               const width = sp ? ((sp.end.getTime()   - sp.start.getTime()) / totalMs) * 100 : 10;

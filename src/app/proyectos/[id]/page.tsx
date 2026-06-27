@@ -1320,6 +1320,7 @@ function PlanTab({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [ganttUnit, setGanttUnit] = useState<"week" | "day">("week");
+  const [filterStatus, setFilterStatus] = useState<"all" | "pend" | "prog" | "done">("all");
   const [editTask, setEditTask] = useState<{ task: { task: Task; start: Date; end: Date; weekStart: number }; startDate: Date; endDate: Date } | null>(null);
   const persist = usePersistOrder("tasks");
 
@@ -1347,6 +1348,7 @@ function PlanTab({
 
   const total = Math.max(6, items.reduce((s, t) => s + t.duration_weeks, 0));
   const rows  = schedule();
+  const filteredRows = filterStatus === "all" ? rows : rows.filter((r) => r.task.status === filterStatus);
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
 
   const projectStart = new Date(project.start_date + "T00:00:00");
@@ -1408,11 +1410,23 @@ function PlanTab({
         {tp.plan.hint}
       </p>
 
-      {/* Gantt unit toggle */}
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-[#5C6A6E]">
-          {ganttUnit === "week" ? "Weeks" : "Days"} view
-        </span>
+      {/* Controls: filter + gantt unit toggle */}
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        {/* Status filter */}
+        <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+          {([
+            { key: "all",  label: "All" },
+            { key: "pend", label: tp.workflow.colPend },
+            { key: "prog", label: tp.workflow.colProg },
+            { key: "done", label: tp.workflow.colDone },
+          ] as const).map(({ key, label }) => (
+            <button key={key} onClick={() => setFilterStatus(key)}
+              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        {/* Weeks / Days toggle */}
         <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
           {(["week", "day"] as const).map((u) => (
             <button key={u} onClick={() => setGanttUnit(u)}
@@ -1454,7 +1468,7 @@ function PlanTab({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
-            {rows.map(({ task: t, start, end, weekStart }) => {
+            {filteredRows.map(({ task: t, start, end, weekStart }) => {
               const left  = (weekStart / total) * 100;
               const width = (t.duration_weeks / total) * 100;
 
