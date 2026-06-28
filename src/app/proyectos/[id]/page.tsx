@@ -48,6 +48,7 @@ import type {
 import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
+import EstimateTab from "@/src/components/ui/EstimateTab";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface ProjectFull extends Project {
@@ -2016,7 +2017,7 @@ export default function ProjectDetailPage() {
       {activeTab === "workflow"    && <WorkflowTab    project={project} tasks={tasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "materiales"  && <MaterialesTab  project={project} materials={project.materials} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "contactos"   && <ContactosTab   project={project} contacts={project.contacts} allContacts={allContacts} onRefresh={fetchProject} toast={showToast} />}
-      {activeTab === "presupuesto" && <PresupuestoTab project={project} budgetItems={project.budget_items} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "presupuesto" && <EstimateTab project={project} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "pagos"       && <PagosTab
         project={project} payments={project.payments} expenses={project.expenses}
         contacts={project.contacts} onRefresh={fetchProject} toast={showToast}

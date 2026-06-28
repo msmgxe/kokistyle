@@ -3,8 +3,9 @@
  * Generates cotización (budget quote) and estado de cuenta (account statement).
  */
 import jsPDF from "jspdf";
-import type { BudgetItem, Payment, Expense, Project } from "@/src/types/project";
+import type { BudgetItem, Payment, Expense, Project, ProjectEstimate } from "@/src/types/project";
 import { money } from "./utils";
+import { branding } from "@/src/config/branding";
 
 const INK  = "#16323D";
 const MUTED = "#5C6A6E";
@@ -26,10 +27,10 @@ function header(doc: jsPDF, title: string, project: Project) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
-  doc.text("KokiStyle", 14, 14);
+  doc.text(branding.companyName, 14, 14);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("kokistyle.com  ·  Florida, USA", W - 14, 14, { align: "right" });
+  doc.text(`${branding.phone}  ·  ${branding.email}`, W - 14, 14, { align: "right" });
 
   // Document title
   doc.setFont("helvetica", "bold");
@@ -256,4 +257,187 @@ export function exportEstadoCuenta(project: Project, payments: Payment[], expens
 
   const filename = `EstadoCuenta_${project.title.replace(/\s+/g, "_")}.pdf`;
   doc.save(filename);
+}
+
+export function exportEstimatePdf(
+  estimate: ProjectEstimate,
+  grandTotal: number,
+  laborTotal: number,
+  discountAmt: number,
+  language: "en" | "es" = "en",
+) {
+  const EN = language === "en";
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = doc.internal.pageSize.getWidth();
+  let y = 0;
+
+  // ── Brand header bar ───────────────────────────────────────────────────────
+  doc.setFillColor(22, 50, 61);
+  doc.rect(0, 0, W, 22, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(255, 255, 255);
+  doc.text(branding.companyName.toUpperCase(), 14, 14);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text(`${branding.phone}  ·  ${branding.email}`, W - 14, 14, { align: "right" });
+
+  // Slogan
+  y = 31;
+  doc.setFontSize(7.5);
+  doc.setTextColor(MUTED);
+  doc.text(branding.slogan, 14, y);
+
+  // ── Project title ──────────────────────────────────────────────────────────
+  y = 42;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(INK);
+  doc.text((estimate.project_title || (EN ? "ESTIMATE" : "ESTIMADO")).toUpperCase(), 14, y);
+
+  // ── Customer info ──────────────────────────────────────────────────────────
+  y = 52;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(MUTED);
+  if (estimate.customer_name) doc.text(`${EN ? "Customer" : "Cliente"}: ${estimate.customer_name}`, 14, y);
+  if (estimate.city)          doc.text(`${EN ? "City" : "Ciudad"}: ${estimate.city}`, 90, y);
+  if (estimate.phone)         doc.text(`Tel: ${estimate.phone}`, 150, y);
+  y += 6;
+  if (estimate.start_date) doc.text(`${EN ? "Start" : "Inicio"}: ${fmtDate(estimate.start_date)}`, 14, y);
+  if (estimate.end_date)   doc.text(`${EN ? "End" : "Fin"}: ${fmtDate(estimate.end_date)}`, 90, y);
+  doc.text(`${EN ? "Date" : "Fecha"}: ${fmtDate(new Date().toISOString().split("T")[0])}`, W - 14, y, { align: "right" });
+
+  // ── Divider + column headers ───────────────────────────────────────────────
+  y = 68;
+  doc.setDrawColor(LINE);
+  doc.setLineWidth(0.4);
+  doc.line(14, y, W - 14, y);
+
+  y = 76;
+  doc.setFillColor(247, 243, 234);
+  doc.rect(0, y - 5, W, 10, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(MUTED);
+  doc.text(EN ? "SECTION / ITEM" : "SECCIÓN / PARTIDA", 14, y);
+  doc.text(EN ? "AMOUNT (USD)" : "MONTO (USD)", W - 14, y, { align: "right" });
+  y += 8;
+
+  // ── Sections ───────────────────────────────────────────────────────────────
+  for (const section of estimate.sections) {
+    const items   = section.items ?? [];
+    const secTotal = items.length > 0 ? items.reduce((a, i) => a + i.amount, 0) : section.section_total;
+    const name    = EN ? section.name_en : section.name_es;
+
+    if (y > 250) { doc.addPage(); y = 20; }
+
+    // Section header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(section.is_material_type ? "#B0492F" : INK);
+    doc.text(name.toUpperCase(), 14, y);
+    if (section.note) {
+      const nX = 14 + doc.getTextWidth(name.toUpperCase()) + 2;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      doc.setTextColor(MUTED);
+      if (nX < W - 50) doc.text(`(${section.note})`, nX, y);
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(section.is_material_type ? "#B0492F" : INK);
+    doc.text(money(secTotal), W - 14, y, { align: "right" });
+    y += 6;
+
+    // Items
+    if (items.length > 0) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      for (const item of items) {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setTextColor(MUTED);
+        doc.text(`  • ${item.description}`, 18, y, { maxWidth: W - 52 });
+        doc.setTextColor(INK);
+        doc.text(money(item.amount), W - 14, y, { align: "right" });
+        y += 5.5;
+      }
+    }
+
+    // Row separator
+    doc.setDrawColor("#F0EBE0");
+    doc.setLineWidth(0.2);
+    doc.line(14, y, W - 14, y);
+    y += 4;
+  }
+
+  // ── Totals ─────────────────────────────────────────────────────────────────
+  y += 4;
+  if (y > 245) { doc.addPage(); y = 20; }
+
+  if (discountAmt > 0) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(MUTED);
+    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", 120, y);
+    doc.text(money(laborTotal), W - 14, y, { align: "right" });
+    y += 6;
+    doc.setTextColor("#4F8A63");
+    doc.text(`${estimate.discount_label} (−${estimate.discount_pct}%)`, 120, y);
+    doc.text(`−${money(discountAmt)}`, W - 14, y, { align: "right" });
+    y += 6;
+  }
+
+  // Grand total bar
+  doc.setFillColor(22, 50, 61);
+  doc.roundedRect(14, y, W - 28, 14, 3, 3, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(255, 255, 255);
+  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", 20, y + 9);
+  doc.text(money(grandTotal), W - 20, y + 9, { align: "right" });
+  y += 22;
+
+  // ── Payment schedule ───────────────────────────────────────────────────────
+  if (y > 245) { doc.addPage(); y = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(INK);
+  doc.text(EN ? "PAYMENT SCHEDULE" : "CALENDARIO DE PAGOS", 14, y);
+  y += 8;
+
+  const depositColors = ["#395886", "#4E7A82", "#4F8A63"];
+  for (let i = 0; i < estimate.deposit_schedule.length; i++) {
+    const dep   = estimate.deposit_schedule[i];
+    const color = depositColors[i] ?? "#5C6A6E";
+    const [r, g, b] = color.match(/\w\w/g)!.map(x => parseInt(x, 16));
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(14, y - 4, 22, 10, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`${dep.pct}%`, 25, y + 2, { align: "center" });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(INK);
+    doc.text(money(grandTotal * dep.pct / 100), 40, y + 2);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(MUTED);
+    doc.text(EN ? dep.label_en : dep.label_es, 72, y + 2);
+    y += 13;
+  }
+
+  // ── Footer ─────────────────────────────────────────────────────────────────
+  y += 4;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7.5);
+  doc.setTextColor(MUTED);
+  doc.text(
+    EN
+      ? `Contractor: ${branding.contractor}  ·  This estimate is valid for 30 days.`
+      : `Contratista: ${branding.contractor}  ·  Este estimado tiene validez de 30 días.`,
+    14, y,
+  );
+
+  doc.save(`Estimate_${(estimate.project_title || "project").replace(/\s+/g, "_")}.pdf`);
 }

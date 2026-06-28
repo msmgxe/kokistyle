@@ -8,6 +8,7 @@ import { LogOut } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
 import VoiceFAB from "@/src/components/ui/VoiceFAB";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { branding } from "@/src/config/branding";
 
 function LangSwitch() {
   const { language, setLanguage } = useLanguage();
@@ -48,12 +49,12 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           aria-label="Panel de administración"
         >
           <div className="mx-auto flex max-w-[1180px] items-center gap-4 px-6 py-3">
-            <Link href="/proyectos" className="flex items-center gap-3" aria-label="KokiStyle Panel">
+            <Link href="/proyectos" className="flex items-center gap-3" aria-label={`${branding.companyShort} Panel`}>
               <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#16323D] text-sm font-bold text-white">
-                KS
+                {branding.initials}
               </span>
               <span>
-                <span className="block text-base font-bold leading-none text-[#16323D]">KokiStyle</span>
+                <span className="block text-base font-bold leading-none text-[#16323D]">{branding.companyShort}</span>
                 <span className="mt-0.5 block text-[10px] uppercase tracking-[0.22em] text-[#5C6A6E]">{t.panel.nav.panelLabel}</span>
               </span>
             </Link>

@@ -72,16 +72,16 @@ export default function Navbar() {
   return (
     <nav className="fixed left-0 top-0 z-50 w-full border-b border-white/50 bg-white/85 backdrop-blur-xl">
       <Container className="flex items-center justify-between py-4">
-        <Link href="/" className="flex items-center gap-3" aria-label="KokiStyle home">
+        <Link href="/" className="flex items-center gap-3" aria-label={`${branding.companyShort} home`}>
           <span className="grid size-10 place-items-center rounded-lg bg-[#0F3D56] text-sm font-bold text-white">
-            KS
+            {branding.initials}
           </span>
           <span>
             <span className="block text-lg font-bold leading-none text-[#0F3D56]">
-              KokiStyle
+              {branding.companyShort}
             </span>
             <span className="mt-1 block text-[11px] uppercase tracking-[0.24em] text-slate-500">
-              Florida
+              South Florida
             </span>
           </span>
         </Link>

@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KokiStyle Remodeling | Premium Florida Renovations",
+  title: "Luxaris Design LLC | Premium Florida Renovations",
   description:
     "Premium remodeling, before and after transformations, virtual tours, and estimate generation for Florida properties.",
   manifest: "/manifest.json",

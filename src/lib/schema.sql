@@ -111,3 +111,101 @@ CREATE TABLE IF NOT EXISTS expenses (
   concept TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 10. Estimate module (Luxaris Design — Card Accordion)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Catálogo de secciones (mantenido por superadmin)
+CREATE TABLE IF NOT EXISTS estimate_section_catalog (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name_en         TEXT NOT NULL,
+  name_es         TEXT NOT NULL,
+  note_en         TEXT NOT NULL DEFAULT '',
+  note_es         TEXT NOT NULL DEFAULT '',
+  is_material_type BOOLEAN NOT NULL DEFAULT false,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- Catálogo de items por sección (mantenido por superadmin)
+CREATE TABLE IF NOT EXISTS estimate_item_catalog (
+  id                   UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  section_catalog_id   UUID REFERENCES estimate_section_catalog(id) ON DELETE CASCADE NOT NULL,
+  description_en       TEXT NOT NULL,
+  description_es       TEXT NOT NULL,
+  default_amount       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  sort_order           INTEGER NOT NULL DEFAULT 0,
+  created_at           TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- Estimado por proyecto (uno por proyecto)
+CREATE TABLE IF NOT EXISTS project_estimates (
+  id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id       UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  status           TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','sent','approved','rejected')),
+  customer_name    TEXT NOT NULL DEFAULT '',
+  city             TEXT NOT NULL DEFAULT '',
+  email            TEXT NOT NULL DEFAULT '',
+  phone            TEXT NOT NULL DEFAULT '',
+  project_title    TEXT NOT NULL DEFAULT '',
+  start_date       DATE,
+  end_date         DATE,
+  discount_label   TEXT NOT NULL DEFAULT 'DISCOUNT',
+  discount_pct     NUMERIC(5,2) NOT NULL DEFAULT 0,
+  deposit_schedule JSONB NOT NULL DEFAULT '[{"pct":50,"label_en":"AT SIGN CONTRACT","label_es":"AL FIRMAR CONTRATO"},{"pct":25,"label_en":"WHEN TILE IS COMPLETE","label_es":"CUANDO EL TILE ESTÉ COMPLETO"},{"pct":25,"label_en":"WHEN CUSTOMER SATISFIED","label_es":"CUANDO EL CLIENTE ESTÉ SATISFECHO"}]',
+  notes            TEXT NOT NULL DEFAULT '',
+  created_at       TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at       TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- Secciones del estimado (DEMOLITION, PLUMBING, etc.)
+CREATE TABLE IF NOT EXISTS estimate_sections (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  estimate_id         UUID REFERENCES project_estimates(id) ON DELETE CASCADE NOT NULL,
+  section_catalog_id  UUID REFERENCES estimate_section_catalog(id) ON DELETE SET NULL,
+  name_en             TEXT NOT NULL,
+  name_es             TEXT NOT NULL,
+  note                TEXT NOT NULL DEFAULT '',
+  is_material_type    BOOLEAN NOT NULL DEFAULT false,
+  section_total       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  sort_order          INTEGER NOT NULL DEFAULT 0,
+  created_at          TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- Items de cada sección
+CREATE TABLE IF NOT EXISTS estimate_items (
+  id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  section_id       UUID REFERENCES estimate_sections(id) ON DELETE CASCADE NOT NULL,
+  item_catalog_id  UUID REFERENCES estimate_item_catalog(id) ON DELETE SET NULL,
+  description      TEXT NOT NULL,
+  amount           NUMERIC(12,2) NOT NULL DEFAULT 0,
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- RLS: acceso anon igual que resto de tablas
+ALTER TABLE estimate_section_catalog ENABLE ROW LEVEL SECURITY;
+ALTER TABLE estimate_item_catalog    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_estimates        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE estimate_sections        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE estimate_items           ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY anon_all ON estimate_section_catalog FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_all ON estimate_item_catalog    FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_all ON project_estimates        FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_all ON estimate_sections        FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_all ON estimate_items           FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Datos iniciales del catálogo (secciones típicas de Luxaris Design)
+INSERT INTO estimate_section_catalog (name_en, name_es, note_en, note_es, is_material_type, sort_order) VALUES
+  ('DEMOLITION',               'DEMOLICIÓN',               'Dumping included',   'Acarreo incluido',   false, 10),
+  ('PLUMBING',                 'PLOMERÍA',                 'Material included',  'Material incluido',  false, 20),
+  ('STRUCTURE',                'ESTRUCTURA',               'Material included',  'Material incluido',  false, 30),
+  ('ELECTRICAL',               'ELÉCTRICO',                'Material included',  'Material incluido',  false, 40),
+  ('TILE INSTALLATION',        'INSTALACIÓN DE TILE',      '',                   '',                   false, 50),
+  ('HANDY WORK',               'TRABAJO MANUAL',           '',                   '',                   false, 60),
+  ('PAINTING',                 'PINTURA',                  '',                   '',                   false, 70),
+  ('PERMIT AND ADMINISTRATIVES','PERMISOS Y ADMINISTRATIVOS','',                 '',                   false, 80),
+  ('MATERIALS',                'MATERIALES',               'Pure materials',     'Solo materiales',    true,  90)
+ON CONFLICT DO NOTHING;

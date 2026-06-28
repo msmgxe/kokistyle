@@ -72,7 +72,7 @@ export const translations = {
       eyebrow: "Virtual tours",
       title: "Interactive tours for premium project storytelling",
       description:
-        "KokiStyle is prepared for Kuula 360 embeds, allowing each remodel to become an immersive sales asset instead of a static gallery.",
+        "Luxaris Design is prepared for Kuula 360 embeds, allowing each remodel to become an immersive sales asset instead of a static gallery.",
       features: [
         "360 walkthrough embeds",
         "Project-ready share links",
@@ -106,7 +106,7 @@ export const translations = {
       subtotal: "Subtotal",
       contingency: "Contingency",
       notes: "Notes",
-      pdfTitle: "KokiStyle Estimate",
+      pdfTitle: "Luxaris Design Estimate",
       client: "Client",
       scope: "Scope",
       estimatedTotal: "Estimated Total",
@@ -131,7 +131,7 @@ export const translations = {
       explore: "Explore",
       contact: "Contact",
       copyright:
-        "© 2026 KokiStyle Remodeling. Built for premium project showcases.",
+        "© 2026 Luxaris Design LLC. Built for premium project showcases.",
       links: ["Services", "Before / After", "Virtual Tours", "Estimates"],
       socialProfile: "Social profile",
     },
@@ -146,7 +146,7 @@ export const translations = {
       tabs: {
         plan: "Plan",
         workflow: "Workflow",
-        budget: "Budget",
+        budget: "Estimate",
         payments: "Payments",
         materials: "Materials",
         contacts: "Contacts",
@@ -518,7 +518,7 @@ export const translations = {
       eyebrow: "Tours virtuales",
       title: "Tours interactivos para contar proyectos premium",
       description:
-        "KokiStyle está preparado para integrar tours 360 de Kuula, convirtiendo cada remodelación en un activo de ventas inmersivo en lugar de una galería estática.",
+        "Luxaris Design está preparado para integrar tours 360 de Kuula, convirtiendo cada remodelación en un activo de ventas inmersivo en lugar de una galería estática.",
       features: [
         "Recorridos 360 integrados",
         "Enlaces listos para compartir",
@@ -552,7 +552,7 @@ export const translations = {
       subtotal: "Subtotal",
       contingency: "Contingencia",
       notes: "Notas",
-      pdfTitle: "Presupuesto KokiStyle",
+      pdfTitle: "Presupuesto Luxaris Design",
       client: "Cliente",
       scope: "Alcance",
       estimatedTotal: "Total Estimado",
@@ -577,7 +577,7 @@ export const translations = {
       explore: "Explorar",
       contact: "Contacto",
       copyright:
-        "© 2026 KokiStyle Remodeling. Creado para showcases premium de proyectos.",
+        "© 2026 Luxaris Design LLC. Creado para showcases premium de proyectos.",
       links: ["Servicios", "Antes / Después", "Tours Virtuales", "Presupuestos"],
       socialProfile: "Perfil social",
     },
@@ -592,7 +592,7 @@ export const translations = {
       tabs: {
         plan: "Plan",
         workflow: "Flujo de trabajo",
-        budget: "Presupuesto",
+        budget: "Estimado",
         payments: "Pagos",
         materials: "Materiales",
         contacts: "Contactos",

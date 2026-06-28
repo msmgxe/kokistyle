@@ -1,11 +1,14 @@
 export const branding = {
-  companyName: "KokiStyle Remodeling",
-  slogan: "Luxury Remodeling & Construction",
-  
-  phone: "+1 (555) 555-5555",
-  email: "info@kokistyle.com",
+  companyName: "Luxaris Design LLC",
+  companyShort: "Luxaris Design",
+  initials: "LD",
+  slogan: "Kitchen, Baths, Flooring, Painting & Design of South Florida",
 
-  address: "Florida, USA",
+  phone: "561-305-6707",
+  email: "luxaris25@yahoo.com",
+  address: "South Florida, USA",
+
+  contractor: "Jorge Saldarriaga",
 
   colors: {
     primary: "#0F3D56",

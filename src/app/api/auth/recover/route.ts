@@ -34,12 +34,12 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "KokiStyle Admin <onboarding@resend.dev>",
+          from: "Luxaris Design Admin <onboarding@resend.dev>",
           to: email,
-          subject: "Código de recuperación — KokiStyle",
+          subject: "Código de recuperación — Luxaris Design",
           html: `
             <div style="font-family:-apple-system,sans-serif;max-width:420px;margin:0 auto;padding:32px 24px;">
-              <h2 style="color:#16323D;margin:0 0 8px;">KokiStyle Admin</h2>
+              <h2 style="color:#16323D;margin:0 0 8px;">Luxaris Design Admin</h2>
               <p style="color:#5C6A6E;margin:0 0 24px;">Solicitaste recuperar tu PIN de administrador.</p>
               <div style="background:#F5E9DA;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;">
                 <p style="margin:0 0 8px;font-size:13px;color:#97A1A0;text-transform:uppercase;letter-spacing:1px;">Código de acceso</p>
