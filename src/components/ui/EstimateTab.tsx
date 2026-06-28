@@ -8,6 +8,7 @@ import { exportEstimatePdf } from "@/src/lib/pdf";
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { branding } from "@/src/config/branding";
+import DayPlannerModal from "./DayPlannerModal";
 
 // ─── Local types (mirrors DB shape) ──────────────────────────────────────────
 
@@ -300,31 +301,6 @@ export default function EstimateTab({
     }) : p);
   }, []);
 
-  // ── Generate tasks ───────────────────────────────────────────────────────────
-  const generateTasks = useCallback(async (mode: "section" | "item") => {
-    if (!estimate) return;
-    const rows = mode === "section"
-      ? estimate.sections.map((s, i) => ({
-          project_id: project.id,
-          name: EN ? s.name_en : s.name_es,
-          hours: 0, duration_weeks: 1, status: "pend", sort_order: i * 10,
-          assigned_contact_id: null,
-        }))
-      : estimate.sections.flatMap((s, si) =>
-          s.items.map((item, ii) => ({
-            project_id: project.id,
-            name: item.description,
-            hours: 0, duration_weeks: 1, status: "pend",
-            sort_order: si * 100 + ii * 10,
-            assigned_contact_id: null,
-          }))
-        );
-    if (!rows.length) { toast(EN ? "No items to generate tasks from" : "Sin items para generar tareas"); return; }
-    await supabase.from("tasks").insert(rows);
-    toast(EN ? `${rows.length} tasks created in Workflow` : `${rows.length} tareas creadas en Workflow`);
-    setShowGenTasks(false);
-    onRefresh();
-  }, [estimate, project.id, EN, toast, onRefresh]);
 
   // ── Export PDF ───────────────────────────────────────────────────────────────
   const handleExportPdf = useCallback(() => {
@@ -433,7 +409,7 @@ export default function EstimateTab({
                 <span className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{label}</span>
                 <input
                   type={type}
-                  value={(estimate as Record<string, string>)[key] ?? ""}
+                  value={(estimate as unknown as Record<string, string>)[key] ?? ""}
                   onChange={e => setEstimate(p => p ? ({ ...p, [key]: e.target.value }) : p)}
                   className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1.5 text-[12px] text-[#16323D] focus:border-[#395886] focus:outline-none"
                 />
@@ -764,64 +740,15 @@ export default function EstimateTab({
         </div>
       )}
 
-      {/* ── Generate Tasks Modal ─────────────────────────────────────────────── */}
-      {showGenTasks && (
-        <div
-          className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-          onClick={() => setShowGenTasks(false)}
-        >
-          <div
-            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-[#E6DDCB] px-5 py-3.5">
-              <span className="text-sm font-bold text-[#16323D]">
-                {EN ? "Generate Workflow Tasks" : "Generar Tareas en Workflow"}
-              </span>
-              <button onClick={() => setShowGenTasks(false)} className="text-[#5C6A6E] hover:text-[#B0492F]">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="space-y-3 p-4">
-              <p className="text-[12px] text-[#5C6A6E]">
-                {EN
-                  ? "How do you want to import estimate items into the Workflow?"
-                  : "¿Cómo deseas importar los items del estimado al Workflow?"}
-              </p>
-              <button
-                onClick={() => generateTasks("section")}
-                className="w-full rounded-xl border border-[#E6DDCB] p-4 text-left transition hover:border-[#395886] hover:bg-[#EDF3FB]"
-              >
-                <div className="text-[13px] font-bold text-[#16323D]">
-                  {EN ? "One task per section" : "Una tarea por sección"}
-                </div>
-                <div className="mt-1 text-[11px] text-[#5C6A6E]">
-                  {EN
-                    ? `Creates ${estimate.sections.length} tasks — DEMOLITION, PLUMBING…`
-                    : `Crea ${estimate.sections.length} tareas — DEMOLICIÓN, PLOMERÍA…`}
-                </div>
-              </button>
-              <button
-                onClick={() => generateTasks("item")}
-                className="w-full rounded-xl border border-[#E6DDCB] p-4 text-left transition hover:border-[#395886] hover:bg-[#EDF3FB]"
-              >
-                <div className="text-[13px] font-bold text-[#16323D]">
-                  {EN ? "One task per item" : "Una tarea por item"}
-                </div>
-                <div className="mt-1 text-[11px] text-[#5C6A6E]">
-                  {EN
-                    ? `Creates ${itemCount} tasks — each line item becomes a Kanban card`
-                    : `Crea ${itemCount} tareas — cada línea del estimado`}
-                </div>
-              </button>
-              <div className="rounded-xl border border-dashed border-[#D7CBB3] bg-[#FDFAF6] p-3 text-[11px] text-[#5C6A6E]">
-                💡 {EN
-                  ? "For day-grouping and advanced scheduling, see the 5 Workflow prototypes."
-                  : "Para agrupar por día y planificación avanzada, consulta los 5 prototipos de Workflow."}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* ── Day Planner Modal ────────────────────────────────────────────────── */}
+      {showGenTasks && estimate && (
+        <DayPlannerModal
+          estimate={estimate}
+          projectId={project.id}
+          onClose={() => setShowGenTasks(false)}
+          onGenerated={() => { setShowGenTasks(false); onRefresh(); }}
+          toast={toast}
+        />
       )}
     </div>
   );
