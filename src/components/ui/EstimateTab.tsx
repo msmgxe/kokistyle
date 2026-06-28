@@ -119,12 +119,18 @@ export default function EstimateTab({
     } catch { /* tables may not exist yet */ }
 
     // Load estimate row
-    const { data: est } = await supabase
+    const { data: est, error: estErr } = await supabase
       .from("project_estimates")
       .select("*")
       .eq("project_id", project.id)
       .maybeSingle();
 
+    if (estErr) {
+      console.error("[EstimateTab] load error:", estErr);
+      setEstimate(null);
+      setLoading(false);
+      return;
+    }
     if (!est) { setEstimate(null); setLoading(false); return; }
 
     // Load sections + items
@@ -169,13 +175,13 @@ export default function EstimateTab({
   // ── Create estimate ──────────────────────────────────────────────────────────
   const createEstimate = useCallback(async () => {
     setSaving(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("project_estimates")
       .insert({
         project_id: project.id,
-        customer_name: project.client,
+        customer_name: project.client ?? "",
         city: (project.address ?? "").split(",")[0].trim(),
-        project_title: project.title,
+        project_title: project.title ?? "",
         status: "draft",
         discount_label: "DISCOUNT",
         discount_pct: 0,
@@ -185,8 +191,16 @@ export default function EstimateTab({
       .select()
       .single();
     setSaving(false);
+    if (error) {
+      console.error("[EstimateTab] createEstimate error:", error);
+      const msg = error.message?.includes("does not exist")
+        ? (EN ? "Run the SQL migration for estimate tables in Supabase first" : "Ejecuta la migración SQL de estimate en Supabase primero")
+        : (EN ? `Error: ${error.message}` : `Error: ${error.message}`);
+      toast(msg);
+      return;
+    }
     if (data) setEstimate({ ...data, deposit_schedule: defaultDeposits(), sections: [] });
-  }, [project]);
+  }, [project, EN, toast]);
 
   // ── Save header ──────────────────────────────────────────────────────────────
   const saveHeader = useCallback(async () => {
