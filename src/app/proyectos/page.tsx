@@ -24,33 +24,50 @@ import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 
-interface EstimateSection {
-  section_total: number;
-  is_material_type: boolean;
-  estimate_items: Array<{ amount: number }>;
-}
-interface EstimateFetch {
-  discount_pct: number;
-  estimate_sections: EstimateSection[];
-}
-
 interface ProjectWithData extends Project {
   payments: Payment[];
   expenses: Expense[];
   tasks: Task[];
-  project_estimates: EstimateFetch[];
 }
 
-function estimateGrandTotal(est: EstimateFetch): number {
-  let all = 0, labor = 0;
-  for (const s of est.estimate_sections ?? []) {
-    const itemsSum = (s.estimate_items ?? []).reduce((a, i) => a + i.amount, 0);
-    const st = itemsSum > 0 ? itemsSum : s.section_total;
-    all += st;
-    if (!s.is_material_type) labor += st;
+// Queries estimate totals independently and overwrites project.budget
+async function enrichWithEstimateBudgets(projects: Project[]): Promise<ProjectWithData[]> {
+  if (projects.length === 0) return projects as ProjectWithData[];
+
+  const projectIds = projects.map(p => p.id);
+
+  const { data: ests } = await supabase
+    .from("project_estimates")
+    .select("id, project_id, discount_pct")
+    .in("project_id", projectIds);
+
+  if (!ests || ests.length === 0) return projects as ProjectWithData[];
+
+  const estIds = ests.map(e => e.id);
+  const { data: secs } = await supabase
+    .from("estimate_sections")
+    .select("estimate_id, section_total, is_material_type, estimate_items(amount)")
+    .in("estimate_id", estIds);
+
+  const budgetByProject = new Map<string, number>();
+  for (const est of ests) {
+    const estSecs = (secs ?? []).filter(s => s.estimate_id === est.id);
+    let all = 0, labor = 0;
+    for (const s of estSecs) {
+      const itemsSum = ((s.estimate_items ?? []) as Array<{ amount: number }>)
+        .reduce((a, i) => a + i.amount, 0);
+      const st = itemsSum > 0 ? itemsSum : s.section_total;
+      all += st;
+      if (!s.is_material_type) labor += st;
+    }
+    const disc = Math.round(labor * ((est.discount_pct ?? 0) / 100) * 100) / 100;
+    budgetByProject.set(est.project_id, all - disc);
   }
-  const disc = Math.round(labor * ((est.discount_pct ?? 0) / 100) * 100) / 100;
-  return all - disc;
+
+  return projects.map(p => ({
+    ...p,
+    budget: budgetByProject.has(p.id) ? budgetByProject.get(p.id)! : p.budget,
+  })) as ProjectWithData[];
 }
 
 function KpiCard({
@@ -612,10 +629,10 @@ export default function DashboardPage() {
     if (isSuperAdmin) {
       const { data, error } = await supabase
         .from("projects")
-        .select(`*, payments(*), expenses(*), tasks(*), project_estimates(discount_pct, estimate_sections(section_total, is_material_type, estimate_items(amount)))`)
+        .select(`*, payments(*), expenses(*), tasks(*)`)
         .order("created_at", { ascending: false });
       if (error) { setError("Error al cargar los proyectos."); }
-      else        { setProjects(data as ProjectWithData[]); }
+      else        { setProjects(await enrichWithEstimateBudgets(data ?? [])); }
     } else {
       const { data: access } = await supabase
         .from("user_project_access")
@@ -625,11 +642,11 @@ export default function DashboardPage() {
       if (ids.length === 0) { setProjects([]); setLoading(false); return; }
       const { data, error } = await supabase
         .from("projects")
-        .select(`*, payments(*), expenses(*), tasks(*), project_estimates(discount_pct, estimate_sections(section_total, is_material_type, estimate_items(amount)))`)
+        .select(`*, payments(*), expenses(*), tasks(*)`)
         .in("id", ids)
         .order("created_at", { ascending: false });
       if (error) { setError("Error al cargar los proyectos."); }
-      else        { setProjects(data as ProjectWithData[]); }
+      else        { setProjects(await enrichWithEstimateBudgets(data ?? [])); }
     }
     setLoading(false);
   }, [currentUser, isSuperAdmin]);
@@ -729,19 +746,15 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => {
-            const est = p.project_estimates?.[0];
-            const budget = est ? estimateGrandTotal(est) : p.budget;
-            return (
-              <ProjectCard
-                key={p.id}
-                project={p}
-                budget={budget}
-                canDelete={isSuperAdmin}
-                onDelete={handleDelete}
-              />
-            );
-          })}
+          {projects.map((p) => (
+            <ProjectCard
+              key={p.id}
+              project={p}
+              budget={p.budget}
+              canDelete={isSuperAdmin}
+              onDelete={handleDelete}
+            />
+          ))}
         </div>
       )}
 
