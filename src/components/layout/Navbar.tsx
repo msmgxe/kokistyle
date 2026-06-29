@@ -7,7 +7,6 @@ import { Menu, X } from "lucide-react";
 import { branding } from "@/src/config/branding";
 import { useLanguage } from "@/src/context/LanguageContext";
 import type { Language } from "@/src/config/translations";
-import Button from "../ui/Button";
 import Container from "../ui/Container";
 import AdminModal from "../ui/AdminModal";
 
@@ -103,9 +102,6 @@ export default function Navbar() {
           <a className="text-sm font-semibold text-[#0F3D56]" href={`tel:${branding.phone}`}>
             {branding.phone}
           </a>
-          <Button href="/#estimate" className="min-h-11 px-5 py-2.5">
-            {t.nav.startEstimate}
-          </Button>
           <button
             id="navbar-admin-btn"
             type="button"
@@ -163,13 +159,6 @@ export default function Navbar() {
               >
                 {branding.phone}
               </a>
-              <Button
-                href="/#estimate"
-                className="min-h-12 w-full justify-center"
-                onClick={() => setMenuOpen(false)}
-              >
-                {t.nav.startEstimate}
-              </Button>
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); setAdminOpen(true); }}
