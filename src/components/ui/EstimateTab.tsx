@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   DndContext,
   closestCenter,
@@ -377,6 +377,21 @@ function SortableSection({
   );
 }
 
+function computeGrandTotal(
+  sections: Array<{ items: Array<{ amount: number }>; section_total: number; is_material_type: boolean }>,
+  discountPct: number,
+): number {
+  let all = 0, labor = 0;
+  for (const s of sections) {
+    const itemsSum = s.items.reduce((a, i) => a + i.amount, 0);
+    const st = itemsSum > 0 ? itemsSum : s.section_total;
+    all += st;
+    if (!s.is_material_type) labor += st;
+  }
+  const disc = Math.round(labor * (discountPct / 100) * 100) / 100;
+  return all - disc;
+}
+
 // ─── EstimateTab ──────────────────────────────────────────────────────────────
 
 export default function EstimateTab({
@@ -423,14 +438,23 @@ export default function EstimateTab({
       .eq("estimate_id", est.id)
       .order("sort_order");
 
+    const mappedSections = (sections ?? []).map(s => ({
+      ...s,
+      items: ((s.items ?? []) as ItemRow[]).sort((a, b) => a.sort_order - b.sort_order),
+    }));
+
     setEstimate({
       ...est,
       deposit_schedule: (est.deposit_schedule as DepositEntry[]) ?? defaultDeposits(),
-      sections: (sections ?? []).map(s => ({
-        ...s,
-        items: ((s.items ?? []) as ItemRow[]).sort((a, b) => a.sort_order - b.sort_order),
-      })),
+      sections: mappedSections,
     });
+
+    // Sync grand total → project.budget so the dashboard is always up to date
+    if (mappedSections.length > 0) {
+      const grandTotal = computeGrandTotal(mappedSections, est.discount_pct ?? 0);
+      supabase.from("projects").update({ budget: grandTotal }).eq("id", project.id);
+    }
+
     setLoading(false);
   }, [project.id]);
 
@@ -454,16 +478,6 @@ export default function EstimateTab({
     return { allTotal: all, laborTotal: labor, discountAmt: disc, grandTotal: all - disc };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimate]);
-
-  // Sync estimate grand total → project.budget so the dashboard stays current
-  const lastSyncedBudget = useRef<number | null>(null);
-  useEffect(() => {
-    const { grandTotal } = totals;
-    if (!estimate?.id || !estimate.sections.length) return;
-    if (lastSyncedBudget.current === grandTotal) return;
-    lastSyncedBudget.current = grandTotal;
-    supabase.from("projects").update({ budget: grandTotal }).eq("id", project.id);
-  }, [totals, estimate?.id, estimate?.sections.length, project.id]);
 
   const effectiveCatalog = catalog.length > 0 ? catalog : FALLBACK_CATALOG;
 
@@ -547,6 +561,10 @@ export default function EstimateTab({
 
       onRefresh();
     }
+
+    // Sync grand total → project.budget
+    const grandTotal = computeGrandTotal(estimate.sections, estimate.discount_pct ?? 0);
+    await supabase.from("projects").update({ budget: grandTotal }).eq("id", project.id);
 
     setSaving(false);
     toast(EN ? "Estimate saved" : "Estimado guardado");
