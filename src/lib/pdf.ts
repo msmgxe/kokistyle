@@ -326,8 +326,9 @@ export function exportEstimatePdf(
 
   // ── Sections ───────────────────────────────────────────────────────────────
   for (const section of estimate.sections) {
-    const items   = section.items ?? [];
-    const secTotal = items.length > 0 ? items.reduce((a, i) => a + i.amount, 0) : section.section_total;
+    const items    = section.items ?? [];
+    const itemsSum = items.reduce((a, i) => a + i.amount, 0);
+    const secTotal = itemsSum > 0 ? itemsSum : section.section_total;
     const name    = EN ? section.name_en : section.name_es;
 
     if (y > 250) { doc.addPage(); y = 20; }
