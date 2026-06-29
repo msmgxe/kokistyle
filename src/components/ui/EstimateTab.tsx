@@ -272,6 +272,22 @@ function SortableSection({
           </div>
         </div>
         <div className="ml-3 flex shrink-0 items-center gap-3">
+          {/* Labor toggle — always visible in header */}
+          <label
+            className="flex cursor-pointer items-center gap-1.5"
+            onClick={e => e.stopPropagation()}
+            title={EN ? "Include in labor subtotal & discount" : "Incluir en subtotal de mano de obra y descuento"}
+          >
+            <input
+              type="checkbox"
+              checked={!section.is_material_type}
+              onChange={e => onUpdateField(section.id, "is_material_type", !e.target.checked)}
+              className="h-3.5 w-3.5 cursor-pointer accent-[#395886]"
+            />
+            <span className={`text-[10px] font-bold uppercase tracking-wide ${!section.is_material_type ? "text-[#395886]" : "text-[#B0492F]"}`}>
+              {!section.is_material_type ? (EN ? "Labor" : "Mano obra") : (EN ? "Material" : "Material")}
+            </span>
+          </label>
           <div className="text-right">
             <div className={`font-mono text-[13px] font-bold ${section.is_material_type ? "text-[#B0492F]" : "text-[#16323D]"}`}>
               {money(effectiveTotal)}
@@ -289,31 +305,20 @@ function SortableSection({
         <div className="border-t border-[#F0EBE0]">
 
           {/* Settings row */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0EBE0] bg-[#FAFAF8] px-4 py-2">
-            <label className="flex cursor-pointer items-center gap-2 text-[11px] text-[#5C6A6E]">
-              <input
-                type="checkbox"
-                checked={section.is_material_type}
-                onChange={e => onUpdateField(section.id, "is_material_type", e.target.checked)}
-                className="rounded"
-              />
-              {EN ? "Materials only (excluded from labor discount)" : "Solo materiales (excluido del descuento)"}
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={section.note}
-                placeholder={EN ? "Note (e.g. Material included)" : "Nota (ej. Material incluido)"}
-                onChange={e => onUpdateField(section.id, "note", e.target.value)}
-                className="w-40 rounded-lg border border-[#E6DDCB] bg-white px-2 py-1 text-[11px] text-[#5C6A6E] focus:border-[#395886] focus:outline-none"
-              />
-              <button
-                onClick={() => onDelete(section.id)}
-                className="rounded-lg p-1.5 text-[#5C6A6E] transition hover:bg-[#FDF0ED] hover:text-[#B0492F]"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-[#F0EBE0] bg-[#FAFAF8] px-4 py-2">
+            <input
+              type="text"
+              value={section.note}
+              placeholder={EN ? "Note (e.g. Material included)" : "Nota (ej. Material incluido)"}
+              onChange={e => onUpdateField(section.id, "note", e.target.value)}
+              className="w-44 rounded-lg border border-[#E6DDCB] bg-white px-2 py-1 text-[11px] text-[#5C6A6E] focus:border-[#395886] focus:outline-none"
+            />
+            <button
+              onClick={() => onDelete(section.id)}
+              className="rounded-lg p-1.5 text-[#5C6A6E] transition hover:bg-[#FDF0ED] hover:text-[#B0492F]"
+            >
+              <Trash2 size={12} />
+            </button>
           </div>
 
           {/* Items — sortable */}
