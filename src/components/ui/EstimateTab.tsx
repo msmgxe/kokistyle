@@ -796,27 +796,38 @@ export default function EstimateTab({
       const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language);
       const safeName = (estimate.project_title || "project").replace(/\s+/g, "_");
       const filename = `Estimate_${safeName}.pdf`;
-      const file = new File([blob], filename, { type: "application/pdf" });
       const cleanPhone = (waCode + waPhone).replace(/\D/g, "");
 
-      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: filename });
-      } else {
-        // Desktop: download PDF + open WhatsApp Web with number pre-selected
+      // Try native file share (mobile iOS/Android) — canShare can itself throw on desktop
+      let shared = false;
+      try {
+        const file = new File([blob], filename, { type: "application/pdf" });
+        if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: filename });
+          shared = true;
+        }
+      } catch {
+        // canShare or share not supported — fall through to desktop flow
+      }
+
+      if (!shared) {
+        // Desktop: open WhatsApp Web first, then trigger PDF download
+        window.open(`https://wa.me/${cleanPhone}`, "_blank");
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = filename;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
-        window.open(`https://wa.me/${cleanPhone}`, "_blank");
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         toast(EN
           ? "PDF downloaded — attach it in WhatsApp Web"
           : "PDF descargado — adjúntalo en WhatsApp Web");
       }
     } catch (err) {
       console.error("[EstimateTab] WhatsApp error:", err);
-      toast(EN ? "Error sending" : "Error al enviar");
+      toast(EN ? "Error generating PDF — check console" : "Error al generar PDF — revisa la consola");
     } finally {
       setWaLoading(false);
     }
