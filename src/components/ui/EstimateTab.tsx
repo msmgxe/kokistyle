@@ -154,11 +154,17 @@ export default function EstimateTab({
   useEffect(() => { load(); }, [load]);
 
   // ── Computed ────────────────────────────────────────────────────────────────
+  const sectionEffectiveTotal = (s: SectionRow) => {
+    const itemsSum = s.items.reduce((a, i) => a + i.amount, 0);
+    return itemsSum > 0 ? itemsSum : s.section_total;
+  };
+
   const totals = useMemo(() => {
     if (!estimate) return { allTotal: 0, laborTotal: 0, discountAmt: 0, grandTotal: 0 };
     let all = 0, labor = 0;
     for (const s of estimate.sections) {
-      const st = s.items.length > 0 ? s.items.reduce((a, i) => a + i.amount, 0) : s.section_total;
+      const itemsSum = s.items.reduce((a, i) => a + i.amount, 0);
+      const st = itemsSum > 0 ? itemsSum : s.section_total;
       all += st;
       if (!s.is_material_type) labor += st;
     }
@@ -167,8 +173,7 @@ export default function EstimateTab({
   }, [estimate]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
-  const sectionDisplayTotal = (s: SectionRow) =>
-    s.items.length > 0 ? s.items.reduce((a, i) => a + i.amount, 0) : s.section_total;
+  const sectionDisplayTotal = sectionEffectiveTotal;
 
   const effectiveCatalog = catalog.length > 0 ? catalog : FALLBACK_CATALOG;
 
@@ -544,21 +549,28 @@ export default function EstimateTab({
                   </div>
                 ))}
 
-                {/* Flat total (no items) */}
-                {section.items.length === 0 && (
-                  <div className="flex items-center gap-3 border-b border-[#F0EBE0] px-4 py-3">
-                    <span className="flex-1 text-[12px] text-[#5C6A6E]">
-                      {EN ? "Section total (or add items below):" : "Total de sección (o agrega items abajo):"}
-                    </span>
-                    <input
-                      type="number"
-                      value={section.section_total || ""}
-                      onChange={e => updateSectionField(section.id, "section_total", parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                      className="w-28 rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1.5 text-right font-mono text-[13px] font-bold text-[#16323D] focus:border-[#395886] focus:outline-none"
-                    />
-                  </div>
-                )}
+                {/* Section total — always visible; overridden by items sum when items have amounts */}
+                <div className="flex items-center gap-3 border-b border-[#F0EBE0] px-4 py-2.5">
+                  <span className="flex-1 text-[11px] text-[#5C6A6E]">
+                    {section.items.some(i => i.amount > 0)
+                      ? (EN ? "Section total (from items):" : "Total de sección (de items):")
+                      : (EN ? "Section total:" : "Total de sección:")}
+                  </span>
+                  <input
+                    type="number"
+                    value={section.items.some(i => i.amount > 0)
+                      ? section.items.reduce((a, i) => a + i.amount, 0)
+                      : (section.section_total || "")}
+                    onChange={e => updateSectionField(section.id, "section_total", parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    disabled={section.items.some(i => i.amount > 0)}
+                    className={`w-28 rounded-lg border px-3 py-1.5 text-right font-mono text-[13px] font-bold text-[#16323D] focus:outline-none ${
+                      section.items.some(i => i.amount > 0)
+                        ? "border-transparent bg-transparent text-[#5C6A6E]"
+                        : "border-[#E6DDCB] bg-[#FDFAF6] focus:border-[#395886]"
+                    }`}
+                  />
+                </div>
 
                 {/* Add item */}
                 {addingItemTo === section.id ? (
