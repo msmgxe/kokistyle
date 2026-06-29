@@ -19,6 +19,13 @@ const SPECIALTY_OPTIONS_ES = [
 
 type TPanel = ReturnType<typeof useLanguage>["t"]["panel"];
 
+function formatUSPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 function ContactForm({
   contact,
   language,
@@ -53,9 +60,10 @@ function ContactForm({
           {gc.phone}
         </label>
         <input
-          type="text"
+          type="tel"
           value={contact.phone ?? ""}
-          onChange={(e) => onChange({ ...contact, phone: e.target.value })}
+          onChange={(e) => onChange({ ...contact, phone: formatUSPhone(e.target.value) })}
+          placeholder="(786) 563-2531"
           className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
         />
       </div>

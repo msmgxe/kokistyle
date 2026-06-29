@@ -259,13 +259,13 @@ export function exportEstadoCuenta(project: Project, payments: Payment[], expens
   doc.save(filename);
 }
 
-export function exportEstimatePdf(
+function buildEstimatePdf(
   estimate: ProjectEstimate,
   grandTotal: number,
   laborTotal: number,
   discountAmt: number,
   language: "en" | "es" = "en",
-) {
+): { doc: jsPDF; filename: string } {
   const EN  = language === "en";
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W   = doc.internal.pageSize.getWidth(); // 210
@@ -616,5 +616,28 @@ export function exportEstimatePdf(
     { align: "center", maxWidth: CW },
   );
 
-  doc.save(`Estimate_${(estimate.project_title || "project").replace(/\s+/g, "_")}.pdf`);
+  const filename = `Estimate_${(estimate.project_title || "project").replace(/\s+/g, "_")}.pdf`;
+  return { doc, filename };
+}
+
+export function exportEstimatePdf(
+  estimate: ProjectEstimate,
+  grandTotal: number,
+  laborTotal: number,
+  discountAmt: number,
+  language: "en" | "es" = "en",
+) {
+  const { doc, filename } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language);
+  doc.save(filename);
+}
+
+export function getEstimatePdfBlob(
+  estimate: ProjectEstimate,
+  grandTotal: number,
+  laborTotal: number,
+  discountAmt: number,
+  language: "en" | "es" = "en",
+): Blob {
+  const { doc } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language);
+  return doc.output("blob") as Blob;
 }

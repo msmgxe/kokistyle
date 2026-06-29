@@ -18,11 +18,27 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical,
+  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Send,
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
-import { exportEstimatePdf } from "@/src/lib/pdf";
+import { exportEstimatePdf, getEstimatePdfBlob } from "@/src/lib/pdf";
+
+const WA_CODES = [
+  { code: "+1",   flag: "🇺🇸", label: "US/CA" },
+  { code: "+52",  flag: "🇲🇽", label: "MX" },
+  { code: "+57",  flag: "🇨🇴", label: "CO" },
+  { code: "+58",  flag: "🇻🇪", label: "VE" },
+  { code: "+54",  flag: "🇦🇷", label: "AR" },
+  { code: "+34",  flag: "🇪🇸", label: "ES" },
+];
+
+function fmtUSPhone(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { branding } from "@/src/config/branding";
@@ -417,6 +433,9 @@ export default function EstimateTab({
   const [addingItemTo,   setAddingItemTo]   = useState<string | null>(null);
   const [newItemDesc,    setNewItemDesc]    = useState("");
   const [newItemAmt,     setNewItemAmt]     = useState("");
+  const [waCode,         setWaCode]         = useState("+1");
+  const [waPhone,        setWaPhone]        = useState("");
+  const [waLoading,      setWaLoading]      = useState(false);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -749,6 +768,41 @@ export default function EstimateTab({
     }
   }, [estimate, totals, language, EN, toast]);
 
+  // ── WhatsApp send ─────────────────────────────────────────────────────────
+  const handleWhatsApp = useCallback(async () => {
+    if (!estimate || !waPhone.trim()) return;
+    setWaLoading(true);
+    try {
+      const { grandTotal, laborTotal, discountAmt } = totals;
+      const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language);
+      const safeName = (estimate.project_title || "project").replace(/\s+/g, "_");
+      const filename = `Estimate_${safeName}.pdf`;
+      const file = new File([blob], filename, { type: "application/pdf" });
+      const cleanPhone = (waCode + waPhone).replace(/\D/g, "");
+
+      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+      } else {
+        // Desktop: download PDF + open WhatsApp Web with number pre-selected
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        window.open(`https://wa.me/${cleanPhone}`, "_blank");
+        toast(EN
+          ? "PDF downloaded — attach it in WhatsApp Web"
+          : "PDF descargado — adjúntalo en WhatsApp Web");
+      }
+    } catch (err) {
+      console.error("[EstimateTab] WhatsApp error:", err);
+      toast(EN ? "Error sending" : "Error al enviar");
+    } finally {
+      setWaLoading(false);
+    }
+  }, [estimate, totals, language, waCode, waPhone, EN, toast]);
+
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="flex items-center justify-center py-20">
@@ -818,6 +872,38 @@ export default function EstimateTab({
             <FileText size={12} /> {EN ? "Download PDF" : "Descargar PDF"}
           </button>
         </div>
+      </div>
+
+      {/* ── WhatsApp send ──────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2">
+        <span className="text-[11px] font-bold text-[#25D366]">WhatsApp</span>
+        <select
+          value={waCode}
+          onChange={e => setWaCode(e.target.value)}
+          className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-2 py-1 text-[11px] text-[#16323D] focus:outline-none"
+        >
+          {WA_CODES.map(c => (
+            <option key={c.code} value={c.code}>{c.flag} {c.code} {c.label}</option>
+          ))}
+        </select>
+        <input
+          type="tel"
+          value={waPhone}
+          onChange={e => setWaPhone(fmtUSPhone(e.target.value))}
+          placeholder="(786) 563-2531"
+          className="flex-1 min-w-[140px] rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1 text-[12px] text-[#16323D] focus:border-[#25D366] focus:outline-none"
+        />
+        <button
+          onClick={handleWhatsApp}
+          disabled={waLoading || !waPhone.trim()}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#1ebe5a] disabled:opacity-40"
+        >
+          <Send size={12} />
+          {waLoading ? "…" : (EN ? "Send" : "Enviar")}
+        </button>
+        <span className="text-[10px] text-[#5C6A6E]">
+          {EN ? "Mobile: shares PDF · Desktop: opens WhatsApp Web" : "Móvil: adjunta PDF · Desktop: abre WhatsApp Web"}
+        </span>
       </div>
 
       {/* ── Customer info (collapsible) ────────────────────────────────────── */}
