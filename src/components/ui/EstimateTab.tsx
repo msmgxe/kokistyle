@@ -31,6 +31,7 @@ const WA_CODES = [
   { code: "+58",  flag: "🇻🇪", label: "VE" },
   { code: "+54",  flag: "🇦🇷", label: "AR" },
   { code: "+34",  flag: "🇪🇸", label: "ES" },
+  { code: "+51",  flag: "🇵🇪", label: "PE" },
 ];
 
 function fmtUSPhone(v: string) {
