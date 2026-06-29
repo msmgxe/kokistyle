@@ -1,35 +1,36 @@
-# KokiStyle — Documentación de implementación y guía para agentes IA
+# Luxaris Design — Documentación de implementación y guía para agentes IA
+
+> **Empresa:** Luxaris Design LLC  
+> **Mercado:** Florida, USA (South Florida · Miami · Boca Raton)  
+> **URL producción:** kokistyle.vercel.app  
+> **Repo:** github.com/msmgxe/kokistyle  
+
+---
 
 ## Descripción del proyecto
 
-KokiStyle es una plataforma premium de remodelación y construcción enfocada en el mercado de Florida, USA.
+Plataforma premium de gestión de proyectos de remodelación y construcción. Tiene dos capas:
 
-Funcionalidades principales:
-- Gestión de proyectos de remodelación (dashboard + detalle)
-- Flujo de trabajo (Kanban/Gantt con drag & drop)
-- Presupuesto, materiales, pagos, egresos y contactos por proyecto
-- Notas con adjuntos (imágenes y PDFs) por proyecto
-- Tours virtuales 360° por proyecto
-- Asistente de voz "Katy" (Web Speech API + Claude API)
-- Sistema de autenticación por PIN con roles y permisos granulares
-- Panel de gestión de equipo (colaboradores)
-- Recuperación de PIN por correo electrónico
+1. **Landing pública** (`/`) — marketing, servicios, before/after, tours virtuales
+2. **Panel privado** (`/proyectos/...`) — gestión de proyectos por PIN, acceso con roles
 
 ---
 
 ## Tech Stack
 
-| Tecnología | Uso |
-|---|---|
-| Next.js 15 (App Router) | Framework principal |
-| TypeScript | Tipado estático |
-| TailwindCSS | Estilos (único, sin CSS externo) |
-| Framer Motion | Animaciones |
-| Supabase (Postgres + Storage) | Base de datos y archivos |
-| Resend | Envío de correos (recuperación de PIN) |
-| Vercel | Despliegue y variables de entorno |
-| pnpm | Gestor de paquetes |
-| @dnd-kit | Drag & drop en tareas |
+| Tecnología | Versión | Uso |
+|---|---|---|
+| Next.js | 15 (App Router) | Framework principal |
+| TypeScript | 5.x | Tipado estático en todo el proyecto |
+| TailwindCSS | v4 | Único sistema de estilos — sin CSS externo |
+| Framer Motion | — | Animaciones en landing |
+| Supabase | Postgres + Storage | Base de datos y archivos adjuntos |
+| Resend | — | Envío de correos (recuperación de PIN) |
+| Vercel | — | Despliegue, variables de entorno, CI/CD |
+| pnpm | — | Gestor de paquetes |
+| @dnd-kit | — | Drag & drop en Kanban y Day Planner |
+| jsPDF | — | Generación de PDF del estimado (`src/lib/pdf.ts`) |
+| lucide-react | — | Íconos SVG |
 
 ---
 
@@ -37,21 +38,22 @@ Funcionalidades principales:
 
 ```bash
 pnpm install        # Instalar dependencias
-pnpm dev            # Servidor de desarrollo
+pnpm dev            # Servidor de desarrollo (localhost:3000)
 pnpm build          # Build de producción
+pnpm tsc --noEmit   # Verificar tipos sin compilar
 ```
 
 ---
 
-## Variables de entorno requeridas
+## Variables de entorno
 
 ```env
 # .env.local — nunca en git
 NEXT_PUBLIC_SUPABASE_URL=       # Supabase → Settings → API → Project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase → Settings → API → anon/public
-SUPABASE_SERVICE_ROLE_KEY=      # Supabase → Settings → API → service_role (secret, solo server)
+SUPABASE_SERVICE_ROLE_KEY=      # Supabase → Settings → API → service_role (SOLO server)
 RESEND_API_KEY=                 # resend.com → API Keys
-ANTHROPIC_API_KEY=              # console.anthropic.com → API Keys (voz)
+ANTHROPIC_API_KEY=              # console.anthropic.com → API Keys (asistente de voz)
 ```
 
 ---
@@ -61,67 +63,105 @@ ANTHROPIC_API_KEY=              # console.anthropic.com → API Keys (voz)
 ```
 src/
 ├── app/
-│   ├── page.tsx                    # Landing pública
+│   ├── page.tsx                      # Landing pública (Hero · Services · Before/After · Tours)
 │   ├── proyectos/
-│   │   ├── page.tsx                # Dashboard de proyectos
-│   │   ├── [id]/page.tsx           # Detalle de proyecto (todas las tabs)
-│   │   ├── cliente-01/page.tsx     # Tour 360° showcase
-│   │   ├── contactos/page.tsx      # Lista global de contactos
-│   │   └── plan/page.tsx           # Gantt global
+│   │   ├── layout.tsx                # Layout del panel: nav top, logout, VoiceFAB, LangSwitch
+│   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs)
+│   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Plan · Workflow · Estimate · Payments · Materials · Contacts · Notes
+│   │   ├── cliente-01/page.tsx       # Tour 360° showcase (demo pública)
+│   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
+│   │   ├── plan/page.tsx             # Gantt global (todas las tareas)
+│   │   └── help/page.tsx             # Página de ayuda — guía paso a paso bilingüe (EN/ES)
 │   └── api/
-│       ├── voice/route.ts          # Asistente de voz (Claude API)
+│       ├── voice/route.ts            # Asistente de voz Katy (Claude API → intención → acción)
 │       └── auth/
-│           ├── login/route.ts      # Verificar PIN superadmin (server-side)
-│           ├── change-pin/route.ts # Cambiar PIN superadmin
-│           ├── recover/route.ts    # Enviar código de recuperación por email
-│           ├── reset-pin/route.ts  # Resetear PIN con código verificado
-│           └── set-email/route.ts  # Guardar correo de recuperación
+│           ├── login/route.ts        # Verificar PIN superadmin (server-side, no expone PIN)
+│           ├── change-pin/route.ts   # Cambiar PIN superadmin
+│           ├── recover/route.ts      # Enviar código 6 dígitos al correo (Resend)
+│           ├── reset-pin/route.ts    # Verificar código y actualizar PIN
+│           └── set-email/route.ts    # Guardar correo de recuperación del superadmin
+│
 ├── components/
 │   ├── layout/
-│   │   └── Navbar.tsx
-│   ├── ui/
-│   │   ├── AdminModal.tsx          # Modal de login por PIN (con recuperación)
-│   │   ├── AdminSettings.tsx       # Panel cambio de PIN + correo de recuperación
-│   │   ├── UsersPanel.tsx          # Gestión de colaboradores y permisos
-│   │   ├── VoiceFAB.tsx            # Asistente de voz flotante "Katy"
-│   │   ├── ProjectFormModal.tsx    # Crear/editar proyecto
-│   │   └── EditorModal.tsx         # Modal genérico para CRUD en tabs
-│   └── sections/                   # Secciones de la landing
+│   │   ├── Navbar.tsx                # Navbar landing: logo · nav links · lang switch · Login
+│   │   └── Footer.tsx                # Footer landing
+│   ├── sections/                     # Secciones de la landing (solo lectura, no admin)
+│   │   ├── Hero.tsx
+│   │   ├── Services.tsx
+│   │   └── BeforeAfter.tsx
+│   ├── tours/
+│   │   └── VirtualTour.tsx           # Visor 360° embed en landing
+│   └── ui/
+│       ├── AdminModal.tsx            # Modal de login por PIN (superadmin + colaboradores + recuperación)
+│       ├── AdminSettings.tsx         # Panel cambio de PIN + correo de recuperación
+│       ├── UsersPanel.tsx            # Gestión de colaboradores y permisos granulares
+│       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
+│       ├── ProjectFormModal.tsx      # Crear/editar proyecto
+│       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop Estimate→Workflow (@dnd-kit)
+│       ├── EstimateTab.tsx           # Tab de estimado dentro de un proyecto
+│       ├── Button.tsx                # Botón reutilizable
+│       └── Container.tsx             # Contenedor de ancho máximo
+│
+├── config/
+│   ├── branding.ts                   # Datos de la empresa (nombre, teléfono, iniciales, etc.)
+│   ├── translations.ts               # Traducciones EN + ES — usado por useLanguage()
+│   └── cliente01.ts                  # Config del tour 360° demo
+│
 ├── context/
-│   ├── AuthContext.tsx             # Autenticación, roles, permisos
-│   └── VoiceContext.tsx            # Contexto activo para el asistente de voz
+│   ├── AuthContext.tsx               # Autenticación, roles, permisos — persiste en localStorage
+│   ├── LanguageContext.tsx           # Idioma activo (en | es) — persiste en localStorage
+│   └── VoiceContext.tsx              # Contexto activo de proyecto/tab para el asistente Katy
+│
 ├── lib/
-│   ├── supabase.ts                 # Cliente Supabase (anon key, browser)
-│   ├── supabase-admin.ts           # Cliente Supabase (service_role, server-side)
-│   ├── schema.sql                  # Schema completo de la base de datos
-│   └── utils.ts                    # Funciones de negocio (money, totales, etc.)
+│   ├── supabase.ts                   # Cliente Supabase con anon key (browser)
+│   ├── supabase-admin.ts             # Cliente Supabase con service_role (SOLO en API routes)
+│   ├── pdf.ts                        # Generación de PDF del estimado con jsPDF
+│   ├── schema.sql                    # Schema completo de la base de datos (ejecutar en orden)
+│   └── utils.ts                      # money(), formatDate(), todayIso(), addDays()
+│
 └── types/
-    ├── project.ts                  # Interfaces de proyecto y sus relaciones
-    └── auth.ts                     # Interfaces de usuario, roles y permisos
+    ├── project.ts                    # Project, Task, Material, Payment, Expense, Contact, Estimate*
+    └── auth.ts                       # AppUser, Permission, AuthState
 ```
 
 ---
 
 ## Base de datos (Supabase Postgres)
 
-El schema completo con el orden de creación está en `src/lib/schema.sql`.
+Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el archivo (7 bloques).
 
-### Tablas
+### Tablas del panel de gestión
 
 | Tabla | Descripción |
 |---|---|
 | `projects` | Proyectos de remodelación |
-| `contacts` | Especialistas y proveedores |
+| `contacts` | Especialistas y proveedores (global) |
 | `project_contacts` | Relación N:M proyectos ↔ contactos |
 | `tasks` | Tareas por proyecto (Kanban/Gantt) |
-| `budget_items` | Líneas de presupuesto por proyecto |
-| `materials` | Materiales por proyecto |
+| `materials` | Materiales con checkbox "comprado" |
 | `payments` | Ingresos recibidos del cliente |
 | `expenses` | Egresos pagados a proveedores |
-| `project_notes` | Notas con adjuntos (JSONB) por proyecto |
+| `project_notes` | Notas con adjuntos JSONB por proyecto |
 | `app_users` | Colaboradores con permisos granulares |
 | `user_project_access` | Proyectos asignados por colaborador |
-| `superadmin_config` | PIN y email de recuperación del superadmin (singleton) |
+| `superadmin_config` | PIN + email del superadmin (singleton) |
+
+### Tablas del módulo Estimate
+
+| Tabla | Descripción |
+|---|---|
+| `estimate_section_catalog` | Catálogo de secciones predefinidas (seed incluido) |
+| `estimate_item_catalog` | Catálogo de items por sección (seed incluido) |
+| `project_estimates` | Estimado por proyecto (1:1) |
+| `estimate_sections` | Secciones del estimado (N:1 → project_estimates) |
+| `estimate_items` | Items dentro de cada sección |
+
+### Lógica de totales del Estimate
+
+- `section_total` = total plano editable de la sección
+- Si algún item de la sección tiene `amount > 0` → el total efectivo es la **suma de items** (anula `section_total`)
+- Si ningún item tiene monto → se usa `section_total` directamente
+- Las secciones marcadas `is_material_type = true` quedan **excluidas** del descuento de mano de obra
 
 ### Storage
 
@@ -131,191 +171,236 @@ El schema completo con el orden de creación está en `src/lib/schema.sql`.
 
 ---
 
+## Landing pública (`/`)
+
+Secciones activas (de arriba a abajo):
+
+| Sección | Componente | Descripción |
+|---|---|---|
+| Navbar | `Navbar.tsx` | Logo · links de nav · EN/ES · teléfono · Login |
+| Hero | `Hero.tsx` | Headline principal + CTA |
+| Services | `Services.tsx` | Grid de servicios ofrecidos |
+| Before/After | `BeforeAfter.tsx` | Slider comparativo de fotos |
+| Tours | `VirtualTour.tsx` | Embed de tours virtuales 360° |
+| Footer | `Footer.tsx` | Info de contacto + redes |
+
+> **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing. El archivo `src/components/estimate/EstimateBuilder.tsx` puede eliminarse si no hay otras referencias.
+
+---
+
+## Panel privado (`/proyectos/...`)
+
+Requiere autenticación por PIN. Layout en `src/app/proyectos/layout.tsx`.
+
+### Tabs del detalle de proyecto (`/proyectos/[id]`)
+
+| Tab | Descripción |
+|---|---|
+| Plan | Vista rápida de avance: progress bars, conteo de tareas |
+| Workflow | Kanban (Pendiente → En Proceso → Listo) + vista Gantt |
+| Estimate | Estimado profesional: secciones, items, PDF, Day Planner |
+| Payments | Ingresos y egresos con balance en tiempo real |
+| Materials | Lista de compras con checkbox "comprado" |
+| Contacts | Especialistas/proveedores vinculados al proyecto |
+| Notes | Notas con adjuntos (imágenes + PDFs) |
+
+### Navegación del panel (top nav)
+
+| Link | Ruta |
+|---|---|
+| Dashboard | `/proyectos` |
+| Contacts | `/proyectos/contactos` |
+| Plan | `/proyectos/plan` |
+| Help | `/proyectos/help` |
+
+---
+
 ## Sistema de autenticación
 
 ### Superadmin
-- PIN almacenado en `superadmin_config` (tabla singleton, solo acceso server-side)
-- Acceso al panel completo, gestión de usuarios y configuración de seguridad
-- Recuperación de PIN por email vía Resend
-- Panel "Seguridad" en el dashboard: cambiar PIN + correo de recuperación
+- PIN en `superadmin_config` (tabla singleton, acceso solo server-side)
+- Panel completo: todos los proyectos, gestión de equipo, configuración de seguridad
+- Recuperación de PIN por email vía Resend (código 6 dígitos, 15 min de expiración)
 
 ### Colaboradores
-- Creados desde el panel "Equipo" del dashboard (solo superadmin)
-- PIN numérico de mínimo 4 dígitos almacenado en `app_users`
-- Solo ven proyectos asignados explícitamente por el superadmin
-- Permisos granulares por sección: `view`, `create`, `edit`, `delete`
+- Creados desde panel "Equipo" del dashboard (solo superadmin puede crear)
+- PIN numérico ≥ 4 dígitos en `app_users`
+- Solo ven proyectos asignados en `user_project_access`
+- Permisos granulares: `view`, `create`, `edit`, `delete` por sección
 
-### Secciones con permisos
-- `workflow` — Flujo de trabajo / tareas
-- `materiales` — Materiales
-- `contactos` — Contactos / especialistas
-- `presupuesto` — Líneas de presupuesto
-- `pagos` — Ingresos y egresos
-- `notas` — Notas con adjuntos
+### Secciones con permisos granulares
+
+`workflow` · `materiales` · `contactos` · `presupuesto` · `pagos` · `notas`
 
 ### Flujo de login
-1. Usuario ingresa PIN en `AdminModal`
-2. Se verifica contra `/api/auth/login` (superadmin, server-side) o tabla `app_users` (colaboradores)
-3. Sesión guardada en `localStorage` con usuario completo + permisos
+1. PIN ingresado en `AdminModal`
+2. Si PIN = superadmin → verifica via `/api/auth/login` (server-side)
+3. Si no → busca en `app_users` (cliente, anon key)
+4. Sesión guardada en `localStorage` (usuario + permisos)
 
 ### Flujo de recuperación de PIN
-1. "¿Olvidaste tu PIN?" en AdminModal → ingresar correo
-2. POST `/api/auth/recover` → genera código 6 dígitos, lo guarda en `superadmin_config`, envía email vía Resend
-3. Usuario ingresa código → POST `/api/auth/reset-pin` → verifica y actualiza PIN
-4. Usuario puede hacer login con el nuevo PIN
+1. "¿Olvidaste tu PIN?" → ingresar correo en `AdminModal`
+2. POST `/api/auth/recover` → código 6 dígitos → `superadmin_config` → email vía Resend
+3. POST `/api/auth/reset-pin` → verifica código → actualiza PIN
+
+---
+
+## Sistema de idioma (EN/ES)
+
+- Contexto: `LanguageContext.tsx` → hook `useLanguage()` → devuelve `{ language, setLanguage, t }`
+- Traducciones: `src/config/translations.ts` → objetos `en` y `es` completos
+- Persistencia: `localStorage` key `kokistyle-language`
+- Alcance: toda la app — landing, panel, tabs, ayuda, PDF
+
+Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `translations.ts`.
 
 ---
 
 ## Asistente de voz "Katy"
 
-- Componente: `VoiceFAB.tsx` — botón flotante en toda la app
+- Componente: `VoiceFAB.tsx` — botón flotante `fixed bottom-6 right-6`
 - Reconocimiento: Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`)
-- Síntesis: `SpeechSynthesis` (voces en español)
-- Intención: API route `/api/voice` con Claude → fallback `localDetect()`
-- Acciones soportadas: `create_project`, `create_task`, `create_material`, `create_budget_item`, `create_payment`, `create_expense`, `create_contact`
-- Contexto: `VoiceContext` informa al FAB en qué tab/proyecto está el usuario
-- Evento de refresh: `kokivoice_saved` (CustomEvent) → las páginas escuchan para refrescar datos
-- Campos editables en confirm: el usuario puede corregir lo transcrito antes de guardar
-- Optimización Android: delay TTS→mic reducido de 3000ms a 900ms; silence timeout 1200ms
+- Síntesis: `SpeechSynthesis` (voz en español preferida)
+- Intención: POST `/api/voice` → Claude → JSON `{ action, fields }` → fallback `localDetect()`
+- Contexto: `VoiceContext` → `setMeta({ projectId, tab })` desde las páginas de proyecto
+- Evento de refresh: `kokivoice_saved` (CustomEvent) → páginas escuchan para refrescar datos
+
+### Comandos de voz soportados
+
+| Acción | Ejemplo EN | Ejemplo ES |
+|---|---|---|
+| `create_project` | "Create project Miami Kitchen" | "Crear proyecto Cocina Miami" |
+| `create_task` | "Add task install tile" | "Agregar tarea instalar tile" |
+| `create_material` | "Add material tile $800" | "Agregar material tile $800" |
+| `create_budget_item` | "Add budget item plumbing $1200" | "Agregar item plomería $1200" |
+| `create_payment` | "Add payment $4000" | "Agregar pago $4000" |
+| `create_expense` | "Add expense $500 Jorge" | "Agregar egreso $500 Jorge" |
+| `create_contact` | "Add contact Jorge plumber" | "Agregar contacto Jorge plomero" |
 
 ---
 
-## Reglas de arquitectura
+## Day Planner (Estimate → Workflow)
 
-- Componentes reutilizables y pequeños
-- Mobile-first (diseño responsive desde móvil)
-- TypeScript en todo — interfaces definidas en `src/types/`
-- Solo TailwindCSS — sin CSS externo ni styled-components
-- Sin comentarios innecesarios en código
-- Sin manejo de errores para escenarios imposibles
-- Validación solo en fronteras del sistema (inputs de usuario, APIs externas)
-- `supabase-admin.ts` solo en Server Components y API routes — nunca en el cliente
+- Componente: `DayPlannerModal.tsx` — modal full-screen `fixed inset-0 z-[300]`
+- Se abre desde EstimateTab → botón "Generate Workflow Tasks"
+- Drag & drop: `@dnd-kit` (DndContext, useDraggable, useDroppable, DragOverlay)
+- Estado: pool de items sin asignar + columnas de días (hasta N días)
+- Fechas: cada columna tiene datepicker nativo (`<input type="date">` con overlay transparente)
+- Capacidad: `workersPerDay × hoursPerWorker` por día → barra de progreso visual
+- Auto-assign: greedy bin-packing (items de más horas primero, rellena días en orden)
+- Output: una tarea Kanban por día en Supabase `tasks`, con fecha en el nombre
 
 ---
 
 ## Sistema de diseño
 
 ```
-Color primario:    #16323D  (dark teal)
-Color secundario:  #F5E9DA  (warm cream)
-Color acento:      #7B1838  (burgundy — CTAs destructivos)
-Color éxito:       #4F8A63
-Color error:       #B0492F
-Color texto suave: #5C6A6E
-Color borde:       #E6DDCB
-Color fondo card:  #F7F3EA
+Color primario:      #16323D  — dark teal (nav, botones principales, headers)
+Color secundario:    #F5E9DA  — warm cream (backgrounds landing)
+Color acento:        #7B1838  — burgundy (CTAs destructivos)
+Color éxito:         #4F8A63  — green (ingresos, aprobado)
+Color error:         #B0492F  — red (egresos, rechazado, destructivo)
+Color texto suave:   #5C6A6E  — slate (labels, subtextos)
+Color borde:         #E6DDCB  — cream border
+Color fondo card:    #F7F3EA  — off-white card background
+Color link/acción:   #395886  — navy blue (botones secundarios, links activos)
 ```
 
-Tipografía: `Manrope` (headings) + sistema sans-serif
+Tipografía: `Manrope` (headings via Google Fonts) + sistema sans-serif (body)
 
 Estilo: luxury · premium · moderno · limpio · elegante
 
 ---
 
-## Configuración inicial — Supabase paso a paso
+## Configuración inicial — Supabase
 
-### Paso 1: Crear proyecto en Supabase
-1. Ir a [supabase.com](https://supabase.com) → New Project
-2. Anotar el **Project ID** (aparece en la URL: `https://supabase.com/dashboard/project/<PROJECT_ID>`)
+### 1. Crear proyecto en Supabase
+1. [supabase.com](https://supabase.com) → New Project → anotar Project ID
 
-### Paso 2: Obtener credenciales
-1. En Supabase Dashboard → `Settings` → `API`
-2. Copiar:
-   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
-   - **anon/public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - **service_role key** (secreto) → `SUPABASE_SERVICE_ROLE_KEY`
-3. Nunca exponer `service_role` en código cliente
+### 2. Obtener credenciales
+`Settings → API`:
+- **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+- **anon/public** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **service_role** → `SUPABASE_SERVICE_ROLE_KEY` (secreto, nunca al cliente)
 
-### Paso 3: Ejecutar el schema SQL
-1. Supabase Dashboard → `SQL Editor` → `New query`
-2. Pegar y ejecutar el contenido completo de `src/lib/schema.sql`
-3. Ejecutar en el orden de los 7 pasos (el archivo ya está en orden)
-4. Verificar que no hay errores en la consola de resultados
+### 3. Ejecutar schema SQL
+`SQL Editor → New query` → pegar `src/lib/schema.sql` completo → ejecutar.  
+El archivo tiene 7 bloques en orden; verificar que ninguno falla.
 
-### Paso 4: Crear bucket de Storage
-1. Supabase Dashboard → `Storage` → `New bucket`
-2. Nombre: `kokistyle-files`
-3. Marcar **Public bucket** → Save
-4. Ir a `Storage` → `Policies`
-5. Ejecutar las 3 políticas del Paso 6 del schema SQL (INSERT, SELECT, DELETE para anon)
-   > O ir a la pestaña `Policies` del bucket y usar el UI para crearlas manualmente
+### 4. Crear bucket Storage
+`Storage → New bucket`:
+- Nombre: `kokistyle-files`
+- Tipo: **Public**
+- Agregar políticas: INSERT · SELECT · DELETE para `anon` (están al final de `schema.sql`)
 
-### Paso 5: Verificar RLS
-- En `Table Editor`, confirmar que todas las tablas tienen el ícono de candado (RLS activo)
-- En `Authentication` → `Policies`, verificar que cada tabla tiene la policy `anon_all`
-- `superadmin_config` NO debe tener políticas (sin políticas = acceso denegado para anon)
+### 5. Verificar RLS
+- Todas las tablas deben tener el candado (RLS activo)
+- Cada tabla debe tener la policy `anon_all`
+- `superadmin_config`: **sin políticas** = acceso denegado para anon (correcto)
 
 ---
 
-## Configuración inicial — Vercel paso a paso
+## Configuración inicial — Vercel
 
-### Paso 1: Conectar repositorio
-1. Ir a [vercel.com](https://vercel.com) → `Add New Project`
-2. Importar el repositorio GitHub de KokiStyle
-3. Framework: **Next.js** (Vercel lo detecta automáticamente)
+### 1. Importar repo
+[vercel.com](https://vercel.com) → Add New Project → seleccionar repo GitHub → Framework: **Next.js**
 
-### Paso 2: Configurar variables de entorno
-1. Vercel Dashboard → `[Proyecto]` → `Settings` → `Environment Variables`
-2. Agregar cada variable con valor para los entornos **Production**, **Preview** y **Development**:
+### 2. Variables de entorno
+`Settings → Environment Variables` (agregar para Production + Preview + Development):
 
-| Variable | Descripción | Dónde obtener |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase | Supabase → Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave anónima pública | Supabase → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clave secreta del servidor | Supabase → Settings → API |
-| `RESEND_API_KEY` | Clave de Resend para emails | resend.com → API Keys |
-| `ANTHROPIC_API_KEY` | Clave de Claude para voz | console.anthropic.com |
+| Variable | Fuente |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API (**Sensitive**) |
+| `RESEND_API_KEY` | resend.com → API Keys |
+| `ANTHROPIC_API_KEY` | console.anthropic.com |
 
-3. Marcar `SUPABASE_SERVICE_ROLE_KEY` como **Sensitive** (ocultar el valor)
-
-### Paso 3: Primer deploy
-1. Hacer push a `main` (o al branch configurado como producción)
-2. Vercel despliega automáticamente
-3. Verificar en `Deployments` que el build termina sin errores
-
-### Paso 4: Verificar variables en producción
-```bash
-# Desde el proyecto local, verificar que el build usa las vars correctas:
-vercel env pull .env.local     # Descarga vars de Vercel a local
-pnpm build                      # Verificar que compila sin errores
-```
-
-### Paso 5: Configurar dominio (opcional)
-1. Vercel Dashboard → `[Proyecto]` → `Settings` → `Domains`
-2. Agregar dominio personalizado y seguir instrucciones DNS
+### 3. Deploy
+Push a `main` → Vercel despliega automáticamente.  
+Verificar en `Deployments` que el build termina sin errores.
 
 ---
 
 ## Configuración de Resend (emails de recuperación)
 
-1. Crear cuenta en [resend.com](https://resend.com)
-2. `API Keys` → `Create API Key` → copiar la clave
-3. Agregar como `RESEND_API_KEY` en `.env.local` y en Vercel
-4. Verificar el dominio del correo remitente en Resend → `Domains`
-   - Si se usa `onboarding@resend.dev` no requiere verificación (solo para pruebas)
-   - Para producción: agregar y verificar el dominio real
-5. En `src/app/api/auth/recover/route.ts`, el campo `from` usa el dominio verificado
+1. [resend.com](https://resend.com) → API Keys → crear y copiar clave
+2. Agregar como `RESEND_API_KEY` en `.env.local` y en Vercel
+3. Verificar dominio en Resend → `Domains` (para producción)
+   - `onboarding@resend.dev` funciona sin verificación (solo testing)
+4. El campo `from` se configura en `src/app/api/auth/recover/route.ts`
 
 ---
 
-## Reglas de seguridad para agentes
+## Reglas de seguridad
 
-- No exponer `SUPABASE_SERVICE_ROLE_KEY` ni `RESEND_API_KEY` en componentes cliente
-- `supabase-admin.ts` solo se importa en API routes (`src/app/api/`)
-- El PIN del superadmin nunca se devuelve al cliente — solo `isSuperAdmin: boolean`
-- Las políticas RLS de `superadmin_config` no tienen acceso anon (sin políticas = denegado)
-- No hardcodear el PIN del superadmin en código (leerlo siempre desde `superadmin_config`)
+- **Nunca** exponer `SUPABASE_SERVICE_ROLE_KEY` ni `RESEND_API_KEY` en componentes cliente
+- `supabase-admin.ts` solo se importa en `src/app/api/` — nunca en componentes
+- El PIN del superadmin nunca se devuelve al cliente — las API routes retornan solo `{ ok: true }`
+- `superadmin_config` no tiene políticas RLS (sin políticas = acceso denegado para anon)
+- No hardcodear PINs en código — leer siempre desde `superadmin_config` en el servidor
 
-## Reglas generales para agentes
+---
 
-Preguntar antes de:
-- Instalar dependencias grandes
-- Eliminar archivos o tablas
-- Modificar archivos de configuración (`next.config.ts`, `tailwind.config.ts`)
-- Cambiar configuración de despliegue en Vercel
+## Reglas para agentes IA
 
-Nunca:
-- Exponer secrets o API keys
-- Usar `supabase-admin` en componentes cliente
+### Preguntar antes de:
+- Instalar dependencias nuevas
+- Eliminar archivos, tablas o columnas
+- Modificar `next.config.ts`, `tailwind.config.ts`
+- Cambiar configuración de despliegue o variables de entorno en Vercel
+- Hacer push o crear PRs
+
+### Nunca:
+- Exponer secrets o API keys en código cliente
+- Importar `supabase-admin` fuera de `src/app/api/`
 - Reescribir la arquitectura completa sin instrucción explícita
-- Agregar comentarios que explican qué hace el código (los nombres ya lo hacen)
+- Agregar comentarios que describen QUÉ hace el código (los nombres ya lo dicen)
+- Usar CSS externo, styled-components ni inline styles — solo TailwindCSS
+
+### Convenciones de código:
+- Todos los componentes con lógica de estado → `"use client"` al inicio
+- Funciones de Supabase en el cliente → usar `src/lib/supabase.ts` (anon key)
+- Texto visible → siempre bilingüe usando `useLanguage()` y `translations.ts`
+- Interfaces TypeScript → definir en `src/types/` antes de usar
+- Un solo `toast()` prop por página para feedback de operaciones
