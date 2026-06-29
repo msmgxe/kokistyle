@@ -266,178 +266,354 @@ export function exportEstimatePdf(
   discountAmt: number,
   language: "en" | "es" = "en",
 ) {
-  const EN = language === "en";
+  const EN  = language === "en";
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const W = doc.internal.pageSize.getWidth();
-  let y = 0;
+  const W   = doc.internal.pageSize.getWidth(); // 210
+  const CX  = W / 2;
+  const ML  = 10;
+  const MR  = W - 10;
+  const CW  = MR - ML; // 190
+  let y     = 0;
 
-  // ── Brand header bar ───────────────────────────────────────────────────────
-  doc.setFillColor(22, 50, 61);
-  doc.rect(0, 0, W, 22, "F");
+  function checkPage(needed = 8) {
+    if (y + needed > 278) { doc.addPage(); y = 12; }
+  }
+
+  // ── Centered header ────────────────────────────────────────────────────────
+  y = 7;
+  const badgeLabel = EN ? "ESTIMATE" : "ESTIMADO";
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(6);
+  const badgeW = doc.getTextWidth(badgeLabel) + 6;
+  doc.setFillColor(22, 50, 61);
+  doc.roundedRect(CX - badgeW / 2, y - 3.5, badgeW, 5, 1, 1, "F");
   doc.setTextColor(255, 255, 255);
-  doc.text(branding.companyName.toUpperCase(), 14, 14);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${branding.phone}  ·  ${branding.email}`, W - 14, 14, { align: "right" });
+  doc.text(badgeLabel, CX, y, { align: "center" });
+  y += 6;
 
-  // Slogan
-  y = 31;
-  doc.setFontSize(7.5);
-  doc.setTextColor(MUTED);
-  doc.text(branding.slogan, 14, y);
-
-  // ── Project title ──────────────────────────────────────────────────────────
-  y = 42;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.setTextColor(INK);
-  doc.text((estimate.project_title || (EN ? "ESTIMATE" : "ESTIMADO")).toUpperCase(), 14, y);
+  doc.setTextColor(22, 50, 61);
+  doc.text(branding.companyName.toUpperCase(), CX, y, { align: "center" });
+  y += 5;
 
-  // ── Customer info ──────────────────────────────────────────────────────────
-  y = 52;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(MUTED);
-  if (estimate.customer_name) doc.text(`${EN ? "Customer" : "Cliente"}: ${estimate.customer_name}`, 14, y);
-  if (estimate.city)          doc.text(`${EN ? "City" : "Ciudad"}: ${estimate.city}`, 90, y);
-  if (estimate.phone)         doc.text(`Tel: ${estimate.phone}`, 150, y);
-  y += 6;
-  if (estimate.start_date) doc.text(`${EN ? "Start" : "Inicio"}: ${fmtDate(estimate.start_date)}`, 14, y);
-  if (estimate.end_date)   doc.text(`${EN ? "End" : "Fin"}: ${fmtDate(estimate.end_date)}`, 90, y);
-  doc.text(`${EN ? "Date" : "Fecha"}: ${fmtDate(new Date().toISOString().split("T")[0])}`, W - 14, y, { align: "right" });
+  doc.setFontSize(7);
+  doc.setTextColor(92, 106, 110);
+  doc.text(branding.slogan, CX, y, { align: "center" });
+  y += 4;
+  doc.text(`${branding.phone}  ·  ${branding.email}`, CX, y, { align: "center" });
+  y += 4;
 
-  // ── Divider + column headers ───────────────────────────────────────────────
-  y = 68;
-  doc.setDrawColor(LINE);
-  doc.setLineWidth(0.4);
-  doc.line(14, y, W - 14, y);
+  doc.setDrawColor(22, 50, 61);
+  doc.setLineWidth(0.5);
+  doc.line(ML, y, MR, y);
+  y += 3;
 
-  y = 76;
+  // ── Project title bar ──────────────────────────────────────────────────────
+  doc.setFillColor(22, 50, 61);
+  doc.rect(ML, y, CW, 8, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text((estimate.project_title || (EN ? "PROJECT" : "PROYECTO")).toUpperCase(), CX, y + 5.5, { align: "center" });
+  y += 11;
+
+  // ── PROPOSAL info block ────────────────────────────────────────────────────
+  const infoH = 22;
   doc.setFillColor(247, 243, 234);
-  doc.rect(0, y - 5, W, 10, "F");
+  doc.setDrawColor(230, 221, 203);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(ML, y, CW, infoH, 2, 2, "FD");
+
+  const propLabel = EN ? "PROPOSAL" : "PROPUESTA";
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.setTextColor(MUTED);
-  doc.text(EN ? "SECTION / ITEM" : "SECCIÓN / PARTIDA", 14, y);
-  doc.text(EN ? "AMOUNT (USD)" : "MONTO (USD)", W - 14, y, { align: "right" });
-  y += 8;
+  doc.setTextColor(22, 50, 61);
+  doc.text(propLabel, CX, y + 5, { align: "center" });
+  doc.setDrawColor(210, 200, 188);
+  doc.setLineWidth(0.2);
+  const pw = doc.getTextWidth(propLabel);
+  doc.line(CX - pw / 2, y + 6, CX + pw / 2, y + 6);
+
+  const iy  = y + 10;
+  const lhh = 4.2;
+  const c1v = ML + 4;
+  const c2v = CX + 4;
+  const valOff = 22;
+
+  const leftRows = [
+    { l: EN ? "Customer:" : "Cliente:",   v: estimate.customer_name || "—" },
+    { l: EN ? "City:"     : "Ciudad:",    v: estimate.city          || "—" },
+    { l: EN ? "Phone:"    : "Teléfono:",  v: estimate.phone         || "—" },
+  ];
+  const rightRows = [
+    { l: EN ? "Contractor:" : "Contratista:", v: branding.contractor },
+    { l: EN ? "Start Date:"  : "Inicio:",      v: estimate.start_date ? fmtDate(estimate.start_date) : "—" },
+    { l: EN ? "Date:"        : "Fecha:",        v: fmtDate(new Date().toISOString().split("T")[0]) },
+  ];
+
+  doc.setFontSize(7.5);
+  leftRows.forEach((row, i) => {
+    const ry = iy + i * lhh;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(92, 106, 110);
+    doc.text(row.l, c1v, ry);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(22, 50, 61);
+    doc.text(row.v, c1v + valOff, ry);
+  });
+  rightRows.forEach((row, i) => {
+    const ry = iy + i * lhh;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(92, 106, 110);
+    doc.text(row.l, c2v, ry);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(22, 50, 61);
+    doc.text(row.v, c2v + valOff, ry);
+  });
+  y += infoH + 3;
+
+  // ── Table header bar ───────────────────────────────────────────────────────
+  doc.setFillColor(22, 50, 61);
+  doc.rect(ML, y, CW, 7, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text(EN ? "SECTION / ITEM" : "SECCIÓN / PARTIDA", ML + 4, y + 4.8);
+  doc.text(EN ? "AMOUNT (USD)" : "MONTO (USD)", MR - 2, y + 4.8, { align: "right" });
+  y += 9;
 
   // ── Sections ───────────────────────────────────────────────────────────────
   for (const section of estimate.sections) {
     const items    = section.items ?? [];
     const itemsSum = items.reduce((a, i) => a + i.amount, 0);
     const secTotal = itemsSum > 0 ? itemsSum : section.section_total;
-    const name    = EN ? section.name_en : section.name_es;
+    const name     = (EN ? section.name_en : section.name_es) || section.name_en || section.name_es || "";
+    const isMat    = section.is_material_type;
+    const secHdrH  = section.note ? 7.5 : 6;
 
-    if (y > 250) { doc.addPage(); y = 20; }
+    checkPage(secHdrH + 4);
 
-    // Section header
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(section.is_material_type ? "#B0492F" : INK);
-    doc.text(name.toUpperCase(), 14, y);
-    if (section.note) {
-      const nX = 14 + doc.getTextWidth(name.toUpperCase()) + 2;
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(7.5);
-      doc.setTextColor(MUTED);
-      if (nX < W - 50) doc.text(`(${section.note})`, nX, y);
+    // Section header: colored left border + tinted background
+    if (isMat) {
+      doc.setFillColor(253, 240, 237);
+    } else {
+      doc.setFillColor(232, 240, 242);
     }
+    doc.rect(ML + 3, y, CW - 3, secHdrH, "F");
+
+    if (isMat) {
+      doc.setFillColor(176, 73, 47);
+    } else {
+      doc.setFillColor(22, 50, 61);
+    }
+    doc.rect(ML, y, 3, secHdrH, "F");
+
+    // Section name
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    if (isMat) {
+      doc.setTextColor(176, 73, 47);
+    } else {
+      doc.setTextColor(22, 50, 61);
+    }
+    const nameY = y + (section.note ? 4 : 4.2);
+    doc.text(name.toUpperCase(), ML + 5, nameY);
+
+    // Note
+    if (section.note) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7);
+      doc.setTextColor(92, 106, 110);
+      doc.text(section.note, ML + 5, y + 6.5);
+    }
+
+    // Section total
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.setTextColor(section.is_material_type ? "#B0492F" : INK);
-    doc.text(money(secTotal), W - 14, y, { align: "right" });
-    y += 6;
+    if (isMat) {
+      doc.setTextColor(176, 73, 47);
+    } else {
+      doc.setTextColor(22, 50, 61);
+    }
+    doc.text(money(secTotal), MR - 2, nameY, { align: "right" });
+    y += secHdrH;
 
-    // Items
+    // Items in 2-column grid
     if (items.length > 0) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      for (const item of items) {
-        if (y > 260) { doc.addPage(); y = 20; }
-        doc.setTextColor(MUTED);
-        doc.text(`  • ${item.description}`, 18, y, { maxWidth: W - 52 });
-        doc.setTextColor(INK);
-        doc.text(money(item.amount), W - 14, y, { align: "right" });
-        y += 5.5;
+      const itemRowH = 4;
+      const halfCW   = (CW - 3) / 2;
+      const c1x      = ML + 3;
+      const c2x      = ML + 3 + halfCW;
+
+      for (let i = 0; i < items.length; i += 2) {
+        const left  = items[i];
+        const right = items[i + 1] ?? null;
+
+        checkPage(itemRowH + 2);
+
+        // Row background + left border
+        doc.setFillColor(250, 250, 248);
+        doc.rect(c1x, y, CW - 3, itemRowH, "F");
+        doc.setFillColor(200, 195, 188);
+        doc.rect(ML, y, 3, itemRowH, "F");
+
+        // Row bottom separator + center divider
+        doc.setDrawColor(240, 235, 224);
+        doc.setLineWidth(0.15);
+        doc.line(c1x, y + itemRowH, MR, y + itemRowH);
+        doc.line(c2x, y, c2x, y + itemRowH);
+
+        // Left item
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(58, 58, 58);
+        doc.text(`• ${left.description}`, c1x + 2, y + 2.8, { maxWidth: halfCW - 22 });
+        doc.setFont("helvetica", "bold");
+        if (left.amount > 0) {
+          doc.setTextColor(22, 50, 61);
+          doc.text(money(left.amount), c2x - 2, y + 2.8, { align: "right" });
+        } else {
+          doc.setTextColor(200, 200, 200);
+          doc.text("—", c2x - 2, y + 2.8, { align: "right" });
+        }
+
+        // Right item
+        if (right) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.5);
+          doc.setTextColor(58, 58, 58);
+          doc.text(`• ${right.description}`, c2x + 2, y + 2.8, { maxWidth: halfCW - 22 });
+          doc.setFont("helvetica", "bold");
+          if (right.amount > 0) {
+            doc.setTextColor(22, 50, 61);
+            doc.text(money(right.amount), MR - 2, y + 2.8, { align: "right" });
+          } else {
+            doc.setTextColor(200, 200, 200);
+            doc.text("—", MR - 2, y + 2.8, { align: "right" });
+          }
+        }
+        y += itemRowH;
       }
     }
 
-    // Row separator
-    doc.setDrawColor("#F0EBE0");
-    doc.setLineWidth(0.2);
-    doc.line(14, y, W - 14, y);
-    y += 4;
+    // Section divider
+    doc.setDrawColor(230, 221, 203);
+    doc.setLineWidth(0.15);
+    doc.line(ML, y, MR, y);
+    y += 1.5;
   }
 
-  // ── Totals ─────────────────────────────────────────────────────────────────
+  // ── Totals + payment schedule (2-column) ───────────────────────────────────
   y += 4;
-  if (y > 245) { doc.addPage(); y = 20; }
+  checkPage(45);
 
+  const totalsStartY = y;
+  const leftBlockW   = 110;
+  const schedW       = CW - leftBlockW - 5;
+  const schedX       = ML + leftBlockW + 5;
+
+  // Discount rows inside a cream bordered box
   if (discountAmt > 0) {
+    doc.setFillColor(247, 243, 234);
+    doc.setDrawColor(230, 221, 203);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(ML, y, leftBlockW, 9, 1.5, 1.5, "FD");
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(MUTED);
-    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", 120, y);
-    doc.text(money(laborTotal), W - 14, y, { align: "right" });
-    y += 6;
-    doc.setTextColor("#4F8A63");
-    doc.text(`${estimate.discount_label} (−${estimate.discount_pct}%)`, 120, y);
-    doc.text(`−${money(discountAmt)}`, W - 14, y, { align: "right" });
-    y += 6;
+    doc.setFontSize(7.5);
+    doc.setTextColor(92, 106, 110);
+    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", ML + 4, y + 3.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(22, 50, 61);
+    doc.text(money(laborTotal), ML + leftBlockW - 3, y + 3.5, { align: "right" });
+    y += 4.5;
+    doc.setDrawColor(220, 212, 200);
+    doc.setLineWidth(0.15);
+    doc.line(ML + 2, y, ML + leftBlockW - 2, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(92, 106, 110);
+    doc.text(
+      `${estimate.discount_label || "Discount"} (−${estimate.discount_pct}%)`,
+      ML + 4, y + 4.5,
+    );
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(79, 138, 99);
+    doc.text(`−${money(discountAmt)}`, ML + leftBlockW - 3, y + 4.5, { align: "right" });
+    y += 5;
   }
 
   // Grand total bar
   doc.setFillColor(22, 50, 61);
-  doc.roundedRect(14, y, W - 28, 14, 3, 3, "F");
+  doc.roundedRect(ML, y, leftBlockW, 12, 2, 2, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
-  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", 20, y + 9);
-  doc.text(money(grandTotal), W - 20, y + 9, { align: "right" });
-  y += 22;
+  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", ML + 5, y + 5);
+  doc.setFontSize(13);
+  doc.text(money(grandTotal), ML + leftBlockW - 4, y + 8.5, { align: "right" });
+  y += 14;
 
-  // ── Payment schedule ───────────────────────────────────────────────────────
-  if (y > 245) { doc.addPage(); y = 20; }
+  // Payment schedule (right column, starts at totalsStartY)
+  const schedBoxH = 7 + estimate.deposit_schedule.length * 11 + 2;
+  doc.setDrawColor(230, 221, 203);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(schedX, totalsStartY, schedW, schedBoxH, 2, 2, "D");
+
+  const schedTitle = EN ? "PAYMENT SCHEDULE" : "CALENDARIO DE PAGOS";
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(INK);
-  doc.text(EN ? "PAYMENT SCHEDULE" : "CALENDARIO DE PAGOS", 14, y);
-  y += 8;
+  doc.setFontSize(7);
+  doc.setTextColor(92, 106, 110);
+  doc.text(schedTitle, schedX + schedW / 2, totalsStartY + 4.5, { align: "center" });
+  const stw = doc.getTextWidth(schedTitle);
+  doc.setDrawColor(220, 212, 200);
+  doc.setLineWidth(0.15);
+  doc.line(schedX + schedW / 2 - stw / 2, totalsStartY + 5.5, schedX + schedW / 2 + stw / 2, totalsStartY + 5.5);
 
-  const depositColors = ["#395886", "#4E7A82", "#4F8A63"];
+  const depRgb: [number, number, number][] = [
+    [57, 88, 134],
+    [78, 122, 130],
+    [79, 138, 99],
+  ];
+  let py = totalsStartY + 8;
   for (let i = 0; i < estimate.deposit_schedule.length; i++) {
-    const dep   = estimate.deposit_schedule[i];
-    const color = depositColors[i] ?? "#5C6A6E";
-    const [r, g, b] = color.match(/\w\w/g)!.map(x => parseInt(x, 16));
-    doc.setFillColor(r, g, b);
-    doc.roundedRect(14, y - 4, 22, 10, 2, 2, "F");
+    const dep = estimate.deposit_schedule[i];
+    const rgb = depRgb[i] ?? ([92, 106, 110] as [number, number, number]);
+    doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+    doc.roundedRect(schedX + 3, py, 14, 7, 1.5, 1.5, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(255, 255, 255);
-    doc.text(`${dep.pct}%`, 25, y + 2, { align: "center" });
+    doc.text(`${dep.pct}%`, schedX + 10, py + 4.8, { align: "center" });
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(INK);
-    doc.text(money(grandTotal * dep.pct / 100), 40, y + 2);
+    doc.setFontSize(9);
+    doc.setTextColor(22, 50, 61);
+    doc.text(money(grandTotal * dep.pct / 100), schedX + schedW - 3, py + 5.5, { align: "right" });
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(MUTED);
-    doc.text(EN ? dep.label_en : dep.label_es, 72, y + 2);
-    y += 13;
+    doc.setFontSize(6.5);
+    doc.setTextColor(92, 106, 110);
+    doc.text(EN ? dep.label_en : dep.label_es, schedX + 19, py + 5.5);
+    py += 11;
   }
 
+  y = Math.max(y, totalsStartY + schedBoxH + 2);
+
   // ── Footer ─────────────────────────────────────────────────────────────────
+  y += 5;
+  doc.setDrawColor(230, 221, 203);
+  doc.setLineWidth(0.3);
+  doc.line(ML, y, MR, y);
   y += 4;
   doc.setFont("helvetica", "italic");
-  doc.setFontSize(7.5);
-  doc.setTextColor(MUTED);
+  doc.setFontSize(7);
+  doc.setTextColor(170, 170, 170);
   doc.text(
     EN
-      ? `Contractor: ${branding.contractor}  ·  This estimate is valid for 30 days.`
-      : `Contratista: ${branding.contractor}  ·  Este estimado tiene validez de 30 días.`,
-    14, y,
+      ? `Contractor: ${branding.contractor}  ·  This estimate is valid for 30 days  ·  Any additional item will be charged with additional change order`
+      : `Contratista: ${branding.contractor}  ·  Este estimado tiene validez de 30 días  ·  Cualquier trabajo adicional será cobrado por separado`,
+    CX, y,
+    { align: "center", maxWidth: CW },
   );
 
   doc.save(`Estimate_${(estimate.project_title || "project").replace(/\s+/g, "_")}.pdf`);

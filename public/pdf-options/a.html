@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PDF Option A — Classic Two-Column</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Arial', sans-serif; background: #f0f0f0; display: flex; justify-content: center; padding: 20px; }
+  .page {
+    width: 794px;
+    background: white;
+    padding: 28px 32px 24px;
+    font-size: 8.5px;
+    color: #1a1a1a;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  }
+
+  /* ── Header ── */
+  .header { text-align: center; border-bottom: 2px solid #16323D; padding-bottom: 10px; margin-bottom: 10px; }
+  .company-name { font-size: 20px; font-weight: 900; letter-spacing: 3px; color: #16323D; text-transform: uppercase; }
+  .company-sub { font-size: 7.5px; color: #5C6A6E; margin-top: 2px; letter-spacing: 1px; }
+  .company-contact { font-size: 7.5px; color: #5C6A6E; margin-top: 2px; }
+
+  /* ── Client info ── */
+  .info-block {
+    background: #f7f3ea;
+    border: 1px solid #e6ddcb;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+  }
+  .info-title {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #16323D;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+  }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 20px; }
+  .info-row { display: flex; gap: 4px; font-size: 7.5px; }
+  .info-label { font-weight: 700; text-transform: uppercase; color: #5C6A6E; min-width: 65px; }
+  .info-value { color: #16323D; }
+  .project-name {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 900;
+    color: #16323D;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 6px 0 10px;
+    padding: 6px;
+    border: 2px solid #16323D;
+    border-radius: 3px;
+    background: #16323D;
+    color: white;
+  }
+
+  /* ── Table ── */
+  .table-header {
+    display: grid;
+    grid-template-columns: 1fr 60px 70px;
+    background: #16323D;
+    color: white;
+    font-size: 7.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 8px;
+    margin-bottom: 1px;
+    border-radius: 2px 2px 0 0;
+  }
+  .table-header span:last-child { text-align: right; }
+  .table-header span:nth-child(2) { text-align: center; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 1px; }
+  .section-header {
+    display: grid;
+    grid-template-columns: 1fr 60px 70px;
+    background: #e8f0f2;
+    padding: 4px 8px;
+    border-left: 3px solid #16323D;
+    align-items: center;
+  }
+  .section-header.material { background: #fdf0ed; border-left-color: #B0492F; }
+  .section-name { font-weight: 800; font-size: 8.5px; color: #16323D; text-transform: uppercase; letter-spacing: 0.5px; }
+  .section-name.material { color: #B0492F; }
+  .section-note { font-size: 7px; color: #5C6A6E; font-style: italic; }
+  .section-total { text-align: right; font-weight: 800; font-size: 9px; color: #16323D; }
+  .section-total.material { color: #B0492F; }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #fafaf8;
+    border-left: 3px solid #ddd;
+    padding: 3px 8px;
+    gap: 0;
+  }
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.5px 4px 1.5px 0;
+    font-size: 7.5px;
+    color: #3a3a3a;
+    border-bottom: 1px solid #f0ebe0;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-desc::before { content: "• "; color: #aaa; }
+  .item-amt { color: #16323D; font-weight: 600; min-width: 28px; text-align: right; }
+  .item-amt.zero { color: #ccc; }
+
+  /* ── Divider ── */
+  .section-divider { height: 1px; background: #e6ddcb; margin: 1px 0; }
+
+  /* ── Totals ── */
+  .totals-area {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 8px;
+    align-items: start;
+  }
+  .discount-block { padding: 6px 8px; border: 1px solid #e6ddcb; border-radius: 3px; background: #f7f3ea; }
+  .discount-row { display: flex; justify-content: space-between; font-size: 7.5px; padding: 2px 0; }
+  .discount-label { color: #5C6A6E; }
+  .discount-value { font-weight: 700; }
+  .discount-value.green { color: #4F8A63; }
+  .grand-total-bar {
+    background: #16323D;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 3px;
+    margin-top: 4px;
+  }
+  .grand-total-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .grand-total-value { font-size: 14px; font-weight: 900; font-family: 'Courier New', monospace; }
+
+  /* ── Payment schedule ── */
+  .payment-block { padding: 6px 8px; border: 1px solid #e6ddcb; border-radius: 3px; }
+  .payment-title { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #5C6A6E; margin-bottom: 5px; }
+  .payment-row { display: flex; gap: 6px; align-items: center; margin-bottom: 3px; }
+  .payment-badge { padding: 2px 6px; border-radius: 3px; font-size: 7.5px; font-weight: 700; color: white; min-width: 32px; text-align: center; }
+  .payment-info { flex: 1; }
+  .payment-label { font-size: 7px; color: #5C6A6E; text-transform: uppercase; }
+  .payment-amount { font-size: 9px; font-weight: 800; color: #16323D; font-family: monospace; }
+
+  /* ── Footer ── */
+  .footer { margin-top: 8px; font-size: 7px; color: #aaa; text-align: center; border-top: 1px solid #e6ddcb; padding-top: 6px; }
+
+  .badge { display: inline-block; background: #16323D; color: white; font-size: 6px; padding: 1px 6px; border-radius: 2px; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">ESTIMATE</div>
+    <div class="company-name">Luxaris Design LLC</div>
+    <div class="company-sub">Kitchen · Baths · Flooring · Painting &amp; Design of South Florida</div>
+    <div class="company-contact">Phone: 561-305-6707 &nbsp;·&nbsp; luxaris25@yahoo.com</div>
+  </div>
+
+  <!-- Project name -->
+  <div class="project-name">Master Bathroom · Master Bathroom Renovation</div>
+
+  <!-- Client info -->
+  <div class="info-block">
+    <div class="info-title">Proposal</div>
+    <div class="info-grid">
+      <div>
+        <div class="info-row"><span class="info-label">Customer:</span><span class="info-value">SOFIYA</span></div>
+        <div class="info-row"><span class="info-label">City:</span><span class="info-value">MIAMI</span></div>
+        <div class="info-row"><span class="info-label">Phone:</span><span class="info-value">786-563-2531</span></div>
+        <div class="info-row"><span class="info-label">Email:</span><span class="info-value">—</span></div>
+      </div>
+      <div>
+        <div class="info-row"><span class="info-label">Contractor:</span><span class="info-value">Jorge Saldarriaga</span></div>
+        <div class="info-row"><span class="info-label">Start Date:</span><span class="info-value">June 2026</span></div>
+        <div class="info-row"><span class="info-label">End Date:</span><span class="info-value">July 2026</span></div>
+        <div class="info-row"><span class="info-label">Date:</span><span class="info-value">29/06/2026</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table header -->
+  <div class="table-header">
+    <span>Section / Item</span>
+    <span style="text-align:center">Unit</span>
+    <span style="text-align:right">Amount (USD)</span>
+  </div>
+
+  <!-- DEMOLITION -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-name">Demolition</div><div class="section-note">Dumping included</div></div>
+      <div></div>
+      <div class="section-total">$800.00</div>
+    </div>
+    <div class="items-grid">
+      <div class="item-row"><span class="item-desc">Floor</span><span class="item-amt zero">—</span></div>
+      <div class="item-row"><span class="item-desc">Mirror</span><span class="item-amt zero">—</span></div>
+      <div class="item-row"><span class="item-desc">Shower Walls</span><span class="item-amt zero">—</span></div>
+      <div class="item-row"><span class="item-desc">Lamp</span><span class="item-amt zero">—</span></div>
+      <div class="item-row"><span class="item-desc">Regular Walls</span><span class="item-amt zero">—</span></div>
+      <div class="item-row"><span class="item-desc">Toilet</span><span class="item-amt zero">—</span></div>
+      <div class="item-row"><span class="item-desc">Glass Door</span><span class="item-amt zero">—</span></div>
+      <div class="item-row"><span class="item-desc">Vanity &amp; Toilet</span><span class="item-amt zero">—</span></div>
+    </div>
+  </div>
+
+  <!-- PLUMBING -->
+  <div class="section">
+    <div class="section-header material">
+      <div><div class="section-name material">Plumbing</div><div class="section-note">Material included</div></div>
+      <div></div>
+      <div class="section-total material">$1,800.00</div>
+    </div>
+    <div class="items-grid">
+      <div class="item-row"><span class="item-desc">Replace Jacuzzi Valves &amp; Drain</span><span class="item-amt">$200</span></div>
+      <div class="item-row"><span class="item-desc">Replace Shower Valve with Handle</span><span class="item-amt">$750</span></div>
+      <div class="item-row"><span class="item-desc">Relocate Shower Pan System</span><span class="item-amt">$250</span></div>
+      <div class="item-row"><span class="item-desc">Re-install Existing Toilet</span><span class="item-amt">$150</span></div>
+      <div class="item-row"><span class="item-desc">Install New Faucets &amp; Drain System</span><span class="item-amt">$450</span></div>
+      <div class="item-row"><span class="item-desc"></span><span class="item-amt"></span></div>
+    </div>
+  </div>
+
+  <!-- STRUCTURE -->
+  <div class="section">
+    <div class="section-header material">
+      <div><div class="section-name material">Structure</div><div class="section-note">Material included</div></div>
+      <div></div>
+      <div class="section-total material">$1,850.00</div>
+    </div>
+    <div class="items-grid">
+      <div class="item-row"><span class="item-desc">Build New Curve w/ Window Shield</span><span class="item-amt">$750</span></div>
+      <div class="item-row"><span class="item-desc">Hardie Board Walls</span><span class="item-amt">$400</span></div>
+      <div class="item-row"><span class="item-desc">Build a Nitch (16 x 48)</span><span class="item-amt">$350</span></div>
+      <div class="item-row"><span class="item-desc">Hardie Board Flooring</span><span class="item-amt">$350</span></div>
+    </div>
+  </div>
+
+  <!-- ELECTRICAL -->
+  <div class="section">
+    <div class="section-header material">
+      <div><div class="section-name material">Electrical</div><div class="section-note">Material included</div></div>
+      <div></div>
+      <div class="section-total material">$850.00</div>
+    </div>
+    <div class="items-grid">
+      <div class="item-row"><span class="item-desc">Setup New Light into Shower</span><span class="item-amt">$150</span></div>
+      <div class="item-row"><span class="item-desc">Install Fan Extractor by Ceiling</span><span class="item-amt">$450</span></div>
+      <div class="item-row"><span class="item-desc">Split Lamp Connection</span><span class="item-amt">$250</span></div>
+      <div class="item-row"><span class="item-desc">New Outlet for LED Mirror</span><span class="item-amt">—</span></div>
+    </div>
+  </div>
+
+  <!-- TILE -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-name">Tile Installation</div><div class="section-note">200 SF approx.</div></div>
+      <div></div>
+      <div class="section-total">$2,400.00</div>
+    </div>
+    <div class="items-grid">
+      <div class="item-row"><span class="item-desc">Shower Walls (100 SF Porcelain 12x24)</span><span class="item-amt">$1,200</span></div>
+      <div class="item-row"><span class="item-desc">Shower Floor (20 SF Concrete Pitch)</span><span class="item-amt">$500</span></div>
+      <div class="item-row"><span class="item-desc">Regular Floor (60 SF Porcelain 8x48)</span><span class="item-amt">$350</span></div>
+      <div class="item-row"><span class="item-desc">Nitch-Deco</span><span class="item-amt">$350</span></div>
+    </div>
+  </div>
+
+  <!-- HANDY WORK -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-name">Handy Work</div></div>
+      <div></div>
+      <div class="section-total">$850.00</div>
+    </div>
+    <div class="items-grid">
+      <div class="item-row"><span class="item-desc">Bath Fixture</span><span class="item-amt">$100</span></div>
+      <div class="item-row"><span class="item-desc">Paint</span><span class="item-amt">$250</span></div>
+      <div class="item-row"><span class="item-desc">Vanity</span><span class="item-amt">$450</span></div>
+      <div class="item-row"><span class="item-desc">Mirror</span><span class="item-amt">$150</span></div>
+      <div class="item-row"><span class="item-desc">Delivery</span><span class="item-amt">$450</span></div>
+      <div class="item-row"><span class="item-desc">Shower Door</span><span class="item-amt">$450</span></div>
+    </div>
+  </div>
+
+  <!-- PERMIT -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-name">Permit &amp; Administratives</div></div>
+      <div></div>
+      <div class="section-total">$1,300.00</div>
+    </div>
+  </div>
+
+  <!-- MATERIALS -->
+  <div class="section">
+    <div class="section-header material">
+      <div><div class="section-name material">Materials</div></div>
+      <div></div>
+      <div class="section-total material">$10,150.00</div>
+    </div>
+    <div class="items-grid">
+      <div class="item-row"><span class="item-desc">Porcelain</span><span class="item-amt">$1,500</span></div>
+      <div class="item-row"><span class="item-desc">Setup Materials</span><span class="item-amt">$700</span></div>
+      <div class="item-row"><span class="item-desc">Plumbing</span><span class="item-amt">$1,200</span></div>
+      <div class="item-row"><span class="item-desc">Electrical</span><span class="item-amt">$650</span></div>
+      <div class="item-row"><span class="item-desc">Shower Valve</span><span class="item-amt">$400</span></div>
+      <div class="item-row"><span class="item-desc">Glass Door</span><span class="item-amt">$1,850</span></div>
+      <div class="item-row"><span class="item-desc">Faucets</span><span class="item-amt">$300</span></div>
+      <div class="item-row"><span class="item-desc">LED Mirror</span><span class="item-amt">$650</span></div>
+      <div class="item-row"><span class="item-desc">Vanity</span><span class="item-amt">$2,100</span></div>
+      <div class="item-row"><span class="item-desc">Top</span><span class="item-amt">$800</span></div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Totals -->
+  <div class="totals-area">
+    <div class="discount-block">
+      <div class="discount-row"><span class="discount-label">Labor Subtotal</span><span class="discount-value">$8,200.00</span></div>
+      <div class="discount-row"><span class="discount-label">Vadim Discount (−20% labor)</span><span class="discount-value green">−$1,640.00</span></div>
+      <div class="grand-total-bar" style="margin-top:6px">
+        <span class="grand-total-label">Grand Total</span>
+        <span class="grand-total-value">$18,560.00</span>
+      </div>
+    </div>
+
+    <div class="payment-block">
+      <div class="payment-title">Payment Schedule</div>
+      <div class="payment-row">
+        <div class="payment-badge" style="background:#395886">50%</div>
+        <div class="payment-info">
+          <div class="payment-label">At Sign Contract</div>
+          <div class="payment-amount">$9,280.00</div>
+        </div>
+      </div>
+      <div class="payment-row">
+        <div class="payment-badge" style="background:#4E7A82">25%</div>
+        <div class="payment-info">
+          <div class="payment-label">When Tile is Complete</div>
+          <div class="payment-amount">$4,640.00</div>
+        </div>
+      </div>
+      <div class="payment-row">
+        <div class="payment-badge" style="background:#4F8A63">25%</div>
+        <div class="payment-info">
+          <div class="payment-label">When Customer Satisfied</div>
+          <div class="payment-amount">$4,640.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Contractor: Jorge Saldarriaga · Luxaris Design LLC · This estimate is valid for 30 days · Any additional item will be charged with additional change order
+  </div>
+
+</div>
+</body>
+</html>
