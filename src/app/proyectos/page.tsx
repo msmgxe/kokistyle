@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, MapPin, User, X } from "lucide-react";
+import { Plus, MapPin, User, X, Trash2 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import {
   money,
@@ -24,10 +24,33 @@ import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 
+interface EstimateSection {
+  section_total: number;
+  is_material_type: boolean;
+  estimate_items: Array<{ amount: number }>;
+}
+interface EstimateFetch {
+  discount_pct: number;
+  estimate_sections: EstimateSection[];
+}
+
 interface ProjectWithData extends Project {
   payments: Payment[];
   expenses: Expense[];
   tasks: Task[];
+  project_estimates: EstimateFetch[];
+}
+
+function estimateGrandTotal(est: EstimateFetch): number {
+  let all = 0, labor = 0;
+  for (const s of est.estimate_sections ?? []) {
+    const itemsSum = (s.estimate_items ?? []).reduce((a, i) => a + i.amount, 0);
+    const st = itemsSum > 0 ? itemsSum : s.section_total;
+    all += st;
+    if (!s.is_material_type) labor += st;
+  }
+  const disc = Math.round(labor * ((est.discount_pct ?? 0) / 100) * 100) / 100;
+  return all - disc;
 }
 
 function KpiCard({
@@ -111,54 +134,108 @@ function ProgressBar({
   );
 }
 
-function ProjectCard({ project }: { project: ProjectWithData }) {
-  const { t } = useLanguage();
+function ProjectCard({
+  project,
+  budget,
+  canDelete,
+  onDelete,
+}: {
+  project: ProjectWithData;
+  budget: number;
+  canDelete: boolean;
+  onDelete: (id: string) => void;
+}) {
+  const { t, language } = useLanguage();
+  const EN = language === "en";
   const tp = t.panel;
   const inc = totalIncome(project.payments);
   const adv = advancePct(project.tasks);
-  const pp = paymentPct(project.budget, project.payments);
-  const paid = balanceDue(project.budget, project.payments) <= 0;
+  const pp = paymentPct(budget, project.payments);
+  const paid = balanceDue(budget, project.payments) <= 0;
+  const [showConfirm, setShowConfirm] = useState(false);
 
   return (
-    <Link
-      href={`/proyectos/${project.id}`}
-      className="block rounded-[18px] border border-[#E6DDCB] bg-white p-[17px] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
-      aria-label={`Ver detalle de ${project.title}`}
-    >
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <StatusChip status={project.status} />
-        <span className="font-mono text-[17px] font-semibold text-[#16323D]">
-          {money(project.budget)}
-        </span>
-      </div>
+    <div className="relative">
+      <Link
+        href={`/proyectos/${project.id}`}
+        className="block rounded-[18px] border border-[#E6DDCB] bg-white p-[17px] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
+        aria-label={`Ver detalle de ${project.title}`}
+      >
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <StatusChip status={project.status} />
+          <span className="font-mono text-[17px] font-semibold text-[#16323D]">
+            {money(budget)}
+          </span>
+        </div>
 
-      <h3 className="font-[Manrope] text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
-        {project.title}
-      </h3>
-      <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E]">
-        <User size={11} className="opacity-60" />
-        {project.client}
-      </div>
-      <div className="mt-0.5 flex items-center gap-1 text-xs text-[#5C6A6E]">
-        <MapPin size={11} className="opacity-60" />
-        {project.address}
-      </div>
+        <h3 className="font-[Manrope] text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
+          {project.title}
+        </h3>
+        <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E]">
+          <User size={11} className="opacity-60" />
+          {project.client}
+        </div>
+        <div className="mt-0.5 flex items-center gap-1 text-xs text-[#5C6A6E]">
+          <MapPin size={11} className="opacity-60" />
+          {project.address}
+        </div>
 
-      <div className="mt-4 flex flex-col gap-2.5">
-        <ProgressBar
-          label={tp.dashboard.progress}
-          pct={adv}
-          valueLabel={`${adv}%`}
-          color="bg-gradient-to-r from-[#4E7A82] to-[#5e8c94]"
-        />
-        <ProgressBar
-          label={tp.dashboard.collected}
-          pct={pp}
-          valueLabel={`${money(inc)} / ${money(project.budget)}`}
-          color={paid ? "bg-[#4F8A63]" : "bg-gradient-to-r from-[#4F8A63] to-[#63a079]"}
-        />
-      </div>
-    </Link>
+        <div className="mt-4 flex flex-col gap-2.5">
+          <ProgressBar
+            label={tp.dashboard.progress}
+            pct={adv}
+            valueLabel={`${adv}%`}
+            color="bg-gradient-to-r from-[#4E7A82] to-[#5e8c94]"
+          />
+          <ProgressBar
+            label={tp.dashboard.collected}
+            pct={pp}
+            valueLabel={`${money(inc)} / ${money(budget)}`}
+            color={paid ? "bg-[#4F8A63]" : "bg-gradient-to-r from-[#4F8A63] to-[#63a079]"}
+          />
+        </div>
+      </Link>
+
+      {/* Delete button — superadmin only */}
+      {canDelete && !showConfirm && (
+        <button
+          onClick={e => { e.preventDefault(); setShowConfirm(true); }}
+          className="absolute right-3 top-3 rounded-lg p-1.5 text-[#C4B89A] opacity-0 transition hover:bg-[#FDF0ED] hover:text-[#B0492F] group-hover:opacity-100 [.relative:hover_&]:opacity-100"
+          aria-label={EN ? "Delete project" : "Eliminar proyecto"}
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
+
+      {/* Delete confirmation overlay */}
+      {showConfirm && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[18px] bg-white/97 p-5 backdrop-blur-sm">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-[#FDF0ED]">
+            <Trash2 size={18} className="text-[#B0492F]" />
+          </div>
+          <p className="text-center text-[13px] font-bold text-[#16323D]">
+            {EN ? "Delete this project?" : "¿Eliminar este proyecto?"}
+          </p>
+          <p className="max-w-[180px] truncate text-center text-[11px] text-[#5C6A6E]">
+            {project.title}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="rounded-xl border border-[#E6DDCB] px-4 py-2 text-[12px] font-semibold text-[#5C6A6E] hover:bg-[#F7F3EA]"
+            >
+              {EN ? "Cancel" : "Cancelar"}
+            </button>
+            <button
+              onClick={() => { onDelete(project.id); setShowConfirm(false); }}
+              className="rounded-xl bg-[#B0492F] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#963d27]"
+            >
+              {EN ? "Delete" : "Eliminar"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -533,7 +610,7 @@ export default function DashboardPage() {
     if (isSuperAdmin) {
       const { data, error } = await supabase
         .from("projects")
-        .select(`*, payments(*), expenses(*), tasks(*)`)
+        .select(`*, payments(*), expenses(*), tasks(*), project_estimates(discount_pct, estimate_sections(section_total, is_material_type, estimate_items(amount)))`)
         .order("created_at", { ascending: false });
       if (error) { setError("Error al cargar los proyectos."); }
       else        { setProjects(data as ProjectWithData[]); }
@@ -546,7 +623,7 @@ export default function DashboardPage() {
       if (ids.length === 0) { setProjects([]); setLoading(false); return; }
       const { data, error } = await supabase
         .from("projects")
-        .select(`*, payments(*), expenses(*), tasks(*)`)
+        .select(`*, payments(*), expenses(*), tasks(*), project_estimates(discount_pct, estimate_sections(section_total, is_material_type, estimate_items(amount)))`)
         .in("id", ids)
         .order("created_at", { ascending: false });
       if (error) { setError("Error al cargar los proyectos."); }
@@ -567,6 +644,11 @@ export default function DashboardPage() {
     const handler = () => fetchData();
     window.addEventListener("kokivoice_saved", handler);
     return () => window.removeEventListener("kokivoice_saved", handler);
+  }, [fetchData]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    await supabase.from("projects").delete().eq("id", id);
+    fetchData();
   }, [fetchData]);
 
   const allPayments = projects.flatMap((p) => p.payments);
@@ -645,9 +727,19 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
+          {projects.map((p) => {
+            const est = p.project_estimates?.[0];
+            const budget = est ? estimateGrandTotal(est) : p.budget;
+            return (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                budget={budget}
+                canDelete={isSuperAdmin}
+                onDelete={handleDelete}
+              />
+            );
+          })}
         </div>
       )}
 

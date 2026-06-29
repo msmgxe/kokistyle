@@ -66,7 +66,7 @@ src/
 │   ├── page.tsx                      # Landing pública (Hero · Services · Before/After · Tours)
 │   ├── proyectos/
 │   │   ├── layout.tsx                # Layout del panel: nav top, logout, VoiceFAB, LangSwitch
-│   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs)
+│   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs + eliminar proyecto)
 │   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Plan · Workflow · Estimate · Payments · Materials · Contacts · Notes
 │   │   ├── cliente-01/page.tsx       # Tour 360° showcase (demo pública)
 │   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
@@ -162,6 +162,16 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 - Si algún item de la sección tiene `amount > 0` → el total efectivo es la **suma de items** (anula `section_total`)
 - Si ningún item tiene monto → se usa `section_total` directamente
 - Las secciones marcadas `is_material_type = true` quedan **excluidas** del descuento de mano de obra
+
+### Sincronización Estimate → Dashboard
+
+- El dashboard lee el `grand_total` del estimate directamente vía nested select en `fetchData()`:
+  ```
+  project_estimates(discount_pct, estimate_sections(section_total, is_material_type, estimate_items(amount)))
+  ```
+- La función `estimateGrandTotal()` en `page.tsx` calcula el total client-side con la misma lógica que `computeGrandTotal()` en `EstimateTab.tsx`
+- Si el proyecto no tiene estimate, se usa `project.budget` como fallback
+- También se sincroniza `project.budget` en la DB cuando el EstimateTab carga (`load()`) o el usuario guarda (`saveHeader()`)
 
 ### Storage
 
