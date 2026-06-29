@@ -128,6 +128,7 @@ export interface ProjectEstimateSection {
   name_es: string;
   note: string;
   is_material_type: boolean;
+  material_included: boolean;
   section_total: number;
   sort_order: number;
   items: ProjectEstimateItem[];

@@ -80,6 +80,7 @@ interface SectionRow {
   name_es: string;
   note: string;
   is_material_type: boolean;
+  material_included: boolean;
   section_total: number;
   sort_order: number;
   items: ItemRow[];
@@ -193,7 +194,7 @@ interface SortableSectionProps {
   effectiveTotal: number;
   hasItemAmounts: boolean;
   onToggle:          () => void;
-  onUpdateField:     (id: string, field: "section_total"|"note"|"is_material_type", value: number|string|boolean) => void;
+  onUpdateField:     (id: string, field: "section_total"|"note"|"is_material_type"|"material_included", value: number|string|boolean) => void;
   onDelete:          (id: string) => void;
   onUpdateItem:      (sectionId: string, itemId: string, field: "description"|"amount", value: string) => void;
   onSaveItem:        (itemId: string, field: "description"|"amount", value: string) => void;
@@ -272,7 +273,23 @@ function SortableSection({
           </div>
         </div>
         <div className="ml-3 flex shrink-0 items-center gap-3">
-          {/* Labor toggle — always visible in header */}
+          {/* Checkbox 1 — Material included (informational) */}
+          <label
+            className="flex cursor-pointer items-center gap-1.5"
+            onClick={e => e.stopPropagation()}
+            title={EN ? "Material cost included in section price" : "Costo de material incluido en el precio"}
+          >
+            <input
+              type="checkbox"
+              checked={section.material_included}
+              onChange={e => onUpdateField(section.id, "material_included", e.target.checked)}
+              className="h-3.5 w-3.5 cursor-pointer accent-[#4F8A63]"
+            />
+            <span className={`text-[10px] font-bold uppercase tracking-wide ${section.material_included ? "text-[#4F8A63]" : "text-[#5C6A6E]"}`}>
+              {EN ? "Mat. incl." : "Mat. incl."}
+            </span>
+          </label>
+          {/* Checkbox 2 — Include in labor discount */}
           <label
             className="flex cursor-pointer items-center gap-1.5"
             onClick={e => e.stopPropagation()}
@@ -284,8 +301,8 @@ function SortableSection({
               onChange={e => onUpdateField(section.id, "is_material_type", !e.target.checked)}
               className="h-3.5 w-3.5 cursor-pointer accent-[#395886]"
             />
-            <span className={`text-[10px] font-bold uppercase tracking-wide ${!section.is_material_type ? "text-[#395886]" : "text-[#B0492F]"}`}>
-              {!section.is_material_type ? (EN ? "Labor" : "Mano obra") : (EN ? "Material" : "Material")}
+            <span className={`text-[10px] font-bold uppercase tracking-wide ${!section.is_material_type ? "text-[#395886]" : "text-[#5C6A6E]"}`}>
+              {EN ? "Labor %" : "M. obra %"}
             </span>
           </label>
           <div className="text-right">
@@ -483,6 +500,7 @@ export default function EstimateTab({
 
     const mappedSections = (sections ?? []).map(s => ({
       ...s,
+      material_included: (s as { material_included?: boolean }).material_included ?? false,
       items: ((s.items ?? []) as ItemRow[]).sort((a, b) => a.sort_order - b.sort_order),
     }));
 
@@ -624,6 +642,7 @@ export default function EstimateTab({
       name_es:    cat?.name_es ?? "NUEVA SECCIÓN",
       note:       EN ? (cat?.note_en ?? "") : (cat?.note_es ?? ""),
       is_material_type: cat?.is_material_type ?? false,
+      material_included: false,
       section_total: 0,
       sort_order: sort,
     }).select().single();
@@ -641,7 +660,7 @@ export default function EstimateTab({
 
   const updateSectionField = useCallback(async (
     sectionId: string,
-    field: "section_total" | "note" | "is_material_type",
+    field: "section_total" | "note" | "is_material_type" | "material_included",
     value: number | string | boolean,
   ) => {
     setEstimate(p => p ? ({

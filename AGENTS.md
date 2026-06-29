@@ -163,6 +163,20 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 - Si ningún item tiene monto → se usa `section_total` directamente
 - Las secciones marcadas `is_material_type = true` quedan **excluidas** del descuento de mano de obra
 
+### Checkboxes por sección (`estimate_sections`)
+
+Cada sección tiene **dos checkboxes independientes** en el encabezado:
+
+| Campo | Checkbox UI | Semántica |
+|---|---|---|
+| `material_included` | **Mat. incl.** (verde) | Informativo — indica que el precio ya incluye el costo de materiales (p.ej. PLOMERÍA con material incluido). No afecta cálculos. |
+| `is_material_type` | **Labor %** (azul) | Computacional — `false` = la sección entra al labor subtotal y al descuento; `true` = excluida. Se invierte en UI: checked = incluida en mano de obra. |
+
+Migración SQL requerida si la columna `material_included` no existe aún:
+```sql
+ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN NOT NULL DEFAULT false;
+```
+
 ### Sincronización Estimate → Dashboard
 
 - El dashboard usa `enrichWithEstimateBudgets()` en `page.tsx` — hace dos queries separadas:

@@ -168,6 +168,7 @@ CREATE TABLE IF NOT EXISTS estimate_sections (
   name_es             TEXT NOT NULL,
   note                TEXT NOT NULL DEFAULT '',
   is_material_type    BOOLEAN NOT NULL DEFAULT false,
+  material_included   BOOLEAN NOT NULL DEFAULT false,
   section_total       NUMERIC(12,2) NOT NULL DEFAULT 0,
   sort_order          INTEGER NOT NULL DEFAULT 0,
   created_at          TIMESTAMPTZ DEFAULT now() NOT NULL
