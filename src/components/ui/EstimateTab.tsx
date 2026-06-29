@@ -319,9 +319,14 @@ export default function EstimateTab({
   // ── Export PDF ───────────────────────────────────────────────────────────────
   const handleExportPdf = useCallback(() => {
     if (!estimate) return;
-    const { grandTotal, laborTotal, discountAmt } = totals;
-    exportEstimatePdf(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language);
-  }, [estimate, totals, language]);
+    try {
+      const { grandTotal, laborTotal, discountAmt } = totals;
+      exportEstimatePdf(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language);
+    } catch (err) {
+      console.error("[EstimateTab] PDF export error:", err);
+      toast(EN ? "Error generating PDF — check console" : "Error al generar PDF — revisa la consola");
+    }
+  }, [estimate, totals, language, EN, toast]);
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   if (loading) return (
@@ -379,15 +384,17 @@ export default function EstimateTab({
           <button
             onClick={saveHeader}
             disabled={saving}
+            title={EN ? "Save changes to database" : "Guardar cambios en la base de datos"}
             className="rounded-xl border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#16323D] transition hover:shadow-sm disabled:opacity-50"
           >
             {saving ? "…" : (EN ? "Save" : "Guardar")}
           </button>
           <button
             onClick={handleExportPdf}
+            title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
             className="inline-flex items-center gap-1.5 rounded-xl bg-[#16323D] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#0F2830]"
           >
-            <FileText size={12} /> PDF
+            <FileText size={12} /> {EN ? "Download PDF" : "Descargar PDF"}
           </button>
         </div>
       </div>
@@ -697,10 +704,11 @@ export default function EstimateTab({
         </button>
         <button
           onClick={handleExportPdf}
+          title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
           className="inline-flex items-center gap-2 rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0F2830]"
         >
           <FileText size={14} />
-          {EN ? "Export PDF" : "Exportar PDF"}
+          {EN ? "Download PDF" : "Descargar PDF"}
         </button>
       </div>
 
