@@ -478,10 +478,11 @@ export default function EstimateTab({
     if (data) setEstimate({ ...data, deposit_schedule: defaultDeposits(), sections: [] });
   }, [project, EN, toast]);
 
-  // ── Save header ───────────────────────────────────────────────────────────
+  // ── Save header + auto-create client contact ──────────────────────────────
   const saveHeader = useCallback(async () => {
     if (!estimate) return;
     setSaving(true);
+
     await supabase.from("project_estimates").update({
       customer_name:    estimate.customer_name,
       city:             estimate.city,
@@ -497,9 +498,45 @@ export default function EstimateTab({
       notes:            estimate.notes,
       updated_at:       new Date().toISOString(),
     }).eq("id", estimate.id);
+
+    // Auto-create/update client contact when name + phone are present
+    if (estimate.customer_name.trim() && estimate.phone.trim()) {
+      const { data: existing } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("name", estimate.customer_name.trim())
+        .eq("type", "customer")
+        .maybeSingle();
+
+      let contactId: string;
+      if (existing) {
+        contactId = existing.id;
+        await supabase.from("contacts")
+          .update({ phone: estimate.phone.trim() })
+          .eq("id", contactId);
+      } else {
+        const { data: created } = await supabase.from("contacts").insert({
+          name:      estimate.customer_name.trim(),
+          phone:     estimate.phone.trim(),
+          specialty: EN ? "Client" : "Cliente",
+          type:      "customer",
+          rate:      "",
+          rate_type: "hour",
+        }).select().single();
+        if (!created) { setSaving(false); return; }
+        contactId = created.id;
+      }
+
+      // Link contact to project (ignore if already linked)
+      await supabase.from("project_contacts")
+        .upsert({ project_id: project.id, contact_id: contactId }, { onConflict: "project_id,contact_id" });
+
+      onRefresh();
+    }
+
     setSaving(false);
     toast(EN ? "Estimate saved" : "Estimado guardado");
-  }, [estimate, EN, toast]);
+  }, [estimate, EN, toast, project.id, onRefresh]);
 
   // ── Sections ──────────────────────────────────────────────────────────────
   const addSection = useCallback(async (cat?: EstimateSectionCatalog & { id: string }) => {
@@ -624,6 +661,49 @@ export default function EstimateTab({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor,   { activationConstraint: { delay: 250, tolerance: 5 } }),
   );
+
+  // ── Deposit confirmation (creates/deletes payment record) ────────────────
+  const handleDepositToggle = useCallback(async (idx: number, checked: boolean) => {
+    if (!estimate) return;
+    const dep = estimate.deposit_schedule[idx];
+    const amount = Math.round(totals.grandTotal * dep.pct / 100 * 100) / 100;
+    const TYPES: Array<"anticipo" | "abono" | "final"> = ["anticipo", "abono", "final"];
+
+    if (checked) {
+      const { data, error } = await supabase.from("payments").insert({
+        project_id: project.id,
+        amount,
+        date:   new Date().toISOString().split("T")[0],
+        method: "Transferencia",
+        type:   TYPES[Math.min(idx, 2)],
+      }).select().single();
+
+      if (error || !data) {
+        toast(EN ? "Error recording payment" : "Error al registrar el pago");
+        return;
+      }
+
+      const updated = estimate.deposit_schedule.map((d, i) =>
+        i === idx ? { ...d, received: true, payment_id: data.id } : d
+      );
+      setEstimate(p => p ? { ...p, deposit_schedule: updated } : p);
+      await supabase.from("project_estimates").update({ deposit_schedule: updated }).eq("id", estimate.id);
+      toast(`${EN ? "Payment registered" : "Pago registrado"} · ${new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(amount)}`);
+      onRefresh();
+
+    } else {
+      if (dep.payment_id) {
+        await supabase.from("payments").delete().eq("id", dep.payment_id);
+      }
+      const updated = estimate.deposit_schedule.map((d, i) =>
+        i === idx ? { ...d, received: false, payment_id: undefined } : d
+      );
+      setEstimate(p => p ? { ...p, deposit_schedule: updated } : p);
+      await supabase.from("project_estimates").update({ deposit_schedule: updated }).eq("id", estimate.id);
+      toast(EN ? "Payment removed" : "Pago eliminado");
+      onRefresh();
+    }
+  }, [estimate, totals.grandTotal, project.id, EN, toast, onRefresh]);
 
   // ── PDF export ────────────────────────────────────────────────────────────
   const handleExportPdf = useCallback(() => {
@@ -868,14 +948,38 @@ export default function EstimateTab({
                     />
                     <span className="text-[11px] font-bold text-white/80">%</span>
                   </div>
-                  <div>
-                    <div className="font-mono text-[12px] font-semibold text-[#16323D]">
+
+                  {/* Amount + label */}
+                  <div className="flex-1">
+                    <div className={`font-mono text-[12px] font-semibold ${dep.received ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
                       {money(grandTotal * dep.pct / 100)}
                     </div>
                     <div className="text-[10px] text-[#5C6A6E]">
                       {EN ? dep.label_en : dep.label_es}
                     </div>
                   </div>
+
+                  {/* Confirmation checkbox */}
+                  <label
+                    className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition ${
+                      dep.received
+                        ? "border-[#4F8A63] bg-[#DCEBDD] text-[#4F8A63]"
+                        : "border-[#E6DDCB] bg-white text-[#5C6A6E] hover:border-[#4F8A63] hover:text-[#4F8A63]"
+                    }`}
+                    title={dep.received
+                      ? (EN ? "Uncheck to remove payment" : "Desmarcar para eliminar el pago")
+                      : (EN ? "Mark as received — creates payment record" : "Marcar como recibido — crea registro de pago")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={dep.received ?? false}
+                      onChange={e => handleDepositToggle(i, e.target.checked)}
+                      className="sr-only"
+                    />
+                    <span className="text-[10px] font-bold">
+                      {dep.received ? (EN ? "✓ Received" : "✓ Cobrado") : (EN ? "Confirm" : "Confirmar")}
+                    </span>
+                  </label>
                 </div>
               ))}
             </div>

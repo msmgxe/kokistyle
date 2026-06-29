@@ -97,6 +97,8 @@ export interface DepositEntry {
   pct: number;
   label_en: string;
   label_es: string;
+  received?: boolean;    // checkbox: payment confirmed received
+  payment_id?: string;   // id of the payments row created on confirmation
 }
 
 export interface EstimateSectionCatalog {
