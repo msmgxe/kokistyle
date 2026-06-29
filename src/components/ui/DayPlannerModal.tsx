@@ -16,6 +16,9 @@ import { useLanguage } from "@/src/context/LanguageContext";
 
 interface PlanItem {
   id: string;
+  estimateSectionId: string;
+  estimateItemId: string | null;
+  sourceKey: string;
   sectionTag: string;
   tagStyle: string;
   description: string;
@@ -89,10 +92,32 @@ function buildItems(estimate: EstimateForPlanner, EN: boolean): PlanItem[] {
     const tagStyle = TAG_STYLES[si % TAG_STYLES.length];
     if (sec.items && sec.items.length > 0) {
       sec.items.forEach((item, ii) => {
-        out.push({ id: `${sec.id}·${item.id}·${ii}`, sectionTag: tag, tagStyle, description: item.description, amount: item.amount, hours: 2, dayIndex: null });
+        out.push({
+          id: `${sec.id}·${item.id}·${ii}`,
+          estimateSectionId: sec.id,
+          estimateItemId: item.id,
+          sourceKey: `estimate-item:${item.id}`,
+          sectionTag: tag,
+          tagStyle,
+          description: item.description,
+          amount: item.amount,
+          hours: 2,
+          dayIndex: null,
+        });
       });
     } else if (sec.section_total > 0) {
-      out.push({ id: `${sec.id}·flat`, sectionTag: tag, tagStyle, description: EN ? sec.name_en : sec.name_es, amount: sec.section_total, hours: 4, dayIndex: null });
+      out.push({
+        id: `${sec.id}·flat`,
+        estimateSectionId: sec.id,
+        estimateItemId: null,
+        sourceKey: `estimate-section:${sec.id}:flat`,
+        sectionTag: tag,
+        tagStyle,
+        description: EN ? sec.name_en : sec.name_es,
+        amount: sec.section_total,
+        hours: 4,
+        dayIndex: null,
+      });
     }
   });
   return out;
@@ -339,54 +364,68 @@ export default function DayPlannerModal({
   // Generate workflow tasks
   const generate = async () => {
     setGenerating(true);
-    const rows: object[] = [];
-
-    for (let d = 0; d < numDays; d++) {
-      const dItems = getDay(d);
-      if (dItems.length === 0) continue;
-      const totalHours = dItems.reduce((s, i) => s + i.hours, 0);
-      const tags = [...new Set(dItems.map(i => i.sectionTag))].join(" · ");
-      const dateLabel = dayDates[d] ? ` (${formatDate(dayDates[d], EN)})` : "";
-      rows.push({
-        project_id: projectId,
-        name: `${EN ? "Day" : "Día"} ${d + 1}${dateLabel} — ${tags}`,
-        hours: totalHours,
-        duration_weeks: 1,
-        status: "pend",
-        sort_order: d * 10,
-        assigned_contact_id: null,
-      });
-    }
-
-    // Unscheduled items → catch-all task
-    if (poolItems.length > 0) {
-      rows.push({
-        project_id: projectId,
-        name: EN ? "⚠ Unscheduled items" : "⚠ Items sin asignar",
-        hours: poolItems.reduce((s, i) => s + i.hours, 0),
-        duration_weeks: 1,
-        status: "pend",
-        sort_order: numDays * 10,
-        assigned_contact_id: null,
-      });
-    }
-
-    if (rows.length === 0) {
+    const scheduledItems = items.filter(i => i.dayIndex !== null);
+    if (scheduledItems.length === 0) {
       toast(EN ? "No items assigned to days" : "Sin items asignados a días");
       setGenerating(false);
+      return;
+    }
+
+    const sourceKeys = scheduledItems.map(i => i.sourceKey);
+    const { data: existing, error: existingError } = await supabase
+      .from("tasks")
+      .select("source_key")
+      .eq("project_id", projectId)
+      .eq("source", "estimate")
+      .in("source_key", sourceKeys);
+
+    if (existingError) {
+      setGenerating(false);
+      toast(EN ? "Error checking existing tasks" : "Error verificando tareas existentes");
+      return;
+    }
+
+    const existingKeys = new Set((existing ?? []).map(row => row.source_key as string));
+    const rows = scheduledItems
+      .filter(item => !existingKeys.has(item.sourceKey))
+      .map((item, index) => {
+        const dayIndex = item.dayIndex ?? 0;
+        return {
+          project_id: projectId,
+          name: item.description,
+          hours: item.hours,
+          duration_weeks: 1,
+          status: "pend",
+          sort_order: dayIndex * 100 + index,
+          assigned_contact_id: null,
+          scheduled_date: dayDates[dayIndex] ?? null,
+          estimate_item_id: item.estimateItemId,
+          estimate_section_id: item.estimateSectionId,
+          source: "estimate",
+          source_key: item.sourceKey,
+          source_section: item.sectionTag,
+          amount: item.amount,
+        };
+      });
+
+    if (rows.length === 0) {
+      setGenerating(false);
+      toast(EN ? "These estimate items already exist in Workflow" : "Estos items ya existen en Workflow");
       return;
     }
 
     const { error } = await supabase.from("tasks").insert(rows);
     setGenerating(false);
     if (error) { toast(EN ? "Error creating tasks" : "Error al crear tareas"); return; }
-    toast(EN ? `${rows.length} tasks created in Workflow` : `${rows.length} tareas creadas en Workflow`);
+    const skipped = scheduledItems.length - rows.length;
+    toast(EN
+      ? `${rows.length} item tasks created${skipped ? ` · ${skipped} skipped` : ""}`
+      : `${rows.length} tareas por item creadas${skipped ? ` · ${skipped} omitidas` : ""}`);
     onGenerated();
     onClose();
   };
 
   const scheduledCount = items.filter(i => i.dayIndex !== null).length;
-  const filledDays     = Array.from({ length: numDays }, (_, d) => getDay(d).length > 0).filter(Boolean).length;
 
   return (
     <div className="fixed inset-0 z-[300] flex flex-col bg-[#F7F3EB]">
@@ -433,7 +472,7 @@ export default function DayPlannerModal({
           {generating
             ? "…"
             : EN
-              ? `Generate ${filledDays + (poolItems.length > 0 ? 1 : 0)} tasks`
+              ? `Generate ${scheduledCount} tasks`
               : `Generar tareas`}
         </button>
       </div>

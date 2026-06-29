@@ -1,4 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Luxaris Design / KokiStyle
+
+Next.js 15 project for a premium remodeling project platform: public landing, private project dashboard, Estimate, Workflow, Plan/Gantt, Payments, Materials, Contacts and Notes.
+
+## Estimate to Workflow
+
+The Estimate Day Planner turns scheduled estimate items into individual Workflow tasks:
+
+- Each scheduled estimate item creates one `tasks` row.
+- Generated tasks use `source = 'estimate'` and a stable `source_key` to prevent duplicates when regenerating.
+- `scheduled_date` is editable from Workflow, so generated activities can be reprogrammed.
+- Workflow includes filters by assignee and scheduled date.
+- Plan/Gantt uses `scheduled_date` when present; manual tasks without dates still fall back to sequential planning.
+
+Required migration for existing Supabase projects:
+
+```sql
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS scheduled_date DATE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_key TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_section TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_section_id UUID REFERENCES estimate_sections(id) ON DELETE SET NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS tasks_project_source_key_idx
+  ON tasks(project_id, source_key)
+  WHERE source_key IS NOT NULL;
+```
 
 ## Getting Started
 

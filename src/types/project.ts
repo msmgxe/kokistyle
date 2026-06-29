@@ -30,6 +30,13 @@ export interface Task {
   status: "pend" | "prog" | "done";
   sort_order: number;
   assigned_contact_id: string | null;
+  scheduled_date?: string | null;
+  estimate_item_id?: string | null;
+  estimate_section_id?: string | null;
+  source?: "manual" | "estimate" | string;
+  source_key?: string | null;
+  source_section?: string | null;
+  amount?: number;
   created_at?: string;
   // Join fields
   assigned_contact_name?: string; 

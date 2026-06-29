@@ -9,7 +9,7 @@ import {
   useEffect, useState, useCallback, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy } from "lucide-react";
+import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, CalendarDays } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -307,6 +307,23 @@ function DroppableKanbanCol({
                     </span>
                     <span className="font-mono text-[11px] text-[#5C6A6E]">{t.hours}h</span>
                   </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10.5px] font-semibold text-[#5C6A6E]">
+                    {t.scheduled_date && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#EDF3FB] px-2 py-0.5 text-[#395886]">
+                        <CalendarDays size={11} /> {dateFmt(t.scheduled_date)}
+                      </span>
+                    )}
+                    {t.source === "estimate" && (
+                      <span className="rounded-full bg-[#EDE3CF] px-2 py-0.5 text-[#7A6230]">
+                        {t.source_section ?? "Estimate"}
+                      </span>
+                    )}
+                    {typeof t.amount === "number" && t.amount > 0 && (
+                      <span className="rounded-full bg-[#F7F3EA] px-2 py-0.5 font-mono">
+                        {money(t.amount)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -328,6 +345,8 @@ function WorkflowTab({
   const [items, setItems]   = useState<Task[]>(tasks);
   const [editor, setEditor] = useState<EditorOpts | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
   const persist = usePersistOrder("tasks");
 
   const KANBAN_COLS = [
@@ -344,12 +363,34 @@ function WorkflowTab({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const byStatus = (s: KanbanStatus) =>
-    items.filter((t) => t.status === s).sort((a, b) => a.sort_order - b.sort_order);
-
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
   const ownTeamLabel = tp.workflow.ownTeam;
   const whoOptions = [ownTeamLabel, ...contacts.map((c) => c.name)];
+  const assigneeOptions = [
+    { value: "all", label: tp.workflow.allAssignees },
+    { value: "own", label: ownTeamLabel },
+    ...contacts.map((c) => ({ value: c.id, label: c.name })),
+  ];
+  const dateOptions = [
+    { value: "all", label: tp.workflow.allDates },
+    { value: "unscheduled", label: tp.workflow.unscheduled },
+    ...Array.from(new Set(items.map((task) => task.scheduled_date).filter(Boolean) as string[]))
+      .sort()
+      .map((iso) => ({ value: iso, label: dateFmt(iso) })),
+  ];
+  const matchesAssignee = (task: Task) => {
+    if (assigneeFilter === "all") return true;
+    if (assigneeFilter === "own") return !task.assigned_contact_id;
+    return task.assigned_contact_id === assigneeFilter;
+  };
+  const matchesDate = (task: Task) => {
+    if (dateFilter === "all") return true;
+    if (dateFilter === "unscheduled") return !task.scheduled_date;
+    return task.scheduled_date === dateFilter;
+  };
+  const filteredItems = items.filter((task) => matchesAssignee(task) && matchesDate(task));
+  const byStatus = (s: KanbanStatus) =>
+    filteredItems.filter((task) => task.status === s).sort((a, b) => a.sort_order - b.sort_order);
 
   const openEdit = (t: Task) => {
     setEditor({
@@ -358,6 +399,7 @@ function WorkflowTab({
         { key: "name",           label: tp.workflow.activity,       type: "text",   value: t.name },
         { key: "hours",          label: tp.workflow.estHours,        type: "number", value: t.hours },
         { key: "duration_weeks", label: tp.workflow.durationWeeks,   type: "number", value: t.duration_weeks },
+        { key: "scheduled_date", label: tp.workflow.scheduledDate,    type: "date",   value: t.scheduled_date ?? "" },
         { key: "status",         label: tp.workflow.status,          type: "select", options: ["pend", "prog", "done"], value: t.status },
         {
           key: "assignee_name", label: tp.workflow.responsible, type: "select", options: whoOptions,
@@ -368,6 +410,7 @@ function WorkflowTab({
         const assignee = contacts.find((c) => c.name === vals.assignee_name);
         const { error } = await supabase.from("tasks").update({
           name: vals.name, hours: vals.hours, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
+          scheduled_date: vals.scheduled_date ? String(vals.scheduled_date) : null,
           status: vals.status, assigned_contact_id: assignee?.id ?? null,
         }).eq("id", t.id);
         if (error) { toast(tp.common.errorSaving + error.message); return; }
@@ -445,6 +488,7 @@ function WorkflowTab({
         { key: "name",           label: tp.workflow.activity,       type: "text",   value: "" },
         { key: "hours",          label: tp.workflow.estHours,        type: "number", value: 8 },
         { key: "duration_weeks", label: tp.workflow.durationWeeks,   type: "number", value: 1 },
+        { key: "scheduled_date", label: tp.workflow.scheduledDate,    type: "date",   value: project.start_date },
         { key: "assignee_name",  label: tp.workflow.responsible,     type: "select", options: whoOptions, value: ownTeamLabel },
       ],
       onSave: async (vals) => {
@@ -452,7 +496,9 @@ function WorkflowTab({
         const { error } = await supabase.from("tasks").insert({
           project_id: project.id, name: vals.name || tp.workflow.activity,
           hours: vals.hours || 0, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
+          scheduled_date: vals.scheduled_date ? String(vals.scheduled_date) : null,
           status: "pend", sort_order: items.length, assigned_contact_id: assignee?.id ?? null,
+          source: "manual",
         });
         if (error) { toast(tp.common.errorSaving + error.message); return; }
         onRefresh(); toast(tp.workflow.taskAdded);
@@ -476,6 +522,37 @@ function WorkflowTab({
       <p className="mb-4 text-[11.5px] text-[#5C6A6E]">
         {tp.workflow.hint}
       </p>
+      <div className="mb-4 flex flex-wrap items-end gap-2 rounded-2xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
+        <label className="min-w-[180px] flex-1 text-[10px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+          {tp.workflow.filterAssignee}
+          <select
+            value={assigneeFilter}
+            onChange={(e) => setAssigneeFilter(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm normal-case tracking-normal text-[#16323D] focus:border-[#16323D] focus:outline-none"
+          >
+            {assigneeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+        <label className="min-w-[160px] flex-1 text-[10px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+          {tp.workflow.filterDate}
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm normal-case tracking-normal text-[#16323D] focus:border-[#16323D] focus:outline-none"
+          >
+            {dateOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+        <button
+          onClick={() => { setAssigneeFilter("all"); setDateFilter("all"); }}
+          className="rounded-xl border border-[#D7CBB3] bg-white px-4 py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#ECE3D1] hover:text-[#16323D]"
+        >
+          {tp.workflow.clearFilters}
+        </button>
+        <span className="ml-auto rounded-full bg-[#EDF3FB] px-3 py-2 text-[11px] font-bold text-[#395886]">
+          {filteredItems.length}/{items.length}
+        </span>
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-3">
         {KANBAN_COLS.map((col) => (
           <DroppableKanbanCol
@@ -1253,7 +1330,7 @@ function PlanTaskForm({
   task: Task;
   startDate: Date;
   endDate: Date;
-  onSave: (vals: { name: string; hours: number; durationDays: number; status: string }) => void;
+  onSave: (vals: { name: string; hours: number; durationDays: number; status: string; startDate: string; endDate: string }) => void;
   onClose: () => void;
 }) {
   const toDateInput = (d: Date) => d.toISOString().split("T")[0];
@@ -1301,7 +1378,7 @@ function PlanTaskForm({
       </div>
       <div className="mt-5 flex gap-3">
         <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancel</button>
-        <button onClick={() => onSave({ name, hours, durationDays, status })} className="flex-1 rounded-xl bg-[#395886] py-3 font-bold text-white">Save</button>
+        <button onClick={() => onSave({ name, hours, durationDays, status, startDate: sDate, endDate: eDate })} className="flex-1 rounded-xl bg-[#395886] py-3 font-bold text-white">Save</button>
       </div>
     </div>
   );
@@ -1335,24 +1412,28 @@ function PlanTab({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const projectStart = new Date(project.start_date + "T00:00:00");
+
   // Calendario secuencial
   const schedule = () => {
     let cum = 0;
     return items.map((t) => {
-      const start = addDays(project.start_date, cum * 7);
-      const end   = addDays(project.start_date, (cum + t.duration_weeks) * 7 - 1);
-      const ws = cum;
-      cum += t.duration_weeks;
+      const hasScheduledDate = Boolean(t.scheduled_date);
+      const start = hasScheduledDate
+        ? new Date(`${t.scheduled_date}T00:00:00`)
+        : addDays(project.start_date, cum * 7);
+      const end = addDays(start.toISOString().slice(0, 10), t.duration_weeks * 7 - 1);
+      const ws = Math.max(0, Math.round((start.getTime() - projectStart.getTime()) / (7 * 86400000)));
+      cum = Math.max(cum, ws + t.duration_weeks);
       return { task: t, start, end, weekStart: ws };
     });
   };
 
-  const total = Math.max(6, items.reduce((s, t) => s + t.duration_weeks, 0));
   const rows  = schedule();
+  const total = Math.max(6, rows.reduce((max, row) => Math.max(max, row.weekStart + row.task.duration_weeks), 0));
   const filteredRows = filterStatus === "all" ? rows : rows.filter((r) => r.task.status === filterStatus);
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
 
-  const projectStart = new Date(project.start_date + "T00:00:00");
   const totalDays    = total * 7;
 
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -1553,6 +1634,7 @@ function PlanTab({
                   name: vals.name,
                   hours: Number(vals.hours),
                   duration_weeks: Math.max(1, Math.round(vals.durationDays / 7)),
+                  scheduled_date: vals.startDate || null,
                   status: vals.status,
                 }).eq("id", editTask.task.task.id);
                 if (error) { toast("Error: " + error.message); return; }

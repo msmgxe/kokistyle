@@ -156,6 +156,34 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `estimate_sections` | Secciones del estimado (N:1 → project_estimates) |
 | `estimate_items` | Items dentro de cada sección |
 
+### Estimate → Workflow
+
+- El Day Planner convierte **cada item programado del Estimate** en una fila individual de `tasks`; no agrupa todo el día en una sola tarea.
+- Campos usados en `tasks` para trazabilidad y planificación:
+  - `scheduled_date` — fecha editable/reprogramable de la actividad
+  - `estimate_item_id` — vínculo al item de Estimate cuando existe
+  - `estimate_section_id` — vínculo a la sección del Estimate
+  - `source = 'estimate'` — distingue tareas generadas vs manuales
+  - `source_key` — llave estable para evitar duplicados al regenerar
+  - `source_section` — etiqueta visible de sección (Demolition, Plumbing, etc.)
+  - `amount` — monto del item para contexto operativo
+- Workflow permite filtrar tareas por responsable y por `scheduled_date`.
+- Para reprogramar: abrir la tarjeta de Workflow y editar **Scheduled date / Fecha programada**. El Plan/Gantt respeta esa fecha.
+
+Migración SQL requerida si estas columnas no existen:
+```sql
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS scheduled_date DATE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_key TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_section TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_section_id UUID REFERENCES estimate_sections(id) ON DELETE SET NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS tasks_project_source_key_idx
+  ON tasks(project_id, source_key)
+  WHERE source_key IS NOT NULL;
+```
+
 ### Lógica de totales del Estimate
 
 - `section_total` = total plano editable de la sección
@@ -339,7 +367,7 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 - Fechas: cada columna tiene datepicker nativo (`<input type="date">` con overlay transparente)
 - Capacidad: `workersPerDay × hoursPerWorker` por día → barra de progreso visual
 - Auto-assign: greedy bin-packing (items de más horas primero, rellena días en orden)
-- Output: una tarea Kanban por día en Supabase `tasks`, con fecha en el nombre
+- Output: una tarea Kanban por item programado en Supabase `tasks`, con `scheduled_date`, `source_key` y vínculo al Estimate para evitar duplicados
 
 ---
 

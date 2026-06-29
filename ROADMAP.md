@@ -12,12 +12,16 @@
 - PDFs
 - QR
 - Lead capture
+- Estimate items converted into individual Workflow tasks
+- Workflow filters by assignee and scheduled date
+- Reprogrammable generated tasks reflected in Plan/Gantt
 
 ## Premium Features
 - Client dashboard
 - CRM
 - AI estimates
 - Analytics
+- Estimate-to-Workflow resync controls
 
 ## Future
 - Mobile app

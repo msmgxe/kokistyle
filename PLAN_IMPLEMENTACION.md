@@ -67,7 +67,7 @@ Definir como variables CSS / theme de Tailwind. Extraídos del sitio real (azul 
 - **`projects`** — id, cliente, dirección, status (`presupuesto`/`aprobado`/`en_obra`/`terminado`), monto presupuestado, **start_date**, owner_id.
 - **`contacts`** — id, nombre, especialidad, teléfono, tarifa.
 - **`project_contacts`** — project_id, contact_id. *(Relación muchos a muchos para asignar especialistas a cada proyecto.)*
-- **`tasks`** (actividades) — project_id, nombre, descripción, status (`pend`/`prog`/`done`), horas estimadas, horas reales, **order** (para drag&drop), duración (semanas/días), start_date, end_date, % avance, **assigned_contact_id** (relación con contact).
+- **`tasks`** (actividades) — project_id, nombre, status (`pend`/`prog`/`done`), horas estimadas, **order** (para drag&drop), duración, **scheduled_date** reprogramable, **assigned_contact_id** (relación con contact), trazabilidad opcional a Estimate (`source`, `source_key`, `estimate_item_id`, `estimate_section_id`, `source_section`, `amount`).
 - **`budget_items`** — project_id, tipo (`mano`/`material`), descripción, cantidad, costo unitario, total.
 - **`materials`** — project_id, nombre, proveedor, costo, comprado (bool).
 - **`payments`** (Ingresos - Pagos recibidos del cliente) — project_id, monto, fecha, método (`Efectivo`/`Transferencia`/`Zelle`/`Cheque`/`Tarjeta`), tipo (`anticipo`/`abono`/`final`), nota.

@@ -51,8 +51,19 @@ CREATE TABLE IF NOT EXISTS tasks (
   status TEXT NOT NULL DEFAULT 'pend' CHECK (status IN ('pend', 'prog', 'done')),
   sort_order INTEGER NOT NULL DEFAULT 0,
   assigned_contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+  scheduled_date DATE,
+  source TEXT NOT NULL DEFAULT 'manual',
+  source_key TEXT,
+  source_section TEXT,
+  amount NUMERIC(12,2) NOT NULL DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS scheduled_date DATE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_key TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_section TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;
 
 -- 6. Tabla de Líneas de Presupuesto
 CREATE TABLE IF NOT EXISTS budget_items (
@@ -184,6 +195,14 @@ CREATE TABLE IF NOT EXISTS estimate_items (
   sort_order       INTEGER NOT NULL DEFAULT 0,
   created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
+-- Estimate → Workflow traceability. These ALTERs live after the Estimate tables
+-- so the schema can run cleanly on a fresh Supabase project.
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_section_id UUID REFERENCES estimate_sections(id) ON DELETE SET NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS tasks_project_source_key_idx
+  ON tasks(project_id, source_key)
+  WHERE source_key IS NOT NULL;
 
 -- RLS: acceso anon igual que resto de tablas
 ALTER TABLE estimate_section_catalog ENABLE ROW LEVEL SECURITY;

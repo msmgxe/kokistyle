@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luxaris Prototype - Estimate to Workflow</title>
+  <style>
+    :root {
+      --primary: #16323D;
+      --primary-2: #395886;
+      --cream: #F5E9DA;
+      --surface: #F7F3EA;
+      --card: #FFFFFF;
+      --border: #E6DDCB;
+      --muted: #5C6A6E;
+      --burgundy: #7B1838;
+      --success: #4F8A63;
+      --warning: #B47B2B;
+      --danger: #B0492F;
+      --blue-soft: #E8EEF7;
+      --green-soft: #DCEBDD;
+      --red-soft: #F5E2DA;
+      --shadow: 0 18px 45px rgba(22, 50, 61, 0.09);
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--cream);
+      color: var(--primary);
+      line-height: 1.5;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 44px;
+      cursor: pointer;
+      border: 0;
+      transition: background 180ms ease, border 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid rgba(57, 88, 134, 0.35);
+      outline-offset: 2px;
+    }
+
+    .app {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px clamp(16px, 3vw, 32px);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(18px, 2vw, 24px);
+      letter-spacing: 0;
+      line-height: 1.15;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .pill svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 16px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 10px 24px rgba(22, 50, 61, 0.15);
+    }
+
+    .primary-btn:hover { background: #0F2830; }
+    .primary-btn:active { transform: scale(0.98); }
+
+    .secondary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #D5DEEF;
+      background: var(--blue-soft);
+      color: var(--primary-2);
+      font-weight: 800;
+    }
+
+    .secondary-btn:hover { border-color: var(--primary-2); }
+
+    .danger-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 14px;
+      border-radius: 8px;
+      background: var(--red-soft);
+      color: var(--danger);
+      font-weight: 800;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      padding: clamp(16px, 3vw, 32px);
+    }
+
+    .workspace {
+      min-width: 0;
+      display: grid;
+      gap: 16px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      min-height: 86px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      box-shadow: 0 8px 22px rgba(22, 50, 61, 0.04);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      background: white;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .panel-header p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .planner {
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .pool, .schedule {
+      min-width: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .item-list {
+      display: grid;
+      gap: 10px;
+      max-height: 618px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .estimate-item, .task-card {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 6px 14px rgba(22, 50, 61, 0.04);
+    }
+
+    .estimate-item.generated {
+      opacity: 0.58;
+    }
+
+    .item-top, .task-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--primary-2);
+      background: var(--blue-soft);
+      white-space: nowrap;
+    }
+
+    .tag.green { color: var(--success); background: var(--green-soft); }
+    .tag.gold { color: #7A6230; background: #EDE3CF; }
+    .tag.red { color: var(--danger); background: var(--red-soft); }
+    .tag.dark { color: white; background: var(--primary); }
+
+    .item-title, .task-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+      line-height: 1.25;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .assign-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .mini-btn:hover, .mini-btn.active {
+      border-color: var(--primary-2);
+      background: var(--blue-soft);
+      color: var(--primary-2);
+    }
+
+    .days {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(210px, 1fr));
+      gap: 12px;
+    }
+
+    .day {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 260px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      overflow: hidden;
+    }
+
+    .day-head {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      background: white;
+    }
+
+    .day-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 900;
+    }
+
+    .day input {
+      width: 100%;
+      min-height: 40px;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0 10px;
+      color: var(--primary);
+      background: var(--surface);
+    }
+
+    .capacity {
+      height: 7px;
+      margin-top: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #E7DEC9;
+    }
+
+    .capacity span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--success);
+      transition: width 180ms ease, background 180ms ease;
+    }
+
+    .day-items {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      padding: 10px;
+      min-height: 160px;
+    }
+
+    .empty {
+      display: grid;
+      min-height: 100px;
+      place-items: center;
+      border: 1px dashed #D7CBB3;
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      padding: 14px;
+    }
+
+    .kanban {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .column {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 420px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.65);
+      overflow: hidden;
+    }
+
+    .column-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 12px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      font-weight: 900;
+    }
+
+    .dropzone {
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      padding: 10px;
+      min-height: 360px;
+    }
+
+    .dropzone.over {
+      outline: 2px dashed var(--primary-2);
+      outline-offset: -6px;
+      background: rgba(57, 88, 134, 0.05);
+    }
+
+    .task-card {
+      cursor: grab;
+      touch-action: manipulation;
+    }
+
+    .task-card:active {
+      cursor: grabbing;
+      transform: scale(0.99);
+    }
+
+    .task-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .task-controls label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .task-controls input, .task-controls select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+      padding: 0 9px;
+      color: var(--primary);
+    }
+
+    .helper {
+      position: sticky;
+      top: 86px;
+      align-self: start;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100dvh - 108px);
+      overflow: auto;
+    }
+
+    .helper-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 10px 26px rgba(22, 50, 61, 0.06);
+      overflow: hidden;
+    }
+
+    .helper-card h3 {
+      margin: 0;
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 15px;
+    }
+
+    .helper-body {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .helper-body p {
+      margin: 0;
+    }
+
+    .helper-body ol, .helper-body ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .helper-body li + li {
+      margin-top: 6px;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid #D5DEEF;
+      border-radius: 8px;
+      background: #F4F7FB;
+      color: #263D58;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow: auto;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 13px 14px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 18px 45px rgba(22, 50, 61, 0.24);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      font-weight: 750;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      main { grid-template-columns: 1fr; }
+      .helper {
+        position: static;
+        max-height: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .helper-card:first-child { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 900px) {
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .planner { grid-template-columns: 1fr; }
+      .days, .kanban { grid-template-columns: 1fr; }
+      .item-list { max-height: none; }
+      .helper { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .top-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 520px) {
+      .summary { grid-template-columns: 1fr; }
+      .panel-header { align-items: flex-start; flex-direction: column; }
+      .top-actions, .panel-header .top-actions { width: 100%; }
+      .primary-btn, .secondary-btn, .danger-btn, .pill { width: 100%; }
+      .task-controls { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">LD</div>
+        <div>
+          <h1>Estimate to Workflow Prototype</h1>
+          <p>Una tarea por item, con fecha, responsable y trazabilidad al estimado.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="pill" id="saveState">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5 10 17 19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Demo local
+        </span>
+        <button class="secondary-btn" id="autoAssignBtn" type="button">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true"><path d="m13 2-2 8h8l-8 12 2-8H5L13 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Auto-asignar
+        </button>
+        <button class="primary-btn" id="generateBtn" type="button">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Generar workflow
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="workspace" aria-label="Prototype workspace">
+        <div class="summary">
+          <article class="metric"><span>Estimate items</span><strong id="metricItems">0</strong></article>
+          <article class="metric"><span>Asignados</span><strong id="metricAssigned">0</strong></article>
+          <article class="metric"><span>Tareas creadas</span><strong id="metricTasks">0</strong></article>
+          <article class="metric"><span>Avance workflow</span><strong id="metricProgress">0%</strong></article>
+        </div>
+
+        <section class="panel" aria-labelledby="plannerTitle">
+          <div class="panel-header">
+            <div>
+              <h2 id="plannerTitle">1. Day Planner - items del Estimate</h2>
+              <p>Asigna cada item a un dia. Al generar, cada item se convierte en una task individual.</p>
+            </div>
+            <div class="top-actions">
+              <button class="secondary-btn" id="addDayBtn" type="button">Agregar dia</button>
+              <button class="danger-btn" id="resetBtn" type="button">Reset demo</button>
+            </div>
+          </div>
+          <div class="planner">
+            <div class="pool">
+              <div class="section-title">
+                <span>Item pool</span>
+                <span id="poolCount">0 sin asignar</span>
+              </div>
+              <div class="item-list" id="itemPool"></div>
+            </div>
+            <div class="schedule">
+              <div class="section-title">
+                <span>Cronograma - 16h/dia</span>
+                <span>Click en D1-D4 para asignar</span>
+              </div>
+              <div class="days" id="days"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="workflowTitle">
+          <div class="panel-header">
+            <div>
+              <h2 id="workflowTitle">2. Workflow Kanban generado</h2>
+              <p>Arrastra las tareas entre columnas o cambia estado desde el selector.</p>
+            </div>
+            <button class="secondary-btn" id="exportBtn" type="button">Ver payload</button>
+          </div>
+          <div class="kanban" id="kanban"></div>
+        </section>
+      </section>
+
+      <aside class="helper" aria-label="Implementation helper">
+        <section class="helper-card">
+          <h3>Helper: como se gestionaria</h3>
+          <div class="helper-body">
+            <ol>
+              <li>El Estimate sigue siendo la fuente comercial: secciones, items, montos y PDF.</li>
+              <li>El Day Planner solo decide ejecucion: dia, horas y prioridad de trabajo.</li>
+              <li>Al presionar Generate, cada item asignado crea una fila en <strong>tasks</strong>.</li>
+              <li>Workflow gestiona esas tareas con status <strong>pend</strong>, <strong>prog</strong> y <strong>done</strong>.</li>
+              <li>La task conserva su origen mediante <strong>estimate_item_id</strong>, para evitar duplicados y permitir sincronizacion futura.</li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="helper-card">
+          <h3>Campos recomendados</h3>
+          <div class="helper-body">
+            <pre>ALTER TABLE tasks
+ADD COLUMN IF NOT EXISTS scheduled_date DATE,
+ADD COLUMN IF NOT EXISTS estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual',
+ADD COLUMN IF NOT EXISTS source_section TEXT,
+ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;</pre>
+            <p>Con esto la app puede saber si una tarea vino del Estimate, en que fecha cae y cuanto representa.</p>
+          </div>
+        </section>
+
+        <section class="helper-card">
+          <h3>Payload que se insertaria</h3>
+          <div class="helper-body">
+            <pre id="payloadPreview">[]</pre>
+          </div>
+        </section>
+
+        <section class="helper-card">
+          <h3>Decision de producto</h3>
+          <div class="helper-body">
+            <ul>
+              <li><strong>Simple:</strong> crear tasks por item sin migracion, usando solo name, hours, status y sort_order.</li>
+              <li><strong>Recomendado:</strong> agregar scheduled_date y estimate_item_id para trazabilidad.</li>
+              <li><strong>Avanzado:</strong> permitir re-sincronizar cuando cambie el Estimate sin pisar tareas ya trabajadas.</li>
+            </ul>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const CAPACITY = 16;
+    const contacts = ["Own team", "Jorge Plumbing", "Carlos Tile", "Mia Electrical", "Luis Helper"];
+
+    const estimateItems = [
+      { id: "ei-floor", section: "Demolition", tag: "blue", description: "Floor", amount: 0, hours: 2 },
+      { id: "ei-shower-walls", section: "Demolition", tag: "blue", description: "Shower walls", amount: 0, hours: 2 },
+      { id: "ei-regular-walls", section: "Demolition", tag: "blue", description: "Regular walls", amount: 0, hours: 2 },
+      { id: "ei-plumbing", section: "Demolition", tag: "blue", description: "Plumbing", amount: 0, hours: 2 },
+      { id: "ei-shower-pan", section: "Plumbing", tag: "green", description: "Relocate shower pan system", amount: 250, hours: 2 },
+      { id: "ei-toilet", section: "Plumbing", tag: "green", description: "Re-install existing toilet", amount: 150, hours: 2 },
+      { id: "ei-faucets", section: "Plumbing", tag: "green", description: "Install new faucets and drain system", amount: 450, hours: 2 },
+      { id: "ei-curve", section: "Structure", tag: "gold", description: "Build a new curve with window shield", amount: 750, hours: 3 },
+      { id: "ei-nitch", section: "Structure", tag: "gold", description: "Build a nitch (16 x 48)", amount: 350, hours: 2 },
+      { id: "ei-shower-tile", section: "Tile installation", tag: "red", description: "Shower walls - 100 SF porcelain", amount: 1200, hours: 4 },
+      { id: "ei-shower-floor", section: "Tile installation", tag: "red", description: "Shower floor - pitch + flat stone", amount: 500, hours: 3 },
+      { id: "ei-split-lamp", section: "Electrical", tag: "blue", description: "Split lamp connection", amount: 250, hours: 2 }
+    ];
+
+    const state = {
+      days: [
+        { label: "Day 1", date: isoPlus(0) },
+        { label: "Day 2", date: isoPlus(1) },
+        { label: "Day 3", date: isoPlus(2) },
+        { label: "Day 4", date: isoPlus(3) }
+      ],
+      assignments: {},
+      tasks: []
+    };
+
+    function isoPlus(n) {
+      const date = new Date();
+      date.setDate(date.getDate() + n);
+      return date.toISOString().slice(0, 10);
+    }
+
+    function money(value) {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+    }
+
+    function statusLabel(status) {
+      return status === "pend" ? "To do" : status === "prog" ? "In progress" : "Finish";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 3200);
+    }
+
+    function render() {
+      renderMetrics();
+      renderPool();
+      renderDays();
+      renderKanban();
+      renderPayload();
+    }
+
+    function renderMetrics() {
+      const assigned = Object.keys(state.assignments).length;
+      const done = state.tasks.filter(task => task.status === "done").length;
+      const progress = state.tasks.length ? Math.round(done / state.tasks.length * 100) : 0;
+      document.getElementById("metricItems").textContent = estimateItems.length;
+      document.getElementById("metricAssigned").textContent = assigned;
+      document.getElementById("metricTasks").textContent = state.tasks.length;
+      document.getElementById("metricProgress").textContent = progress + "%";
+      document.getElementById("poolCount").textContent = (estimateItems.length - assigned) + " sin asignar";
+    }
+
+    function itemById(id) {
+      return estimateItems.find(item => item.id === id);
+    }
+
+    function renderPool() {
+      const pool = document.getElementById("itemPool");
+      pool.innerHTML = "";
+      estimateItems.forEach(item => {
+        const generated = state.tasks.some(task => task.estimate_item_id === item.id);
+        const dayIndex = state.assignments[item.id];
+        const card = document.createElement("article");
+        card.className = "estimate-item" + (generated ? " generated" : "");
+        card.innerHTML = `
+          <div class="item-top">
+            <span class="tag ${item.tag}">${item.section}</span>
+            <span class="meta">${item.hours}h</span>
+          </div>
+          <h3 class="item-title">${item.description}</h3>
+          <div class="meta">
+            <span>${money(item.amount)}</span>
+            <span>${dayIndex === undefined ? "Not scheduled" : state.days[dayIndex].label + " - " + state.days[dayIndex].date}</span>
+            ${generated ? "<span>Generated</span>" : ""}
+          </div>
+          <div class="assign-row">
+            ${state.days.map((day, idx) => `<button class="mini-btn ${dayIndex === idx ? "active" : ""}" data-assign="${item.id}" data-day="${idx}" type="button">${day.label.replace("Day ", "D")}</button>`).join("")}
+            <button class="mini-btn" data-unassign="${item.id}" type="button">Pool</button>
+          </div>
+        `;
+        pool.appendChild(card);
+      });
+    }
+
+    function renderDays() {
+      const days = document.getElementById("days");
+      days.innerHTML = "";
+      state.days.forEach((day, index) => {
+        const ids = Object.entries(state.assignments).filter((entry) => entry[1] === index).map((entry) => entry[0]);
+        const totalHours = ids.reduce((sum, id) => sum + itemById(id).hours, 0);
+        const pct = Math.min(100, Math.round(totalHours / CAPACITY * 100));
+        const barColor = totalHours > CAPACITY ? "var(--danger)" : totalHours > CAPACITY * 0.8 ? "var(--warning)" : "var(--success)";
+        const column = document.createElement("section");
+        column.className = "day";
+        column.innerHTML = `
+          <div class="day-head">
+            <div class="day-title">
+              <span>${day.label}</span>
+              <span class="meta">${totalHours}h / ${CAPACITY}h</span>
+            </div>
+            <input type="date" aria-label="${day.label} date" data-date="${index}" value="${day.date}">
+            <div class="capacity" aria-hidden="true"><span style="width:${pct}%; background:${barColor}"></span></div>
+          </div>
+          <div class="day-items" data-day-drop="${index}">
+            ${ids.length ? ids.map(id => dayItemTemplate(itemById(id))).join("") : `<div class="empty">Sin items asignados en este dia.</div>`}
+          </div>
+        `;
+        days.appendChild(column);
+      });
+    }
+
+    function dayItemTemplate(item) {
+      return `
+        <article class="estimate-item">
+          <div class="item-top">
+            <span class="tag ${item.tag}">${item.section}</span>
+            <button class="mini-btn" data-unassign="${item.id}" type="button">Quitar</button>
+          </div>
+          <h3 class="item-title">${item.description}</h3>
+          <div class="meta"><span>${money(item.amount)}</span><span>${item.hours}h</span></div>
+        </article>
+      `;
+    }
+
+    function renderKanban() {
+      const kanban = document.getElementById("kanban");
+      const columns = [
+        { key: "pend", label: "To do", tag: "gold" },
+        { key: "prog", label: "In progress", tag: "blue" },
+        { key: "done", label: "Finish", tag: "green" }
+      ];
+      kanban.innerHTML = columns.map(col => {
+        const tasks = state.tasks.filter(task => task.status === col.key).sort((a, b) => a.sort_order - b.sort_order);
+        return `
+          <section class="column">
+            <div class="column-head">
+              <span>${col.label}</span>
+              <span class="tag ${col.tag}">${tasks.length}</span>
+            </div>
+            <div class="dropzone" data-status="${col.key}">
+              ${tasks.length ? tasks.map(taskTemplate).join("") : `<div class="empty">Arrastra tareas aqui o genera desde el planner.</div>`}
+            </div>
+          </section>
+        `;
+      }).join("");
+    }
+
+    function taskTemplate(task) {
+      return `
+        <article class="task-card" draggable="true" data-task="${task.id}">
+          <div class="task-top">
+            <span class="tag dark">${task.source_section}</span>
+            <span class="meta">${task.hours}h</span>
+          </div>
+          <h3 class="task-title">${task.name}</h3>
+          <div class="meta">
+            <span>${task.scheduled_date}</span>
+            <span>${money(task.amount)}</span>
+            <span>${task.source}</span>
+          </div>
+          <div class="task-controls">
+            <label>Estado
+              <select data-task-status="${task.id}">
+                <option value="pend" ${task.status === "pend" ? "selected" : ""}>To do</option>
+                <option value="prog" ${task.status === "prog" ? "selected" : ""}>In progress</option>
+                <option value="done" ${task.status === "done" ? "selected" : ""}>Finish</option>
+              </select>
+            </label>
+            <label>Responsable
+              <select data-task-owner="${task.id}">
+                ${contacts.map(contact => `<option value="${contact}" ${task.assignee_name === contact ? "selected" : ""}>${contact}</option>`).join("")}
+              </select>
+            </label>
+          </div>
+        </article>
+      `;
+    }
+
+    function buildPayload() {
+      return Object.entries(state.assignments)
+        .map(([itemId, dayIndex], index) => {
+          const item = itemById(itemId);
+          const day = state.days[dayIndex];
+          return {
+            project_id: "current-project-id",
+            name: item.description,
+            hours: item.hours,
+            duration_weeks: 1,
+            status: "pend",
+            sort_order: dayIndex * 100 + index,
+            assigned_contact_id: null,
+            scheduled_date: day.date,
+            estimate_item_id: item.id,
+            source: "estimate",
+            source_section: item.section,
+            amount: item.amount
+          };
+        })
+        .filter(row => !state.tasks.some(task => task.estimate_item_id === row.estimate_item_id));
+    }
+
+    function renderPayload() {
+      document.getElementById("payloadPreview").textContent = JSON.stringify(buildPayload(), null, 2);
+    }
+
+    function autoAssign() {
+      const usage = state.days.map(() => 0);
+      estimateItems
+        .slice()
+        .sort((a, b) => b.hours - a.hours)
+        .forEach(item => {
+          if (state.tasks.some(task => task.estimate_item_id === item.id)) return;
+          let best = 0;
+          for (let i = 0; i < usage.length; i += 1) {
+            if (usage[i] + item.hours <= CAPACITY) {
+              best = i;
+              break;
+            }
+            if (usage[i] < usage[best]) best = i;
+          }
+          state.assignments[item.id] = best;
+          usage[best] += item.hours;
+        });
+      showToast("Items asignados por capacidad diaria.");
+      render();
+    }
+
+    function generateTasks() {
+      const payload = buildPayload();
+      if (!payload.length) {
+        showToast("No hay items nuevos para generar.");
+        return;
+      }
+      const created = payload.map((row, index) => ({
+        id: "task-" + row.estimate_item_id,
+        ...row,
+        assignee_name: "Own team",
+        sort_order: state.tasks.length + index
+      }));
+      state.tasks = [...state.tasks, ...created];
+      showToast(created.length + " tareas individuales creadas en Workflow.");
+      render();
+    }
+
+    function resetDemo() {
+      state.assignments = {};
+      state.tasks = [];
+      state.days = [
+        { label: "Day 1", date: isoPlus(0) },
+        { label: "Day 2", date: isoPlus(1) },
+        { label: "Day 3", date: isoPlus(2) },
+        { label: "Day 4", date: isoPlus(3) }
+      ];
+      showToast("Demo reiniciado.");
+      render();
+    }
+
+    function addDay() {
+      const next = state.days.length;
+      state.days.push({ label: "Day " + (next + 1), date: isoPlus(next) });
+      showToast("Dia agregado.");
+      render();
+    }
+
+    document.addEventListener("click", (event) => {
+      const assign = event.target.closest("[data-assign]");
+      const unassign = event.target.closest("[data-unassign]");
+      if (assign) {
+        const itemId = assign.dataset.assign;
+        const day = Number(assign.dataset.day);
+        state.assignments[itemId] = day;
+        render();
+      }
+      if (unassign) {
+        delete state.assignments[unassign.dataset.unassign];
+        render();
+      }
+    });
+
+    document.addEventListener("change", (event) => {
+      const dateInput = event.target.closest("[data-date]");
+      const taskStatus = event.target.closest("[data-task-status]");
+      const taskOwner = event.target.closest("[data-task-owner]");
+      if (dateInput) {
+        state.days[Number(dateInput.dataset.date)].date = dateInput.value;
+        render();
+      }
+      if (taskStatus) {
+        const task = state.tasks.find(row => row.id === taskStatus.dataset.taskStatus);
+        if (task) {
+          task.status = taskStatus.value;
+          showToast("Status actualizado a " + statusLabel(task.status) + ".");
+          render();
+        }
+      }
+      if (taskOwner) {
+        const task = state.tasks.find(row => row.id === taskOwner.dataset.taskOwner);
+        if (task) {
+          task.assignee_name = taskOwner.value;
+          showToast("Responsable actualizado.");
+          render();
+        }
+      }
+    });
+
+    document.addEventListener("dragstart", (event) => {
+      const card = event.target.closest("[data-task]");
+      if (!card) return;
+      event.dataTransfer.setData("text/plain", card.dataset.task);
+      event.dataTransfer.effectAllowed = "move";
+    });
+
+    document.addEventListener("dragover", (event) => {
+      const zone = event.target.closest("[data-status]");
+      if (!zone) return;
+      event.preventDefault();
+      zone.classList.add("over");
+    });
+
+    document.addEventListener("dragleave", (event) => {
+      const zone = event.target.closest("[data-status]");
+      if (zone) zone.classList.remove("over");
+    });
+
+    document.addEventListener("drop", (event) => {
+      const zone = event.target.closest("[data-status]");
+      if (!zone) return;
+      event.preventDefault();
+      zone.classList.remove("over");
+      const taskId = event.dataTransfer.getData("text/plain");
+      const task = state.tasks.find(row => row.id === taskId);
+      if (!task) return;
+      task.status = zone.dataset.status;
+      showToast("Tarea movida a " + statusLabel(task.status) + ".");
+      render();
+    });
+
+    document.getElementById("autoAssignBtn").addEventListener("click", autoAssign);
+    document.getElementById("generateBtn").addEventListener("click", generateTasks);
+    document.getElementById("resetBtn").addEventListener("click", resetDemo);
+    document.getElementById("addDayBtn").addEventListener("click", addDay);
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      navigator.clipboard?.writeText(document.getElementById("payloadPreview").textContent);
+      showToast("Payload copiado si el navegador permite clipboard.");
+    });
+
+    render();
+  </script>
+</body>
+</html>
