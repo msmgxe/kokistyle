@@ -155,19 +155,32 @@ function ProjectCard({
   const [showConfirm, setShowConfirm] = useState(false);
 
   return (
-    <div className="relative">
-      <Link
-        href={`/proyectos/${project.id}`}
-        className="block rounded-[18px] border border-[#E6DDCB] bg-white p-[17px] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
-        aria-label={`Ver detalle de ${project.title}`}
-      >
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <StatusChip status={project.status} />
+    <div className="relative overflow-hidden rounded-[18px] border border-[#E6DDCB] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]">
+      {/* Header row: status · amount · trash (separated, not nested in Link) */}
+      <div className="flex items-center justify-between gap-2 px-[17px] pb-3 pt-[17px]">
+        <StatusChip status={project.status} />
+        <div className="flex items-center gap-2">
           <span className="font-mono text-[17px] font-semibold text-[#16323D]">
             {money(budget)}
           </span>
+          {canDelete && !showConfirm && (
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#FDF0ED] hover:text-[#B0492F]"
+              aria-label={EN ? "Delete project" : "Eliminar proyecto"}
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
         </div>
+      </div>
 
+      {/* Clickable body */}
+      <Link
+        href={`/proyectos/${project.id}`}
+        className="block px-[17px] pb-[17px]"
+        aria-label={`Ver detalle de ${project.title}`}
+      >
         <h3 className="font-[Manrope] text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
           {project.title}
         </h3>
@@ -196,20 +209,9 @@ function ProjectCard({
         </div>
       </Link>
 
-      {/* Delete button — superadmin only */}
-      {canDelete && !showConfirm && (
-        <button
-          onClick={e => { e.preventDefault(); setShowConfirm(true); }}
-          className="absolute right-3 top-3 rounded-lg p-1.5 text-[#C4B89A] opacity-0 transition hover:bg-[#FDF0ED] hover:text-[#B0492F] group-hover:opacity-100 [.relative:hover_&]:opacity-100"
-          aria-label={EN ? "Delete project" : "Eliminar proyecto"}
-        >
-          <Trash2 size={13} />
-        </button>
-      )}
-
       {/* Delete confirmation overlay */}
       {showConfirm && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[18px] bg-white/97 p-5 backdrop-blur-sm">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/97 p-5">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-[#FDF0ED]">
             <Trash2 size={18} className="text-[#B0492F]" />
           </div>
