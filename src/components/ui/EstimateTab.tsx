@@ -305,10 +305,14 @@ function SortableSection({
                 : (EN ? "Section total:" : "Total de sección:")}
             </span>
             <input
-              type="number"
-              value={hasItemAmounts ? effectiveTotal : totalStr}
+              type="text"
+              inputMode="decimal"
+              value={hasItemAmounts ? String(effectiveTotal) : totalStr}
               disabled={hasItemAmounts}
-              onChange={e => { if (!hasItemAmounts) setTotalStr(e.target.value); }}
+              onFocus={e => { if (!hasItemAmounts) e.target.select(); }}
+              onChange={e => {
+                if (!hasItemAmounts) setTotalStr(e.target.value.replace(/[^0-9.]/g, ""));
+              }}
               onBlur={() => {
                 if (!hasItemAmounts) onUpdateField(section.id, "section_total", parseFloat(totalStr) || 0);
               }}
