@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -455,6 +455,16 @@ export default function EstimateTab({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimate]);
 
+  // Sync estimate grand total → project.budget so the dashboard stays current
+  const lastSyncedBudget = useRef<number | null>(null);
+  useEffect(() => {
+    const { grandTotal } = totals;
+    if (!estimate?.id || !estimate.sections.length) return;
+    if (lastSyncedBudget.current === grandTotal) return;
+    lastSyncedBudget.current = grandTotal;
+    supabase.from("projects").update({ budget: grandTotal }).eq("id", project.id);
+  }, [totals, estimate?.id, estimate?.sections.length, project.id]);
+
   const effectiveCatalog = catalog.length > 0 ? catalog : FALLBACK_CATALOG;
 
   // ── Create estimate ───────────────────────────────────────────────────────
@@ -805,7 +815,14 @@ export default function EstimateTab({
             </span>
             {estimate.city && <span className="text-[11px] text-[#5C6A6E]">· {estimate.city}</span>}
           </div>
-          {showHeader ? <ChevronUp size={14} className="shrink-0 text-[#5C6A6E]" /> : <ChevronDown size={14} className="shrink-0 text-[#5C6A6E]" />}
+          <div className="flex items-center gap-3">
+            {totals.grandTotal > 0 && (
+              <span className="font-mono text-[13px] font-bold text-[#16323D]">
+                {money(totals.grandTotal)}
+              </span>
+            )}
+            {showHeader ? <ChevronUp size={14} className="shrink-0 text-[#5C6A6E]" /> : <ChevronDown size={14} className="shrink-0 text-[#5C6A6E]" />}
+          </div>
         </button>
         {showHeader && (
           <div className="grid grid-cols-2 gap-3 border-t border-[#F0EBE0] px-4 pb-4 pt-3 sm:grid-cols-3">
