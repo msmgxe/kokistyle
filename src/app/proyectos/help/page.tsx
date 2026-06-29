@@ -310,28 +310,32 @@ function useFeatures(EN: boolean) {
     {
       id: "estimate", icon: "💰",
       title: EN ? "Estimate" : "Estimado",
-      desc:  EN ? "Create professional client proposals with sections, line items, discounts, payment schedules and PDF export."
-                : "Crea propuestas profesionales para clientes con secciones, items, descuentos, calendario de pagos y exportación PDF.",
+      desc:  EN ? "Create professional client proposals with sections, line items, discounts, payment schedules, PDF export and WhatsApp delivery."
+                : "Crea propuestas profesionales con secciones, items, descuentos, calendario de pagos, exportación PDF y envío por WhatsApp.",
       mockup: <MockupEstimate EN={EN} />,
       steps: EN ? [
         { t:"Create the estimate", d:"Go to the <b>Estimate</b> tab inside a project and click <b>Create Estimate</b>. Customer info is pre-filled from the project data." },
         { t:"Add sections from catalog", d:"Click <b>+ Add Section</b> and choose from the catalog: DEMOLITION, PLUMBING, STRUCTURE, ELECTRICAL, TILE, PAINTING… or create a custom section." },
         { t:"Add line items", d:"Expand any section and click <b>+ Add item</b>. Type the description and dollar amount. Items auto-sum the section total. Or enter a single flat total if you don't need itemization." },
         { t:"Set discount & payment schedule", d:"In the <b>Totals card</b>, enter a discount % (applies only to labor, not materials). The payment schedule has 3 deposits (50/25/25% default) — fully editable." },
-        { t:"Download the PDF", d:"Click <b>Download PDF</b>. A branded Luxaris Design proposal downloads instantly with all sections, totals, payment schedule and contractor name." },
+        { t:"Download the PDF", d:"Click <b>Download PDF</b>. A professionally designed Luxaris Design proposal downloads instantly — centered header, full project name bar, 2-column item layout per section, subtotals, payment schedule and contractor details." },
+        { t:"Send via WhatsApp", d:"In the <b>WhatsApp row</b> below the action buttons, select a country code (🇺🇸 +1, 🇲🇽 +52, 🇨🇴 +57…), enter the number and click <b>Send</b>. On <b>mobile</b>: the PDF is attached and shared directly via WhatsApp. On <b>desktop</b>: the PDF downloads and WhatsApp Web opens with the number pre-selected — attach the file from your downloads folder." },
       ] : [
         { t:"Crear el estimado", d:"Ve a la pestaña <b>Estimado</b> dentro del proyecto y clic en <b>Crear Estimado</b>. Los datos del cliente se llenan solos desde el proyecto." },
         { t:"Agregar secciones del catálogo", d:"Clic en <b>+ Agregar Sección</b> y elige: DEMOLICIÓN, PLOMERÍA, ESTRUCTURA, ELÉCTRICO, TILE, PINTURA… o crea una sección personalizada." },
         { t:"Agregar items", d:"Expande una sección y clic en <b>+ Agregar item</b>. Escribe descripción y monto. Los items suman el total de la sección automáticamente. O ingresa un total plano si no necesitas desglose." },
         { t:"Descuento y calendario de pagos", d:"En la <b>tarjeta de Totales</b>, ingresa un % de descuento (solo sobre mano de obra, no materiales). El calendario tiene 3 depósitos (50/25/25% por defecto) — totalmente editable." },
-        { t:"Descargar PDF", d:"Clic en <b>Descargar PDF</b>. La propuesta Luxaris Design se descarga al instante con todas las secciones, totales, calendario de pagos y nombre del contratista." },
+        { t:"Descargar PDF", d:"Clic en <b>Descargar PDF</b>. La propuesta Luxaris Design se descarga al instante — cabecera centrada, barra con el nombre completo del proyecto, items en 2 columnas por sección, subtotales, calendario de pagos y datos del contratista." },
+        { t:"Enviar por WhatsApp", d:"En la <b>fila de WhatsApp</b> debajo de los botones de acción, selecciona el código de país (🇺🇸 +1, 🇲🇽 +52, 🇨🇴 +57…), ingresa el número y clic en <b>Enviar</b>. En <b>móvil</b>: el PDF se adjunta y se comparte directamente por WhatsApp. En <b>desktop</b>: el PDF se descarga y WhatsApp Web abre con el número ya seleccionado — adjunta el archivo desde tu carpeta de descargas." },
       ],
       tips: EN ? [
         "💡 <b>Materials sections</b> (toggle the checkbox per section) are excluded from the labor discount automatically.",
+        "📱 WhatsApp Send works natively on mobile — the OS share sheet appears and WhatsApp attaches the PDF automatically. On desktop, download the PDF first, then attach it in WhatsApp Web.",
         "💡 After building the estimate, click <b>Generate Workflow Tasks</b> to open the Day Planner and schedule each item with dates.",
         "🔄 Change status: <b>Draft → Sent → Approved → Rejected</b> from the dropdown at the top of the tab.",
       ] : [
         "💡 Las <b>secciones de materiales</b> (activa el checkbox por sección) se excluyen del descuento automáticamente.",
+        "📱 El envío por WhatsApp funciona nativamente en móvil — el menú de compartir del sistema adjunta el PDF automáticamente. En desktop, descarga el PDF primero y luego adjúntalo en WhatsApp Web.",
         "💡 Después de crear el estimado, clic en <b>Generar Tareas</b> para abrir el Planificador por Día y programar cada item con fechas.",
         "🔄 Cambia estado: <b>Borrador → Enviado → Aprobado → Rechazado</b> desde el selector en la parte superior.",
       ],
@@ -390,19 +394,23 @@ function useFeatures(EN: boolean) {
       mockup: <MockupContacts EN={EN} />,
       steps: EN ? [
         { t:"Create a contact", d:"Go to <b>Contacts</b> in the top nav (global list) or the Contacts tab inside a project. Click <b>+ Add Contact</b> and fill in name, specialty, phone and rate." },
-        { t:"Set type and rate", d:"Choose: <b>Coworker</b> (subcontractor) or <b>Supplier</b>. Set rate as hourly or by job — e.g., \"$45/hr\" or \"$1,200 per job\"." },
+        { t:"US phone format", d:"The phone field auto-formats to US format as you type — just enter the digits and it becomes <b>(786) 563-2531</b> automatically. You can also type the full number and it reformats on completion." },
+        { t:"Set type and rate", d:"Choose: <b>Friend</b>, <b>Co-worker</b> (subcontractor) or <b>Customer</b>. Co-workers also have specialty (Plumbing, Electrical, Tile…) and rate fields — hourly or per job." },
         { t:"Link contact to a project", d:"Inside a project's <b>Contacts tab</b>, search and add existing contacts. They then appear in the Workflow task assignment dropdown." },
       ] : [
         { t:"Crear un contacto", d:"Ve a <b>Contactos</b> en la navegación superior (lista global) o la pestaña Contactos dentro de un proyecto. Clic en <b>+ Agregar Contacto</b>." },
-        { t:"Definir tipo y tarifa", d:"Elige: <b>Colaborador</b> (subcontratista) o <b>Proveedor</b>. Tarifa por hora o por trabajo — ej. \"$45/hr\" o \"$1,200 por trabajo\"." },
+        { t:"Formato de teléfono US", d:"El campo de teléfono formatea automáticamente mientras escribes — ingresa los dígitos y se convierte en <b>(786) 563-2531</b> solo. También puedes pegar el número completo y se reformatea." },
+        { t:"Definir tipo y tarifa", d:"Elige: <b>Amigo</b>, <b>Colaborador</b> (subcontratista) o <b>Cliente</b>. Los colaboradores tienen además campos de especialidad (Plomería, Eléctrico, Tile…) y tarifa por hora o trabajo." },
         { t:"Vincular contacto a un proyecto", d:"Dentro de la pestaña <b>Contactos</b> del proyecto, busca y agrega contactos existentes. Aparecerán en el selector de asignación del Workflow." },
       ],
       tips: EN ? [
         "💡 Contacts linked to a project appear in <b>Workflow → Assign</b> so you can assign tasks directly to them.",
         "📋 The global <b>Contacts page</b> (top nav) shows all specialists across all projects — great for building your trusted team list.",
+        "📞 Phone numbers are stored with US format <b>(XXX) XXX-XXXX</b> — makes them tappable on mobile to call directly.",
       ] : [
         "💡 Los contactos vinculados al proyecto aparecen en <b>Workflow → Asignar</b> para asignar tareas directamente.",
         "📋 La página global de <b>Contactos</b> (nav superior) muestra todos los especialistas de todos los proyectos.",
+        "📞 Los teléfonos se guardan con formato US <b>(XXX) XXX-XXXX</b> — en móvil se pueden tocar para llamar directamente.",
       ],
     },
     {

@@ -98,7 +98,7 @@ src/
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
 │       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop Estimate→Workflow (@dnd-kit)
-│       ├── EstimateTab.tsx           # Tab de estimado dentro de un proyecto
+│       ├── EstimateTab.tsx           # Tab de estimado: secciones drag&drop, PDF download, WhatsApp send, Day Planner
 │       ├── Button.tsx                # Botón reutilizable
 │       └── Container.tsx             # Contenedor de ancho máximo
 │
@@ -115,7 +115,7 @@ src/
 ├── lib/
 │   ├── supabase.ts                   # Cliente Supabase con anon key (browser)
 │   ├── supabase-admin.ts             # Cliente Supabase con service_role (SOLO en API routes)
-│   ├── pdf.ts                        # Generación de PDF del estimado con jsPDF
+│   ├── pdf.ts                        # PDF del estimado (jsPDF) — buildEstimatePdf() interno + exportEstimatePdf() + getEstimatePdfBlob()
 │   ├── schema.sql                    # Schema completo de la base de datos (ejecutar en orden)
 │   └── utils.ts                      # money(), formatDate(), todayIso(), addDays()
 │
@@ -165,13 +165,40 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 
 ### Sincronización Estimate → Dashboard
 
-- El dashboard lee el `grand_total` del estimate directamente vía nested select en `fetchData()`:
-  ```
-  project_estimates(discount_pct, estimate_sections(section_total, is_material_type, estimate_items(amount)))
-  ```
-- La función `estimateGrandTotal()` en `page.tsx` calcula el total client-side con la misma lógica que `computeGrandTotal()` en `EstimateTab.tsx`
+- El dashboard usa `enrichWithEstimateBudgets()` en `page.tsx` — hace dos queries separadas:
+  1. `project_estimates` → filtra por `project_id IN [...]`
+  2. `estimate_sections` + `estimate_items` → filtra por `estimate_id IN [...]`
+- Calcula `grand_total` client-side con la misma lógica que `computeGrandTotal()` en `EstimateTab.tsx`
 - Si el proyecto no tiene estimate, se usa `project.budget` como fallback
 - También se sincroniza `project.budget` en la DB cuando el EstimateTab carga (`load()`) o el usuario guarda (`saveHeader()`)
+- **Nota:** evitar nested Supabase selects de 3+ niveles (PostgREST devuelve null silenciosamente) — usar queries explícitas con `.in()`
+
+### PDF del estimado (`src/lib/pdf.ts`)
+
+- **`buildEstimatePdf()`** — función interna que genera el jsPDF doc. Diseño "Opción A":
+  - Cabecera centrada: badge ESTIMATE, nombre empresa, slogan, teléfono+email, línea divisora teal
+  - Barra oscura con nombre completo del proyecto en blanco
+  - Bloque PROPOSAL (crema) en 2 columnas: cliente izquierda / contratista+fechas derecha
+  - Header de tabla oscuro
+  - Por sección: borde izquierdo de color (teal=labor, rojo=material) + items en 2 columnas (pares)
+  - Totales izquierda (descuento + grand total) · Payment schedule derecha
+  - Footer con divider + texto del contratista centrado
+- **`exportEstimatePdf()`** — llama `buildEstimatePdf()` y hace `doc.save()` (descarga)
+- **`getEstimatePdfBlob()`** — llama `buildEstimatePdf()` y devuelve `Blob` (para WhatsApp)
+
+### WhatsApp PDF send (`EstimateTab.tsx`)
+
+- Fila WhatsApp debajo de los botones Save / Download PDF
+- Campos: selector de código de país (🇺🇸 +1, 🇲🇽 +52, 🇨🇴 +57, 🇻🇪 +58, 🇦🇷 +54, 🇪🇸 +34) + input de número (formato US auto) + botón verde Send
+- En **móvil** (iOS/Android): usa `navigator.share({ files: [pdfFile] })` — WhatsApp aparece en el menú nativo con el PDF adjunto
+- En **desktop**: descarga el PDF + abre `https://wa.me/<number>` en nueva pestaña + toast explicativo
+- El número final se construye como `waCode + waPhone` limpiando caracteres no numéricos
+
+### Contactos — formato de teléfono US
+
+- El campo phone en el `ContactForm` de `contactos/page.tsx` usa `formatUSPhone()` en `onChange`
+- Formatea automáticamente mientras el usuario escribe: `7865632531` → `(786) 563-2531`
+- Acepta máximo 10 dígitos; filtra cualquier carácter no numérico
 
 ### Storage
 
@@ -208,7 +235,7 @@ Requiere autenticación por PIN. Layout en `src/app/proyectos/layout.tsx`.
 |---|---|
 | Plan | Vista rápida de avance: progress bars, conteo de tareas |
 | Workflow | Kanban (Pendiente → En Proceso → Listo) + vista Gantt |
-| Estimate | Estimado profesional: secciones, items, PDF, Day Planner |
+| Estimate | Estimado profesional: secciones, items, PDF, WhatsApp send, Day Planner |
 | Payments | Ingresos y egresos con balance en tiempo real |
 | Materials | Lista de compras con checkbox "comprado" |
 | Contacts | Especialistas/proveedores vinculados al proyecto |
