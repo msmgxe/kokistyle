@@ -34,11 +34,29 @@ const WA_CODES = [
   { code: "+51",  flag: "🇵🇪", label: "PE" },
 ];
 
-function fmtUSPhone(v: string) {
-  const d = v.replace(/\D/g, "").slice(0, 10);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
-  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+function fmtPhone(v: string, code: string): string {
+  const raw = v.replace(/\D/g, "");
+  if (code === "+1") {
+    const d = raw.slice(0, 10);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  }
+  if (code === "+51") {
+    // Peru: 9 digits — XXX XXX-XXX
+    const d = raw.slice(0, 9);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+    return `${d.slice(0, 3)} ${d.slice(3, 6)}-${d.slice(6)}`;
+  }
+  // Other countries: digits only, max 12
+  return raw.slice(0, 12);
+}
+
+function phonePlaceholder(code: string): string {
+  if (code === "+1")  return "(786) 563-2531";
+  if (code === "+51") return "984 368-710";
+  return "123 456 7890";
 }
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -880,7 +898,7 @@ export default function EstimateTab({
         <span className="text-[11px] font-bold text-[#25D366]">WhatsApp</span>
         <select
           value={waCode}
-          onChange={e => setWaCode(e.target.value)}
+          onChange={e => { setWaCode(e.target.value); setWaPhone(""); }}
           className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-2 py-1 text-[11px] text-[#16323D] focus:outline-none"
         >
           {WA_CODES.map(c => (
@@ -890,8 +908,8 @@ export default function EstimateTab({
         <input
           type="tel"
           value={waPhone}
-          onChange={e => setWaPhone(fmtUSPhone(e.target.value))}
-          placeholder="(786) 563-2531"
+          onChange={e => setWaPhone(fmtPhone(e.target.value, waCode))}
+          placeholder={phonePlaceholder(waCode)}
           className="flex-1 min-w-[140px] rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1 text-[12px] text-[#16323D] focus:border-[#25D366] focus:outline-none"
         />
         <button
