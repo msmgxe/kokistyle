@@ -1461,27 +1461,28 @@ function PlanTab({
 
   const projectStart = new Date(project.start_date + "T00:00:00");
 
-  // Calendario secuencial
+  // Calendario secuencial — coordenadas en días para precisión diaria
   const schedule = () => {
-    let cum = 0;
+    let cumDays = 0;
     return items.map((t) => {
       const hasScheduledDate = Boolean(t.scheduled_date);
       const start = hasScheduledDate
         ? new Date(`${t.scheduled_date}T00:00:00`)
-        : addDays(project.start_date, cum * 7);
-      const end = addDays(start.toISOString().slice(0, 10), t.duration_weeks * 7 - 1);
-      const ws = Math.max(0, Math.round((start.getTime() - projectStart.getTime()) / (7 * 86400000)));
-      cum = Math.max(cum, ws + t.duration_weeks);
-      return { task: t, start, end, weekStart: ws };
+        : new Date(projectStart.getTime() + cumDays * 86400000);
+      // Day Planner tasks (source estimate/planner) represent a single scheduled day
+      const isFromPlanner = t.source === "estimate" || t.source === "planner";
+      const effectiveDays = isFromPlanner && hasScheduledDate ? 1 : t.duration_weeks * 7;
+      const end = new Date(start.getTime() + (effectiveDays - 1) * 86400000);
+      const dayStart = Math.max(0, Math.round((start.getTime() - projectStart.getTime()) / 86400000));
+      if (!hasScheduledDate) cumDays = dayStart + effectiveDays;
+      return { task: t, start, end, dayStart, durationDays: effectiveDays };
     });
   };
 
   const rows  = schedule();
-  const total = Math.max(6, rows.reduce((max, row) => Math.max(max, row.weekStart + row.task.duration_weeks), 0));
+  const totalDays = Math.max(14, rows.reduce((max, row) => Math.max(max, row.dayStart + row.durationDays), 0));
   const filteredRows = filterStatus === "all" ? rows : rows.filter((r) => r.task.status === filterStatus);
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
-
-  const totalDays    = total * 7;
 
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const monthLabels: { label: string; pct: number }[] = [];
@@ -1498,8 +1499,9 @@ function PlanTab({
 
   const unitLabels: { label: string; pct: number }[] = [];
   if (ganttUnit === "week") {
-    for (let w = 0; w < total; w++) {
-      unitLabels.push({ label: `W${w + 1}`, pct: (w / total) * 100 });
+    const totalWeeks = Math.ceil(totalDays / 7);
+    for (let w = 0; w < totalWeeks; w++) {
+      unitLabels.push({ label: `W${w + 1}`, pct: ((w * 7) / totalDays) * 100 });
     }
   } else {
     const step = totalDays > 30 ? 3 : totalDays > 14 ? 2 : 1;
@@ -1597,9 +1599,9 @@ function PlanTab({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
-            {filteredRows.map(({ task: t, start, end, weekStart }) => {
-              const left  = (weekStart / total) * 100;
-              const width = (t.duration_weeks / total) * 100;
+            {filteredRows.map(({ task: t, start, end, dayStart, durationDays }) => {
+              const left  = (dayStart / totalDays) * 100;
+              const width = Math.max((durationDays / totalDays) * 100, 2);
 
               return (
                 <SortableRow key={t.id} id={t.id}>
@@ -1616,15 +1618,15 @@ function PlanTab({
                       </div>
                       <div className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1]">
                         <div
-                          className={`absolute top-0.5 h-4 rounded-[5px] px-1.5 text-[9.5px] font-bold ${COLORS[t.status]}`}
-                          style={{ left: `${left}%`, width: `${Math.max(width, 5)}%` }}
+                          className={`absolute top-0.5 h-4 overflow-hidden rounded-[5px] px-1 text-[9px] font-bold leading-4 ${COLORS[t.status]}`}
+                          style={{ left: `${left}%`, width: `${width}%` }}
                         >
-                          S{weekStart + 1}
+                          {durationDays >= 3 ? dShort(start) : ""}
                         </div>
                       </div>
                       <div className="mr-2 flex gap-1">
                         <button
-                          onClick={(e) => { e.stopPropagation(); setEditTask({ task: { task: t, start, end, weekStart }, startDate: start, endDate: end }); }}
+                          onClick={(e) => { e.stopPropagation(); setEditTask({ task: { task: t, start, end, weekStart: dayStart }, startDate: start, endDate: end }); }}
                           className="grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
                           aria-label="Edit"
                         >
