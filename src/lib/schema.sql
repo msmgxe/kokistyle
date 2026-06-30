@@ -14,8 +14,11 @@ CREATE TABLE IF NOT EXISTS projects (
   status TEXT NOT NULL DEFAULT 'presupuesto' CHECK (status IN ('presupuesto', 'aprobado', 'en_obra', 'terminado')),
   budget NUMERIC(12,2) NOT NULL DEFAULT 0,
   start_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  end_date DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+-- Migration: run if upgrading from older schema
+-- ALTER TABLE projects ADD COLUMN IF NOT EXISTS end_date DATE;
 
 -- 3. Tabla de Contactos (Especialistas / Proveedores)
 CREATE TABLE IF NOT EXISTS contacts (

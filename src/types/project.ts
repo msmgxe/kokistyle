@@ -6,6 +6,7 @@ export interface Project {
   status: "presupuesto" | "aprobado" | "en_obra" | "terminado";
   budget: number;
   start_date: string;
+  end_date?: string | null;
   created_at?: string;
 }
 

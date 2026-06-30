@@ -351,7 +351,7 @@ function buildEstimatePdf(
   const rightRows = [
     { l: EN ? "Contractor:" : "Contratista:", v: branding.contractor },
     { l: EN ? "Start Date:"  : "Inicio:",      v: estimate.start_date ? fmtDate(estimate.start_date) : "—" },
-    { l: EN ? "Date:"        : "Fecha:",        v: fmtDate(new Date().toISOString().split("T")[0]) },
+    { l: EN ? "End Date:"    : "Fecha fin:",   v: estimate.end_date   ? fmtDate(estimate.end_date)   : "—" },
   ];
 
   doc.setFontSize(7.5);
