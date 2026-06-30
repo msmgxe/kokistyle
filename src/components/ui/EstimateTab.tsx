@@ -804,7 +804,7 @@ export default function EstimateTab({
     if (!estimate) return;
     try {
       const { grandTotal, laborTotal, discountAmt } = totals;
-      exportEstimatePdf(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language);
+      exportEstimatePdf(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title);
     } catch (err) {
       console.error("[EstimateTab] PDF export error:", err);
       toast(EN ? "Error generating PDF — check console" : "Error al generar PDF — revisa la consola");
@@ -817,7 +817,7 @@ export default function EstimateTab({
     setWaLoading(true);
     try {
       const { grandTotal, laborTotal, discountAmt } = totals;
-      const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language);
+      const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title);
       const safeName = (estimate.project_title || "project").replace(/\s+/g, "_");
       const filename = `Estimate_${safeName}.pdf`;
       const cleanPhone = (waCode + waPhone).replace(/\D/g, "");

@@ -265,6 +265,7 @@ function buildEstimatePdf(
   laborTotal: number,
   discountAmt: number,
   language: "en" | "es" = "en",
+  projectTitle?: string,
 ): { doc: jsPDF; filename: string } {
   const EN  = language === "en";
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -316,7 +317,7 @@ function buildEstimatePdf(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
-  doc.text((estimate.project_title || (EN ? "PROJECT" : "PROYECTO")).toUpperCase(), CX, y + 5.5, { align: "center" });
+  doc.text((projectTitle || estimate.project_title || (EN ? "PROJECT" : "PROYECTO")).toUpperCase(), CX, y + 5.5, { align: "center", maxWidth: CW - 4 });
   y += 11;
 
   // ── PROPOSAL info block ────────────────────────────────────────────────────
@@ -626,8 +627,9 @@ export function exportEstimatePdf(
   laborTotal: number,
   discountAmt: number,
   language: "en" | "es" = "en",
+  projectTitle?: string,
 ) {
-  const { doc, filename } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language);
+  const { doc, filename } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle);
   doc.save(filename);
 }
 
@@ -637,7 +639,8 @@ export function getEstimatePdfBlob(
   laborTotal: number,
   discountAmt: number,
   language: "en" | "es" = "en",
+  projectTitle?: string,
 ): Blob {
-  const { doc } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language);
+  const { doc } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle);
   return doc.output("blob") as Blob;
 }
