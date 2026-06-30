@@ -650,10 +650,32 @@ function MaterialesTab({
   const EN = language === "en";
   const tp = t.panel;
   const [items, setItems] = useState<Material[]>(materials);
-  const [editor, setEditor]       = useState<EditorOpts | null>(null);
-  const [activeId, setActiveId]   = useState<string | null>(null);
+  const [editor, setEditor]         = useState<EditorOpts | null>(null);
+  const [activeId, setActiveId]     = useState<string | null>(null);
   const [confirmDup, setConfirmDup] = useState<Material | null>(null);
-  const [importing, setImporting] = useState(false);
+  const [importing, setImporting]   = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting]     = useState(false);
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+  const bulkDelete = async () => {
+    const ids = [...selectedIds];
+    setDeleting(true);
+    const { error } = await supabase.from("materials").delete().in("id", ids);
+    setDeleting(false);
+    if (error) { toast("Error: " + error.message); return; }
+    exitSelectMode();
+    onRefresh();
+    toast(EN
+      ? `${ids.length} item${ids.length !== 1 ? "s" : ""} deleted`
+      : `${ids.length} item${ids.length !== 1 ? "s" : ""} eliminados`
+    );
+  };
 
   useEffect(() => { setItems(materials); }, [materials]);
 
@@ -848,23 +870,62 @@ function MaterialesTab({
         </button>
       </div>
 
+      {/* Toolbar: select mode toggle + select-all */}
+      <div className="mb-2 flex items-center gap-2">
+        {!selectMode ? (
+          <button
+            onClick={() => setSelectMode(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[#16323D] hover:text-[#16323D]"
+          >
+            ☑ {EN ? "Select" : "Seleccionar"}
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => setSelectedIds(selectedIds.size === items.length ? new Set() : new Set(items.map(m => m.id)))}
+              className="rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[#16323D]"
+            >
+              {selectedIds.size === items.length ? (EN ? "Deselect all" : "Quitar todo") : (EN ? "Select all" : "Seleccionar todo")}
+            </button>
+            <button onClick={exitSelectMode} className="rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E]">
+              {EN ? "Cancel" : "Cancelar"}
+            </button>
+          </>
+        )}
+      </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((m) => m.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
-            {items.map((m) => (
+            {items.map((m) => {
+              const isSelected = selectedIds.has(m.id);
+              return (
               <SortableRow key={m.id} id={m.id}>
                 {({ listeners, attributes }, isDragging) => (
                   <div
-                    onClick={() => openEdit(m)}
-                    className={`flex cursor-pointer select-none items-start overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""} ${m.bought ? "opacity-65" : ""}`}
+                    onClick={() => selectMode ? toggleSelect(m.id) : openEdit(m)}
+                    className={`flex cursor-pointer select-none items-start overflow-hidden rounded-[13px] border transition ${
+                      isSelected ? "border-[#B0492F] bg-[#FDF3F1] ring-1 ring-[#B0492F]"
+                        : isDragging ? "border-[#E6DDCB] bg-white shadow-lg ring-1 ring-[#16323D]"
+                        : "border-[#E6DDCB] bg-white"
+                    } ${m.bought && !isSelected ? "opacity-65" : ""}`}
                   >
-                    <div
-                      {...listeners} {...attributes}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center justify-center px-2 pt-3.5 text-[#C4B89A] touch-none cursor-grab active:cursor-grabbing select-none"
-                    >
-                      <GripVertical size={15} />
-                    </div>
+                    {/* Left: select checkbox (select mode) or drag handle */}
+                    {selectMode ? (
+                      <div className="flex items-center justify-center px-2 pt-3.5">
+                        <span className={`grid size-6 flex-none place-items-center rounded-lg border-2 ${isSelected ? "border-[#B0492F] bg-[#B0492F]" : "border-[#D7CBB3]"}`}>
+                          {isSelected && <span className="text-[10px] font-bold text-white">✓</span>}
+                        </span>
+                      </div>
+                    ) : (
+                      <div
+                        {...listeners} {...attributes}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-center px-2 pt-3.5 text-[#C4B89A] touch-none cursor-grab active:cursor-grabbing select-none"
+                      >
+                        <GripVertical size={15} />
+                      </div>
+                    )}
                     <div className="flex flex-1 items-start gap-3 py-3 pr-3">
                       <span className={`mt-0.5 grid size-6 flex-none place-items-center rounded-lg border-2 ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3]"}`}>
                         {m.bought && <span className="text-[10px] font-bold text-white">✓</span>}
@@ -896,18 +957,21 @@ function MaterialesTab({
                         )}
                       </span>
                       <span className="mt-0.5 font-mono text-sm font-semibold text-[#16323D] whitespace-nowrap">{money(m.cost)}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmDup(m); }}
-                        className="mt-0.5 grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
-                        aria-label="Duplicate"
-                      >
-                        <Copy size={13} />
-                      </button>
+                      {!selectMode && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDup(m); }}
+                          className="mt-0.5 grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+                          aria-label="Duplicate"
+                        >
+                          <Copy size={13} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
               </SortableRow>
-            ))}
+            );
+            })}
           </div>
         </SortableContext>
 
@@ -920,6 +984,27 @@ function MaterialesTab({
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* Bulk delete action bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="sticky bottom-4 mt-4 flex items-center justify-between rounded-xl border border-[#F0C9C2] bg-[#FDF3F1] px-4 py-3 shadow-lg">
+          <span className="text-sm font-semibold text-[#B0492F]">
+            {selectedIds.size} {EN ? `item${selectedIds.size !== 1 ? "s" : ""} selected` : `item${selectedIds.size !== 1 ? "s" : ""} seleccionado${selectedIds.size !== 1 ? "s" : ""}`}
+          </span>
+          <div className="flex gap-2">
+            <button onClick={exitSelectMode} className="rounded-xl bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+              {EN ? "Cancel" : "Cancelar"}
+            </button>
+            <button
+              onClick={bulkDelete}
+              disabled={deleting}
+              className="rounded-xl bg-[#B0492F] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#8C3523] disabled:opacity-50"
+            >
+              {deleting ? "…" : (EN ? `Delete ${selectedIds.size}` : `Eliminar ${selectedIds.size}`)}
+            </button>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={() => setEditor({
