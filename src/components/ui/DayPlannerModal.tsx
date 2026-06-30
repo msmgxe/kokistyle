@@ -435,6 +435,10 @@ export default function DayPlannerModal({
   const [dayDates, setDayDates] = useState<Record<number, string>>({});
   const [items, setItems] = useState<PlanItem[]>([]);
   const [contacts, setContacts] = useState<PlanContact[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const COL_STEP = 208; // column width (196) + gap (12)
+  const scrollCols = (dir: 1 | -1) =>
+    scrollRef.current?.scrollBy({ left: dir * COL_STEP * 2, behavior: "smooth" });
 
   const estimateRef = useRef(estimate);
   const ENRef       = useRef(EN);
@@ -782,7 +786,7 @@ export default function DayPlannerModal({
         </div>
       ) : (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4" style={{ minHeight: embedded ? "520px" : undefined }}>
+          <div className="flex min-h-0 flex-1 gap-4 overflow-y-hidden p-4" style={{ minHeight: embedded ? "520px" : undefined }}>
 
             {/* Left: Pool */}
             <div className="flex w-[224px] shrink-0 flex-col gap-2">
@@ -813,11 +817,26 @@ export default function DayPlannerModal({
             </div>
 
             {/* Right: Day columns */}
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-              <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
-                {EN ? "Schedule" : "Cronograma"} — {dayCapacity}h/{EN ? "day" : "día"} capacity
-              </span>
-              <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-1">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-hidden">
+              <div className="flex shrink-0 items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+                  {EN ? "Schedule" : "Cronograma"} — {dayCapacity}h/{EN ? "day" : "día"} capacity
+                </span>
+                {numDays > 3 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => scrollCols(-1)}
+                      className="grid size-6 place-items-center rounded-lg border border-[#D7CBB3] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1] text-sm font-bold"
+                    >‹</button>
+                    <span className="px-1 text-[10px] font-semibold text-[#5C6A6E]">{numDays} {EN ? "days" : "días"}</span>
+                    <button
+                      onClick={() => scrollCols(1)}
+                      className="grid size-6 place-items-center rounded-lg border border-[#D7CBB3] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1] text-sm font-bold"
+                    >›</button>
+                  </div>
+                )}
+              </div>
+              <div ref={scrollRef} className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
                 {Array.from({ length: numDays }, (_, d) => (
                   <DayColumn
                     key={d}
