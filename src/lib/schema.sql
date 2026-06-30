@@ -80,11 +80,28 @@ CREATE TABLE IF NOT EXISTS materials (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
-  supplier TEXT NOT NULL,
+  supplier TEXT NOT NULL DEFAULT '',
   cost NUMERIC(12,2) NOT NULL DEFAULT 0,
   bought BOOLEAN NOT NULL DEFAULT FALSE,
+  quantity NUMERIC(10,2) NOT NULL DEFAULT 1,
+  unit TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  purchase_date DATE,
+  estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL,
+  estimate_section_id UUID REFERENCES estimate_sections(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+-- Unique: one material per estimate item per project
+CREATE UNIQUE INDEX IF NOT EXISTS materials_project_estimate_item_idx
+  ON materials(project_id, estimate_item_id)
+  WHERE estimate_item_id IS NOT NULL;
+-- Migration: run if upgrading from older schema
+-- ALTER TABLE materials ADD COLUMN IF NOT EXISTS quantity NUMERIC(10,2) NOT NULL DEFAULT 1;
+-- ALTER TABLE materials ADD COLUMN IF NOT EXISTS unit TEXT NOT NULL DEFAULT '';
+-- ALTER TABLE materials ADD COLUMN IF NOT EXISTS notes TEXT NOT NULL DEFAULT '';
+-- ALTER TABLE materials ADD COLUMN IF NOT EXISTS purchase_date DATE;
+-- ALTER TABLE materials ADD COLUMN IF NOT EXISTS estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL;
+-- ALTER TABLE materials ADD COLUMN IF NOT EXISTS estimate_section_id UUID REFERENCES estimate_sections(id) ON DELETE SET NULL;
 
 -- 8. Tabla de Ingresos (Pagos recibidos del cliente)
 CREATE TABLE IF NOT EXISTS payments (

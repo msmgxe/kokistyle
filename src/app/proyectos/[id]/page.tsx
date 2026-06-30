@@ -109,7 +109,7 @@ function ConfirmModal({
 }
 
 // ─── Editor modal genérico ───────────────────────────────────────────────────
-type FieldType = "text" | "number" | "date" | "select";
+type FieldType = "text" | "number" | "date" | "select" | "textarea";
 interface Field { key: string; label: string; type: FieldType; value: string | number; options?: string[] }
 interface EditorOpts {
   title: string; sub?: string; fields: Field[];
@@ -154,6 +154,13 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
                     }}
                     placeholder="0"
                     className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  />
+                ) : f.type === "textarea" ? (
+                  <textarea
+                    rows={3}
+                    value={vals[f.key] as string}
+                    onChange={(e) => set(f.key, e.target.value)}
+                    className="w-full resize-none rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
                   />
                 ) : (
                   <input type={f.type} value={vals[f.key] as string}
@@ -638,12 +645,14 @@ function MaterialesTab({
 }: {
   project: Project; materials: Material[]; onRefresh: () => void; toast: (m: string) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const EN = language === "en";
   const tp = t.panel;
   const [items, setItems] = useState<Material[]>(materials);
-  const [editor, setEditor]     = useState<EditorOpts | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [editor, setEditor]       = useState<EditorOpts | null>(null);
+  const [activeId, setActiveId]   = useState<string | null>(null);
   const [confirmDup, setConfirmDup] = useState<Material | null>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => { setItems(materials); }, [materials]);
 
@@ -657,14 +666,11 @@ function MaterialesTab({
   const com = items.filter((m) => m.bought).reduce((s, m) => s + m.cost, 0);
 
   const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
-
-  const handleDragEnd = async (e: DragEndEvent) => {
+  const handleDragEnd   = async (e: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const oldIdx = items.findIndex((m) => m.id === active.id);
-    const newIdx = items.findIndex((m) => m.id === over.id);
-    const next = arrayMove(items, oldIdx, newIdx);
+    const next = arrayMove(items, items.findIndex((m) => m.id === active.id), items.findIndex((m) => m.id === over.id));
     setItems(next);
   };
 
@@ -674,13 +680,22 @@ function MaterialesTab({
     setEditor({
       title: tp.materials.editMaterial,
       fields: [
-        { key: "name",     label: tp.materials.material,  type: "text",   value: m.name },
-        { key: "supplier", label: tp.materials.supplier,   type: "text",   value: m.supplier },
-        { key: "cost",     label: tp.materials.cost,       type: "number", value: m.cost },
-        { key: "bought",   label: tp.materials.boughtQ,    type: "select", options: [noLabel, yesLabel], value: m.bought ? yesLabel : noLabel },
+        { key: "name",          label: tp.materials.material,      type: "text",     value: m.name },
+        { key: "quantity",      label: EN ? "Quantity" : "Cantidad", type: "number", value: m.quantity ?? 1 },
+        { key: "unit",          label: EN ? "Unit / Size" : "Unidad / Medida", type: "text", value: m.unit ?? "" },
+        { key: "supplier",      label: tp.materials.supplier,      type: "text",     value: m.supplier },
+        { key: "cost",          label: tp.materials.cost,          type: "number",   value: m.cost },
+        { key: "purchase_date", label: EN ? "Purchase date" : "Fecha de compra", type: "date", value: m.purchase_date ?? "" },
+        { key: "notes",         label: EN ? "Notes" : "Notas",    type: "textarea",  value: m.notes ?? "" },
+        { key: "bought",        label: tp.materials.boughtQ,       type: "select",   options: [noLabel, yesLabel], value: m.bought ? yesLabel : noLabel },
       ],
       onSave: async (vals) => {
-        const { error } = await supabase.from("materials").update({ name: vals.name, supplier: vals.supplier, cost: vals.cost, bought: vals.bought === yesLabel }).eq("id", m.id);
+        const { error } = await supabase.from("materials").update({
+          name: vals.name, supplier: vals.supplier, cost: vals.cost,
+          quantity: vals.quantity || 1, unit: vals.unit, notes: vals.notes,
+          purchase_date: vals.purchase_date || null,
+          bought: vals.bought === yesLabel,
+        }).eq("id", m.id);
         if (error) { toast(tp.common.errorSaving + error.message); return; }
         onRefresh(); toast(tp.materials.materialUpdated);
       },
@@ -696,14 +711,104 @@ function MaterialesTab({
 
   const duplicateMaterial = async (m: Material) => {
     const { error } = await supabase.from("materials").insert({
-      project_id: m.project_id,
-      name: m.name,
-      supplier: m.supplier,
-      cost: m.cost,
-      bought: false,
+      project_id: m.project_id, name: m.name, supplier: m.supplier, cost: m.cost,
+      quantity: m.quantity ?? 1, unit: m.unit ?? "", notes: m.notes ?? "", bought: false,
     });
     if (error) { toast(tp.common.errorSaving + error.message); return; }
     onRefresh(); toast(tp.materials.materialAdded);
+  };
+
+  // ── Import items from Estimate ───────────────────────────────────────────────
+  const importFromEstimate = async () => {
+    setImporting(true);
+    try {
+      // Load estimate
+      const { data: estimateRow } = await supabase
+        .from("project_estimates")
+        .select("id")
+        .eq("project_id", project.id)
+        .maybeSingle();
+
+      if (!estimateRow) {
+        toast(EN ? "No estimate found for this project." : "No hay estimado para este proyecto.");
+        setImporting(false);
+        return;
+      }
+
+      // Load sections + items
+      const { data: sections } = await supabase
+        .from("estimate_sections")
+        .select("id, name_en, name_es, section_total, estimate_items(id, description, amount)")
+        .eq("estimate_id", estimateRow.id);
+
+      if (!sections || sections.length === 0) {
+        toast(EN ? "Estimate has no items." : "El estimado no tiene items.");
+        setImporting(false);
+        return;
+      }
+
+      // Existing imported estimate_item_ids to avoid duplicates
+      const existingIds = new Set(
+        items.filter(m => m.estimate_item_id).map(m => m.estimate_item_id!)
+      );
+
+      type EstimateItem = { id: string; description: string; amount: number };
+      type EstimateSection = {
+        id: string; name_en: string; name_es: string; section_total: number;
+        estimate_items: EstimateItem[];
+      };
+
+      const toInsert: object[] = [];
+      (sections as EstimateSection[]).forEach((sec) => {
+        const secName = EN ? sec.name_en : sec.name_es;
+        const estItems = sec.estimate_items ?? [];
+        if (estItems.length > 0) {
+          estItems.forEach(item => {
+            if (existingIds.has(item.id)) return;
+            toInsert.push({
+              project_id:          project.id,
+              name:                `${EN ? "Purchase of" : "Compra de"} ${item.description}`,
+              supplier:            "",
+              cost:                item.amount,
+              quantity:            1,
+              unit:                "",
+              notes:               `${EN ? "Section" : "Sección"}: ${secName}`,
+              bought:              false,
+              estimate_item_id:    item.id,
+              estimate_section_id: sec.id,
+            });
+          });
+        } else if (sec.section_total > 0 && !existingIds.has(sec.id)) {
+          toInsert.push({
+            project_id:          project.id,
+            name:                `${EN ? "Purchase of" : "Compra de"} ${secName}`,
+            supplier:            "",
+            cost:                sec.section_total,
+            quantity:            1,
+            unit:                "",
+            notes:               "",
+            bought:              false,
+            estimate_section_id: sec.id,
+          });
+        }
+      });
+
+      if (toInsert.length === 0) {
+        toast(EN ? "All estimate items already imported." : "Todos los items ya fueron importados.");
+        setImporting(false);
+        return;
+      }
+
+      const { error } = await supabase.from("materials").insert(toInsert);
+      if (error) { toast("Error: " + error.message); setImporting(false); return; }
+      onRefresh();
+      toast(EN
+        ? `${toInsert.length} item${toInsert.length !== 1 ? "s" : ""} imported from Estimate`
+        : `${toInsert.length} item${toInsert.length !== 1 ? "s" : ""} importados del Estimado`
+      );
+    } finally {
+      setImporting(false);
+    }
   };
 
   return (
@@ -720,6 +825,27 @@ function MaterialesTab({
         </div>
       </div>
 
+      {/* Import from Estimate */}
+      <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#D5DEEF] bg-[#EDF3FB] px-4 py-3">
+        <div className="flex-1">
+          <div className="text-[12px] font-bold text-[#395886]">
+            {EN ? "Import from Estimate" : "Importar del Estimado"}
+          </div>
+          <div className="text-[10.5px] text-[#5C6A6E]">
+            {EN
+              ? "Adds estimate items as purchase orders (\"Purchase of …\"). Skips already-imported items."
+              : "Agrega los items del estimado como órdenes de compra (\"Compra de …\"). Omite los ya importados."}
+          </div>
+        </div>
+        <button
+          onClick={importFromEstimate}
+          disabled={importing}
+          className="flex items-center gap-1.5 rounded-xl bg-[#395886] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#16323D] disabled:opacity-50"
+        >
+          {importing ? "…" : (EN ? "⬇ Import" : "⬇ Importar")}
+        </button>
+      </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((m) => m.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
@@ -728,28 +854,49 @@ function MaterialesTab({
                 {({ listeners, attributes }, isDragging) => (
                   <div
                     onClick={() => openEdit(m)}
-                    className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""} ${m.bought ? "opacity-70" : ""}`}
+                    className={`flex cursor-pointer select-none items-start overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""} ${m.bought ? "opacity-65" : ""}`}
                   >
-                    {/* Drag handle — only area that activates DnD */}
                     <div
                       {...listeners} {...attributes}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center justify-center px-2 text-[#C4B89A] touch-none cursor-grab active:cursor-grabbing select-none"
+                      className="flex items-center justify-center px-2 pt-3.5 text-[#C4B89A] touch-none cursor-grab active:cursor-grabbing select-none"
                     >
                       <GripVertical size={15} />
                     </div>
-                    <div className="flex flex-1 items-center gap-3 py-3 pr-3">
-                      <span className={`grid size-6 flex-none place-items-center rounded-lg border-2 ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3]"}`}>
+                    <div className="flex flex-1 items-start gap-3 py-3 pr-3">
+                      <span className={`mt-0.5 grid size-6 flex-none place-items-center rounded-lg border-2 ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3]"}`}>
                         {m.bought && <span className="text-[10px] font-bold text-white">✓</span>}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className={`block text-sm font-semibold ${m.bought ? "text-[#5C6A6E] line-through" : "text-[#16323D]"}`}>{m.name}</span>
-                        <span className="block text-[11px] text-[#97A1A0]">{m.supplier}</span>
+                        <span className="flex items-center gap-1.5 flex-wrap">
+                          {m.estimate_item_id && (
+                            <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[#395886]">
+                              {EN ? "FROM EST" : "DEL EST"}
+                            </span>
+                          )}
+                          <span className={`text-sm font-semibold ${m.bought ? "text-[#5C6A6E] line-through" : "text-[#16323D]"}`}>{m.name}</span>
+                        </span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-2">
+                          {((m.quantity && m.quantity !== 1) || m.unit) && (
+                            <span className="text-[11px] font-semibold text-[#4E7A82]">
+                              {m.quantity ?? 1}{m.unit ? ` × ${m.unit}` : ""}
+                            </span>
+                          )}
+                          {m.supplier && <span className="text-[11px] text-[#97A1A0]">{m.supplier}</span>}
+                          {m.purchase_date && (
+                            <span className="rounded bg-[#F0EBE0] px-1.5 py-0.5 font-mono text-[10px] text-[#5C6A6E]">
+                              📅 {m.purchase_date}
+                            </span>
+                          )}
+                        </span>
+                        {m.notes && (
+                          <span className="mt-0.5 block truncate text-[10.5px] text-[#97A1A0]">{m.notes}</span>
+                        )}
                       </span>
-                      <span className="font-mono text-sm font-semibold text-[#16323D]">{money(m.cost)}</span>
+                      <span className="mt-0.5 font-mono text-sm font-semibold text-[#16323D] whitespace-nowrap">{money(m.cost)}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setConfirmDup(m); }}
-                        className="grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+                        className="mt-0.5 grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
                         aria-label="Duplicate"
                       >
                         <Copy size={13} />
@@ -776,12 +923,26 @@ function MaterialesTab({
         onClick={() => setEditor({
           title: tp.materials.newMaterial,
           fields: [
-            { key: "name",     label: tp.materials.material,  type: "text",   value: "" },
-            { key: "supplier", label: tp.materials.supplier,   type: "text",   value: "" },
-            { key: "cost",     label: tp.materials.cost,       type: "number", value: 0 },
+            { key: "name",          label: tp.materials.material,                     type: "text",     value: "" },
+            { key: "quantity",      label: EN ? "Quantity" : "Cantidad",              type: "number",   value: 1 },
+            { key: "unit",          label: EN ? "Unit / Size" : "Unidad / Medida",    type: "text",     value: "" },
+            { key: "supplier",      label: tp.materials.supplier,                     type: "text",     value: "" },
+            { key: "cost",          label: tp.materials.cost,                         type: "number",   value: 0 },
+            { key: "purchase_date", label: EN ? "Purchase date" : "Fecha de compra",  type: "date",     value: "" },
+            { key: "notes",         label: EN ? "Notes" : "Notas",                   type: "textarea", value: "" },
           ],
           onSave: async (vals) => {
-            const { error } = await supabase.from("materials").insert({ project_id: project.id, name: vals.name || tp.materials.material, supplier: vals.supplier || "", cost: vals.cost || 0, bought: false });
+            const { error } = await supabase.from("materials").insert({
+              project_id: project.id,
+              name: vals.name || tp.materials.material,
+              supplier: vals.supplier || "",
+              cost: vals.cost || 0,
+              quantity: vals.quantity || 1,
+              unit: vals.unit || "",
+              notes: vals.notes || "",
+              purchase_date: vals.purchase_date || null,
+              bought: false,
+            });
             if (error) { toast(tp.common.errorSaving + error.message); return; }
             onRefresh(); toast(tp.materials.materialAdded);
           },

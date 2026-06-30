@@ -58,6 +58,12 @@ export interface Material {
   supplier: string;
   cost: number;
   bought: boolean;
+  quantity: number;
+  unit: string;
+  notes: string;
+  estimate_item_id?: string | null;
+  estimate_section_id?: string | null;
+  purchase_date?: string | null;
   created_at?: string;
 }
 
