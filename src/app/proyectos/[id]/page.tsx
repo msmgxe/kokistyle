@@ -446,29 +446,43 @@ function WorkflowTab({
   const handleDragEnd = async (e: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = e;
-    if (!over) return;
+    if (!over) {
+      setItems(tasks); // reset visuals if dropped outside
+      return;
+    }
 
-    const draggedId   = String(active.id);
-    const overId      = String(over.id);
+    const draggedId = String(active.id);
+    const overId    = String(over.id);
 
     const draggedTask = items.find((t) => t.id === draggedId);
     if (!draggedTask) return;
 
-    const originalStatus = tasks.find((t) => t.id === draggedId)?.status ?? draggedTask.status;
+    const originalStatus = (tasks.find((t) => t.id === draggedId)?.status ?? draggedTask.status) as KanbanStatus;
 
-    if (draggedTask.status !== originalStatus) {
-      const { error } = await supabase.from("tasks").update({ status: draggedTask.status }).eq("id", draggedId);
+    // Derive target status from the drop target directly — avoids stale closure
+    // on `items` state that handleDragOver may not have flushed yet.
+    const overIsCol    = KANBAN_COLS.some((c) => c.key === overId);
+    const overTask     = overIsCol ? null : items.find((t) => t.id === overId);
+    const targetStatus = (overIsCol ? overId : (overTask?.status ?? originalStatus)) as KanbanStatus;
+
+    if (targetStatus !== originalStatus) {
+      // Cross-column move: apply optimistic update then persist
+      setItems((prev) => prev.map((t) => t.id === draggedId ? { ...t, status: targetStatus } : t));
+      const { error } = await supabase.from("tasks").update({ status: targetStatus }).eq("id", draggedId);
       if (error) {
         setItems(tasks);
         toast(tp.common.errorSaving + error.message);
         return;
       }
-      const colName = KANBAN_COLS.find((c) => c.key === draggedTask.status)?.name ?? draggedTask.status;
+      const colName = KANBAN_COLS.find((c) => c.key === targetStatus)?.name ?? targetStatus;
       toast(`${tp.workflow.taskMoved} "${colName}"`);
-    } else if (draggedId !== overId) {
-      const colItems = items.filter((t) => t.status === draggedTask.status).sort((a, b) => a.sort_order - b.sort_order);
-      const oldIdx   = colItems.findIndex((t) => t.id === draggedId);
-      const newIdx   = colItems.findIndex((t) => t.id === overId);
+    } else if (draggedId !== overId && !overIsCol) {
+      // Same-column reorder
+      const colItems = items
+        .filter((t) => t.status === originalStatus)
+        .sort((a, b) => a.sort_order - b.sort_order);
+      const oldIdx = colItems.findIndex((t) => t.id === draggedId);
+      const newIdx = colItems.findIndex((t) => t.id === overId);
       if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
       const reordered = arrayMove(colItems, oldIdx, newIdx);
       const next = items.map((t) => {
