@@ -156,19 +156,33 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `estimate_sections` | Secciones del estimado (N:1 → project_estimates) |
 | `estimate_items` | Items dentro de cada sección |
 
-### Estimate → Workflow
+### Estimate → Workflow (Day Planner)
 
-- El Day Planner convierte **cada item programado del Estimate** en una fila individual de `tasks`; no agrupa todo el día en una sola tarea.
+- El Day Planner se abre desde EstimateTab → botón "Generate Workflow Tasks".
+- Al abrir, **carga las tareas existentes** (`source IN ('estimate','planner')`) y pre-popula los day columns desde `scheduled_date`.
+- El usuario arrastra items entre columnas; al presionar **Save** se hace:
+  - `INSERT` para ítems asignados sin taskId todavía
+  - `UPDATE scheduled_date` para ítems ya guardados que cambiaron de día
+  - `UPDATE scheduled_date = null` para ítems devueltos al pool
+- **Custom items**: el pool tiene un botón "+ Add custom item" que abre un mini-formulario (descripción, sección tag, horas, monto). Se guardan con `source = 'planner'` y `source_key = 'planner-custom:<uuid>'`.
 - Campos usados en `tasks` para trazabilidad y planificación:
   - `scheduled_date` — fecha editable/reprogramable de la actividad
   - `estimate_item_id` — vínculo al item de Estimate cuando existe
   - `estimate_section_id` — vínculo a la sección del Estimate
-  - `source = 'estimate'` — distingue tareas generadas vs manuales
-  - `source_key` — llave estable para evitar duplicados al regenerar
+  - `source` — `'estimate'` para items del estimado, `'planner'` para custom, `'manual'` para tareas del Workflow directo
+  - `source_key` — llave estable para upsert; unique index en `(project_id, source_key) WHERE source_key IS NOT NULL`
   - `source_section` — etiqueta visible de sección (Demolition, Plumbing, etc.)
   - `amount` — monto del item para contexto operativo
-- Workflow permite filtrar tareas por responsable y por `scheduled_date`.
+- Workflow y Plan tabs se refrescan automáticamente después del Save (`onGenerated → fetchProject`).
 - Para reprogramar: abrir la tarjeta de Workflow y editar **Scheduled date / Fecha programada**. El Plan/Gantt respeta esa fecha.
+
+### Tab Workflow — métricas resumen
+
+El tab Workflow muestra 4 KPI cards en la parte superior:
+- **Total tasks** — todas las tareas del proyecto
+- **From estimate** — tareas con `source = 'estimate'` o `'planner'`
+- **Completed** — tareas con `status = 'done'`
+- **Progress %** — `done / total * 100` con barra visual
 
 Migración SQL requerida si estas columnas no existen:
 ```sql
