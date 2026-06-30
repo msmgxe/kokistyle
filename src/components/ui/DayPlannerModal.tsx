@@ -27,7 +27,10 @@ interface PlanItem {
   dayIndex: number | null;
   taskId: string | null;
   isCustom: boolean;
+  assignedContactId: string | null;
 }
+
+interface PlanContact { id: string; name: string; }
 
 interface EstimateSection {
   id: string;
@@ -102,6 +105,7 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
           dayIndex: null,
           taskId: null,
           isCustom: false,
+          assignedContactId: null,
         });
       });
     } else if (sec.section_total > 0) {
@@ -118,6 +122,7 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
         dayIndex: null,
         taskId: null,
         isCustom: false,
+        assignedContactId: null,
       });
     }
   });
@@ -126,11 +131,20 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
 
 // ─── Draggable card ───────────────────────────────────────────────────────────
 
-function ItemCard({ item, overlay }: { item: PlanItem; overlay?: boolean }) {
+function ItemCard({
+  item, overlay, contacts, onAssign,
+}: {
+  item: PlanItem;
+  overlay?: boolean;
+  contacts?: PlanContact[];
+  onAssign?: (itemId: string, contactId: string | null) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id });
   const style = !overlay && transform
     ? { transform: `translate3d(${transform.x}px,${transform.y}px,0)` }
     : undefined;
+
+  const assignedName = contacts?.find(c => c.id === item.assignedContactId)?.name;
 
   return (
     <div
@@ -162,6 +176,24 @@ function ItemCard({ item, overlay }: { item: PlanItem; overlay?: boolean }) {
           </>
         )}
       </div>
+      {!overlay && contacts && contacts.length > 0 && onAssign && (
+        <div className="relative mt-1.5 border-t border-[#F0EBE0] pt-1.5">
+          <span className="pointer-events-none block truncate text-[9px] font-semibold text-[#395886]">
+            {assignedName ?? "Own team"}
+          </span>
+          <select
+            value={item.assignedContactId ?? ""}
+            onPointerDown={e => e.stopPropagation()}
+            onChange={e => onAssign(item.id, e.target.value || null)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+          >
+            <option value="">Own team</option>
+            {contacts.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -169,11 +201,13 @@ function ItemCard({ item, overlay }: { item: PlanItem; overlay?: boolean }) {
 // ─── Pool ─────────────────────────────────────────────────────────────────────
 
 function ItemPool({
-  items, EN, onAddCustom,
+  items, EN, onAddCustom, contacts, onAssign,
 }: {
   items: PlanItem[];
   EN: boolean;
   onAddCustom: () => void;
+  contacts: PlanContact[];
+  onAssign: (itemId: string, contactId: string | null) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "pool" });
   return (
@@ -187,7 +221,7 @@ function ItemPool({
           ✓ {EN ? "All items scheduled" : "Todos los items asignados"}
         </div>
       ) : (
-        items.map(i => <ItemCard key={i.id} item={i} />)
+        items.map(i => <ItemCard key={i.id} item={i} contacts={contacts} onAssign={onAssign} />)
       )}
       <button
         onClick={onAddCustom}
@@ -202,7 +236,7 @@ function ItemPool({
 // ─── Day column ───────────────────────────────────────────────────────────────
 
 function DayColumn({
-  day, items, capacity, date, EN, onDateChange,
+  day, items, capacity, date, EN, onDateChange, contacts, onAssign,
 }: {
   day: number;
   items: PlanItem[];
@@ -210,6 +244,8 @@ function DayColumn({
   date: string;
   EN: boolean;
   onDateChange: (iso: string) => void;
+  contacts: PlanContact[];
+  onAssign: (itemId: string, contactId: string | null) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day}` });
   const used = items.reduce((s, i) => s + i.hours, 0);
@@ -260,7 +296,7 @@ function DayColumn({
         className={`flex min-h-[150px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition
           ${isOver ? "border-[#395886] bg-[#EDF3FB]" : items.length ? "border-transparent bg-[#F7F3EA]" : "border-[#D7CBB3]"}`}
       >
-        {items.map(i => <ItemCard key={i.id} item={i} />)}
+        {items.map(i => <ItemCard key={i.id} item={i} contacts={contacts} onAssign={onAssign} />)}
         {items.length === 0 && (
           <div className="flex flex-1 items-center justify-center text-[10px] text-[#C4B89A]">
             {EN ? "Drop items here" : "Arrastra aquí"}
@@ -396,6 +432,7 @@ export default function DayPlannerModal({
 
   const [dayDates, setDayDates] = useState<Record<number, string>>({});
   const [items, setItems] = useState<PlanItem[]>([]);
+  const [contacts, setContacts] = useState<PlanContact[]>([]);
 
   const estimateRef = useRef(estimate);
   const ENRef       = useRef(EN);
@@ -407,15 +444,25 @@ export default function DayPlannerModal({
     let alive = true;
 
     const init = async () => {
-      const { data: existingTasks } = await supabase
-        .from("tasks")
-        .select("id, source_key, scheduled_date, name, hours, amount, source, source_section, estimate_item_id, estimate_section_id")
-        .eq("project_id", projectId)
-        .or("source.eq.estimate,source.eq.planner");
+      const [{ data: existingTasks }, { data: projectContacts }] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("id, source_key, scheduled_date, name, hours, amount, source, source_section, estimate_item_id, estimate_section_id, assigned_contact_id")
+          .eq("project_id", projectId)
+          .or("source.eq.estimate,source.eq.planner"),
+        supabase
+          .from("project_contacts")
+          .select("contacts(id, name)")
+          .eq("project_id", projectId),
+      ]);
 
       if (!alive) return;
 
       const tasks = existingTasks ?? [];
+      const loadedContacts: PlanContact[] = (projectContacts ?? [])
+        .map(pc => (pc as unknown as { contacts: PlanContact }).contacts)
+        .filter(Boolean);
+      setContacts(loadedContacts);
 
       // Collect unique scheduled dates (sorted)
       const scheduledDates = [
@@ -452,6 +499,7 @@ export default function DayPlannerModal({
           ...item,
           taskId: task.id as string,
           dayIndex: task.scheduled_date ? (dateToIdx.get(task.scheduled_date as string) ?? null) : null,
+          assignedContactId: (task.assigned_contact_id as string | null) ?? null,
         };
       });
 
@@ -471,6 +519,7 @@ export default function DayPlannerModal({
           dayIndex: t.scheduled_date ? (dateToIdx.get(t.scheduled_date as string) ?? null) : null,
           taskId: t.id as string,
           isCustom: true,
+          assignedContactId: (t.assigned_contact_id as string | null) ?? null,
         }));
 
       setNumDays(newNumDays);
@@ -562,10 +611,16 @@ export default function DayPlannerModal({
       dayIndex: null,
       taskId: null,
       isCustom: true,
+      assignedContactId: null,
     };
     setItems(prev => [newItem, ...prev]);
     setShowCustomForm(false);
   }, [items.length]);
+
+  // ── Assign contact to item ───────────────────────────────────────────────────
+  const handleAssign = useCallback((itemId: string, contactId: string | null) => {
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, assignedContactId: contactId } : i));
+  }, []);
 
   // ── Save / Update ────────────────────────────────────────────────────────────
   const save = async () => {
@@ -578,29 +633,30 @@ export default function DayPlannerModal({
     const toInsert = assigned
       .filter(i => !i.taskId)
       .map((item, index) => ({
-        project_id:         projectId,
-        name:               item.description,
-        hours:              item.hours,
-        duration_weeks:     1,
-        status:             "pend",
-        sort_order:         (item.dayIndex ?? 0) * 100 + index,
-        assigned_contact_id: null,
-        scheduled_date:     dayDates[item.dayIndex ?? 0] ?? null,
-        estimate_item_id:   item.estimateItemId,
+        project_id:          projectId,
+        name:                item.description,
+        hours:               item.hours,
+        duration_weeks:      1,
+        status:              "pend",
+        sort_order:          (item.dayIndex ?? 0) * 100 + index,
+        assigned_contact_id: item.assignedContactId,
+        scheduled_date:      dayDates[item.dayIndex ?? 0] ?? null,
+        estimate_item_id:    item.estimateItemId,
         estimate_section_id: item.estimateSectionId,
-        source:             item.isCustom ? "planner" : "estimate",
-        source_key:         item.sourceKey,
-        source_section:     item.sectionTag,
-        amount:             item.amount,
+        source:              item.isCustom ? "planner" : "estimate",
+        source_key:          item.sourceKey,
+        source_section:      item.sectionTag,
+        amount:              item.amount,
       }));
 
-    // Existing tasks to UPDATE (scheduled_date may have changed)
+    // Existing tasks to UPDATE (scheduled_date / assignee may have changed)
     const toUpdate = assigned
       .filter(i => i.taskId !== null)
       .map(item => ({
-        id:             item.taskId!,
-        scheduled_date: dayDates[item.dayIndex ?? 0] ?? null,
-        sort_order:     (item.dayIndex ?? 0) * 100,
+        id:                  item.taskId!,
+        scheduled_date:      dayDates[item.dayIndex ?? 0] ?? null,
+        sort_order:          (item.dayIndex ?? 0) * 100,
+        assigned_contact_id: item.assignedContactId,
       }));
 
     // Tasks dragged back to pool: clear scheduled_date
@@ -626,10 +682,14 @@ export default function DayPlannerModal({
       }
     }
 
-    // UPDATE existing (scheduled_date or sort_order changed)
+    // UPDATE existing (scheduled_date, assignee, or sort_order changed)
     await Promise.all(
       toUpdate.map(u =>
-        supabase.from("tasks").update({ scheduled_date: u.scheduled_date, sort_order: u.sort_order }).eq("id", u.id)
+        supabase.from("tasks").update({
+          scheduled_date:      u.scheduled_date,
+          sort_order:          u.sort_order,
+          assigned_contact_id: u.assigned_contact_id,
+        }).eq("id", u.id)
       )
     );
 
@@ -736,9 +796,11 @@ export default function DayPlannerModal({
 
               <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
                 <ItemPool
-                  items={showCustomForm ? poolItems : poolItems}
+                  items={poolItems}
                   EN={EN}
                   onAddCustom={() => setShowCustomForm(true)}
+                  contacts={contacts}
+                  onAssign={handleAssign}
                 />
               </div>
             </div>
@@ -758,6 +820,8 @@ export default function DayPlannerModal({
                     date={dayDates[d] ?? ""}
                     EN={EN}
                     onDateChange={iso => setDayDate(d, iso)}
+                    contacts={contacts}
+                    onAssign={handleAssign}
                   />
                 ))}
               </div>

@@ -1435,9 +1435,9 @@ function PlanTaskForm({
 // TAB: PLAN GANTT con DnD (@dnd-kit)
 // ═══════════════════════════════════════════════════════════════════════════════
 function PlanTab({
-  project, tasks, onRefresh, toast,
+  project, tasks, contacts, onRefresh, toast,
 }: {
-  project: Project; tasks: Task[]; onRefresh: () => void; toast: (m: string) => void;
+  project: Project; tasks: Task[]; contacts: Contact[]; onRefresh: () => void; toast: (m: string) => void;
 }) {
   const { t } = useLanguage();
   const tp = t.panel;
@@ -1446,6 +1446,7 @@ function PlanTab({
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [ganttUnit, setGanttUnit] = useState<"week" | "day">("week");
   const [filterStatus, setFilterStatus] = useState<"all" | "pend" | "prog" | "done">("all");
+  const [filterAssignee, setFilterAssignee] = useState("all");
   const [editTask, setEditTask] = useState<{ task: { task: Task; start: Date; end: Date; weekStart: number }; startDate: Date; endDate: Date } | null>(null);
   const persist = usePersistOrder("tasks");
 
@@ -1481,7 +1482,19 @@ function PlanTab({
 
   const rows  = schedule();
   const totalDays = Math.max(14, rows.reduce((max, row) => Math.max(max, row.dayStart + row.durationDays), 0));
-  const filteredRows = filterStatus === "all" ? rows : rows.filter((r) => r.task.status === filterStatus);
+  const ownTeamLabel = tp.workflow.ownTeam ?? "Own team";
+  const assigneeOptions = [
+    { value: "all", label: "All assignees" },
+    { value: "own", label: ownTeamLabel },
+    ...contacts.map((c) => ({ value: c.id, label: c.name })),
+  ];
+  const filteredRows = rows
+    .filter((r) => filterStatus === "all" || r.task.status === filterStatus)
+    .filter((r) => {
+      if (filterAssignee === "all") return true;
+      if (filterAssignee === "own") return !r.task.assigned_contact_id;
+      return r.task.assigned_contact_id === filterAssignee;
+    });
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
 
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -1541,8 +1554,8 @@ function PlanTab({
         {tp.plan.hint}
       </p>
 
-      {/* Controls: filter + gantt unit toggle */}
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+      {/* Controls: filter + assignee + gantt unit toggle */}
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         {/* Status filter */}
         <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
           {([
@@ -1557,8 +1570,20 @@ function PlanTab({
             </button>
           ))}
         </div>
+        {/* Assignee filter */}
+        {contacts.length > 0 && (
+          <select
+            value={filterAssignee}
+            onChange={e => setFilterAssignee(e.target.value)}
+            className="rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] font-semibold text-[#5C6A6E] focus:border-[#395886] focus:outline-none"
+          >
+            {assigneeOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        )}
         {/* Weeks / Days toggle */}
-        <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+        <div className="ml-auto inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
           {(["week", "day"] as const).map((u) => (
             <button key={u} onClick={() => setGanttUnit(u)}
               className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
@@ -1614,7 +1639,12 @@ function PlanTab({
                       <DragHandle />
                       <div className="py-2">
                         <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-[#16323D]">{t.name}</div>
-                        <div className="font-mono text-[10.5px] text-[#5C6A6E]">{dShort(start)}–{dShort(end)} · {t.hours}h</div>
+                        <div className="font-mono text-[10.5px] text-[#5C6A6E]">
+                          {dShort(start)}–{dShort(end)} · {t.hours}h
+                          {t.assigned_contact_id && (
+                            <span className="ml-1 font-sans not-italic">· {contacts.find(c => c.id === t.assigned_contact_id)?.name ?? ""}</span>
+                          )}
+                        </div>
                       </div>
                       <div className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1]">
                         <div
@@ -2154,7 +2184,7 @@ export default function ProjectDetailPage() {
         contacts={project.contacts} onRefresh={fetchProject} toast={showToast}
         onSubTabChange={(sub) => setMeta({ context: `project.pagos.${sub}`, projectId: project.id, projectTitle: project.title, contacts: project.contacts?.map((c) => c.name) ?? [] })}
       />}
-      {activeTab === "plan"        && <PlanTab        project={project} tasks={tasks} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "plan"        && <PlanTab        project={project} tasks={tasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "notas"       && <NotasTab       project={project} notes={project.project_notes ?? []} onRefresh={fetchProject} toast={showToast} />}
 
       {/* Editar proyecto */}
