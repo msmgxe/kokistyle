@@ -250,6 +250,45 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
 - En **desktop**: descarga el PDF + abre `https://wa.me/<number>` en nueva pestaña + toast explicativo
 - El número final se construye como `waCode + waPhone` limpiando caracteres no numéricos
 
+### Módulo Materials — Import desde Estimate
+
+- Botón azul **"Import from Estimate / Importar del Estimado"** en la parte superior del tab Materials.
+- Al presionar, carga todas las `estimate_sections` + `estimate_items` del estimado del proyecto y crea un registro en `materials` por cada item:
+  - `name` = `"Compra de [item.description]"` (independiente del idioma de la UI)
+  - `estimate_item_id` → vínculo al item de origen
+  - `estimate_section_id` → vínculo a la sección de origen
+- Deduplicación: si ya existe un material con ese `estimate_item_id` en el proyecto, se omite (índice único).
+- Cards muestran una etiqueta **FROM EST / DEL EST** (azul) cuando `estimate_item_id IS NOT NULL`.
+- Campos nuevos en la tabla `materials`:
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `quantity` | `NUMERIC(10,2)` | Cantidad (ej. 50) |
+| `unit` | `TEXT` | Unidad de medida (ej. sq.ft, unit, box) |
+| `notes` | `TEXT` | Notas de compra en texto libre |
+| `purchase_date` | `DATE` | Fecha en que se realizó la compra |
+| `estimate_item_id` | `UUID` | FK → `estimate_items(id)` ON DELETE SET NULL |
+| `estimate_section_id` | `UUID` | FK → `estimate_sections(id)` ON DELETE SET NULL |
+
+Migración SQL requerida:
+```sql
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS quantity       NUMERIC(10,2);
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS unit           TEXT;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS notes          TEXT;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS purchase_date  DATE;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS estimate_item_id
+  UUID REFERENCES estimate_items(id) ON DELETE SET NULL;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS estimate_section_id
+  UUID REFERENCES estimate_sections(id) ON DELETE SET NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS materials_project_estimate_item_idx
+  ON materials(project_id, estimate_item_id)
+  WHERE estimate_item_id IS NOT NULL;
+```
+
+- El formulario de edición de material incluye: name, quantity, unit, supplier, cost, purchase_date, notes, bought.
+- La acción **Duplicate** clona una tarjeta completa (útil para el mismo item de dos proveedores).
+
 ### Contactos — formato de teléfono US
 
 - El campo phone en el `ContactForm` de `contactos/page.tsx` usa `formatUSPhone()` en `onChange`

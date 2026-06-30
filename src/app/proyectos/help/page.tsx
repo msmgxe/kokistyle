@@ -139,29 +139,37 @@ function MockupPayments({ EN }: { EN: boolean }) {
 }
 
 function MockupMaterials({ EN }: { EN: boolean }) {
-  const items = EN
-    ? [{ n:"Porcelain tile 12x24",  s:"Home Depot",      c:"$1,200", bought:true  },
-       { n:"Shower glass door",     s:"Glass Supply Co", c:"$850",   bought:true  },
-       { n:"Vanity mirror",         s:"IKEA",            c:"$320",   bought:false },
-       { n:"Waterproof membrane",   s:"Lowes",           c:"$180",   bought:false }]
-    : [{ n:"Porcelanato 12x24",     s:"Home Depot",      c:"$1,200", bought:true  },
-       { n:"Puerta ducha vidrio",   s:"Glass Supply Co", c:"$850",   bought:true  },
-       { n:"Espejo tocador",        s:"IKEA",            c:"$320",   bought:false },
-       { n:"Membrana impermeabl.",  s:"Lowes",           c:"$180",   bought:false }];
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
-      {items.map(i => (
-        <div key={i.n} className={`flex items-center gap-2.5 border-b border-[#F0EBE0] px-3 py-2 last:border-0 ${i.bought ? "opacity-50" : ""}`}>
-          <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${i.bought ? "border-[#4F8A63] bg-[#4F8A63] text-white" : "border-[#D7CBB3]"} text-[8px] font-bold`}>
-            {i.bought ? "✓" : ""}
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 rounded-xl border border-[#395886] bg-[#EDF3FB] px-3 py-2">
+        <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#395886] text-[8px] font-bold text-white">↓</div>
+        <span className="text-[9px] font-bold text-[#395886]">
+          {EN ? "Import from Estimate" : "Importar del Estimado"}
+        </span>
+      </div>
+      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+        {[
+          { n: EN ? "Compra de PORCELAIN" : "Compra de PORCELAIN", badge: EN ? "FROM EST" : "DEL EST", qty: "50 sq.ft", cost: "$1,500", bought: false },
+          { n: EN ? "Compra de GLASS DOOR" : "Compra de GLASS DOOR", badge: EN ? "FROM EST" : "DEL EST", qty: "1 unit",  cost: "$1,850", bought: true  },
+          { n: "LED MIRROR",                                          badge: null,                        qty: "",        cost: "$650",   bought: false },
+        ].map(i => (
+          <div key={i.n} className={`flex items-center gap-2.5 border-b border-[#F0EBE0] px-3 py-2 last:border-0 ${i.bought ? "opacity-50" : ""}`}>
+            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${i.bought ? "border-[#4F8A63] bg-[#4F8A63] text-white" : "border-[#D7CBB3]"} text-[8px] font-bold`}>
+              {i.bought ? "✓" : ""}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[9px] font-semibold ${i.bought ? "line-through text-[#5C6A6E]" : "text-[#16323D]"}`}>{i.n}</span>
+                {i.badge && (
+                  <span className="rounded bg-[#EDF3FB] px-1 py-px text-[7px] font-bold text-[#395886]">{i.badge}</span>
+                )}
+              </div>
+              {i.qty && <div className="text-[8px] text-[#5C6A6E]">{i.qty}</div>}
+            </div>
+            <div className="font-mono text-[9px] font-bold text-[#16323D]">{i.cost}</div>
           </div>
-          <div className="min-w-0 flex-1">
-            <div className={`text-[9px] font-semibold ${i.bought ? "line-through text-[#5C6A6E]" : "text-[#16323D]"}`}>{i.n}</div>
-            <div className="text-[8px] text-[#5C6A6E]">{i.s}</div>
-          </div>
-          <div className="font-mono text-[9px] font-bold text-[#16323D]">{i.c}</div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -558,26 +566,34 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
-      id: "materials", icon: "🔩",
-      title: EN ? "Materials" : "Materiales",
-      desc:  EN ? "Shopping list of all materials needed per project. Mark items as purchased to track what's still pending."
-                : "Lista de compras de todos los materiales necesarios por proyecto. Marca los items como comprados para ver qué falta.",
+      id: "materials", icon: "🛒",
+      title: EN ? "Materials / Materiales" : "Materials / Materiales",
+      desc:  EN ? "Shopping list per project — import items directly from the Estimate or add them manually. Track quantity, unit, supplier, purchase date and notes."
+                : "Lista de compras por proyecto — importa items directamente del Estimado o agrégalos manualmente. Registra cantidad, unidad, proveedor, fecha de compra y notas.",
       mockup: <MockupMaterials EN={EN} />,
       steps: EN ? [
-        { t:"Add a material", d:"Click <b>+ Add Material</b>. Enter the material name, supplier (store or person name) and cost." },
-        { t:"Mark as purchased", d:"Click the <b>✓ checkbox</b> once you've bought it. The row turns gray so you can focus on what's still pending." },
-        { t:"Track the total cost", d:"The tab shows the <b>total material cost</b> at the bottom — compare it against the Materials section in your Estimate." },
+        { t:"Import from Estimate", d:"At the top of the Materials tab, click the blue <b>Import from Estimate</b> banner. The app reads all sections and items from the project's Estimate and creates one material record per item, named <b>\"Compra de [item]\"</b>. Items already imported are skipped automatically — no duplicates." },
+        { t:"\"Compra de\" naming", d:"Imported materials follow the naming convention <b>Compra de [ITEM NAME]</b> (e.g., \"Compra de PORCELAIN\"). Cards from the Estimate show a blue <b>FROM EST</b> badge so you can tell them apart from manual entries at a glance." },
+        { t:"Edit quantity, unit and notes", d:"Tap any material card to open the edit form. You can set: <b>name, quantity</b> (e.g., 50), <b>unit</b> (e.g., sq.ft, unit, box), <b>supplier, cost, purchase date</b> and free-text <b>notes</b>. All fields are optional." },
+        { t:"Mark as purchased", d:"Click the <b>✓ checkbox</b> on any card once you've bought it. The card dims and the name gets a strikethrough so you can focus on what's still pending." },
+        { t:"Duplicate a card", d:"Use the <b>duplicate</b> action on any card to quickly clone a material — useful when you need the same item from two different suppliers or in different quantities." },
+        { t:"Add manually", d:"Click <b>+ Add Material</b> to create a material from scratch — no Estimate needed. Manual entries have no FROM EST badge and can include any name, quantity and supplier you like." },
       ] : [
-        { t:"Agregar un material", d:"Clic en <b>+ Agregar Material</b>. Ingresa nombre del material, proveedor (tienda o persona) y costo." },
-        { t:"Marcar como comprado", d:"Clic en el <b>checkbox ✓</b> una vez comprado. La fila se pone gris para que te enfoques en lo que falta." },
-        { t:"Ver el costo total", d:"La pestaña muestra el <b>costo total de materiales</b> abajo — compáralo con la sección Materiales del Estimado." },
+        { t:"Importar del Estimado", d:"En la parte superior del tab Materiales, clic en el banner azul <b>Importar del Estimado</b>. La app lee todas las secciones e items del Estimado del proyecto y crea un registro de material por item con el nombre <b>\"Compra de [item]\"</b>. Los items ya importados se omiten automáticamente — sin duplicados." },
+        { t:"Nomenclatura \"Compra de\"", d:"Los materiales importados siguen la convención <b>Compra de [NOMBRE DEL ITEM]</b> (ej. \"Compra de PORCELAIN\"). Las tarjetas del Estimado muestran una etiqueta azul <b>DEL EST</b> para distinguirlas de los registros manuales de un vistazo." },
+        { t:"Editar cantidad, unidad y notas", d:"Toca cualquier tarjeta para abrir el formulario de edición. Puedes definir: <b>nombre, cantidad</b> (ej. 50), <b>unidad</b> (ej. sq.ft, unidad, caja), <b>proveedor, costo, fecha de compra</b> y <b>notas</b> en texto libre. Todos los campos son opcionales." },
+        { t:"Marcar como comprado", d:"Clic en el <b>checkbox ✓</b> de cualquier tarjeta una vez comprado. La tarjeta se atenúa y el nombre queda tachado para que te enfoques en lo que falta." },
+        { t:"Duplicar una tarjeta", d:"Usa la acción <b>duplicar</b> en cualquier tarjeta para clonarla rápidamente — útil cuando necesitas el mismo item de dos proveedores distintos o en diferentes cantidades." },
+        { t:"Agregar manualmente", d:"Clic en <b>+ Agregar Material</b> para crear un material desde cero — sin necesitar el Estimado. Los registros manuales no tienen etiqueta DEL EST y admiten cualquier nombre, cantidad y proveedor." },
       ],
       tips: EN ? [
-        "💡 Use the supplier field to note <b>where to buy</b> — e.g., \"Home Depot · Aisle 12\". Makes shopping trips much faster.",
-        "🎙 Say <b>\"Add material porcelain tile $800\"</b> to Katy.",
+        "💡 <b>Import first, then fill details.</b> Click Import from Estimate to populate the list instantly, then open each card to add quantity, unit and purchase date as you shop.",
+        "🔵 The <b>FROM EST badge</b> links each material back to its Estimate line item — so you always know what it covers and what section it belongs to.",
+        "📅 Use the <b>purchase date</b> field to log exactly when you bought each item — helps reconcile receipts and track cash flow per phase of the project.",
       ] : [
-        "💡 Usa el campo de proveedor para anotar <b>dónde comprarlo</b> — ej. \"Home Depot · Pasillo 12\". Facilita las compras.",
-        "🎙 Di <b>\"Agregar material porcelanato $800\"</b> a Katy.",
+        "💡 <b>Importa primero, luego agrega detalles.</b> Clic en Importar del Estimado para llenar la lista al instante, luego abre cada tarjeta para agregar cantidad, unidad y fecha de compra mientras compras.",
+        "🔵 La <b>etiqueta DEL EST</b> vincula cada material con su línea del Estimado — así siempre sabes qué cubre y a qué sección pertenece.",
+        "📅 Usa el campo <b>fecha de compra</b> para registrar exactamente cuándo compraste cada item — ayuda a conciliar recibos y rastrear el flujo de caja por fase del proyecto.",
       ],
     },
     {
