@@ -736,11 +736,12 @@ function MaterialesTab({
         return;
       }
 
-      // Load sections + items
+      // Load only material-type sections + items
       const { data: sections } = await supabase
         .from("estimate_sections")
         .select("id, name_en, name_es, section_total, estimate_items(id, description, amount)")
-        .eq("estimate_id", estimateRow.id);
+        .eq("estimate_id", estimateRow.id)
+        .eq("is_material_type", true);
 
       if (!sections || sections.length === 0) {
         toast(EN ? "Estimate has no items." : "El estimado no tiene items.");
