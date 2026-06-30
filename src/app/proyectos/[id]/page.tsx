@@ -861,7 +861,7 @@ function MaterialesTab({
   };
 
   return (
-    <div className="max-w-[760px]">
+    <div className="w-full">
       {/* Resumen */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-[400px]">
         <div className="rounded-[13px] border border-[#E6DDCB] bg-white p-3">
@@ -1128,7 +1128,7 @@ function ContactosTab({
   };
 
   return (
-    <div className="max-w-[760px]">
+    <div className="w-full">
       <div className="mb-4 flex items-center justify-between">
         <span className="text-sm font-semibold text-[#5C6A6E]">{tp.contacts.assigned}</span>
         <button
@@ -1302,7 +1302,7 @@ function PresupuestoTab({
   };
 
   return (
-    <div className="max-w-[760px]">
+    <div className="w-full">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((b) => b.id)} strategy={verticalListSortingStrategy}>
           <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
@@ -1502,7 +1502,7 @@ function PagosTab({
   const activeExp = activeExpId ? expItems.find((x) => x.id === activeExpId) : null;
 
   return (
-    <div className="max-w-[760px]">
+    <div className="w-full">
       {/* KPIs */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.income}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
@@ -1853,7 +1853,7 @@ function PlanTab({
   };
 
   return (
-    <div className="max-w-[900px]">
+    <div className="w-full">
       <p className="mb-4 text-xs text-[#5C6A6E]">
         {tp.plan.hint}
       </p>
@@ -2137,7 +2137,7 @@ function NotasTab({
   );
 
   return (
-    <div className="max-w-[760px] space-y-4">
+    <div className="w-full space-y-4">
       {/* Add note button */}
       {!adding && (
         <button
