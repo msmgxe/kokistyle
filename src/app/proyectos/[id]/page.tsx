@@ -511,6 +511,11 @@ function WorkflowTab({
     return pw.length ? pw : rectIntersection(args);
   }, []);
 
+  const totalTasks       = items.length;
+  const fromEstimate     = items.filter((t) => t.source === "estimate").length;
+  const doneTasks        = items.filter((t) => t.status === "done").length;
+  const progressPct      = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
   return (
     <DndContext
       sensors={sensors}
@@ -519,6 +524,34 @@ function WorkflowTab({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
+      {/* Summary metrics */}
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricTotal}</div>
+          <div className="mt-1.5 font-mono text-2xl font-semibold text-[#16323D]">{totalTasks}</div>
+        </div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricFromEstimate}</div>
+          <div className="mt-1.5 font-mono text-2xl font-semibold text-[#395886]">{fromEstimate}</div>
+        </div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricDone}</div>
+          <div className="mt-1.5 font-mono text-2xl font-semibold text-[#4F8A63]">{doneTasks}</div>
+        </div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricProgress}</div>
+          <div className="mt-1.5 flex items-end gap-2">
+            <span className="font-mono text-2xl font-semibold text-[#16323D]">{progressPct}%</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#E6DDCB]">
+            <div
+              className="h-full rounded-full bg-[#4F8A63] transition-all"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
       <p className="mb-4 text-[11.5px] text-[#5C6A6E]">
         {tp.workflow.hint}
       </p>

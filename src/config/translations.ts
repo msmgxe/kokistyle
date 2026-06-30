@@ -255,6 +255,10 @@ export const translations = {
         movedTo: "Moved to",
         dragHint: "Drag to reorder or move between columns. Tap a card to edit.",
         hint: "Drag to reorder or move between columns. Tap a card to edit.",
+        metricTotal: "Total tasks",
+        metricFromEstimate: "From estimate",
+        metricDone: "Completed",
+        metricProgress: "Progress",
       },
       materials: {
         toBuy: "To buy",
@@ -709,6 +713,10 @@ export const translations = {
         movedTo: "Actividad movida a",
         dragHint: "Arrastra para reordenar o mover entre columnas. Toca una tarjeta para editar.",
         hint: "Arrastra para reordenar o mover entre columnas. Toca una tarjeta para editar.",
+        metricTotal: "Total tareas",
+        metricFromEstimate: "Del estimado",
+        metricDone: "Completadas",
+        metricProgress: "Avance",
       },
       materials: {
         toBuy: "Por comprar",
