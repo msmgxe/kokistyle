@@ -49,6 +49,7 @@ import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 import EstimateTab from "@/src/components/ui/EstimateTab";
+import DayPlannerModal from "@/src/components/ui/DayPlannerModal";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface ProjectFull extends Project {
@@ -61,7 +62,7 @@ interface ProjectFull extends Project {
   project_notes: ProjectNote[];
 }
 
-type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "pagos" | "plan" | "notas";
+type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas";
 type PaySubTab = "ingresos" | "egresos";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -2204,6 +2205,67 @@ function NotasTab({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// TAB: PLANNER — Day Planner embebido (desde Estimate)
+// ═══════════════════════════════════════════════════════════════════════════════
+function PlannerTab({
+  project, onRefresh, toast,
+}: {
+  project: Project; onRefresh: () => void; toast: (m: string) => void;
+}) {
+  const { language } = useLanguage();
+  const EN = language === "en";
+  interface EstSection {
+    id: string; name_en: string; name_es: string;
+    is_material_type: boolean; section_total: number;
+    items: { id: string; description: string; amount: number }[];
+  }
+  const [estimate, setEstimate] = useState<{ sections: EstSection[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: estRow } = await supabase
+        .from("project_estimates").select("id").eq("project_id", project.id).maybeSingle();
+      if (!estRow) { setLoading(false); return; }
+      const { data: sections } = await supabase
+        .from("estimate_sections")
+        .select("id, name_en, name_es, is_material_type, section_total, estimate_items(id, description, amount)")
+        .eq("estimate_id", estRow.id)
+        .order("sort_order", { ascending: true });
+      const mapped: EstSection[] = (sections ?? []).map((s) => {
+        const raw = s as unknown as { id: string; name_en: string; name_es: string; is_material_type: boolean; section_total: number; estimate_items: { id: string; description: string; amount: number }[] };
+        return { id: raw.id, name_en: raw.name_en, name_es: raw.name_es, is_material_type: raw.is_material_type, section_total: raw.section_total, items: raw.estimate_items ?? [] };
+      });
+      setEstimate({ sections: mapped });
+      setLoading(false);
+    };
+    load();
+  }, [project.id]);
+
+  if (loading) return (
+    <div className="flex h-64 items-center justify-center">
+      <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+    </div>
+  );
+  if (!estimate) return (
+    <div className="flex h-64 items-center justify-center">
+      <p className="text-[#5C6A6E]">{EN ? "No estimate found. Create one in the Estimate tab first." : "No hay estimado. Crea uno en el tab Estimate primero."}</p>
+    </div>
+  );
+
+  return (
+    <DayPlannerModal
+      embedded
+      estimate={estimate}
+      projectId={project.id}
+      onClose={() => {}}
+      onGenerated={onRefresh}
+      toast={toast}
+    />
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PÁGINA PRINCIPAL: Detalle del Proyecto
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function ProjectDetailPage() {
@@ -2225,6 +2287,7 @@ export default function ProjectDetailPage() {
     { id: "plan",        label: tp.tabs.plan },
     { id: "workflow",    label: tp.tabs.workflow },
     { id: "presupuesto", label: tp.tabs.budget },
+    { id: "planner",     label: tp.tabs.planner },
     { id: "pagos",       label: tp.tabs.payments },
     { id: "materiales",  label: tp.tabs.materials },
     { id: "contactos",   label: tp.tabs.contacts },
@@ -2265,6 +2328,7 @@ export default function ProjectDetailPage() {
       materiales:  "project.materiales",
       contactos:   "project.contactos",
       presupuesto: "project.presupuesto",
+      planner:     "project.planner",
       pagos:       "project.pagos.ingresos",
       plan:        "project.plan",
       notas:       "project.notas",
@@ -2340,6 +2404,7 @@ export default function ProjectDetailPage() {
       {activeTab === "materiales"  && <MaterialesTab  project={project} materials={project.materials} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "contactos"   && <ContactosTab   project={project} contacts={project.contacts} allContacts={allContacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "presupuesto" && <EstimateTab project={project} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "planner"     && <PlannerTab  project={project} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "pagos"       && <PagosTab
         project={project} payments={project.payments} expenses={project.expenses}
         contacts={project.contacts} onRefresh={fetchProject} toast={showToast}

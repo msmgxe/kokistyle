@@ -330,9 +330,10 @@ Requiere autenticación por PIN. Layout en `src/app/proyectos/layout.tsx`.
 |---|---|
 | Plan | Vista rápida de avance: progress bars, conteo de tareas |
 | Workflow | Kanban (Pendiente → En Proceso → Listo) + vista Gantt |
-| Estimate | Estimado profesional: secciones, items, PDF, WhatsApp send, Day Planner |
+| Estimate | Estimado profesional: secciones, items, PDF, WhatsApp send |
+| Day Planner | Planificador por día embebido — carga el estimado, drag&drop a columnas de días, asignación de co-workers, items custom, auto-assign, guarda tareas en Workflow |
 | Payments | Ingresos y egresos con balance en tiempo real |
-| Materials | Lista de compras con checkbox "comprado" |
+| Materials | Lista de compras con checkbox "comprado" + import desde Estimate |
 | Contacts | Especialistas/proveedores vinculados al proyecto |
 | Notes | Notas con adjuntos (imágenes + PDFs) |
 
@@ -411,16 +412,31 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 
 ---
 
-## Day Planner (Estimate → Workflow)
+## Day Planner — Tab dedicado
 
-- Componente: `DayPlannerModal.tsx` — modal full-screen `fixed inset-0 z-[300]`
-- Se abre desde EstimateTab → botón "Generate Workflow Tasks"
+- Componente: `DayPlannerModal.tsx` — tiene prop `embedded?: boolean` (default `false`)
+- **Modo modal** (`embedded=false`): `fixed inset-0 z-[300]` — se usaba antes desde EstimateTab (botón "Generate Workflow Tasks") — **deprecado, botón eliminado del Estimate**
+- **Modo embebido** (`embedded=true`): renderiza como contenido de tab normal, sin overlay ni botón X
+- Tab `"planner"` en `src/app/proyectos/[id]/page.tsx` → componente `PlannerTab`:
+  - Carga el `project_estimate` y sus secciones+items desde Supabase
+  - Pasa `estimate` al `<DayPlannerModal embedded ...>` como prop
+  - Muestra spinner si carga, mensaje si no hay estimado
 - Drag & drop: `@dnd-kit` (DndContext, useDraggable, useDroppable, DragOverlay)
 - Estado: pool de items sin asignar + columnas de días (hasta N días)
 - Fechas: cada columna tiene datepicker nativo (`<input type="date">` con overlay transparente)
 - Capacidad: `workersPerDay × hoursPerWorker` por día → barra de progreso visual
 - Auto-assign: greedy bin-packing (items de más horas primero, rellena días en orden)
-- Output: una tarea Kanban por item programado en Supabase `tasks`, con `scheduled_date`, `source_key` y vínculo al Estimate para evitar duplicados
+- Asignación de co-worker por item: selector `<select>` con `onPointerDown={e => e.stopPropagation()}` para no disparar el drag
+- **Custom items**: botón "+ Custom" en el pool → mini-formulario (descripción, sección tag, horas, monto) → `source = 'planner'`, `source_key = 'planner-custom:<uuid>'`
+- Output al guardar: `INSERT`/`UPDATE` en `tasks` con `scheduled_date`, `source_key`, `assigned_contact_id`, vínculo al Estimate para upsert sin duplicados
+
+### Posición del tab `"planner"` en TabId
+
+```typescript
+type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas";
+```
+
+Orden en `TABS` array: Plan · Workflow · Estimate · **Day Planner** · Payments · Materials · Contacts · Notes
 
 ---
 

@@ -412,12 +412,14 @@ export default function DayPlannerModal({
   onClose,
   onGenerated,
   toast,
+  embedded = false,
 }: {
   estimate: EstimateForPlanner;
   projectId: string;
   onClose: () => void;
   onGenerated: () => void;
   toast: (msg: string) => void;
+  embedded?: boolean;
 }) {
   const { language } = useLanguage();
   const EN = language === "en";
@@ -713,16 +715,21 @@ export default function DayPlannerModal({
   const savedCount     = items.filter(i => i.taskId !== null).length;
 
   return (
-    <div className="fixed inset-0 z-[300] flex flex-col bg-[#F7F3EB]">
+    <div className={embedded
+      ? "flex flex-col overflow-hidden rounded-[20px] border border-[#E6DDCB] bg-[#F7F3EB]"
+      : "fixed inset-0 z-[300] flex flex-col bg-[#F7F3EB]"
+    }>
 
       {/* ── Top bar ────────────────────────────────────────────────────────── */}
       <div className="flex shrink-0 items-center gap-4 border-b border-[#D5DEEF] bg-white px-5 py-3">
-        <button
-          onClick={onClose}
-          className="rounded-lg p-1.5 text-[#5C6A6E] transition hover:bg-[#F7F3EA] hover:text-[#B0492F]"
-        >
-          <X size={18} />
-        </button>
+        {!embedded && (
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-[#5C6A6E] transition hover:bg-[#F7F3EA] hover:text-[#B0492F]"
+          >
+            <X size={18} />
+          </button>
+        )}
         <div className="min-w-0">
           <div className="text-sm font-bold text-[#16323D]">
             {EN ? "Day Planner" : "Planificador por Día"}
@@ -770,12 +777,12 @@ export default function DayPlannerModal({
 
       {/* ── Main canvas ────────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-1 items-center justify-center" style={{ minHeight: embedded ? "520px" : undefined }}>
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
         </div>
       ) : (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
+          <div className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4" style={{ minHeight: embedded ? "520px" : undefined }}>
 
             {/* Left: Pool */}
             <div className="flex w-[224px] shrink-0 flex-col gap-2">

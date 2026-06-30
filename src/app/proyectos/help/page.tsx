@@ -543,6 +543,45 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
+      id: "planner", icon: "🗓",
+      title: EN ? "Day Planner" : "Planificador por Día",
+      desc:  EN ? "Schedule estimate items into day columns with drag & drop. Set dates, assign workers, add custom items and generate Workflow tasks — all in one place as a dedicated tab."
+               : "Programa items del estimado en columnas de días con drag & drop. Asigna fechas, asigna trabajadores, agrega items personalizados y genera tareas de Workflow — todo en un tab dedicado.",
+      mockup: <MockupDayPlanner EN={EN} />,
+      steps: EN ? [
+        { t:"Open the tab", d:"Click the <b>Day Planner</b> tab next to Estimate in the project navigation. The planner loads all estimate sections and their items automatically." },
+        { t:"Items pool", d:"All unscheduled estimate items appear in the left <b>Pool</b> column. Drag any item to a day column on the right to schedule it." },
+        { t:"Add custom items", d:"Click <b>+ Custom</b> in the pool header to add activities not in the estimate. Fill in description, section tag, hours and amount. Custom items are saved with source = 'planner'." },
+        { t:"Set day dates", d:"Each day column has a <b>date picker</b> at the top. Click the date to change it — the column keeps its items when you change the date." },
+        { t:"Capacity bar", d:"Each column shows a <b>capacity bar</b> based on workers × hours per worker. The bar turns red when the day is over capacity." },
+        { t:"Assign a worker", d:"Each item card has an <b>Assignee</b> selector. Choose a co-worker contact to assign that item. Assignments are saved with the task." },
+        { t:"Auto-assign", d:"Click <b>Auto-assign</b> to automatically fill day columns using greedy bin-packing (heaviest items first). Redistribute manually after if needed." },
+        { t:"Save / Update", d:"Click <b>Save / Update</b> to upsert all scheduled items. New assignments create Workflow tasks with the scheduled date. Moving an item updates its date. Returning an item to the pool removes its scheduled date." },
+      ] : [
+        { t:"Abrir el tab", d:"Clic en el tab <b>Day Planner</b> junto al tab Estimate en la navegación del proyecto. Las secciones e items del estimado se cargan automáticamente." },
+        { t:"Pool de items", d:"Todos los items del estimado sin programar aparecen en la columna <b>Pool</b> de la izquierda. Arrastra cualquier item a una columna de día para programarlo." },
+        { t:"Agregar items personalizados", d:"Clic en <b>+ Custom</b> en el encabezado del pool para agregar actividades que no están en el estimado. Completa descripción, etiqueta de sección, horas y monto." },
+        { t:"Asignar fechas", d:"Cada columna de día tiene un <b>selector de fecha</b>. Clic para cambiarlo — la columna conserva sus items al cambiar la fecha." },
+        { t:"Barra de capacidad", d:"Cada columna muestra una <b>barra de capacidad</b> según trabajadores × horas por trabajador. La barra se vuelve roja cuando el día está sobre capacidad." },
+        { t:"Asignar trabajador", d:"Cada tarjeta de item tiene un selector de <b>responsable</b>. Elige un contacto co-worker para asignar ese item. La asignación se guarda con la tarea." },
+        { t:"Auto-asignar", d:"Clic en <b>Auto-asignar</b> para llenar automáticamente las columnas usando empaquetado codicioso (items más pesados primero). Redistribuye manualmente si es necesario." },
+        { t:"Guardar / Actualizar", d:"Clic en <b>Guardar / Actualizar</b> para upsert de todos los items programados. Nuevas asignaciones crean tareas en Workflow con la fecha programada. Mover un item actualiza su fecha. Devolver un item al pool elimina su fecha." },
+      ],
+      tips: EN ? [
+        "🗓 The Day Planner is now a <b>dedicated tab</b> — no need to open it from Estimate. Access it directly alongside Estimate in the project tabs.",
+        "🔗 Items scheduled in Day Planner become <b>Workflow tasks</b> with `source = estimate` or `planner`. They appear in Kanban and Gantt with the scheduled date.",
+        "👤 Assignees set in Day Planner are saved on the Workflow task and visible in the <b>Plan/Gantt</b> view.",
+        "➕ Custom items let you plan <b>any activity</b> beyond the estimate — site prep, inspections, cleanups. They save with a 'planner' source tag.",
+        "🔄 Reopen the planner anytime — all existing day assignments reload automatically.",
+      ] : [
+        "🗓 El Planificador es ahora un <b>tab dedicado</b> — ya no necesitas abrirlo desde Estimate. Accede directamente en la navegación del proyecto.",
+        "🔗 Los items programados se convierten en <b>tareas del Workflow</b> con `source = estimate` o `planner`. Aparecen en Kanban y Gantt con la fecha programada.",
+        "👤 Los responsables asignados en el Planner se guardan en la tarea del Workflow y son visibles en el <b>Plan/Gantt</b>.",
+        "➕ Los items personalizados permiten planear <b>cualquier actividad</b> fuera del estimado — preparación del sitio, inspecciones, limpiezas.",
+        "🔄 Vuelve a abrir el Planificador cuando quieras — las asignaciones de días existentes se recargan automáticamente.",
+      ],
+    },
+    {
       id: "payments", icon: "💳",
       title: EN ? "Payments" : "Pagos",
       desc:  EN ? "Track all money in (from client) and money out (to workers/suppliers) per project."
