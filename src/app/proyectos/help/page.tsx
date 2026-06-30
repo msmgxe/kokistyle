@@ -220,6 +220,147 @@ function MockupNotes({ EN }: { EN: boolean }) {
   );
 }
 
+function MockupPlan({ EN }: { EN: boolean }) {
+  const tasks = EN
+    ? [
+        { name:"Demo walls",        weeks:1, col:"#B0492F", start:0, span:1, status:"Done ✓" },
+        { name:"Rough plumbing",    weeks:2, col:"#395886", start:1, span:2, status:"In Progress" },
+        { name:"Tile installation", weeks:2, col:"#7A6230", start:2, span:2, status:"Pending" },
+        { name:"Painting",          weeks:1, col:"#4F8A63", start:4, span:1, status:"Pending" },
+      ]
+    : [
+        { name:"Demoler paredes",   weeks:1, col:"#B0492F", start:0, span:1, status:"Listo ✓" },
+        { name:"Plomería inicial",  weeks:2, col:"#395886", start:1, span:2, status:"En Proceso" },
+        { name:"Instalación tile",  weeks:2, col:"#7A6230", start:2, span:2, status:"Pendiente" },
+        { name:"Pintura",           weeks:1, col:"#4F8A63", start:4, span:1, status:"Pendiente" },
+      ];
+  const weeks = [1,2,3,4,5];
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between border-b border-[#F0EBE0] bg-[#F7F3EA] px-3 py-2">
+        <div className="flex gap-1">
+          {[EN?"All":"Todo", EN?"To do":"Por hacer", EN?"In progress":"En proceso", EN?"Done":"Listo"].map((f,i) => (
+            <span key={f} className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${i===0 ? "bg-[#16323D] text-white" : "text-[#5C6A6E]"}`}>{f}</span>
+          ))}
+        </div>
+        <div className="flex gap-1">
+          {[EN?"Weeks":"Semanas", EN?"Days":"Días"].map((v,i) => (
+            <span key={v} className={`rounded-lg px-2 py-0.5 text-[8px] font-semibold ${i===0 ? "bg-[#395886] text-white" : "text-[#5C6A6E]"}`}>{v}</span>
+          ))}
+        </div>
+      </div>
+      {/* Gantt grid */}
+      <div className="p-3">
+        {/* Week headers */}
+        <div className="mb-1.5 flex">
+          <div className="w-28 shrink-0" />
+          {weeks.map(w => (
+            <div key={w} className="flex-1 text-center text-[8px] font-bold text-[#5C6A6E]">
+              {EN ? `Wk ${w}` : `Sem ${w}`}
+            </div>
+          ))}
+        </div>
+        {/* Task rows */}
+        {tasks.map(task => (
+          <div key={task.name} className="mb-1.5 flex items-center">
+            <div className="w-28 shrink-0 truncate pr-2 text-[9px] font-semibold text-[#16323D]">{task.name}</div>
+            <div className="relative flex flex-1 gap-0">
+              {weeks.map(w => (
+                <div key={w} className="flex-1 border-l border-[#F0EBE0] px-px py-px first:border-l-0">
+                  {w === task.start + 1 && (
+                    <div
+                      className="h-4 rounded-full px-1.5 flex items-center"
+                      style={{
+                        background: task.col,
+                        width: `calc(${task.span * 100}% - 2px)`,
+                        position: "absolute",
+                        left: `calc(${task.start * (100/5)}% + 1px)`,
+                        opacity: 0.85,
+                      }}
+                    >
+                      <span className="truncate text-[7px] font-bold text-white">{task.name}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MockupDayPlanner({ EN }: { EN: boolean }) {
+  const pool = EN
+    ? [{ label:"Electrical rough-in", sec:"ELECTRICAL", hrs:8, c:"#395886" },
+       { label:"Custom item: cleanup",  sec:"CUSTOM",    hrs:2, c:"#7A6230" }]
+    : [{ label:"Rough eléctrico",      sec:"ELÉCTRICO", hrs:8, c:"#395886" },
+       { label:"Item custom: limpieza", sec:"CUSTOM",   hrs:2, c:"#7A6230" }];
+  const days = EN
+    ? [
+        { label:"Day 1", date:"Jun 30", items:[{ label:"Demo walls", sec:"DEMOLITION", hrs:6, c:"#B0492F" }], cap:8, used:6 },
+        { label:"Day 2", date:"Jul 1",  items:[{ label:"Rough plumbing", sec:"PLUMBING", hrs:8, c:"#395886" }], cap:8, used:8 },
+        { label:"Day 3", date:"Jul 2",  items:[], cap:8, used:0 },
+      ]
+    : [
+        { label:"Día 1", date:"30 jun", items:[{ label:"Demoler paredes", sec:"DEMOLICIÓN", hrs:6, c:"#B0492F" }], cap:8, used:6 },
+        { label:"Día 2", date:"1 jul",  items:[{ label:"Plomería inicial", sec:"PLOMERÍA", hrs:8, c:"#395886" }], cap:8, used:8 },
+        { label:"Día 3", date:"2 jul",  items:[], cap:8, used:0 },
+      ];
+  return (
+    <div className="flex gap-2.5">
+      {/* Pool */}
+      <div className="w-36 shrink-0">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-[8px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN ? "Item Pool" : "Items"}</span>
+          <span className="rounded-full bg-[#16323D] px-1.5 py-0.5 text-[7px] font-bold text-white">+ {EN?"Custom":"Custom"}</span>
+        </div>
+        <div className="space-y-1.5">
+          {pool.map(item => (
+            <div key={item.label} className="rounded-lg border border-[#E6DDCB] bg-white px-2 py-1.5">
+              <div className="mb-0.5 truncate text-[8px] font-semibold text-[#16323D]">{item.label}</div>
+              <div className="flex items-center gap-1">
+                <span className="rounded-full px-1 py-0.5 text-[6px] font-bold text-white" style={{ background: item.c }}>{item.sec}</span>
+                <span className="text-[7px] text-[#5C6A6E]">{item.hrs}h</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Day columns */}
+      <div className="flex flex-1 gap-1.5">
+        {days.map(day => {
+          const pct = Math.round((day.used / day.cap) * 100);
+          return (
+            <div key={day.label} className="flex-1 rounded-xl bg-[#F7F3EA] p-1.5">
+              <div className="mb-1 text-[8px] font-bold text-[#16323D]">{day.label}</div>
+              <div className="mb-1 text-[7px] text-[#5C6A6E]">{day.date}</div>
+              {/* Capacity bar */}
+              <div className="mb-1.5 h-1 w-full overflow-hidden rounded-full bg-[#E6DDCB]">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 100 ? "#B0492F" : "#4F8A63" }} />
+              </div>
+              <div className="mb-1.5 text-[6px] text-[#5C6A6E]">{day.used}/{day.cap}h</div>
+              {day.items.map(item => (
+                <div key={item.label} className="mb-1 rounded-lg border border-[#E6DDCB] bg-white px-1.5 py-1">
+                  <div className="truncate text-[7px] font-semibold text-[#16323D]">{item.label}</div>
+                  <span className="rounded px-0.5 py-px text-[6px] font-bold text-white" style={{ background: item.c }}>{item.sec}</span>
+                </div>
+              ))}
+              {day.items.length === 0 && (
+                <div className="rounded-lg border border-dashed border-[#D7CBB3] py-2 text-center text-[7px] text-[#C4B89A]">
+                  {EN ? "Drop here" : "Soltar aquí"}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function MockupVoice({ EN }: { EN: boolean }) {
   const cmds = EN
     ? ["Create project Miami Kitchen","Add task demo walls","Add payment $4000","Add material tile $800"]
@@ -283,6 +424,37 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
+      id: "plan", icon: "📅",
+      title: EN ? "Plan (Gantt)" : "Plan (Gantt)",
+      desc:  EN ? "Bird's-eye Gantt view of all tasks in the project. See timelines, filter by status, toggle between week and day resolution."
+                : "Vista Gantt aérea de todas las tareas del proyecto. Visualiza líneas de tiempo, filtra por estado y alterna entre semanas y días.",
+      mockup: <MockupPlan EN={EN} />,
+      steps: EN ? [
+        { t:"Open the Plan tab", d:"Inside any project, click the <b>Plan</b> tab. All tasks are displayed as horizontal bars on a timeline, ordered by start date." },
+        { t:"Filter by status", d:"Use the filter pills at the top: <b>All · To do · In progress · Done</b>. Only matching tasks are shown — useful to focus on what's still pending." },
+        { t:"Toggle Weeks / Days", d:"Switch between <b>Weeks</b> and <b>Days</b> resolution using the toggle in the top-right. Days view gives you finer granularity for short-duration tasks." },
+        { t:"Edit a task inline", d:"Click any task bar to open the edit panel. You can update: <b>name, hours, start date, end date, and status</b>. Changes save immediately." },
+        { t:"Reorder tasks", d:"Drag any task row up or down to reorder the list — useful to visually group related work." },
+        { t:"Scheduled dates from Day Planner", d:"Tasks generated via the <b>Day Planner</b> carry a <b>scheduled date</b>. The Gantt respects this date, so the bar is placed on the correct day automatically." },
+      ] : [
+        { t:"Abrir la pestaña Plan", d:"Dentro de cualquier proyecto, clic en la pestaña <b>Plan</b>. Todas las tareas se muestran como barras horizontales en una línea de tiempo ordenada por fecha de inicio." },
+        { t:"Filtrar por estado", d:"Usa los botones de filtro arriba: <b>Todo · Por hacer · En proceso · Listo</b>. Solo se muestran las tareas que coinciden — útil para enfocarte en lo pendiente." },
+        { t:"Alternar Semanas / Días", d:"Cambia entre resolución de <b>Semanas</b> y <b>Días</b> con el toggle arriba a la derecha. La vista Días da mayor granularidad para tareas cortas." },
+        { t:"Editar una tarea inline", d:"Clic en cualquier barra de tarea para abrir el panel de edición. Puedes actualizar: <b>nombre, horas, fecha de inicio, fecha fin y estado</b>. Los cambios se guardan al instante." },
+        { t:"Reordenar tareas", d:"Arrastra cualquier fila de tarea hacia arriba o abajo para reordenar la lista — útil para agrupar visualmente el trabajo relacionado." },
+        { t:"Fechas del Planificador por Día", d:"Las tareas generadas por el <b>Planificador por Día</b> llevan una <b>fecha programada</b>. El Gantt respeta esta fecha y posiciona la barra en el día correcto automáticamente." },
+      ],
+      tips: EN ? [
+        "💡 The Plan tab reads the same <b>scheduled_date</b> field set by the Day Planner — so scheduling in Estimate directly drives the Gantt.",
+        "💡 Use the <b>Days</b> toggle when your project spans less than 2 weeks — individual days become visible columns for precise scheduling.",
+        "💡 Changing a task's <b>start/end date</b> in Plan also updates the bar width. Tasks with no dates appear at the top without a bar.",
+      ] : [
+        "💡 La pestaña Plan lee el mismo campo <b>scheduled_date</b> asignado por el Planificador por Día — programar en Estimate impulsa el Gantt directamente.",
+        "💡 Usa el toggle de <b>Días</b> cuando tu proyecto dura menos de 2 semanas — los días individuales se convierten en columnas visibles para programación precisa.",
+        "💡 Cambiar la <b>fecha de inicio/fin</b> de una tarea en Plan también actualiza el ancho de la barra. Las tareas sin fecha aparecen al inicio sin barra.",
+      ],
+    },
+    {
       id: "workflow", icon: "🗂",
       title: EN ? "Workflow" : "Flujo de Trabajo",
       desc:  EN ? "Manage project tasks with a Kanban board. Drag cards between columns or switch to Gantt timeline view."
@@ -291,6 +463,7 @@ function useFeatures(EN: boolean) {
       steps: EN ? [
         { t:"Add a task", d:"Click <b>+ Add Task</b> under any column. Fill in name, estimated <b>hours</b>, duration in weeks, and optionally assign a contact." },
         { t:"Drag to change status", d:"Drag cards between <b>Pending → In Progress → Done</b>. On mobile, long-press to start dragging." },
+        { t:"Read the metrics strip", d:"At the top of the Workflow board, <b>4 KPI cards</b> summarise the project at a glance: <b>Total tasks · From estimate · Completed · Progress %</b>. The Progress card shows a colour-coded progress bar." },
         { t:"Switch to Gantt view", d:"Click the <b>Gantt</b> button above the board to see a horizontal timeline of all tasks by week." },
         { t:"Import from Estimate", d:"In the <b>Estimate</b> tab, click <b>Generate Workflow Tasks</b> to open the Day Planner. Each scheduled estimate item becomes its own Kanban task, with date, hours and Estimate traceability." },
         { t:"Filter generated work", d:"Use the Workflow filters to view tasks by <b>assignee</b> or <b>scheduled date</b>. This makes it easy to run the crew day by day." },
@@ -298,15 +471,18 @@ function useFeatures(EN: boolean) {
       ] : [
         { t:"Agregar una tarea", d:"Clic en <b>+ Agregar Tarea</b> en cualquier columna. Ingresa nombre, <b>horas</b> estimadas, semanas y asigna un contacto (opcional)." },
         { t:"Arrastrar para cambiar estado", d:"Arrastra tarjetas entre <b>Pendiente → En Proceso → Listo</b>. En móvil, mantén presionado para arrastrar." },
+        { t:"Leer el panel de métricas", d:"Al inicio del tablero Workflow, <b>4 tarjetas KPI</b> resumen el proyecto de un vistazo: <b>Total tareas · Del estimado · Completadas · Progreso %</b>. La tarjeta de Progreso muestra una barra de avance con código de color." },
         { t:"Cambiar a vista Gantt", d:"Clic en el botón <b>Gantt</b> encima del tablero para ver una línea de tiempo horizontal por semana." },
         { t:"Importar desde Estimado", d:"En la pestaña <b>Estimado</b>, clic en <b>Generar Tareas</b> para abrir el Planificador por Día. Cada item programado del estimado se convierte en su propia tarea Kanban, con fecha, horas y trazabilidad al Estimate." },
         { t:"Filtrar trabajo generado", d:"Usa los filtros del Workflow para ver tareas por <b>responsable</b> o por <b>fecha programada</b>. Así puedes gestionar la cuadrilla día por día." },
         { t:"Reprogramar tareas", d:"Toca cualquier tarea y cambia <b>Fecha programada</b>. La fecha queda guardada en la tarea y se refleja en la vista Plan/Gantt." },
       ],
       tips: EN ? [
+        "📊 The <b>metrics strip</b> at the top shows: Total tasks, how many came <b>From estimate</b>, how many are <b>Completed</b>, and overall <b>Progress %</b> with a progress bar — updated in real time as you move cards.",
         "💡 The <b>Day Planner</b> lets you drag estimate items into day columns (Day 1, Day 2…) with hours capacity bars. Use <b>Auto-assign</b> to fill days automatically. Generated tasks are skipped if they already exist, preventing duplicates.",
         "🎙 Say <b>\"Add task [description]\"</b> to Katy to add it to the current project.",
       ] : [
+        "📊 El <b>panel de métricas</b> arriba muestra: Total de tareas, cuántas vienen <b>Del estimado</b>, cuántas están <b>Completadas</b> y el <b>% de Progreso</b> con barra de avance — se actualiza en tiempo real al mover tarjetas.",
         "💡 El <b>Planificador por Día</b> permite arrastrar items del estimado a columnas de días con barras de capacidad. Usa <b>Auto-asignar</b> para llenar automáticamente. Si una tarea ya existe, se omite para evitar duplicados.",
         "🎙 Di <b>\"Agregar tarea [descripción]\"</b> a Katy para añadirla al proyecto actual.",
       ],
@@ -316,7 +492,15 @@ function useFeatures(EN: boolean) {
       title: EN ? "Estimate" : "Estimado",
       desc:  EN ? "Create professional client proposals with sections, line items, discounts, payment schedules, PDF export and WhatsApp delivery."
                 : "Crea propuestas profesionales con secciones, items, descuentos, calendario de pagos, exportación PDF y envío por WhatsApp.",
-      mockup: <MockupEstimate EN={EN} />,
+      mockup: (
+        <div className="space-y-4">
+          <MockupEstimate EN={EN} />
+          <div className="text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E] pt-1">
+            {EN ? "Day Planner — Schedule items into days" : "Planificador por Día — Programa items por día"}
+          </div>
+          <MockupDayPlanner EN={EN} />
+        </div>
+      ),
       steps: EN ? [
         { t:"Create the estimate", d:"Go to the <b>Estimate</b> tab inside a project and click <b>Create Estimate</b>. Customer info is pre-filled from the project data." },
         { t:"Add sections from catalog", d:"Click <b>+ Add Section</b> and choose from the catalog: DEMOLITION, PLUMBING, STRUCTURE, ELECTRICAL, TILE, PAINTING… or create a custom section." },
@@ -325,6 +509,7 @@ function useFeatures(EN: boolean) {
         { t:"Set discount & payment schedule", d:"In the <b>Totals card</b>, enter a discount % (applies only to labor sections with <b>Labor %</b> checked). The payment schedule has 3 deposits (50/25/25% default) — fully editable." },
         { t:"Download the PDF", d:"Click <b>Download PDF</b>. A professionally designed Luxaris Design proposal downloads instantly — centered header, full project name bar, 2-column item layout per section, subtotals, payment schedule and contractor details." },
         { t:"Send via WhatsApp", d:"In the <b>WhatsApp row</b> below the action buttons, select a country code (🇺🇸 +1, 🇲🇽 +52, 🇨🇴 +57…), enter the number and click <b>Send</b>. On <b>mobile</b>: the PDF is attached and shared directly via WhatsApp. On <b>desktop</b>: the PDF downloads and WhatsApp Web opens with the number pre-selected — attach the file from your downloads folder." },
+        { t:"Schedule with Day Planner", d:"Click <b>Generate Workflow Tasks</b> to open the Day Planner. Drag estimate items into day columns — assignments are <b>saved to Supabase automatically</b>. Reopen anytime to see existing assignments and adjust. Use the <b>+ Custom</b> button to add activities not in the estimate to the pool. Click <b>Save / Update</b> to upsert: new assignments create Workflow tasks, moved items update their dates, items returned to the pool are unscheduled." },
       ] : [
         { t:"Crear el estimado", d:"Ve a la pestaña <b>Estimado</b> dentro del proyecto y clic en <b>Crear Estimado</b>. Los datos del cliente se llenan solos desde el proyecto." },
         { t:"Agregar secciones del catálogo", d:"Clic en <b>+ Agregar Sección</b> y elige: DEMOLICIÓN, PLOMERÍA, ESTRUCTURA, ELÉCTRICO, TILE, PINTURA… o crea una sección personalizada." },
@@ -333,16 +518,19 @@ function useFeatures(EN: boolean) {
         { t:"Descuento y calendario de pagos", d:"En la <b>tarjeta de Totales</b>, ingresa un % de descuento (aplica solo a secciones con <b>M. obra %</b> activado). El calendario tiene 3 depósitos (50/25/25% por defecto) — totalmente editable." },
         { t:"Descargar PDF", d:"Clic en <b>Descargar PDF</b>. La propuesta Luxaris Design se descarga al instante — cabecera centrada, barra con el nombre completo del proyecto, items en 2 columnas por sección, subtotales, calendario de pagos y datos del contratista." },
         { t:"Enviar por WhatsApp", d:"En la <b>fila de WhatsApp</b> debajo de los botones de acción, selecciona el código de país (🇺🇸 +1, 🇲🇽 +52, 🇨🇴 +57…), ingresa el número y clic en <b>Enviar</b>. En <b>móvil</b>: el PDF se adjunta y se comparte directamente por WhatsApp. En <b>desktop</b>: el PDF se descarga y WhatsApp Web abre con el número ya seleccionado — adjunta el archivo desde tu carpeta de descargas." },
+        { t:"Programar con el Planificador por Día", d:"Clic en <b>Generar Tareas</b> para abrir el Planificador. Arrastra items a columnas de días — las asignaciones se <b>guardan en Supabase automáticamente</b>. Vuelve a abrirlo cuando quieras para ver las asignaciones existentes y ajustarlas. Usa el botón <b>+ Custom</b> para agregar actividades que no están en el estimado al pool. Clic en <b>Guardar / Actualizar</b> para upsert: nuevas asignaciones crean tareas en Workflow, items movidos actualizan sus fechas, items devueltos al pool se desvinculan." },
       ],
       tips: EN ? [
         "💡 Each section has <b>two checkboxes</b>: <b>Mat. incl.</b> flags that the price includes material cost. <b>Labor %</b> controls whether the section feeds the labor discount — uncheck it for pure material sections.",
         "📱 WhatsApp Send works natively on mobile — the OS share sheet appears and WhatsApp attaches the PDF automatically. On desktop, download the PDF first, then attach it in WhatsApp Web.",
-        "💡 After building the estimate, click <b>Generate Workflow Tasks</b> to open the Day Planner and schedule each item with dates. Each item becomes an editable Workflow task.",
+        "🗓 The <b>Day Planner persists</b> — reopen it at any time and your day assignments are still there. Use <b>Save / Update</b> after each rescheduling session so dates stay in sync with Workflow.",
+        "➕ Add <b>custom items</b> to the Day Planner pool (activities not in the estimate) using the <b>+ Custom</b> button. They become regular Workflow tasks with a custom label.",
         "🔄 Change status: <b>Draft → Sent → Approved → Rejected</b> from the dropdown at the top of the tab.",
       ] : [
         "💡 Cada sección tiene <b>dos checkboxes</b>: <b>Mat. incl.</b> indica que el precio ya incluye materiales. <b>M. obra %</b> controla si la sección entra al descuento de mano de obra — desactívalo en secciones de solo materiales.",
         "📱 El envío por WhatsApp funciona nativamente en móvil — el menú de compartir del sistema adjunta el PDF automáticamente. En desktop, descarga el PDF primero y luego adjúntalo en WhatsApp Web.",
-        "💡 Después de crear el estimado, clic en <b>Generar Tareas</b> para abrir el Planificador por Día y programar cada item con fechas. Cada item se convierte en una tarea editable del Workflow.",
+        "🗓 El <b>Planificador por Día persiste</b> — ábrelo cuando quieras y tus asignaciones siguen ahí. Usa <b>Guardar / Actualizar</b> después de cada sesión de reprogramación para mantener las fechas en sincronía con el Workflow.",
+        "➕ Agrega <b>items personalizados</b> al pool del Planificador (actividades que no están en el estimado) con el botón <b>+ Custom</b>. Se convierten en tareas normales del Workflow con etiqueta personalizada.",
         "🔄 Cambia estado: <b>Borrador → Enviado → Aprobado → Rechazado</b> desde el selector en la parte superior.",
       ],
     },
@@ -489,7 +677,7 @@ export default function HelpPage() {
         <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
           {EN ? "Features" : "Funcionalidades"}
         </div>
-        {features.slice(0, 7).map(f => (
+        {features.slice(0, 8).map(f => (
           <button
             key={f.id}
             onClick={() => setActiveId(f.id)}
