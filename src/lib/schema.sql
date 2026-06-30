@@ -137,8 +137,11 @@ CREATE TABLE IF NOT EXISTS expenses (
   method TEXT NOT NULL CHECK (method IN ('Efectivo', 'Transferencia', 'Zelle', 'Cheque', 'Tarjeta')),
   payee_name TEXT NOT NULL,
   concept TEXT NOT NULL,
+  material_id UUID REFERENCES materials(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+-- Migration: run if upgrading from older schema
+-- ALTER TABLE expenses ADD COLUMN IF NOT EXISTS material_id UUID REFERENCES materials(id) ON DELETE SET NULL;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 10. Estimate module (Luxaris Design — Card Accordion)

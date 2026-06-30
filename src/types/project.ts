@@ -85,6 +85,7 @@ export interface Expense {
   method: "Efectivo" | "Transferencia" | "Zelle" | "Cheque" | "Tarjeta";
   payee_name: string; // "Equipo propio" o el nombre del especialista
   concept: string;
+  material_id?: string | null;
   created_at?: string;
 }
 

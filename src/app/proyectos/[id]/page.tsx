@@ -732,6 +732,31 @@ function MaterialesTab({
 
   const activeMat = activeId ? items.find((m) => m.id === activeId) : null;
 
+  const handleToggleBought = async (m: Material) => {
+    const newBought = !m.bought;
+    if (newBought) {
+      const today = new Date().toISOString().split("T")[0];
+      const { error } = await supabase.from("expenses").insert({
+        project_id: m.project_id,
+        amount: m.cost,
+        date: today,
+        method: "Efectivo",
+        payee_name: m.supplier || (EN ? "Material Purchase" : "Compra"),
+        concept: m.name,
+        material_id: m.id,
+      });
+      if (error) { toast("Error: " + error.message); return; }
+      await supabase.from("materials").update({ bought: true }).eq("id", m.id);
+      onRefresh();
+      toast(EN ? "Purchased ✓ — expense recorded" : "Comprado ✓ — egreso registrado");
+    } else {
+      await supabase.from("expenses").delete().eq("material_id", m.id);
+      await supabase.from("materials").update({ bought: false }).eq("id", m.id);
+      onRefresh();
+      toast(EN ? "Unmarked — expense removed" : "Desmarcado — egreso eliminado");
+    }
+  };
+
   const duplicateMaterial = async (m: Material) => {
     const { error } = await supabase.from("materials").insert({
       project_id: m.project_id, name: m.name, supplier: m.supplier, cost: m.cost,
@@ -927,7 +952,10 @@ function MaterialesTab({
                       </div>
                     )}
                     <div className="flex flex-1 items-start gap-3 py-3 pr-3">
-                      <span className={`mt-0.5 grid size-6 flex-none place-items-center rounded-lg border-2 ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3]"}`}>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); handleToggleBought(m); }}
+                        className={`mt-0.5 grid size-6 flex-none cursor-pointer place-items-center rounded-lg border-2 transition ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3] hover:border-[#4F8A63]"}`}
+                      >
                         {m.bought && <span className="text-[10px] font-bold text-white">✓</span>}
                       </span>
                       <span className="flex-1 min-w-0">
@@ -1368,10 +1396,20 @@ function PagosTab({
   onRefresh: () => void; toast: (m: string) => void;
   onSubTabChange?: (sub: PaySubTab) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const EN = language === "en";
   const tp = t.panel;
   const [subTab, setSubTab] = useState<PaySubTab>("ingresos");
   const changeSubTab = (t: PaySubTab) => { setSubTab(t); onSubTabChange?.(t); };
+
+  const unmarkMaterial = async (x: Expense) => {
+    if (!x.material_id) return;
+    await supabase.from("materials").update({ bought: false }).eq("id", x.material_id);
+    const { error } = await supabase.from("expenses").delete().eq("id", x.id);
+    if (error) { toast("Error: " + error.message); return; }
+    onRefresh();
+    toast(EN ? "Material unmarked — expense removed" : "Material desmarcado — egreso eliminado");
+  };
   const [payItems, setPayItems]     = useState<Payment[]>([...payments].reverse());
   const [expItems, setExpItems]     = useState<Expense[]>([...expenses].reverse());
   const [editor, setEditor]         = useState<EditorOpts | null>(null);
@@ -1451,6 +1489,9 @@ function PagosTab({
       onRefresh(); toast(tp.payments.expenseUpdated);
     },
     onDelete: async () => {
+      if (x.material_id) {
+        await supabase.from("materials").update({ bought: false }).eq("id", x.material_id);
+      }
       const { error } = await supabase.from("expenses").delete().eq("id", x.id);
       if (error) { toast(tp.common.errorDeleting + error.message); return; }
       onRefresh(); toast(tp.payments.expenseDeleted);
@@ -1562,18 +1603,33 @@ function PagosTab({
                     <div
                       {...listeners} {...attributes}
                       onClick={() => openExpEdit(x)}
-                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}
+                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border transition ${x.material_id ? "border-[#D5DEEF] bg-[#F4F8FE]" : "border-[#E6DDCB] bg-white"} ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}
                     >
                       <DragHandle />
                       <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
-                        <div>
-                          <div className="flex items-center gap-2 text-sm font-semibold text-[#16323D]">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-[#16323D]">
+                            {x.material_id && (
+                              <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[#395886]">
+                                {EN ? "FROM MAT" : "DEL MAT"}
+                              </span>
+                            )}
                             {x.payee_name}
                             <span className="rounded bg-[#ECE3D1] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E]">{x.method}</span>
                           </div>
                           <div className="text-[11px] text-[#5C6A6E]">{x.concept} · {dateFmt(x.date)}</div>
                         </div>
-                        <span className="font-mono text-base font-semibold text-[#B0492F]">−{money(x.amount)}</span>
+                        <div className="flex items-center gap-2">
+                          {x.material_id && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); unmarkMaterial(x); }}
+                              className="rounded-lg border border-[#D5DEEF] bg-white px-2 py-1 text-[10px] font-bold text-[#395886] transition hover:bg-[#EDF3FB]"
+                            >
+                              ↩ {EN ? "Unmark" : "Desmarcar"}
+                            </button>
+                          )}
+                          <span className="font-mono text-base font-semibold text-[#B0492F]">−{money(x.amount)}</span>
+                        </div>
                       </div>
                     </div>
                   )}
