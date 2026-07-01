@@ -396,7 +396,7 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 - **Modo voz**: Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) — disponible en Chrome/Safari
 - **Modo texto**: panel de texto que se abre al tocar ⌨ — funciona en todos los navegadores sin permisos
 - Síntesis: `SpeechSynthesis` (voz en español preferida)
-- Modelo: `"anthropic/claude-sonnet-4.6"` — formato con **puntos** en la versión (requerido por Vercel AI Gateway)
+- Modelo: `anthropic("claude-sonnet-4-6")` via `@ai-sdk/anthropic` — lee `ANTHROPIC_API_KEY` del env automáticamente (sin Vercel AI Gateway)
 - Intención: POST `/api/voice` → Claude (multi-turn) → JSON `{ action, fields }` → fallback `localDetect()`
 - Contexto: `VoiceContext` → `setMeta({ projectId, projectTitle, contacts, projects })` desde las páginas de proyecto
   - `projects` — lista de todos los proyectos activos (cargada en `page.tsx` del dashboard) para resolver referencias como "el de Brickell"
@@ -415,6 +415,18 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 | `create_payment` | "Add payment $4000" | "Agregar pago $4000" |
 | `create_expense` | "Add expense $500 Jorge" | "Agregar egreso $500 Jorge" |
 | `create_contact` | "Add contact Jorge plumber" | "Agregar contacto Jorge plomero" |
+
+### Flujo conversacional `create_contact`
+
+Katy guía la creación de contacto en pasos, preguntando uno a la vez:
+
+1. **Tipo** → `"¿Co-worker, cliente o amistad?"` — mapea a `"coworker" | "customer" | "friend"`
+2. **Nombre** → `"¿Cómo se llama?"`
+3. **Teléfono** → `"¿Número de teléfono?"`
+4. **Especialidad** *(solo si coworker)* → `"¿Especialidad?"` — lista: Plumbing, Painting, Finisher, Electrical, Marble, Flooring, Bathroom, Handyman, Helper (se normaliza a EN en la DB)
+5. **Tarifa** *(solo si coworker, opcional)* → `"¿Tarifa? (ej: 25/hora)"` — el usuario puede decir "omitir"
+
+El `saveAction` en `VoiceFAB.tsx` normaliza el tipo hablado (ej: "cliente", "amigo") al enum de la DB. La especialidad siempre se guarda en inglés (`"Plumbing"` etc.) ya que `specialtyDisplay()` indexa por el valor en inglés.
 
 ### Tabla `voice_actions` (auditoría)
 
@@ -453,6 +465,7 @@ Ya incluida en `src/lib/schema.sql`. Ejecutar en Supabase SQL Editor si la tabla
 - Capacidad: `workersPerDay × hoursPerWorker` por día → barra de progreso visual
 - Auto-assign: **phase-ordered + even-spread** — ordena por fase constructiva (Materiales → Demolición → Estructura → Plomería → Eléctrico → Tile/Piso → Handyman → Pintura → Otro), distribuye equitativamente entre todos los días configurados (`targetPerDay = ceil(n/numDays)`), y avanza de día en los límites de fase
 - Asignación de co-worker por item: selector `<select>` con `onPointerDown={e => e.stopPropagation()}` para no disparar el drag
+- **Quick-assign por fecha**: cada tarjeta del pool tiene un botón `📅 Agregar a día...` que llama a `inputRef.current?.showPicker()` abriendo el calendario nativo. Al elegir fecha se busca coincidencia exacta en `dayDates`; si no hay, se calcula el día más cercano por ms. Muestra `✓ Día N · fecha` en verde cuando ya está asignado.
 - **Custom items**: botón "+ Custom" en el pool → mini-formulario (descripción, sección tag, horas, monto) → `source = 'planner'`, `source_key = 'planner-custom:<uuid>'`
 - Output al guardar: `INSERT`/`UPDATE` en `tasks` con `scheduled_date`, `source_key`, `assigned_contact_id`, vínculo al Estimate para upsert sin duplicados
 
