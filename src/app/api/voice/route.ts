@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 
 const TODAY = () => new Date().toISOString().split("T")[0];
 
@@ -123,6 +122,7 @@ Con toda la info:      {"type":"action","action":"nombre_accion","data":{...camp
 };
 
 export async function POST(req: NextRequest) {
+  let language: "en" | "es" = "es";
   try {
     const body = await req.json() as {
       messages: ApiMsg[];
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
     const context      = body.context      ?? "dashboard";
     const contacts     = body.contacts     ?? [];
     const projectTitle = body.projectTitle ?? "";
-    const language     = body.language     ?? "es";
+    language           = body.language     ?? "es";
     const projects     = body.projects     ?? [];
 
     if (!messages.length) {
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { text } = await generateText({
-      model: anthropic("claude-sonnet-4-6"),
+      model: "anthropic/claude-haiku-4.5",
       system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects),
       messages: messages.map(m => ({
         role:    m.role as "user" | "assistant",
@@ -160,7 +160,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed);
 
   } catch (err) {
-    console.error("[/api/voice]", err instanceof Error ? err.message : err);
-    return NextResponse.json({ type: "question", text: "Error de conexión. Intenta de nuevo." });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[/api/voice]", msg);
+    const isAuth  = /auth|api.?key|401|x-api-key/i.test(msg);
+    const isModel = /model|404|not.?found/i.test(msg);
+    const userMsg = isAuth
+      ? (language === "en" ? "Invalid API key. Contact support." : "Clave API inválida. Contacta al administrador.")
+      : isModel
+      ? (language === "en" ? "AI model unavailable." : "Modelo no disponible.")
+      : (language === "en" ? "Connection error. Try again." : "Error de conexión. Intenta de nuevo.");
+    return NextResponse.json({ type: "question", text: userMsg });
   }
 }
