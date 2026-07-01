@@ -558,49 +558,56 @@ function buildEstimatePdf(
     py += 11;
   }
 
-  // Discount rows (right column, top)
-  let ry = totalsStartY;
+  // Grand total bar height — anchored to bottom of payment schedule box
+  const gtBarH = 14;
+  const gtY    = totalsStartY + schedBoxH - gtBarH;
+
+  // Discount rows (right column, top-aligned)
   if (discountAmt > 0) {
+    const discBoxH = 11;
     doc.setFillColor(247, 243, 234);
     doc.setDrawColor(230, 221, 203);
     doc.setLineWidth(0.2);
-    doc.roundedRect(rightX, ry, rightBlockW, 9, 1.5, 1.5, "FD");
+    doc.roundedRect(rightX, totalsStartY, rightBlockW, discBoxH, 1.5, 1.5, "FD");
+
+    // Labor subtotal row
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(92, 106, 110);
-    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", rightX + 4, ry + 3.5);
+    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", rightX + 4, totalsStartY + 4);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(22, 50, 61);
-    doc.text(money(laborTotal), rightX + rightBlockW - 3, ry + 3.5, { align: "right" });
-    ry += 4.5;
+    doc.text(money(laborTotal), rightX + rightBlockW - 3, totalsStartY + 4, { align: "right" });
+
+    // Internal divider
     doc.setDrawColor(220, 212, 200);
     doc.setLineWidth(0.15);
-    doc.line(rightX + 2, ry, rightX + rightBlockW - 2, ry);
+    doc.line(rightX + 2, totalsStartY + 5.5, rightX + rightBlockW - 2, totalsStartY + 5.5);
+
+    // Discount row
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(92, 106, 110);
     doc.text(
       `${estimate.discount_label || "Discount"} (−${estimate.discount_pct}%)`,
-      rightX + 4, ry + 4.5,
+      rightX + 4, totalsStartY + 9,
     );
     doc.setFont("helvetica", "bold");
     doc.setTextColor(79, 138, 99);
-    doc.text(`−${money(discountAmt)}`, rightX + rightBlockW - 3, ry + 4.5, { align: "right" });
-    ry += 9;
+    doc.text(`−${money(discountAmt)}`, rightX + rightBlockW - 3, totalsStartY + 9, { align: "right" });
   }
 
-  // Grand total bar (right column)
+  // Grand total bar — bottom-aligned with payment schedule rectangle
   doc.setFillColor(22, 50, 61);
-  doc.roundedRect(rightX, ry, rightBlockW, 14, 2, 2, "F");
+  doc.roundedRect(rightX, gtY, rightBlockW, gtBarH, 2, 2, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(255, 255, 255);
-  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", rightX + 5, ry + 5.5);
-  doc.setFontSize(14);
-  doc.text(money(grandTotal), rightX + rightBlockW - 4, ry + 10.5, { align: "right" });
-  ry += 16;
+  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", rightX + 5, gtY + 5);
+  doc.setFontSize(13);
+  doc.text(money(grandTotal), rightX + rightBlockW - 4, gtY + 10.5, { align: "right" });
 
-  y = Math.max(ry, totalsStartY + schedBoxH + 2);
+  y = totalsStartY + schedBoxH + 2;
 
   // ── Footer ─────────────────────────────────────────────────────────────────
   y += 5;
