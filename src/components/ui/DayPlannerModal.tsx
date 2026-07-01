@@ -132,12 +132,14 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
 // ─── Draggable card ───────────────────────────────────────────────────────────
 
 function ItemCard({
-  item, overlay, contacts, onAssign,
+  item, overlay, contacts, onAssign, days, onJumpToDay,
 }: {
   item: PlanItem;
   overlay?: boolean;
   contacts?: PlanContact[];
   onAssign?: (itemId: string, contactId: string | null) => void;
+  days?: { index: number; label: string }[];
+  onJumpToDay?: (itemId: string, dayIndex: number | null) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id });
   const style = !overlay && transform
@@ -145,6 +147,7 @@ function ItemCard({
     : undefined;
 
   const assignedName = contacts?.find(c => c.id === item.assignedContactId)?.name;
+  const currentDayLabel = days?.find(d => d.index === item.dayIndex)?.label;
 
   return (
     <div
@@ -176,8 +179,34 @@ function ItemCard({
           </>
         )}
       </div>
-      {!overlay && contacts && contacts.length > 0 && onAssign && (
+
+      {/* Day picker — shown on pool cards and day-column cards */}
+      {!overlay && days && days.length > 0 && onJumpToDay && (
         <div className="relative mt-1.5 border-t border-[#F0EBE0] pt-1.5">
+          <span className={`pointer-events-none block truncate text-[9px] font-semibold ${item.dayIndex !== null ? "text-[#4F8A63]" : "text-[#B0492F]"}`}>
+            {item.dayIndex !== null
+              ? `✓ ${currentDayLabel}`
+              : "→ Asignar a día..."}
+          </span>
+          <select
+            value={item.dayIndex !== null ? String(item.dayIndex) : ""}
+            onPointerDown={e => e.stopPropagation()}
+            onChange={e => {
+              const val = e.target.value;
+              onJumpToDay(item.id, val === "" ? null : Number(val));
+            }}
+            className="absolute inset-0 cursor-pointer opacity-0"
+          >
+            <option value="">— Pool —</option>
+            {days.map(d => (
+              <option key={d.index} value={String(d.index)}>{d.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!overlay && contacts && contacts.length > 0 && onAssign && (
+        <div className="relative mt-1 border-t border-[#F0EBE0] pt-1.5">
           <span className="pointer-events-none block truncate text-[9px] font-semibold text-[#395886]">
             {assignedName ?? "Own team"}
           </span>
@@ -201,13 +230,15 @@ function ItemCard({
 // ─── Pool ─────────────────────────────────────────────────────────────────────
 
 function ItemPool({
-  items, EN, onAddCustom, contacts, onAssign,
+  items, EN, onAddCustom, contacts, onAssign, days, onJumpToDay,
 }: {
   items: PlanItem[];
   EN: boolean;
   onAddCustom: () => void;
   contacts: PlanContact[];
   onAssign: (itemId: string, contactId: string | null) => void;
+  days: { index: number; label: string }[];
+  onJumpToDay: (itemId: string, dayIndex: number | null) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "pool" });
   return (
@@ -221,7 +252,16 @@ function ItemPool({
           ✓ {EN ? "All items scheduled" : "Todos los items asignados"}
         </div>
       ) : (
-        items.map(i => <ItemCard key={i.id} item={i} contacts={contacts} onAssign={onAssign} />)
+        items.map(i => (
+          <ItemCard
+            key={i.id}
+            item={i}
+            contacts={contacts}
+            onAssign={onAssign}
+            days={days}
+            onJumpToDay={onJumpToDay}
+          />
+        ))
       )}
       <button
         onClick={onAddCustom}
@@ -649,6 +689,19 @@ export default function DayPlannerModal({
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, assignedContactId: contactId } : i));
   }, []);
 
+  // ── Jump item to specific day (or back to pool) from the card selector ────────
+  const handleJumpToDay = useCallback((itemId: string, dayIndex: number | null) => {
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, dayIndex } : i));
+  }, []);
+
+  // ── Day labels for the card selector ─────────────────────────────────────────
+  const dayLabels = useMemo(() =>
+    Array.from({ length: numDays }, (_, d) => ({
+      index: d,
+      label: `Día ${d + 1}${dayDates[d] ? " · " + formatDate(dayDates[d], EN) : ""}`,
+    })),
+  [numDays, dayDates, EN]);
+
   // ── Save / Update ────────────────────────────────────────────────────────────
   const save = async () => {
     setSaving(true);
@@ -833,6 +886,8 @@ export default function DayPlannerModal({
                   onAddCustom={() => setShowCustomForm(true)}
                   contacts={contacts}
                   onAssign={handleAssign}
+                  days={dayLabels}
+                  onJumpToDay={handleJumpToDay}
                 />
               </div>
             </div>
