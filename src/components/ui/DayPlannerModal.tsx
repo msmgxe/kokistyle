@@ -576,25 +576,46 @@ export default function DayPlannerModal({
     setItems(prev => prev.map(i => i.id === (active.id as string) ? { ...i, dayIndex: newDay } : i));
   };
 
-  // ── Greedy bin-packing auto-assign ──────────────────────────────────────────
+  // ── Phase-ordered + even-spread auto-assign ─────────────────────────────────
   const autoAssign = () => {
     setItems(prev => {
-      const sorted = [...prev].sort((a, b) => b.hours - a.hours);
+      const phaseOf = (item: PlanItem): number => {
+        const tag = (item.sectionTag || "").toUpperCase();
+        const desc = (item.description || "").toUpperCase();
+        if (tag.includes("MATERIAL") || desc.startsWith("COMPRA") || desc.startsWith("BUY") || desc.startsWith("PURCHASE")) return 0;
+        if (tag.includes("DEMOLIT") || tag.includes("DEMOLICI")) return 1;
+        if (tag.includes("STRUCT") || tag.includes("ESTRUCTURA")) return 2;
+        if (tag.includes("PLUMB") || tag.includes("PLOMER")) return 3;
+        if (tag.includes("ELECTR")) return 4;
+        if (tag.includes("TILE") || tag.includes("INSTALACI") || tag.includes("FLOOR") || tag.includes("PISO")) return 5;
+        if (tag.includes("HANDY") || tag.includes("TRABAJO")) return 6;
+        if (tag.includes("PAINT") || tag.includes("PINTURA")) return 7;
+        return 8;
+      };
+      const sorted = [...prev].sort((a, b) => {
+        const pa = phaseOf(a), pb = phaseOf(b);
+        return pa !== pb ? pa - pb : b.hours - a.hours;
+      });
+      const targetPerDay = Math.max(1, Math.ceil(sorted.length / numDays));
+      const counts = Array<number>(numDays).fill(0);
       const usage = Array<number>(numDays).fill(0);
+      let currentDay = 0;
+      let lastPhase = -1;
       return sorted.map(item => {
-        let assigned: number | null = null;
-        for (let d = 0; d < numDays; d++) {
-          if (usage[d] + item.hours <= dayCapacity) {
-            usage[d] += item.hours;
-            assigned = d;
-            break;
-          }
+        const phase = phaseOf(item);
+        if (phase !== lastPhase && lastPhase !== -1 && counts[currentDay] > 0) {
+          if (currentDay < numDays - 1) currentDay++;
         }
-        if (assigned === null) {
-          assigned = numDays - 1;
-          usage[assigned] += item.hours;
+        lastPhase = phase;
+        while (
+          currentDay < numDays - 1 &&
+          (counts[currentDay] >= targetPerDay || usage[currentDay] + item.hours > dayCapacity)
+        ) {
+          currentDay++;
         }
-        return { ...item, dayIndex: assigned };
+        counts[currentDay]++;
+        usage[currentDay] += item.hours;
+        return { ...item, dayIndex: currentDay };
       });
     });
   };
