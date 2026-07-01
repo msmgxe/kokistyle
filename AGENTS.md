@@ -145,6 +145,7 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `app_users` | Colaboradores con permisos granulares |
 | `user_project_access` | Proyectos asignados por colaborador |
 | `superadmin_config` | PIN + email del superadmin (singleton) |
+| `voice_actions` | Auditoría de todos los comandos del asistente Katy |
 
 ### Tablas del módulo Estimate
 
@@ -237,7 +238,7 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
   - Bloque PROPOSAL (crema) en 2 columnas: cliente izquierda / contratista+fechas derecha
   - Header de tabla oscuro
   - Por sección: borde izquierdo de color (teal=labor, rojo=material) + items en 2 columnas (pares)
-  - Totales izquierda (descuento + grand total) · Payment schedule derecha
+  - **Payment Schedule a la izquierda** · **Descuento + Grand Total a la derecha** (Grand Total anclado a la línea inferior del rectángulo del Payment Schedule)
   - Footer con divider + texto del contratista centrado
 - **`exportEstimatePdf()`** — llama `buildEstimatePdf()` y hace `doc.save()` (descarga)
 - **`getEstimatePdfBlob()`** — llama `buildEstimatePdf()` y devuelve `Blob` (para WhatsApp)
@@ -391,12 +392,17 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 
 ## Asistente de voz "Katy"
 
-- Componente: `VoiceFAB.tsx` — botón flotante `fixed bottom-6 right-6`
-- Reconocimiento: Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`)
+- Componente: `VoiceFAB.tsx` — dos botones flotantes: 🎙 mic (`fixed bottom-6 right-6`) y ⌨ teclado (`fixed bottom-6 right-[5.5rem]`)
+- **Modo voz**: Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) — disponible en Chrome/Safari
+- **Modo texto**: panel de texto que se abre al tocar ⌨ — funciona en todos los navegadores sin permisos
 - Síntesis: `SpeechSynthesis` (voz en español preferida)
-- Intención: POST `/api/voice` → Claude → JSON `{ action, fields }` → fallback `localDetect()`
-- Contexto: `VoiceContext` → `setMeta({ projectId, tab })` desde las páginas de proyecto
+- Modelo: `"anthropic/claude-sonnet-4.6"` — formato con **puntos** en la versión (requerido por Vercel AI Gateway)
+- Intención: POST `/api/voice` → Claude (multi-turn) → JSON `{ action, fields }` → fallback `localDetect()`
+- Contexto: `VoiceContext` → `setMeta({ projectId, projectTitle, contacts, projects })` desde las páginas de proyecto
+  - `projects` — lista de todos los proyectos activos (cargada en `page.tsx` del dashboard) para resolver referencias como "el de Brickell"
 - Evento de refresh: `kokivoice_saved` (CustomEvent) → páginas escuchan para refrescar datos
+- **Auditoría**: cada acción (confirmada, cancelada o error) se guarda en `voice_actions` vía `auditLog()` en VoiceFAB
+- **Confirmación**: Katy siempre muestra tarjeta de confirmación con campos editables — nada se guarda hasta tocar Confirmar
 
 ### Comandos de voz soportados
 
@@ -409,6 +415,26 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 | `create_payment` | "Add payment $4000" | "Agregar pago $4000" |
 | `create_expense` | "Add expense $500 Jorge" | "Agregar egreso $500 Jorge" |
 | `create_contact` | "Add contact Jorge plumber" | "Agregar contacto Jorge plomero" |
+
+### Tabla `voice_actions` (auditoría)
+
+```sql
+CREATE TABLE IF NOT EXISTS voice_actions (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_label  TEXT,
+  transcript  TEXT NOT NULL,
+  action      TEXT,
+  action_data JSONB,
+  project_id  UUID REFERENCES projects(id) ON DELETE SET NULL,
+  outcome     TEXT NOT NULL DEFAULT 'pending',  -- 'confirmed' | 'cancelled' | 'error'
+  error_msg   TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE voice_actions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON voice_actions FOR ALL TO anon USING (true) WITH CHECK (true);
+```
+
+Ya incluida en `src/lib/schema.sql`. Ejecutar en Supabase SQL Editor si la tabla no existe aún.
 
 ---
 
@@ -425,7 +451,7 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 - Estado: pool de items sin asignar + columnas de días (hasta N días)
 - Fechas: cada columna tiene datepicker nativo (`<input type="date">` con overlay transparente)
 - Capacidad: `workersPerDay × hoursPerWorker` por día → barra de progreso visual
-- Auto-assign: greedy bin-packing (items de más horas primero, rellena días en orden)
+- Auto-assign: **phase-ordered + even-spread** — ordena por fase constructiva (Materiales → Demolición → Estructura → Plomería → Eléctrico → Tile/Piso → Handyman → Pintura → Otro), distribuye equitativamente entre todos los días configurados (`targetPerDay = ceil(n/numDays)`), y avanza de día en los límites de fase
 - Asignación de co-worker por item: selector `<select>` con `onPointerDown={e => e.stopPropagation()}` para no disparar el drag
 - **Custom items**: botón "+ Custom" en el pool → mini-formulario (descripción, sección tag, horas, monto) → `source = 'planner'`, `source_key = 'planner-custom:<uuid>'`
 - Output al guardar: `INSERT`/`UPDATE` en `tasks` con `scheduled_date`, `source_key`, `assigned_contact_id`, vínculo al Estimate para upsert sin duplicados
