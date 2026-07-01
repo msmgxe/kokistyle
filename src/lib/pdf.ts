@@ -564,7 +564,8 @@ function buildEstimatePdf(
 
   // Discount rows (right column, top-aligned)
   if (discountAmt > 0) {
-    const discBoxH = 11;
+    const discBoxH   = 13;
+    const labelMaxW  = rightBlockW - 28;
     doc.setFillColor(247, 243, 234);
     doc.setDrawColor(230, 221, 203);
     doc.setLineWidth(0.2);
@@ -574,27 +575,32 @@ function buildEstimatePdf(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(92, 106, 110);
-    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", rightX + 4, totalsStartY + 4);
+    doc.text(
+      EN ? "Labor subtotal" : "Subtotal mano de obra",
+      rightX + 4, totalsStartY + 4.5,
+      { maxWidth: labelMaxW },
+    );
     doc.setFont("helvetica", "bold");
     doc.setTextColor(22, 50, 61);
-    doc.text(money(laborTotal), rightX + rightBlockW - 3, totalsStartY + 4, { align: "right" });
+    doc.text(money(laborTotal), rightX + rightBlockW - 3, totalsStartY + 4.5, { align: "right" });
 
     // Internal divider
     doc.setDrawColor(220, 212, 200);
     doc.setLineWidth(0.15);
-    doc.line(rightX + 2, totalsStartY + 5.5, rightX + rightBlockW - 2, totalsStartY + 5.5);
+    doc.line(rightX + 2, totalsStartY + 7, rightX + rightBlockW - 2, totalsStartY + 7);
 
-    // Discount row
+    // Discount row — use plain hyphen, Helvetica doesn't render U+2212
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(92, 106, 110);
     doc.text(
-      `${estimate.discount_label || "Discount"} (−${estimate.discount_pct}%)`,
-      rightX + 4, totalsStartY + 9,
+      `${estimate.discount_label || "Discount"} (-${estimate.discount_pct}%)`,
+      rightX + 4, totalsStartY + 10.5,
+      { maxWidth: labelMaxW },
     );
     doc.setFont("helvetica", "bold");
     doc.setTextColor(79, 138, 99);
-    doc.text(`−${money(discountAmt)}`, rightX + rightBlockW - 3, totalsStartY + 9, { align: "right" });
+    doc.text(`-${money(discountAmt)}`, rightX + rightBlockW - 3, totalsStartY + 10.5, { align: "right" });
   }
 
   // Grand total bar — bottom-aligned with payment schedule rectangle
