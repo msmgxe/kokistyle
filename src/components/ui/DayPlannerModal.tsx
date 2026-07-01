@@ -852,7 +852,7 @@ export default function DayPlannerModal({
         <div className="flex items-center gap-4">
           <Stepper label={EN ? "Workers" : "Trabajadores"} value={workersPerDay} min={1} max={10} onChange={setWorkersPerDay} />
           <Stepper label={EN ? "Hrs/worker" : "Hrs/trab."}  value={hoursPerWorker} min={2} max={16} onChange={setHoursPerWorker} />
-          <Stepper label={EN ? "Days" : "Días"}              value={numDays}        min={1} max={14} onChange={handleNumDaysChange} />
+          <Stepper label={EN ? "Days" : "Días"}              value={numDays}        min={1} max={30} onChange={handleNumDaysChange} />
         </div>
 
         <div className="h-7 border-l border-[#E6DDCB]" />
