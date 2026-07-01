@@ -51,7 +51,7 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
   create_task:        [{ key:"name", label:"Actividad", type:"text" }],
   create_material:    [{ key:"name", label:"Material", type:"text" }, { key:"cost", label:"Costo", type:"number" }, { key:"supplier", label:"Proveedor", type:"text" }],
   create_budget_item: [{ key:"description", label:"Descripción", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"amount", label:"Monto", type:"number" }],
-  create_contact:     [{ key:"name", label:"Nombre", type:"text" }, { key:"specialty", label:"Especialidad", type:"text" }, { key:"phone", label:"Teléfono", type:"text" }],
+  create_contact:     [{ key:"type", label:"Tipo", type:"text" }, { key:"name", label:"Nombre", type:"text" }, { key:"phone", label:"Teléfono", type:"text" }, { key:"specialty", label:"Especialidad", type:"text" }, { key:"rate", label:"Tarifa", type:"text" }, { key:"rate_type", label:"Por (hour/day)", type:"text" }],
   update_task_status: [{ key:"task_name", label:"Actividad", type:"text" }, { key:"status", label:"Estado", type:"text" }],
 };
 
@@ -117,12 +117,24 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
       return `Línea "${data.description}" agregada`;
     }
     case "create_contact": {
+      const rawType = String(data.type ?? "coworker").toLowerCase();
+      const contactType: "coworker" | "customer" | "friend" =
+        rawType.includes("client") || rawType.includes("cliente") || rawType.includes("customer") ? "customer"
+        : rawType.includes("friend") || rawType.includes("amig") || rawType.includes("amistad") ? "friend"
+        : "coworker";
+      const isCoworker = contactType === "coworker";
+      const rawRateType = String(data.rate_type ?? "hour").toLowerCase();
+      const rateType: "hour" | "day" = rawRateType.includes("day") || rawRateType.includes("día") ? "day" : "hour";
       const { error } = await supabase.from("contacts").insert({
-        name: String(data.name ?? ""), specialty: String(data.specialty ?? ""),
-        phone: String(data.phone ?? ""), rate: String(data.rate ?? "0"),
+        name:      String(data.name ?? ""),
+        phone:     String(data.phone ?? ""),
+        type:      contactType,
+        specialty: isCoworker ? String(data.specialty ?? "") : "",
+        rate:      isCoworker && data.rate ? String(data.rate) : "",
+        rate_type: isCoworker ? rateType : "hour",
       });
       if (error) throw error;
-      return `Contacto "${data.name}" creado`;
+      return `Contacto "${data.name}" (${contactType}) creado`;
     }
     case "update_task_status": {
       if (!pid) throw new Error("Abre un proyecto primero");
@@ -275,7 +287,7 @@ function buildSummary(action: string, data: Record<string, unknown>): string {
     case "create_task":        return `"${data.name ?? ""}"`;
     case "create_material":    return `${data.name ?? ""}, ${fmt(Number(data.cost ?? 0))} en ${data.supplier ?? ""}`;
     case "create_budget_item": return `${data.description ?? ""}, ${fmt(Number(data.amount ?? 0))}`;
-    case "create_contact":     return `${data.name ?? ""}, ${data.specialty ?? ""}`;
+    case "create_contact":     return `${data.name ?? ""} · ${data.type ?? "coworker"} · ${data.phone ?? ""}${data.specialty ? " · " + data.specialty : ""}`;
     case "update_task_status": { const sl: Record<string,string> = { pend:"Por hacer", prog:"En proceso", done:"Hecho" }; return `"${data.task_name ?? ""}" → ${sl[String(data.status ?? "")] ?? data.status}`; }
     default:                   return JSON.stringify(data);
   }
