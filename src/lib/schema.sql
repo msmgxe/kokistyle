@@ -252,3 +252,19 @@ INSERT INTO estimate_section_catalog (name_en, name_es, note_en, note_es, is_mat
   ('PERMIT AND ADMINISTRATIVES','PERMISOS Y ADMINISTRATIVOS','',                 '',                   false, 80),
   ('MATERIALS',                'MATERIALES',               'Pure materials',     'Solo materiales',    true,  90)
 ON CONFLICT DO NOTHING;
+
+-- ── Voice Actions Audit Log ──────────────────────────────────────────────────
+-- Migration: run once if upgrading
+CREATE TABLE IF NOT EXISTS voice_actions (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_label  TEXT,
+  transcript  TEXT NOT NULL,
+  action      TEXT,
+  action_data JSONB,
+  project_id  UUID REFERENCES projects(id) ON DELETE SET NULL,
+  outcome     TEXT NOT NULL DEFAULT 'pending',
+  error_msg   TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE voice_actions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON voice_actions FOR ALL TO anon USING (true) WITH CHECK (true);

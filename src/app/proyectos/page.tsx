@@ -656,8 +656,11 @@ export default function DashboardPage() {
   }, [fetchData]);
 
   useEffect(() => {
-    setMeta({ context: "dashboard" });
-  }, [setMeta]);
+    setMeta({
+      context:  "dashboard",
+      projects: projects.map(p => ({ id: p.id, title: p.title })),
+    });
+  }, [setMeta, projects]);
 
   useEffect(() => {
     const handler = () => fetchData();

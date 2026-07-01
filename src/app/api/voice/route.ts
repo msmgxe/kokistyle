@@ -5,12 +5,24 @@ const TODAY = () => new Date().toISOString().split("T")[0];
 
 type ApiMsg = { role: "user" | "assistant"; content: string };
 
-const SYSTEM = (ctx: string, contacts: string[], project: string, today: string, lang: "en" | "es") => {
+const SYSTEM = (
+  ctx: string,
+  contacts: string[],
+  project: string,
+  today: string,
+  lang: "en" | "es",
+  projects: { id: string; title: string }[] = [],
+) => {
+  const projectsList = projects.length
+    ? projects.map(p => `"${p.title}" (id:${p.id})`).join(", ")
+    : "none";
+
   if (lang === "en") return `
 You are Katy, the voice assistant for KokiStyle (construction project management in Florida).
 Respond in English. Be very concise: max 10 words per reply.
-Active module: "${ctx}". Project: "${project || "none"}". Today: ${today}.
+Active module: "${ctx}". Current project: "${project || "none"}". Today: ${today}.
 Available contacts: ${contacts.length ? contacts.join(", ") : "none"}.
+All active projects (use these to resolve references like "the Brickell one"): ${projectsList}.
 
 ACTIONS AND REQUIRED FIELDS:
 update_task_status → task_name, status ("pend"|"prog"|"done")
@@ -44,8 +56,9 @@ With all info:         {"type":"action","action":"action_name","data":{...fields
   return `
 Eres Katy, asistente de voz de KokiStyle (gestión de obras en Florida).
 Hablas español. Sé muy concisa: máximo 10 palabras por respuesta.
-Módulo activo: "${ctx}". Proyecto: "${project || "ninguno"}". Hoy: ${today}.
+Módulo activo: "${ctx}". Proyecto actual: "${project || "ninguno"}". Hoy: ${today}.
 Contactos disponibles: ${contacts.length ? contacts.join(", ") : "ninguno"}.
+Todos los proyectos activos (úsalos para resolver referencias como "el de Brickell"): ${projectsList}.
 
 ACCIONES Y CAMPOS OBLIGATORIOS:
 update_task_status → task_name, status ("pend"|"prog"|"done")
@@ -85,20 +98,22 @@ export async function POST(req: NextRequest) {
       contacts?: string[];
       projectTitle?: string;
       language?: "en" | "es";
+      projects?: { id: string; title: string }[];
     };
     const messages     = body.messages     ?? [];
     const context      = body.context      ?? "dashboard";
     const contacts     = body.contacts     ?? [];
     const projectTitle = body.projectTitle ?? "";
     const language     = body.language     ?? "es";
+    const projects     = body.projects     ?? [];
 
     if (!messages.length) {
       return NextResponse.json({ type: "question", text: language === "en" ? "How can I help?" : "¿En qué te ayudo?" });
     }
 
     const { text } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
-      system: SYSTEM(context, contacts, projectTitle, TODAY(), language),
+      model: "anthropic/claude-sonnet-4.6",
+      system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects),
       messages: messages.map(m => ({
         role:    m.role as "user" | "assistant",
         content: m.content,

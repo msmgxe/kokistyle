@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, X, Loader2, CheckCircle } from "lucide-react";
+import { Mic, X, Loader2, CheckCircle, Keyboard, Send } from "lucide-react";
 import { useVoice } from "@/src/context/VoiceContext";
 import type { VoiceMeta } from "@/src/context/VoiceContext";
 import { supabase } from "@/src/lib/supabase";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useAuth } from "@/src/context/AuthContext";
 
-type Phase  = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error";
+type Phase  = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error" | "text";
 type ApiMsg = { role: "user" | "assistant"; content: string };
 interface Msg { role: "user" | "assistant"; text: string; }
 
@@ -286,17 +287,23 @@ export default function VoiceFAB() {
   useEffect(() => { metaRef.current = meta; }, [meta]);
 
   const { language, t } = useLanguage();
+  const { currentUser }  = useAuth();
 
   const [phase,         setPhase]         = useState<Phase>("idle");
   const [messages,      setMessages]      = useState<Msg[]>([]);
   const [pendingAction, setPendingAction] = useState<{ action: string; data: Record<string, unknown> } | null>(null);
   const [editableData,  setEditableData]  = useState<Record<string, unknown>>({});
   const [statusMsg,     setStatusMsg]     = useState("");
+  const [textInput,     setTextInput]     = useState("");
 
-  const activeRef  = useRef(false);
-  const recRef     = useRef<SR | null>(null);
-  const startedRef = useRef(false);
-  const msgEndRef  = useRef<HTMLDivElement>(null);
+  const activeRef     = useRef(false);
+  const recRef        = useRef<SR | null>(null);
+  const startedRef    = useRef(false);
+  const msgEndRef     = useRef<HTMLDivElement>(null);
+  const textModeRef   = useRef(false);
+  const transcriptRef = useRef("");
+  const apiHistRef    = useRef<ApiMsg[]>([]);
+  const converseRef   = useRef<(() => Promise<void>) | null>(null);
 
   const supported =
     typeof window !== "undefined" &&
@@ -333,8 +340,12 @@ export default function VoiceFAB() {
   }, [language]);
 
   const closeClean = useCallback(() => {
-    activeRef.current  = false;
-    startedRef.current = false;
+    activeRef.current   = false;
+    startedRef.current  = false;
+    textModeRef.current = false;
+    transcriptRef.current = "";
+    apiHistRef.current  = [];
+    converseRef.current = null;
     try { window.speechSynthesis?.cancel(); } catch { /* noop */ }
     recRef.current?.abort();
     recRef.current = null;
@@ -343,6 +354,7 @@ export default function VoiceFAB() {
     setPendingAction(null);
     setEditableData({});
     setStatusMsg("");
+    setTextInput("");
   }, []);
 
   const showError = useCallback((msg: string) => {
@@ -354,11 +366,29 @@ export default function VoiceFAB() {
     setPhase("error");
   }, []);
 
+  const auditLog = useCallback(async (
+    outcome: "confirmed" | "cancelled" | "error",
+    action?: string,
+    data?: Record<string, unknown>,
+    errorMsg?: string,
+  ) => {
+    await supabase.from("voice_actions").insert({
+      user_label:  currentUser?.name ?? null,
+      transcript:  transcriptRef.current || "(sin texto)",
+      action:      action  ?? null,
+      action_data: data    ?? null,
+      project_id:  metaRef.current.projectId ?? null,
+      outcome,
+      error_msg:   errorMsg ?? null,
+    });
+  }, [currentUser]);
+
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
     setPhase("saving");
     try {
       const msg = await saveAction(pendingAction.action, editableData, metaRef.current);
+      await auditLog("confirmed", pendingAction.action, editableData);
       setStatusMsg(msg);
       setPhase("success");
       window.dispatchEvent(new CustomEvent("kokivoice_saved", {
@@ -366,9 +396,85 @@ export default function VoiceFAB() {
       }));
       setTimeout(closeClean, 2500);
     } catch (e) {
-      showError(e instanceof Error ? e.message : t.panel.voice.errorSaving);
+      const errMsg = e instanceof Error ? e.message : t.panel.voice.errorSaving;
+      await auditLog("error", pendingAction.action, editableData, errMsg);
+      showError(errMsg);
     }
-  }, [pendingAction, editableData, closeClean, showError, t]);
+  }, [pendingAction, editableData, closeClean, showError, t, auditLog]);
+
+  const handleCancel = useCallback(async () => {
+    if (pendingAction) {
+      await auditLog("cancelled", pendingAction.action, editableData);
+    }
+    closeClean();
+  }, [pendingAction, editableData, auditLog, closeClean]);
+
+  const handleTextSubmit = useCallback(async () => {
+    const text = textInput.trim();
+    if (!text || !converseRef.current) return;
+    if (!transcriptRef.current) transcriptRef.current = text;
+    setTextInput("");
+    push("user", text);
+    apiHistRef.current.push({ role: "user", content: text });
+    await converseRef.current();
+  }, [textInput, push]);
+
+  const startTextMode = useCallback(() => {
+    if (startedRef.current) return;
+    startedRef.current  = true;
+    activeRef.current   = true;
+    textModeRef.current = true;
+    transcriptRef.current = "";
+    apiHistRef.current  = [];
+    setMessages([]); setPendingAction(null); setEditableData({}); setStatusMsg(""); setTextInput("");
+
+    const ctx = metaRef.current.context;
+
+    const converse = async (): Promise<void> => {
+      setPhase("thinking");
+      let result: { type: string; text?: string; action?: string; data?: Record<string, unknown> };
+      try {
+        const ctrl = new AbortController();
+        const tid  = setTimeout(() => ctrl.abort(), 12_000);
+        const res  = await fetch("/api/voice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages:     apiHistRef.current,
+            context:      ctx,
+            contacts:     metaRef.current.contacts     ?? [],
+            projects:     metaRef.current.projects     ?? [],
+            projectTitle: metaRef.current.projectTitle ?? "",
+            language,
+          }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tid);
+        result = await res.json();
+      } catch {
+        const lastUser = [...apiHistRef.current].reverse().find(m => m.role === "user")?.content ?? "";
+        result = { type: "action", action: localDetect(lastUser, ctx), data: {} };
+      }
+
+      if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
+        const action = result.action;
+        const data: Record<string, unknown> = { ...result.data };
+        if (!data.date) data.date = TODAY();
+        if (action === "create_task" && !data.hours) data.hours = 8;
+        setPendingAction({ action, data });
+        setEditableData({ ...data });
+        setPhase("confirm");
+      } else {
+        const question = result.text ?? "¿Algo más?";
+        apiHistRef.current.push({ role: "assistant", content: question });
+        push("assistant", question);
+        setPhase("text");
+      }
+    };
+
+    converseRef.current = converse;
+    setPhase("text");
+  }, [language, push]);
 
   const start = useCallback(() => {
     if (phase !== "idle" || startedRef.current) return;
@@ -412,6 +518,7 @@ export default function VoiceFAB() {
         userInput = await listen();
         if (!userInput) { await say(tpVoice.whenReady); closeClean(); return; }
       }
+      transcriptRef.current = userInput;
       push("user", userInput);
       apiHist.push({ role: "user", content: userInput });
       if (!activeRef.current) return;
@@ -431,6 +538,7 @@ export default function VoiceFAB() {
               messages:     apiHist,
               context:      ctx,
               contacts:     metaRef.current.contacts     ?? [],
+              projects:     metaRef.current.projects     ?? [],
               projectTitle: metaRef.current.projectTitle ?? "",
               language,
             }),
@@ -487,35 +595,38 @@ export default function VoiceFAB() {
     });
   }, [phase, say, listen, push, closeClean, showError, language, t]);
 
-  if (!supported) return null;
-
   const headerLabel: Record<Phase, string> = {
     idle: "", listening: "Escuchando…", thinking: "Procesando…",
     speaking: `${ASSISTANT} habla…`, confirm: "Revisa y confirma",
     saving: "Guardando…", success: "¡Guardado!", error: "Error",
+    text: "Escribe tu instrucción",
   };
   const dotCls: Record<Phase, string> = {
-    idle:     "",
-    listening:"animate-ping bg-[#B0492F]",
-    thinking: "animate-pulse bg-[#4E7A82]",
-    speaking: "animate-pulse bg-[#4F8A63]",
-    confirm:  "bg-[#16323D]",
-    saving:   "animate-pulse bg-[#4E7A82]",
-    success:  "bg-[#4F8A63]",
-    error:    "bg-[#B0492F]",
+    idle:      "",
+    listening: "animate-ping bg-[#B0492F]",
+    thinking:  "animate-pulse bg-[#4E7A82]",
+    speaking:  "animate-pulse bg-[#4F8A63]",
+    confirm:   "bg-[#16323D]",
+    saving:    "animate-pulse bg-[#4E7A82]",
+    success:   "bg-[#4F8A63]",
+    error:     "bg-[#B0492F]",
+    text:      "bg-[#395886]",
   };
   const fabBg =
-    phase === "listening"                          ? "animate-pulse bg-[#B0492F]" :
-    phase === "success"                            ? "bg-[#4F8A63]"               :
-    phase === "thinking" || phase === "speaking" || phase === "saving"
-                                                   ? "bg-[#4E7A82]"               :
-                                                     "bg-[#16323D] hover:bg-[#0e2630]";
+    phase === "listening"                                            ? "animate-pulse bg-[#B0492F]" :
+    phase === "success"                                             ? "bg-[#4F8A63]"               :
+    phase === "thinking" || phase === "speaking" || phase === "saving" ? "bg-[#4E7A82]"            :
+    phase === "text"                                                ? "bg-[#395886]"               :
+                                                                      "bg-[#16323D] hover:bg-[#0e2630]";
+
+  const panelOpen = phase !== "idle";
 
   return (
     <>
-      {phase !== "idle" && (
-        <div className="fixed bottom-24 right-4 z-[150] flex w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl">
+      {panelOpen && (
+        <div className="fixed bottom-24 right-4 z-[150] flex w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl">
 
+          {/* Header */}
           <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#F7F3EA] px-4 py-3">
             <div className="flex items-center gap-2">
               <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotCls[phase]}`} />
@@ -530,39 +641,56 @@ export default function VoiceFAB() {
             )}
           </div>
 
-          <div className="flex max-h-[220px] flex-col gap-2 overflow-y-auto p-3">
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                {m.role === "assistant" && (
-                  <span className="mr-1.5 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
+          {/* Chat transcript */}
+          {messages.length > 0 && (
+            <div className="flex max-h-[200px] flex-col gap-2 overflow-y-auto p-3">
+              {messages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  {m.role === "assistant" && (
+                    <span className="mr-1.5 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
+                      {ASSISTANT[0]}
+                    </span>
+                  )}
+                  <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-snug ${
+                    m.role === "user"
+                      ? "rounded-br-sm bg-[#16323D] text-white"
+                      : "rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] text-[#16323D]"
+                  }`}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              {(phase === "thinking" || phase === "saving") && (
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
                     {ASSISTANT[0]}
                   </span>
-                )}
-                <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-snug ${
-                  m.role === "user"
-                    ? "rounded-br-sm bg-[#16323D] text-white"
-                    : "rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] text-[#16323D]"
-                }`}>
-                  {m.text}
+                  <div className="flex gap-1 rounded-2xl rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2">
+                    {[0, 150, 300].map(d => (
+                      <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5C6A6E]"
+                            style={{ animationDelay: `${d}ms` }} />
+                    ))}
+                  </div>
                 </div>
+              )}
+              <div ref={msgEndRef} />
+            </div>
+          )}
+          {messages.length === 0 && (phase === "thinking" || phase === "saving") && (
+            <div className="flex items-center gap-2 p-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
+                {ASSISTANT[0]}
+              </span>
+              <div className="flex gap-1 rounded-2xl rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2">
+                {[0, 150, 300].map(d => (
+                  <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5C6A6E]"
+                        style={{ animationDelay: `${d}ms` }} />
+                ))}
               </div>
-            ))}
-            {(phase === "thinking" || phase === "saving") && (
-              <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
-                  {ASSISTANT[0]}
-                </span>
-                <div className="flex gap-1 rounded-2xl rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2">
-                  {[0, 150, 300].map(d => (
-                    <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5C6A6E]"
-                          style={{ animationDelay: `${d}ms` }} />
-                  ))}
-                </div>
-              </div>
-            )}
-            <div ref={msgEndRef} />
-          </div>
+            </div>
+          )}
 
+          {/* Voice: listening waveform */}
           {phase === "listening" && (
             <div className="flex items-center justify-center gap-1.5 border-t border-[#E6DDCB] bg-[#FFF5F5] py-3 px-4">
               {[10,16,13,18,11].map((h,i) => (
@@ -573,6 +701,7 @@ export default function VoiceFAB() {
             </div>
           )}
 
+          {/* Voice: speaking indicator */}
           {phase === "speaking" && (
             <div className="flex items-center justify-center gap-2 border-t border-[#E6DDCB] bg-[#F0F7F5] py-2.5">
               <Loader2 size={13} className="animate-spin text-[#4F8A63]" />
@@ -580,10 +709,40 @@ export default function VoiceFAB() {
             </div>
           )}
 
+          {/* Text mode: input area */}
+          {phase === "text" && (
+            <div className="border-t border-[#E6DDCB] p-3">
+              {messages.length === 0 && (
+                <p className="mb-2 text-xs text-[#5C6A6E]">
+                  Escribe tu instrucción — p.ej. "Agregar egreso $500 a Jorge"
+                </p>
+              )}
+              <div className="flex gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={textInput}
+                  onChange={e => setTextInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleTextSubmit(); }}
+                  placeholder="Tu instrucción…"
+                  className="flex-1 rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                />
+                <button
+                  onClick={handleTextSubmit}
+                  disabled={!textInput.trim()}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#16323D] text-white disabled:opacity-40 active:scale-95 transition"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Confirm form */}
           {phase === "confirm" && pendingAction && (
-            <div className="max-h-[280px] overflow-y-auto border-t border-[#E6DDCB] p-3">
+            <div className="max-h-[300px] overflow-y-auto border-t border-[#E6DDCB] p-3">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">
-                Corrige si es necesario
+                Revisa y corrige si es necesario
               </p>
               <div className="space-y-2">
                 {(EDIT_FIELDS[pendingAction.action] ?? []).map(f => (
@@ -609,24 +768,25 @@ export default function VoiceFAB() {
                         }));
                       }}
                       placeholder={f.type === "number" ? "0" : ""}
-                      className="flex-1 min-w-0 rounded-lg border border-[#D7CBB3] bg-white px-2 py-1.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                      className="flex-1 min-w-0 rounded-lg border border-[#D7CBB3] bg-white px-2 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
                     />
                   </div>
                 ))}
               </div>
               <div className="mt-3 flex gap-2">
-                <button onClick={closeClean}
-                  className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#DDD3BB]">
+                <button onClick={handleCancel}
+                  className="flex-1 rounded-xl bg-[#ECE3D1] py-3 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#DDD3BB]">
                   Cancelar
                 </button>
                 <button onClick={handleConfirm}
-                  className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white transition hover:bg-[#0e2630]">
-                  ✓ Guardar
+                  className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white transition hover:bg-[#0e2630]">
+                  ✓ Confirmar
                 </button>
               </div>
             </div>
           )}
 
+          {/* Success */}
           {phase === "success" && (
             <div className="flex items-center gap-2 border-t border-[#E6DDCB] bg-[#F0F9F3] px-4 py-3">
               <CheckCircle size={16} className="shrink-0 text-[#4F8A63]" />
@@ -634,31 +794,69 @@ export default function VoiceFAB() {
             </div>
           )}
 
+          {/* Error */}
           {phase === "error" && (
             <div className="flex flex-col gap-2 border-t border-[#E6DDCB] p-3">
               <p className="rounded-lg bg-[#FFF0EE] px-3 py-2 text-sm text-[#B0492F]">{statusMsg}</p>
-              <button onClick={() => { setPhase("idle"); startedRef.current = false; start(); }}
-                className="w-full rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white">
-                Reintentar
-              </button>
+              <div className="flex gap-2">
+                {supported && (
+                  <button onClick={() => { setPhase("idle"); startedRef.current = false; start(); }}
+                    className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white">
+                    🎤 Voz
+                  </button>
+                )}
+                <button onClick={() => { setPhase("idle"); startedRef.current = false; startTextMode(); }}
+                  className="flex-1 rounded-xl bg-[#395886] py-3 text-sm font-bold text-white">
+                  ⌨ Texto
+                </button>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={phase === "idle" ? start : undefined}
-        aria-label={phase === "idle" ? `Iniciar asistente ${ASSISTANT}` : headerLabel[phase]}
-        className={`fixed bottom-6 right-6 z-[150] grid size-14 place-items-center rounded-full text-white shadow-2xl transition-all duration-200 active:scale-95 ${fabBg}`}
-      >
-        {phase === "success"
-          ? <CheckCircle size={22} />
-          : phase === "thinking" || phase === "speaking" || phase === "saving"
-          ? <Loader2 size={22} className="animate-spin" />
-          : <Mic size={22} className={phase === "listening" ? "animate-pulse" : ""} />
-        }
-      </button>
+      {/* Text mode FAB — always shown as secondary button */}
+      {phase === "idle" && (
+        <button
+          type="button"
+          onClick={startTextMode}
+          aria-label="Escribir instrucción a Katy"
+          className="fixed bottom-6 right-[5.5rem] z-[150] grid size-10 place-items-center rounded-full bg-[#395886] text-white shadow-xl transition-all duration-200 active:scale-95 hover:bg-[#2c4570]"
+        >
+          <Keyboard size={18} />
+        </button>
+      )}
+
+      {/* Main FAB: mic (or keyboard when voice not supported) */}
+      {supported ? (
+        <button
+          type="button"
+          onClick={phase === "idle" ? start : undefined}
+          aria-label={phase === "idle" ? `Iniciar asistente ${ASSISTANT}` : headerLabel[phase]}
+          className={`fixed bottom-6 right-6 z-[150] grid size-14 place-items-center rounded-full text-white shadow-2xl transition-all duration-200 active:scale-95 ${fabBg}`}
+        >
+          {phase === "success"
+            ? <CheckCircle size={22} />
+            : phase === "thinking" || phase === "speaking" || phase === "saving"
+            ? <Loader2 size={22} className="animate-spin" />
+            : <Mic size={22} className={phase === "listening" ? "animate-pulse" : ""} />
+          }
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={phase === "idle" ? startTextMode : undefined}
+          aria-label={phase === "idle" ? `Escribir instrucción a ${ASSISTANT}` : headerLabel[phase]}
+          className={`fixed bottom-6 right-6 z-[150] grid size-14 place-items-center rounded-full text-white shadow-2xl transition-all duration-200 active:scale-95 ${fabBg}`}
+        >
+          {phase === "success"
+            ? <CheckCircle size={22} />
+            : phase === "thinking" || phase === "saving"
+            ? <Loader2 size={22} className="animate-spin" />
+            : <Keyboard size={22} />
+          }
+        </button>
+      )}
     </>
   );
 }

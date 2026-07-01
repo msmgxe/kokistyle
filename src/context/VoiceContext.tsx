@@ -13,6 +13,8 @@ export interface VoiceMeta {
   projectTitle?: string;
   /** Nombres de los contactos asignados (para el campo Responsable/Pagado a) */
   contacts?: string[];
+  /** Lista de proyectos activos para que Katy resuelva referencias como "el de Brickell" */
+  projects?: { id: string; title: string }[];
 }
 
 interface VoiceContextType {
