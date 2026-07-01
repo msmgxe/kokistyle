@@ -97,7 +97,7 @@ function ConfirmModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
       <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-        <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">{title}</h3>
+        <h3 className="mb-2 text-lg font-bold text-[#16323D]">{title}</h3>
         <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">
@@ -209,7 +209,7 @@ export default function PlanPage() {
 
   const BlueHeader = () => (
     <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-      <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">{tp.globalPlan.title}</h1>
+      <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">{tp.globalPlan.title}</h1>
       <p className="mt-1 text-sm text-[#B1C9EF]">
         {tp.globalPlan.subtitle}
       </p>

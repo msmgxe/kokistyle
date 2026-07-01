@@ -198,7 +198,7 @@ function ProjectCard({
         className="block px-[17px] pb-[17px]"
         aria-label={`Ver detalle de ${project.title}`}
       >
-        <h3 className="font-[Manrope] text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
+        <h3 className="text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
           {project.title}
         </h3>
         <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E]">
@@ -305,7 +305,7 @@ function KpiDetailModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#E6DDCB] px-5 py-3.5">
-          <span className="font-[Manrope] text-sm font-bold uppercase tracking-widest text-[#16323D]">
+          <span className="text-sm font-bold uppercase tracking-widest text-[#16323D]">
             {TITLES[type]}
           </span>
           <button
@@ -710,7 +710,7 @@ export default function DashboardPage() {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-[Manrope] text-[22px] font-extrabold leading-tight tracking-tight text-white">
+        <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">
           {tp.dashboard.greeting}, {currentUser?.name ?? ""}
         </h1>
         <p className="mt-1 text-sm text-[#B1C9EF]">
@@ -730,7 +730,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">{tp.dashboard.projectsTitle}</h2>
+        <h2 className="text-base font-bold text-[#16323D]">{tp.dashboard.projectsTitle}</h2>
         {canCreateProj && (
           <button
             id="add-project-btn"
@@ -766,7 +766,7 @@ export default function DashboardPage() {
           <UsersPanel projects={projects} />
           <div className="mt-8">
             <div className="mb-4">
-              <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">{tp.dashboard.security}</h2>
+              <h2 className="text-base font-bold text-[#16323D]">{tp.dashboard.security}</h2>
               <p className="text-[11px] text-[#97A1A0]">{tp.dashboard.securityDesc}</p>
             </div>
             <AdminSettings />

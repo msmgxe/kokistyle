@@ -38,7 +38,7 @@ export default function Hero() {
             {t.hero.eyebrow}
           </p>
 
-          <h1 className="text-5xl font-bold leading-[0.98] text-[#0F3D56] sm:text-6xl lg:text-7xl">
+          <h1 className="font-display text-5xl font-semibold leading-[0.95] text-[#0F3D56] sm:text-6xl lg:text-7xl">
             {t.hero.title}
           </h1>
 

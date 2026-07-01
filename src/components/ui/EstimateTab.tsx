@@ -869,7 +869,7 @@ export default function EstimateTab({
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F3EA]">
         <FileText size={28} className="text-[#5C6A6E]" />
       </div>
-      <h3 className="mb-2 font-[Manrope] text-base font-bold text-[#16323D]">
+      <h3 className="mb-2 text-base font-bold text-[#16323D]">
         {EN ? "No estimate yet" : "Sin estimado todavía"}
       </h3>
       <p className="mb-6 max-w-xs text-sm text-[#5C6A6E]">

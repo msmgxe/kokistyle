@@ -184,7 +184,7 @@ function ContactModal({
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh]">
-          <h3 className="mb-5 font-[Manrope] text-xl font-bold text-[#16323D]">
+          <h3 className="mb-5 text-xl font-bold text-[#16323D]">
             {contact ? gc.editContact : gc.newContact}
           </h3>
           <ContactForm contact={form} language={language} tp={tp} onChange={setForm} />
@@ -207,7 +207,7 @@ function ContactModal({
       {confirmSave && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">{tp.common.confirmChanges}</h3>
+            <h3 className="mb-2 text-lg font-bold text-[#16323D]">{tp.common.confirmChanges}</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">{tp.common.confirmSaveQ}</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmSave(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
@@ -220,7 +220,7 @@ function ContactModal({
       {confirmDel && onDelete && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">{gc.deleteContact}</h3>
+            <h3 className="mb-2 text-lg font-bold text-[#16323D]">{gc.deleteContact}</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">{gc.deleteBody}</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
@@ -335,7 +335,7 @@ export default function ContactosPage() {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-[Manrope] text-[22px] font-extrabold tracking-tight text-white">{gc.title}</h1>
+        <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">{gc.title}</h1>
         <p className="mt-1 text-sm text-[#B1C9EF]">{gc.subtitle}</p>
       </div>
 
@@ -403,7 +403,7 @@ export default function ContactosPage() {
                 onKeyDown={(e) => { if (e.key === "Enter") setEditor({ contact: c }); }}
                 className="flex cursor-pointer items-start gap-4 rounded-2xl border border-[#E6DDCB] bg-white p-4 shadow-sm transition hover:border-[#16323D] hover:shadow-md"
               >
-                <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] font-[Manrope] text-sm font-bold text-white">
+                <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] text-sm font-bold text-white">
                   {initials(c.name)}
                 </span>
 

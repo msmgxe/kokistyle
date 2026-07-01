@@ -99,7 +99,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="w-full max-w-[480px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh]">
-          <h3 className="mb-5 font-[Manrope] text-xl font-bold text-[#16323D]">
+          <h3 className="mb-5 text-xl font-bold text-[#16323D]">
             {isEdit ? "Editar proyecto" : "Nuevo proyecto"}
           </h3>
 
@@ -221,7 +221,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
       {confirmDel && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 font-[Manrope] text-lg font-bold text-[#16323D]">Eliminar proyecto</h3>
+            <h3 className="mb-2 text-lg font-bold text-[#16323D]">Eliminar proyecto</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">
               Se eliminarán &ldquo;{project?.title}&rdquo; y todos sus datos. Esta acción no se puede deshacer.
             </p>

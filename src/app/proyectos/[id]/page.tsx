@@ -99,7 +99,7 @@ function ConfirmModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-[440px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
-        <h3 className="mb-1 font-[Manrope] text-lg font-bold text-[#16323D]">{title}</h3>
+        <h3 className="mb-1 text-lg font-bold text-[#16323D]">{title}</h3>
         <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
@@ -134,7 +134,7 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="w-full max-w-[460px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh] overflow-y-auto">
-          <h3 className="mb-1 font-[Manrope] text-xl font-bold text-[#16323D]">{opts.title}</h3>
+          <h3 className="mb-1 text-xl font-bold text-[#16323D]">{opts.title}</h3>
           {opts.sub && <p className="mb-4 text-sm text-[#5C6A6E]">{opts.sub}</p>}
           <div className="space-y-3">
             {opts.fields.map((f) => (
@@ -1157,7 +1157,7 @@ function ContactosTab({
               key={c.id}
               className="flex items-center gap-3 rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3 shadow-sm"
             >
-              <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] font-[Manrope] text-sm font-bold text-white">
+              <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] text-sm font-bold text-white">
                 {initials(c.name)}
               </span>
               <div className="min-w-0 flex-1">
@@ -1190,7 +1190,7 @@ function ContactosTab({
       {pickerOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
           <div className="flex max-h-[80vh] w-full max-w-[460px] flex-col rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
-            <h3 className="mb-4 font-[Manrope] text-xl font-bold text-[#16323D]">
+            <h3 className="mb-4 text-xl font-bold text-[#16323D]">
               {tp.contacts.pickerTitle}
             </h3>
             <input
@@ -1213,7 +1213,7 @@ function ContactosTab({
                     disabled={busy === c.id}
                     className="flex w-full items-center gap-3 rounded-xl border border-[#E6DDCB] bg-white p-3 text-left transition hover:bg-[#F7F3EA] disabled:opacity-50"
                   >
-                    <span className="grid size-10 flex-none place-items-center rounded-[12px] bg-[#16323D] font-[Manrope] text-sm font-bold text-white">
+                    <span className="grid size-10 flex-none place-items-center rounded-[12px] bg-[#16323D] text-sm font-bold text-white">
                       {initials(c.name)}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -2008,7 +2008,7 @@ function PlanTab({
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
           onClick={(e) => { if (e.target === e.currentTarget) setEditTask(null); }}>
           <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[90vh]">
-            <h3 className="mb-4 font-[Manrope] text-xl font-bold text-[#16323D]">Edit task</h3>
+            <h3 className="mb-4 text-xl font-bold text-[#16323D]">Edit task</h3>
             <PlanTaskForm
               task={editTask.task.task}
               startDate={editTask.startDate}
@@ -2311,7 +2311,7 @@ function NotasTab({
       {pinPrompt && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
           <div className="w-full max-w-[360px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
-            <h3 className="mb-1 font-[Manrope] text-base font-bold text-[#16323D]">
+            <h3 className="mb-1 text-base font-bold text-[#16323D]">
               {pinPrompt.action === "delete" ? tp.notes.deleteNote : tp.notes.confirmEdit}
             </h3>
             <p className="mb-4 text-sm text-[#5C6A6E]">{tp.notes.pinPrompt}</p>
@@ -2513,7 +2513,7 @@ export default function ProjectDetailPage() {
 
       {/* Blue header */}
       <div className="relative mb-2 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-[Manrope] text-lg font-bold uppercase tracking-widest text-white pr-10">{project.title}</h1>
+        <h1 className="font-display text-xl font-medium tracking-[0.08em] uppercase text-white pr-10">{project.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
           <StatusChipOnBlue status={project.status} />
           <span>· {project.client}</span>

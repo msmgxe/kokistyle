@@ -889,7 +889,7 @@ export default function HelpPage() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">{active.icon}</span>
             <div>
-              <h1 className="font-[Manrope] text-xl font-black text-[#16323D]">{active.title}</h1>
+              <h1 className="font-display text-2xl font-medium text-[#16323D]">{active.title}</h1>
               <p className="text-[13px] text-[#5C6A6E]">{active.desc}</p>
             </div>
           </div>

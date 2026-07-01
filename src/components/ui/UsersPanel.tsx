@@ -362,7 +362,7 @@ export default function UsersPanel({ projects }: { projects: Project[] }) {
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="font-[Manrope] text-base font-bold text-[#16323D]">Equipo</h2>
+          <h2 className="text-base font-bold text-[#16323D]">Equipo</h2>
           <p className="text-[11px] text-[#97A1A0]">Gestiona colaboradores y sus permisos</p>
         </div>
         <button
