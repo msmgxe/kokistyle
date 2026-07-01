@@ -138,16 +138,34 @@ function ItemCard({
   overlay?: boolean;
   contacts?: PlanContact[];
   onAssign?: (itemId: string, contactId: string | null) => void;
-  days?: { index: number; label: string }[];
+  days?: { index: number; label: string; date: string }[];
   onJumpToDay?: (itemId: string, dayIndex: number | null) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id });
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const style = !overlay && transform
     ? { transform: `translate3d(${transform.x}px,${transform.y}px,0)` }
     : undefined;
 
-  const assignedName = contacts?.find(c => c.id === item.assignedContactId)?.name;
-  const currentDayLabel = days?.find(d => d.index === item.dayIndex)?.label;
+  const assignedName    = contacts?.find(c => c.id === item.assignedContactId)?.name;
+  const currentDay      = days?.find(d => d.index === item.dayIndex);
+  const currentDayLabel = currentDay?.label ?? "";
+
+  const handleDateChange = useCallback((selectedDate: string) => {
+    if (!selectedDate || !days || !onJumpToDay) return;
+    const exact = days.find(d => d.date === selectedDate);
+    if (exact) { onJumpToDay(item.id, exact.index); return; }
+    // Snap to nearest configured day
+    const selMs = new Date(selectedDate + "T00:00:00").getTime();
+    let best = days[0]; let minDiff = Infinity;
+    for (const d of days) {
+      if (!d.date) continue;
+      const diff = Math.abs(new Date(d.date + "T00:00:00").getTime() - selMs);
+      if (diff < minDiff) { minDiff = diff; best = d; }
+    }
+    if (best) onJumpToDay(item.id, best.index);
+  }, [days, item.id, onJumpToDay]);
 
   return (
     <div
@@ -180,28 +198,35 @@ function ItemCard({
         )}
       </div>
 
-      {/* Day picker — shown on pool cards and day-column cards */}
+      {/* Day date-picker — tap label to open native calendar */}
       {!overlay && days && days.length > 0 && onJumpToDay && (
-        <div className="relative mt-1.5 border-t border-[#F0EBE0] pt-1.5">
-          <span className={`pointer-events-none block truncate text-[9px] font-semibold ${item.dayIndex !== null ? "text-[#4F8A63]" : "text-[#B0492F]"}`}>
-            {item.dayIndex !== null
-              ? `✓ ${currentDayLabel}`
-              : "→ Asignar a día..."}
-          </span>
-          <select
-            value={item.dayIndex !== null ? String(item.dayIndex) : ""}
-            onPointerDown={e => e.stopPropagation()}
-            onChange={e => {
-              const val = e.target.value;
-              onJumpToDay(item.id, val === "" ? null : Number(val));
+        <div
+          className="mt-1.5 border-t border-[#F0EBE0] pt-1.5"
+          onPointerDown={e => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              try { dateInputRef.current?.showPicker(); }
+              catch { dateInputRef.current?.click(); }
             }}
-            className="absolute inset-0 cursor-pointer opacity-0"
+            className={`flex w-full items-center gap-1 text-left text-[9px] font-semibold transition
+              ${item.dayIndex !== null ? "text-[#4F8A63]" : "text-[#B0492F] hover:text-[#16323D]"}`}
           >
-            <option value="">— Pool —</option>
-            {days.map(d => (
-              <option key={d.index} value={String(d.index)}>{d.label}</option>
-            ))}
-          </select>
+            <span>{item.dayIndex !== null ? "✓" : "📅"}</span>
+            <span className="truncate">
+              {item.dayIndex !== null ? currentDayLabel : "Agregar a día..."}
+            </span>
+          </button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={currentDay?.date ?? ""}
+            min={days[0]?.date ?? ""}
+            max={days[days.length - 1]?.date ?? ""}
+            onChange={e => handleDateChange(e.target.value)}
+            className="pointer-events-none h-0 w-0 opacity-0"
+          />
         </div>
       )}
 
@@ -237,7 +262,7 @@ function ItemPool({
   onAddCustom: () => void;
   contacts: PlanContact[];
   onAssign: (itemId: string, contactId: string | null) => void;
-  days: { index: number; label: string }[];
+  days: { index: number; label: string; date: string }[];
   onJumpToDay: (itemId: string, dayIndex: number | null) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "pool" });
@@ -698,6 +723,7 @@ export default function DayPlannerModal({
   const dayLabels = useMemo(() =>
     Array.from({ length: numDays }, (_, d) => ({
       index: d,
+      date:  dayDates[d] ?? "",
       label: `Día ${d + 1}${dayDates[d] ? " · " + formatDate(dayDates[d], EN) : ""}`,
     })),
   [numDays, dayDates, EN]);
