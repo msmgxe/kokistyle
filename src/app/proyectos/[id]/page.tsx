@@ -50,6 +50,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 import EstimateTab from "@/src/components/ui/EstimateTab";
 import DayPlannerModal from "@/src/components/ui/DayPlannerModal";
+import DesignTab from "@/src/components/ui/DesignTab";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface ProjectFull extends Project {
@@ -62,7 +63,7 @@ interface ProjectFull extends Project {
   project_notes: ProjectNote[];
 }
 
-type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas";
+type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas" | "design";
 type PaySubTab = "ingresos" | "egresos";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -2434,12 +2435,13 @@ export default function ProjectDetailPage() {
     { id: "materiales",  label: tp.tabs.materials },
     { id: "contactos",   label: tp.tabs.contacts },
     { id: "notas",       label: tp.tabs.notes },
+    { id: "design",      label: tp.tabs.design },
   ];
 
   // Filter tabs the user is allowed to view
   const visibleTabs = TABS.filter(t => {
     if (isSuperAdmin) return true;
-    const sec = t.id === "pagos" ? "pagos" : t.id === "plan" ? "workflow" : t.id as import("@/src/types/auth").PermissionSection;
+    const sec = t.id === "pagos" ? "pagos" : t.id === "plan" || t.id === "planner" || t.id === "design" ? "workflow" : t.id as import("@/src/types/auth").PermissionSection;
     return hasPermission(sec, "view");
   });
 
@@ -2474,6 +2476,7 @@ export default function ProjectDetailPage() {
       pagos:       "project.pagos.ingresos",
       plan:        "project.plan",
       notas:       "project.notas",
+      design:      "project.design",
     };
     setMeta({
       context:      ctxMap[activeTab],
@@ -2554,6 +2557,7 @@ export default function ProjectDetailPage() {
       />}
       {activeTab === "plan"        && <PlanTab        project={project} tasks={tasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "notas"       && <NotasTab       project={project} notes={project.project_notes ?? []} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "design"      && <DesignTab      project={project} toast={showToast} />}
 
       {/* Editar proyecto */}
       {editProjectOpen && (

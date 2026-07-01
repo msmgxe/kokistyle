@@ -700,6 +700,85 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
+      id: "design", icon: "✨",
+      title: EN ? "Design — AI Render" : "Design — AI Render",
+      desc:  EN ? "Upload a reference photo of the room and generate a photorealistic AI render using your design brief. Drag the comparison slider to see Before vs After side by side."
+               : "Sube una foto de referencia del ambiente y genera un render fotorrealista con IA usando tu brief de diseño. Arrastra el slider para comparar Antes vs Después.",
+      mockup: (
+        <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-sm">
+          {/* 3-col header */}
+          <div className="grid grid-cols-3 text-[9px] font-bold uppercase tracking-wider">
+            <div className="bg-[#16323D] text-white/60 px-2 py-1.5">📸 {EN ? "References" : "Referencias"}</div>
+            <div className="bg-[#16323D] text-white/60 px-2 py-1.5 border-x border-white/10">Brief</div>
+            <div className="bg-[#16323D] text-white/60 px-2 py-1.5">AI Render</div>
+          </div>
+          <div className="grid grid-cols-3 gap-0" style={{ height: 110 }}>
+            {/* Col 1 */}
+            <div className="border-r border-[#E6DDCB] p-1.5 flex flex-col gap-1">
+              {[{ bg:"#D4C8B8", h: 48 }, { bg:"#C4B89A", h: 40 }].map((b, i) => (
+                <div key={i} className="rounded flex-none" style={{ height: b.h, background: b.bg }} />
+              ))}
+            </div>
+            {/* Col 2 */}
+            <div className="border-r border-[#E6DDCB] p-1.5 flex flex-col gap-1.5">
+              <div className="rounded bg-[#F7F3EA] h-5 text-[8px] text-[#5C6A6E] flex items-center px-2">{EN ? "Kitchen" : "Cocina"}</div>
+              <div className="grid grid-cols-2 gap-0.5">
+                <div className="rounded bg-[#16323D] h-4 text-[7px] text-white flex items-center justify-center">{EN ? "Modern" : "Moderno"}</div>
+                <div className="rounded border border-[#E6DDCB] h-4 text-[7px] text-[#5C6A6E] flex items-center justify-center">{EN ? "Luxury" : "Lujo"}</div>
+              </div>
+              <div className="h-1.5 rounded-full bg-[#E6DDCB] overflow-hidden"><div className="h-full bg-[#C9A96E]" style={{ width: "75%" }} /></div>
+              <div className="mt-auto rounded bg-[#16323D] h-5 text-[8px] text-white flex items-center justify-center">✨ {EN ? "Generate" : "Generar"}</div>
+            </div>
+            {/* Col 3 — comparison slider */}
+            <div className="relative overflow-hidden bg-[#0d1f27]">
+              <div className="absolute inset-0 flex">
+                <div className="flex-1 bg-[#2a3a40]" />
+                <div className="flex-1" style={{ background: "linear-gradient(135deg, #3a5a6a 0%, #1a3040 100%)" }} />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center" style={{ left: "50%" }}>
+                <div className="absolute top-0 bottom-0 w-0.5 bg-[#C9A96E]" />
+                <div className="w-6 h-6 rounded-full bg-[#C9A96E] border-2 border-white flex items-center justify-center text-[9px] text-[#16323D] font-bold">⟺</div>
+              </div>
+              <div className="absolute top-1.5 left-1.5 text-[7px] font-bold text-white/70 bg-black/40 rounded px-1">{EN ? "BEFORE" : "ANTES"}</div>
+              <div className="absolute top-1.5 right-1.5 text-[7px] font-bold text-white/70 bg-[#4F8A63]/60 rounded px-1">{EN ? "AFTER" : "DESPUÉS"}</div>
+            </div>
+          </div>
+        </div>
+      ),
+      steps: EN ? [
+        { t: "Upload reference photos", d: "Go to the <b>Design</b> tab in any project. Click <b>+ Add Photos</b> on the left panel and select one or more photos of the room you want to transform. The active photo (gold border) will be used as the base for generation." },
+        { t: "Select Room Type and Style", d: "Choose the <b>room type</b> from the dropdown (Kitchen, Living Room, Bathroom…) and click a <b>design style</b> (Modern, Luxury, Mediterranean…). These guide the AI's creative direction." },
+        { t: "Adjust Change Intensity", d: "The <b>Change Intensity</b> slider (30–95%) controls how much the AI modifies your photo. <b>Subtle</b> keeps the structure; <b>Balanced</b> applies guided changes; <b>Bold</b> does a major redesign; <b>Full Creative</b> applies maximum transformation." },
+        { t: "Describe your vision — voice or text", d: "Type in the <b>Description</b> field or click <b>🎙 Voice</b> to speak your instructions. Example: \"marble floors, white quartz countertops, pendant lights, open concept\". Each voice clip appends to your description — combine multiple inputs for more detail." },
+        { t: "Generate the render", d: "Click <b>✨ Generate Render</b>. The AI takes your photo, reads your brief, and generates a photorealistic render in 20–40 seconds using Replicate's <code>adirik/interior-design</code> img2img model." },
+        { t: "Compare Before / After", d: "When the render is ready, <b>drag the gold slider</b> left and right across the result panel to compare the original photo and the AI render side by side. ANTES = original, DESPUÉS = AI render." },
+        { t: "View full size, download or regenerate", d: "Click <b>🔍</b> to open both images in a full-screen modal for detailed inspection. Click <b>⬇</b> to download the render. Click <b>🔄</b> to generate a new variation with the same settings." },
+      ] : [
+        { t: "Subir fotos de referencia", d: "Ve al tab <b>Design</b> en cualquier proyecto. Clic en <b>+ Agregar fotos</b> en el panel izquierdo y selecciona una o más fotos del ambiente a transformar. La foto activa (borde dorado) se usará como base de la generación." },
+        { t: "Seleccionar tipo de ambiente y estilo", d: "Elige el <b>tipo de ambiente</b> en el selector (Cocina, Sala, Baño…) y clic en un <b>estilo de diseño</b> (Moderno, Lujo, Mediterráneo…). Estos guían la dirección creativa de la IA." },
+        { t: "Ajustar la intensidad del cambio", d: "El slider de <b>Intensidad del cambio</b> (30–95%) controla cuánto modifica la IA tu foto. <b>Sutil</b> conserva la estructura; <b>Equilibrado</b> aplica cambios guiados; <b>Atrevido</b> hace un rediseño mayor; <b>Máximo creativo</b> aplica transformación total." },
+        { t: "Describir tu visión — voz o texto", d: "Escribe en el campo <b>Descripción</b> o clic en <b>🎙 Voz</b> para hablar tus instrucciones. Ejemplo: \"piso de mármol, encimera de cuarzo blanco, luces colgantes, concepto abierto\". Cada clip de voz se agrega al texto — combina múltiples inputs para más detalle." },
+        { t: "Generar el render", d: "Clic en <b>✨ Generar Render</b>. La IA toma tu foto, lee el brief y genera un render fotorrealista en 20–40 segundos usando el modelo img2img <code>adirik/interior-design</code> de Replicate." },
+        { t: "Comparar Antes / Después", d: "Cuando el render está listo, <b>arrastra el slider dorado</b> de izquierda a derecha en el panel de resultado para comparar la foto original y el render de IA. ANTES = original, DESPUÉS = AI render." },
+        { t: "Ver completo, descargar o regenerar", d: "Clic en <b>🔍</b> para abrir ambas imágenes en modal de pantalla completa. Clic en <b>⬇</b> para descargar el render. Clic en <b>🔄</b> para generar una nueva variación con los mismos ajustes." },
+      ],
+      tips: EN ? [
+        "📸 Use <b>wide-angle photos</b> that show the full room — the AI needs to see the space structure to apply changes accurately.",
+        "🎚 Start with <b>Balanced (60–65%)</b> intensity for the first render. Increase to Bold or Full Creative for more dramatic transformations.",
+        "🗣 <b>Voice + text combo</b>: speak a broad description first, then type specific details. Voice clips append to the text field each time.",
+        "🔄 Click <b>🔄 Regenerate</b> to get a different variation with the same brief — useful when you like the direction but want more options.",
+        "💾 Download renders to share with clients via WhatsApp or email as part of the design proposal.",
+        "🔑 Requires <b>REPLICATE_API_TOKEN</b> in environment variables. Get a free token at replicate.com — new accounts include free credits.",
+      ] : [
+        "📸 Usa <b>fotos gran angular</b> que muestren la sala completa — la IA necesita ver la estructura del espacio para aplicar cambios con precisión.",
+        "🎚 Comienza con intensidad <b>Equilibrado (60–65%)</b> para el primer render. Aumenta a Atrevido o Máximo creativo para transformaciones más dramáticas.",
+        "🗣 <b>Combo voz + texto</b>: habla una descripción amplia primero, luego escribe detalles específicos. Los clips de voz se agregan al campo de texto cada vez.",
+        "🔄 Clic en <b>🔄 Regenerar</b> para obtener una variación diferente con el mismo brief — útil cuando te gusta la dirección pero quieres más opciones.",
+        "💾 Descarga los renders para compartir con clientes via WhatsApp o email como parte de la propuesta de diseño.",
+        "🔑 Requiere <b>REPLICATE_API_TOKEN</b> en variables de entorno. Obtén un token gratuito en replicate.com — las cuentas nuevas incluyen créditos gratis.",
+      ],
+    },
+    {
       id: "voice", icon: "🎙",
       title: EN ? "Katy — Voice Assistant" : "Katy — Asistente de Voz",
       desc:  EN ? "Tap the microphone button (bottom-right) and speak, or tap the keyboard button to type — Katy understands both modes and creates records automatically."
@@ -756,7 +835,7 @@ export default function HelpPage() {
         <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
           {EN ? "Features" : "Funcionalidades"}
         </div>
-        {features.slice(0, 8).map(f => (
+        {features.map(f => (
           <button
             key={f.id}
             onClick={() => setActiveId(f.id)}

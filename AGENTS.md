@@ -54,6 +54,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase → Settings → API → anon/public
 SUPABASE_SERVICE_ROLE_KEY=      # Supabase → Settings → API → service_role (SOLO server)
 RESEND_API_KEY=                 # resend.com → API Keys
 ANTHROPIC_API_KEY=              # console.anthropic.com → API Keys (asistente de voz)
+REPLICATE_API_TOKEN=            # replicate.com → Account → API Tokens (Design tab img2img)
 ```
 
 ---
@@ -337,6 +338,7 @@ Requiere autenticación por PIN. Layout en `src/app/proyectos/layout.tsx`.
 | Materials | Lista de compras con checkbox "comprado" + import desde Estimate |
 | Contacts | Especialistas/proveedores vinculados al proyecto |
 | Notes | Notas con adjuntos (imágenes + PDFs) |
+| Design | AI Render Studio — sube foto, brief de diseño, genera render fotorrealista con Replicate img2img, slider de comparación Antes/Después |
 
 ### Navegación del panel (top nav)
 
@@ -449,6 +451,61 @@ CREATE POLICY anon_all ON voice_actions FOR ALL TO anon USING (true) WITH CHECK 
 Ya incluida en `src/lib/schema.sql`. Ejecutar en Supabase SQL Editor si la tabla no existe aún.
 
 ---
+
+## Design Tab — AI Render Studio
+
+- Componente: `src/components/ui/DesignTab.tsx`
+- API route: `src/app/api/design-render/route.ts` (GET + POST, `maxDuration = 60`)
+- Modelo: `adirik/interior-design` en Replicate — img2img, parte de la foto original
+- Variable de entorno requerida: `REPLICATE_API_TOKEN` (replicate.com → Account → API Tokens)
+
+### Flujo de generación
+
+1. Usuario sube foto(s) al bucket `kokistyle-files/design-refs/[project_id]/` vía Supabase Storage (public bucket)
+2. POST `/api/design-render` con `{ imageUrl, prompt, roomType, style, strength }`
+   - La route llama a Replicate con `Prefer: wait=55` (resultado síncrono hasta 55s)
+   - Si el resultado viene en `data.output` → retorna directo al cliente
+   - Si viene `data.id` → cliente hace polling GET `/api/design-render?id={predictionId}` cada 2.5s
+3. Resultado aparece en el panel de comparación; el usuario arrastra el slider dorado para ver ANTES vs DESPUÉS
+
+### Parámetros de generación
+
+| Param | Valor | Efecto |
+|---|---|---|
+| `strength` | 0.3–0.95 | Intensidad del cambio (0.3=sutil, 0.95=máximo creativo) |
+| `guidance_scale` | 15 | Adherencia al prompt |
+| `num_inference_steps` | 50 | Calidad del render (más pasos = mejor calidad) |
+| `seed` | aleatorio | Variación del resultado |
+
+### Slider de comparación
+
+- Drag nativo (mouse + touch) en el contenedor `containerRef`
+- `clipPath: inset(0 ${100 - sliderPos}% 0 0)` sobre la imagen "antes"
+- Imagen "después" en capa base con `object-fit: contain`
+- Ambas imágenes usan el mismo container → alineación perfecta
+
+### Voz en Design Tab
+
+Usa el mismo patrón de `SpeechRecognition` que el prototipo 02:
+```
+rec.onresult = (e) => {
+  const transcript = e.results[0]?.[0]?.transcript ?? "";
+  setPrompt(cur => cur ? cur + ", " + transcript : transcript);
+};
+```
+Cada clip de voz se agrega al campo de texto (no reemplaza).
+
+### Instalación (one-time)
+
+```bash
+# 1. Crear cuenta en replicate.com
+# 2. Account → API Tokens → crear token
+# 3. Agregar a .env.local:
+REPLICATE_API_TOKEN=r8_xxxxxxxxxxxxxxxxxxxx
+# 4. Agregar en Vercel: Settings → Environment Variables → REPLICATE_API_TOKEN
+```
+
+Costo estimado: ~$0.01 por render. Cuentas nuevas reciben créditos gratuitos.
 
 ## Day Planner — Tab dedicado
 

@@ -153,6 +153,7 @@ export const translations = {
         materials: "Materials",
         contacts: "Contacts",
         notes: "Notes 📎",
+        design: "Design",
       },
       status: {
         presupuesto: "Estimate",
@@ -613,6 +614,7 @@ export const translations = {
         materials: "Materiales",
         contacts: "Contactos",
         notes: "Notas 📎",
+        design: "Design",
       },
       status: {
         presupuesto: "Presupuesto",

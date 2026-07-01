@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replicate img2img — Luxaris Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary:   #16323D;
+  --secondary: #F5E9DA;
+  --gold:      #C9A96E;
+  --gold-light: #e2c48a;
+  --success:   #4F8A63;
+  --soft:      #5C6A6E;
+  --border:    #E6DDCB;
+  --card:      #F7F3EA;
+  --navy:      #395886;
+  --white:     #FFFFFF;
+  --img-bg:    #0d1f27;
+  --shadow:    0 4px 24px rgba(22,50,61,0.10);
+  --shadow-lg: 0 12px 48px rgba(22,50,61,0.16);
+  --radius:    14px;
+  --radius-sm: 8px;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Manrope', sans-serif;
+  background: #eee8de;
+  color: var(--primary);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* ─── APP SHELL ─── */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── HEADER ─── */
+header {
+  height: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--primary);
+  position: relative;
+  z-index: 10;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--gold), #a07840);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+}
+.logo-text { display: flex; flex-direction: column; line-height: 1.1; }
+.logo-text .brand {
+  font-size: 13px; font-weight: 700;
+  color: var(--gold); letter-spacing: 0.3px;
+}
+.logo-text .sub {
+  font-size: 10px; font-weight: 400;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+
+.header-badge {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(201,169,110,0.14);
+  border: 1px solid rgba(201,169,110,0.35);
+  border-radius: 24px;
+  padding: 6px 14px 6px 10px;
+}
+.badge-dot {
+  width: 7px; height: 7px;
+  background: var(--gold); border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.5; transform:scale(0.7); }
+}
+.badge-text {
+  font-size: 11.5px; font-weight: 700;
+  color: var(--gold); letter-spacing: 0.3px;
+}
+
+.header-right {
+  display: flex; align-items: center; gap: 10px;
+}
+.proto-tag {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: 4px 10px;
+}
+
+/* ─── MAIN 3-COLUMN GRID ─── */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 200px 260px 1fr;
+  gap: 0;
+  min-height: 0;
+  height: calc(100vh - 60px);
+}
+
+/* ─── COLUMN BASE ─── */
+.col {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.col:last-child { border-right: none; }
+
+.col-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  flex-shrink: 0;
+}
+.col-title {
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--soft);
+}
+.col-subtitle {
+  font-size: 11px; font-weight: 500; color: var(--soft);
+  margin-top: 2px; line-height: 1.35;
+}
+.col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  background: var(--secondary);
+}
+.col-body::-webkit-scrollbar { width: 4px; }
+.col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ─── COLUMN 3 (result) special ─── */
+.col-result {
+  background: var(--img-bg);
+  position: relative;
+}
+.col-result .col-header {
+  background: #1a3542;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.col-result .col-title { color: rgba(255,255,255,0.4); }
+
+/* ─── PHOTO THUMBNAILS (col 1) ─── */
+.photo-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--card);
+  position: relative;
+  margin-bottom: 12px;
+}
+.photo-upload-zone:hover, .photo-upload-zone.drag-over {
+  border-color: var(--primary);
+  background: rgba(22,50,61,0.05);
+}
+.photo-upload-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2;
+}
+.upload-icon-sm {
+  font-size: 22px; display: block; margin-bottom: 6px;
+}
+.upload-text-sm {
+  font-size: 11px; font-weight: 600; color: var(--primary);
+  margin-bottom: 2px;
+}
+.upload-hint-sm {
+  font-size: 10px; color: var(--soft); font-weight: 400;
+}
+
+.thumb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.thumb-item {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color .2s;
+  aspect-ratio: 1;
+  background: var(--img-bg);
+}
+.thumb-item:hover { border-color: var(--gold); }
+.thumb-item.active { border-color: var(--gold); }
+.thumb-item img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+.thumb-del {
+  position: absolute; top: 3px; right: 3px;
+  width: 18px; height: 18px;
+  background: rgba(0,0,0,0.6); border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .15s;
+  color: #fff; font-size: 10px; line-height: 1;
+}
+.thumb-item:hover .thumb-del { opacity: 1; }
+.thumb-active-badge {
+  position: absolute; bottom: 4px; left: 4px;
+  background: var(--gold);
+  color: var(--primary);
+  font-size: 8px; font-weight: 800; letter-spacing: 0.5px;
+  padding: 2px 5px; border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* ─── FORM CONTROLS (col 2) ─── */
+.form-section { margin-bottom: 14px; }
+.form-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--soft); margin-bottom: 6px; display: block;
+}
+
+.room-select {
+  width: 100%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px; font-weight: 600;
+  padding: 9px 30px 9px 11px;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235C6A6E' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer; outline: none;
+  transition: border-color .2s;
+}
+.room-select:hover, .room-select:focus { border-color: var(--primary); }
+
+.style-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.style-btn {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 6px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px; font-weight: 600;
+  color: var(--soft);
+  cursor: pointer; text-align: center;
+  transition: all .18s;
+  line-height: 1.2;
+}
+.style-btn:hover { border-color: var(--primary); color: var(--primary); }
+.style-btn.active {
+  background: var(--primary); border-color: var(--primary);
+  color: var(--white);
+}
+
+/* ─── STRENGTH SLIDER ─── */
+.strength-wrap {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.strength-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.strength-label-main {
+  font-size: 12px; font-weight: 700; color: var(--primary);
+}
+.strength-value {
+  font-size: 13px; font-weight: 800; color: var(--gold);
+  background: rgba(201,169,110,0.12);
+  border-radius: 6px; padding: 2px 8px;
+  min-width: 40px; text-align: center;
+}
+.strength-desc-row {
+  display: flex; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.strength-desc {
+  font-size: 10px; font-weight: 500; color: var(--soft);
+}
+input[type="range"].strength-slider {
+  width: 100%;
+  -webkit-appearance: none; appearance: none;
+  height: 4px;
+  background: linear-gradient(to right, var(--gold) 0%, var(--gold) 50%, var(--border) 50%, var(--border) 100%);
+  border-radius: 4px; outline: none; cursor: pointer;
+  transition: background .1s;
+}
+input[type="range"].strength-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 3px solid var(--white);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  cursor: grab;
+}
+input[type="range"].strength-slider:active::-webkit-slider-thumb { cursor: grabbing; }
+
+.strength-info-pill {
+  margin-top: 8px;
+  background: rgba(22,50,61,0.05);
+  border-radius: 6px; padding: 6px 9px;
+  font-size: 10px; color: var(--soft); font-weight: 500;
+  line-height: 1.4;
+}
+.strength-info-pill strong { color: var(--primary); font-weight: 700; }
+
+/* ─── PROMPT AREA ─── */
+.prompt-wrap {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.prompt-wrap:focus-within { border-color: var(--primary); }
+.prompt-textarea {
+  width: 100%; padding: 10px 11px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px; color: var(--primary);
+  border: none; outline: none; resize: none;
+  background: transparent;
+  line-height: 1.5; min-height: 64px;
+}
+.prompt-textarea::placeholder { color: #aab1b4; }
+.prompt-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+.voice-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px; font-weight: 600; color: var(--soft);
+  padding: 3px 6px; border-radius: 6px;
+  transition: all .15s;
+}
+.voice-btn:hover { background: var(--secondary); color: var(--primary); }
+.voice-btn.recording { color: #c0392b; background: rgba(192,57,43,0.08); }
+.voice-btn svg { flex-shrink: 0; }
+.char-count {
+  font-size: 10px; color: var(--border); font-weight: 500;
+}
+
+/* ─── GENERATE BTN ─── */
+.generate-btn {
+  width: 100%; padding: 12px;
+  background: var(--primary); color: var(--white);
+  border: none; border-radius: var(--radius-sm);
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px; font-weight: 800;
+  cursor: pointer; letter-spacing: 0.3px;
+  transition: background .2s, transform .1s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.generate-btn:hover { background: #1e4455; }
+.generate-btn:active { transform: scale(0.98); }
+.generate-btn:disabled { background: #b0bec0; cursor: not-allowed; transform: none; }
+.generate-btn .btn-icon { font-size: 15px; }
+
+/* ─── IMPL NOTE ─── */
+.impl-note {
+  margin-top: 10px;
+  background: rgba(22,50,61,0.06);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 8px 10px;
+  font-size: 10px; color: var(--soft); font-weight: 500;
+  line-height: 1.5;
+}
+.impl-note strong { color: var(--primary); font-weight: 700; }
+
+/* ─── RESULT COLUMN (col 3) ─── */
+.result-body {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Empty state */
+.result-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  color: rgba(255,255,255,0.25);
+}
+.result-empty-icon {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px dashed rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.result-empty p {
+  font-size: 13px; font-weight: 500;
+  text-align: center; line-height: 1.5;
+  color: rgba(255,255,255,0.3);
+}
+.result-empty small {
+  font-size: 11px;
+  color: rgba(255,255,255,0.18);
+}
+
+/* Shimmer / loading */
+.shimmer-wrap {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+}
+.shimmer-wrap.visible { display: flex; }
+.shimmer-box {
+  width: calc(100% - 48px); max-width: 360px;
+  height: 320px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.shimmer-text {
+  font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.4); letter-spacing: 0.5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(201,169,110,0.3);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── COMPARISON AREA ─── */
+.compare-container {
+  position: absolute; inset: 0;
+  display: none;
+}
+.compare-container.visible { display: block; }
+.compare-before-img, .compare-after-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  background: var(--img-bg);
+}
+.compare-clip {
+  position: absolute; inset: 0;
+  overflow: hidden;
+}
+.compare-divider {
+  position: absolute; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent 5%, var(--gold), var(--gold), transparent 95%);
+  transform: translateX(-50%);
+  z-index: 10; pointer-events: none;
+}
+.compare-handle {
+  position: absolute; top: 50%;
+  width: 40px; height: 40px;
+  background: var(--gold);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  z-index: 11; pointer-events: none;
+  cursor: ew-resize;
+}
+.compare-handle svg { pointer-events: none; }
+.compare-wrap {
+  position: absolute; inset: 0;
+  cursor: ew-resize; user-select: none; z-index: 5;
+}
+.compare-lbl {
+  position: absolute; bottom: 14px;
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px;
+  pointer-events: none; z-index: 12;
+  backdrop-filter: blur(6px);
+}
+.cmp-lbl-before { left: 14px; background: rgba(0,0,0,0.55); color: rgba(255,255,255,0.7); }
+.cmp-lbl-after { right: 14px; background: rgba(201,169,110,0.85); color: var(--primary); }
+
+/* ─── RESULT ACTION BAR ─── */
+.result-action-bar {
+  display: none;
+  flex-shrink: 0;
+  align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  background: #1a3542;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.result-action-bar.visible { display: flex; }
+.action-btn-group { display: flex; gap: 8px; }
+.action-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; padding: 7px 12px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px; font-weight: 700;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer; transition: all .15s; text-decoration: none;
+}
+.action-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.action-btn.primary {
+  background: rgba(201,169,110,0.2);
+  border-color: rgba(201,169,110,0.4);
+  color: var(--gold);
+}
+.action-btn.primary:hover { background: rgba(201,169,110,0.3); }
+
+.result-tag {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+}
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.88);
+  display: none; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+.modal-img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+}
+.modal-close {
+  position: fixed; top: 20px; right: 20px;
+  width: 40px; height: 40px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%; cursor: pointer;
+  color: #fff; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.2); }
+.modal-label {
+  position: fixed; top: 20px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 24px; padding: 6px 16px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--primary);
+  color: var(--white);
+  padding: 10px 18px; border-radius: 24px;
+  font-size: 12px; font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  transition: transform .3s ease, opacity .3s;
+  opacity: 0; pointer-events: none; z-index: 999;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.error { background: #c0392b; }
+.toast.success { background: var(--success); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">LD</div>
+      <div class="logo-text">
+        <span class="brand">Luxaris Design</span>
+        <span class="sub">Visualizador de Ambientes</span>
+      </div>
+    </div>
+    <div class="header-badge">
+      <div class="badge-dot"></div>
+      <span class="badge-text">Replicate · img2img · Transforma TU foto</span>
+    </div>
+    <div class="header-right">
+      <span class="proto-tag">Prototype 05</span>
+    </div>
+  </header>
+
+  <!-- MAIN 3-COLUMN GRID -->
+  <div class="main">
+
+    <!-- ─── COL 1: Photos ─── -->
+    <div class="col">
+      <div class="col-header">
+        <div class="col-title">Fotos de referencia</div>
+        <div class="col-subtitle">Sube · toca para activar</div>
+      </div>
+      <div class="col-body">
+
+        <div class="photo-upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*" multiple>
+          <span class="upload-icon-sm">📸</span>
+          <div class="upload-text-sm">Agregar fotos</div>
+          <div class="upload-hint-sm">JPG, PNG, WebP</div>
+        </div>
+
+        <div class="thumb-grid" id="thumbGrid"></div>
+
+      </div>
+    </div>
+
+    <!-- ─── COL 2: Design Brief ─── -->
+    <div class="col">
+      <div class="col-header">
+        <div class="col-title">Brief de Diseño</div>
+        <div class="col-subtitle">Estilo · intensidad · visión</div>
+      </div>
+      <div class="col-body">
+
+        <!-- Room type -->
+        <div class="form-section">
+          <label class="form-label">Tipo de ambiente</label>
+          <select class="room-select" id="roomSelect">
+            <option value="">Selecciona ambiente…</option>
+            <option value="living room">Sala de estar</option>
+            <option value="kitchen">Cocina</option>
+            <option value="master bedroom">Habitación principal</option>
+            <option value="bathroom">Baño principal</option>
+            <option value="dining room">Comedor</option>
+            <option value="home office">Oficina en casa</option>
+            <option value="outdoor patio">Exterior / Patio</option>
+            <option value="entryway">Entrada / Foyer</option>
+          </select>
+        </div>
+
+        <!-- Style grid -->
+        <div class="form-section">
+          <label class="form-label">Estilo de diseño</label>
+          <div class="style-grid">
+            <button class="style-btn" data-style="modern luxury">Lujo moderno</button>
+            <button class="style-btn" data-style="classic mediterranean">Mediterráneo</button>
+            <button class="style-btn" data-style="contemporary minimalist">Minimalista</button>
+            <button class="style-btn" data-style="tropical coastal">Tropical costero</button>
+            <button class="style-btn" data-style="industrial chic">Industrial chic</button>
+            <button class="style-btn" data-style="french provincial">Provenzal francés</button>
+            <button class="style-btn" data-style="art deco glamour">Art Deco</button>
+            <button class="style-btn" data-style="bohemian eclectic">Bohemio</button>
+          </div>
+        </div>
+
+        <!-- Change Intensity — KEY FEATURE -->
+        <div class="form-section">
+          <label class="form-label">Intensidad del cambio</label>
+          <div class="strength-wrap">
+            <div class="strength-header">
+              <span class="strength-label-main">Nivel de transformación</span>
+              <span class="strength-value" id="strengthVal">65%</span>
+            </div>
+            <div class="strength-desc-row">
+              <span class="strength-desc">Conserva original ←</span>
+              <span class="strength-desc">→ Total creativo</span>
+            </div>
+            <input
+              type="range" class="strength-slider" id="strengthSlider"
+              min="30" max="95" value="65"
+            >
+            <div class="strength-info-pill" id="strengthHint">
+              <strong>Equilibrado</strong> — La IA transforma las superficies principales (paredes, pisos, acabados)
+              conservando la estructura y distribución de tu ambiente.
+            </div>
+          </div>
+        </div>
+
+        <!-- Prompt + Voice -->
+        <div class="form-section">
+          <label class="form-label">Tu Visión</label>
+          <div class="prompt-wrap">
+            <textarea
+              class="prompt-textarea" id="promptTextarea"
+              placeholder="Describe lo que quieres… ej. mármol blanco en encimeras, accesorios dorados, ventanas de piso a techo…"
+              rows="3"
+            ></textarea>
+            <div class="prompt-footer">
+              <button class="voice-btn" id="voiceBtn">
+                <svg id="micIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+                <span id="voiceLabel">Voz</span>
+              </button>
+              <span class="char-count" id="charCount">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate -->
+        <button class="generate-btn" id="generateBtn" disabled>
+          <span class="btn-icon">✦</span>
+          Generar Render
+        </button>
+
+        <!-- Impl note -->
+        <div class="impl-note">
+          <strong>Implementación real:</strong> Replicate API
+          (<code>stability-ai/stable-diffusion-img2img</code>) — 20–40s, usa tu foto cargada como base,
+          el slider de intensidad controla cuánto puede alejarse la IA del original.
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── COL 3: Result ─── -->
+    <div class="col col-result" style="border-right:none;">
+      <div class="col-header">
+        <div class="col-title" style="color:rgba(255,255,255,0.4);">Antes / Después</div>
+        <div class="col-subtitle" style="color:rgba(255,255,255,0.25); font-size:10px;">Arrastra el slider para comparar</div>
+      </div>
+
+      <div class="result-body" id="resultBody">
+
+        <!-- Empty state -->
+        <div class="result-empty" id="resultEmpty">
+          <div class="result-empty-icon">🏠</div>
+          <p>Sube una foto y completa el brief<br>para generar un AI render</p>
+          <small>img2img conserva la estructura de tu ambiente — solo cambian las superficies</small>
+        </div>
+
+        <!-- Loading shimmer -->
+        <div class="shimmer-wrap" id="shimmerWrap">
+          <div class="shimmer-box"></div>
+          <div class="shimmer-text">
+            <div class="spinner"></div>
+            Replicate está transformando tu foto…
+          </div>
+        </div>
+
+        <!-- Before/After comparison -->
+        <div class="compare-container" id="compareContainer">
+          <img class="compare-before-img" id="cmpBefore" alt="Antes">
+          <div class="compare-clip" id="cmpClip">
+            <img class="compare-after-img" id="cmpAfter" alt="Después">
+          </div>
+          <div class="compare-divider" id="cmpDivider" style="left:50%"></div>
+          <div class="compare-handle" id="cmpHandle" style="left:50%">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16323D" stroke-width="2.5">
+              <polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16323D" stroke-width="2.5" style="margin-left:-4px;">
+              <polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="compare-wrap" id="compareWrap"></div>
+          <span class="compare-lbl cmp-lbl-before">ANTES</span>
+          <span class="compare-lbl cmp-lbl-after">DESPUÉS</span>
+        </div>
+
+      </div>
+
+      <!-- Action bar -->
+      <div class="result-action-bar" id="actionBar">
+        <span class="result-tag">img2img · Replicate</span>
+        <div class="action-btn-group">
+          <button class="action-btn" id="regenBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Regenerar
+          </button>
+          <a class="action-btn primary" id="downloadBtn" href="#" download="luxaris-render.jpg">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Descargar
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-label" id="modalLabel">Vista completa</div>
+  <button class="modal-close" id="modalClose">✕</button>
+  <img class="modal-img" id="modalImg" src="" alt="">
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+let photos = [];        // [{dataUrl, thumb}]
+let activePhotoIdx = -1;
+let selectedStyle = '';
+let strength = 65;
+let isRecording = false;
+let recognition = null;
+let generatedUrl = null;
+let isDraggingCompare = false;
+let seed = Math.floor(Math.random() * 99999);
+
+// ─── ELEMENTS ────────────────────────────────────────────────
+const uploadZone     = document.getElementById('uploadZone');
+const fileInput      = document.getElementById('fileInput');
+const thumbGrid      = document.getElementById('thumbGrid');
+const roomSelect     = document.getElementById('roomSelect');
+const strengthSlider = document.getElementById('strengthSlider');
+const strengthVal    = document.getElementById('strengthVal');
+const strengthHint   = document.getElementById('strengthHint');
+const promptTextarea = document.getElementById('promptTextarea');
+const charCount      = document.getElementById('charCount');
+const voiceBtn       = document.getElementById('voiceBtn');
+const voiceLabel     = document.getElementById('voiceLabel');
+const micIcon        = document.getElementById('micIcon');
+const generateBtn    = document.getElementById('generateBtn');
+const resultEmpty    = document.getElementById('resultEmpty');
+const shimmerWrap    = document.getElementById('shimmerWrap');
+const compareContainer = document.getElementById('compareContainer');
+const cmpBefore      = document.getElementById('cmpBefore');
+const cmpAfter       = document.getElementById('cmpAfter');
+const cmpClip        = document.getElementById('cmpClip');
+const cmpDivider     = document.getElementById('cmpDivider');
+const cmpHandle      = document.getElementById('cmpHandle');
+const compareWrap    = document.getElementById('compareWrap');
+const actionBar      = document.getElementById('actionBar');
+const regenBtn       = document.getElementById('regenBtn');
+const downloadBtn    = document.getElementById('downloadBtn');
+const modalOverlay   = document.getElementById('modalOverlay');
+const modalImg       = document.getElementById('modalImg');
+const modalLabel     = document.getElementById('modalLabel');
+const modalClose     = document.getElementById('modalClose');
+const toastEl        = document.getElementById('toast');
+
+// ─── TOAST ───────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  toastEl.textContent = msg;
+  toastEl.className = 'toast show ' + type;
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => { toastEl.className = 'toast'; }, 3000);
+}
+
+// ─── PHOTO UPLOAD ────────────────────────────────────────────
+fileInput.addEventListener('change', e => {
+  Array.from(e.target.files).forEach(addPhoto);
+  fileInput.value = '';
+});
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  Array.from(e.dataTransfer.files).forEach(f => { if (f.type.startsWith('image/')) addPhoto(f); });
+});
+
+function addPhoto(file) {
+  if (!file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    photos.push({ dataUrl: ev.target.result });
+    const idx = photos.length - 1;
+    renderThumbs();
+    setActivePhoto(idx);
+    showToast('Foto agregada — activa ✓');
+  };
+  reader.readAsDataURL(file);
+}
+
+function setActivePhoto(idx) {
+  activePhotoIdx = idx;
+  renderThumbs();
+  validateGenerate();
+}
+
+function renderThumbs() {
+  thumbGrid.innerHTML = '';
+  photos.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'thumb-item' + (i === activePhotoIdx ? ' active' : '');
+
+    const img = document.createElement('img');
+    img.src = p.dataUrl; img.alt = 'Foto ' + (i+1);
+
+    const del = document.createElement('button');
+    del.className = 'thumb-del'; del.textContent = '✕';
+    del.title = 'Eliminar';
+    del.addEventListener('click', e => { e.stopPropagation(); removePhoto(i); });
+
+    if (i === activePhotoIdx) {
+      const badge = document.createElement('div');
+      badge.className = 'thumb-active-badge'; badge.textContent = 'Activa';
+      item.appendChild(badge);
+    }
+
+    item.addEventListener('click', () => setActivePhoto(i));
+    item.appendChild(img); item.appendChild(del);
+    thumbGrid.appendChild(item);
+  });
+
+  // click on active photo opens modal
+  if (activePhotoIdx >= 0) {
+    const activeItem = thumbGrid.children[activePhotoIdx];
+    if (activeItem) {
+      const img = activeItem.querySelector('img');
+      img.addEventListener('click', ev => { ev.stopPropagation(); openModal(photos[activePhotoIdx].dataUrl, 'Foto de referencia'); });
+    }
+  }
+}
+
+function removePhoto(idx) {
+  photos.splice(idx, 1);
+  if (activePhotoIdx >= photos.length) activePhotoIdx = photos.length - 1;
+  renderThumbs();
+  validateGenerate();
+}
+
+// ─── STYLE BUTTONS ───────────────────────────────────────────
+document.querySelectorAll('.style-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedStyle = btn.dataset.style;
+    validateGenerate();
+  });
+});
+
+// ─── STRENGTH SLIDER ─────────────────────────────────────────
+const strengthDescriptions = {
+  low:    { label: 'Sutil', text: '<strong>Sutil</strong> — ajustes menores de color y textura. Tu ambiente se mantiene casi idéntico.' },
+  mid:    { label: 'Equilibrado', text: '<strong>Equilibrado</strong> — La IA transforma las superficies principales (paredes, pisos, acabados) conservando la estructura y distribución de tu ambiente.' },
+  high:   { label: 'Atrevido', text: '<strong>Atrevido</strong> — transformación dramática. Los materiales, la iluminación y la atmósfera cambian significativamente.' },
+  max:    { label: 'Máximo creativo', text: '<strong>Máximo creativo</strong> — transformación total. La IA reimagina tu espacio usando solo la distribución original como guía.' },
+};
+
+function updateStrengthUI(val) {
+  strength = val;
+  strengthVal.textContent = val + '%';
+  // Update gradient
+  const pct = ((val - 30) / (95 - 30)) * 100;
+  strengthSlider.style.background =
+    `linear-gradient(to right, var(--gold) 0%, var(--gold) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+  // Update hint
+  let desc;
+  if (val <= 45) desc = strengthDescriptions.low;
+  else if (val <= 62) desc = strengthDescriptions.mid;
+  else if (val <= 80) desc = strengthDescriptions.high;
+  else desc = strengthDescriptions.max;
+  strengthHint.innerHTML = desc.text;
+}
+
+strengthSlider.addEventListener('input', e => updateStrengthUI(parseInt(e.target.value)));
+updateStrengthUI(65);
+
+// ─── PROMPT ──────────────────────────────────────────────────
+promptTextarea.addEventListener('input', () => {
+  charCount.textContent = promptTextarea.value.length;
+  validateGenerate();
+});
+
+// ─── VOICE ───────────────────────────────────────────────────
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+voiceBtn.addEventListener('click', () => {
+  if (!SpeechRec) { showToast('Voz no disponible en este navegador', 'error'); return; }
+  isRecording ? stopRecording() : startRecording();
+});
+
+function startRecording() {
+  recognition = new SpeechRec();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'es-ES';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    voiceBtn.classList.add('recording');
+    voiceLabel.textContent = 'Escuchando…';
+    micIcon.style.stroke = '#c0392b';
+    showToast('Escuchando… habla ahora');
+  };
+
+  recognition.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    const cur = promptTextarea.value.trim();
+    promptTextarea.value = cur ? cur + ', ' + transcript : transcript;
+    promptTextarea.dispatchEvent(new Event('input'));
+  };
+
+  recognition.onerror = err => {
+    if (err.error !== 'no-speech') showToast('Error de voz: ' + err.error, 'error');
+    stopRecording();
+  };
+  recognition.onend = () => stopRecording();
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  voiceBtn.classList.remove('recording');
+  voiceLabel.textContent = 'Voz';
+  micIcon.style.stroke = '';
+  try { if (recognition) recognition.stop(); } catch(e) {}
+}
+
+// ─── VALIDATE GENERATE ───────────────────────────────────────
+function validateGenerate() {
+  generateBtn.disabled = activePhotoIdx < 0;
+}
+
+// ─── GENERATE ────────────────────────────────────────────────
+generateBtn.addEventListener('click', generate);
+regenBtn.addEventListener('click', () => { seed = Math.floor(Math.random() * 99999); generate(); });
+
+async function generate() {
+  if (activePhotoIdx < 0) { showToast('Sube una foto de referencia primero', 'error'); return; }
+
+  resultEmpty.style.display = 'none';
+  compareContainer.classList.remove('visible');
+  actionBar.classList.remove('visible');
+  shimmerWrap.classList.add('visible');
+
+  generateBtn.disabled = true;
+  generateBtn.textContent = '⏳ Generando…';
+
+  const room = roomSelect.value || 'interior room';
+  const style = selectedStyle || 'modern luxury';
+  const extra = promptTextarea.value.trim();
+  const prompt = [
+    style, 'interior design', room,
+    'professional architectural photography',
+    'high-end finish', 'dramatic lighting', '8k ultra realistic',
+    extra
+  ].filter(Boolean).join(', ');
+
+  const encoded = encodeURIComponent(prompt);
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=768&height=1024&nologo=true&model=flux&seed=${seed}`;
+
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      generatedUrl = url;
+      shimmerWrap.classList.remove('visible');
+
+      // Set comparison images
+      cmpBefore.src = photos[activePhotoIdx].dataUrl;
+      cmpAfter.src = url;
+      compareContainer.classList.add('visible');
+      actionBar.classList.add('visible');
+
+      setComparePosition(50);
+      downloadBtn.href = url;
+
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<span class="btn-icon">✦</span> Generar Render';
+      showToast('¡Render listo! Arrastra el slider para comparar', 'success');
+    };
+    img.onerror = () => {
+      shimmerWrap.classList.remove('visible');
+      resultEmpty.style.display = 'flex';
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<span class="btn-icon">✦</span> Generar Render';
+      showToast('Error al generar — verifica tu conexión', 'error');
+    };
+    img.src = url;
+  } catch(e) {
+    shimmerWrap.classList.remove('visible');
+    resultEmpty.style.display = 'flex';
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = '<span class="btn-icon">✦</span> Generar Render';
+  }
+}
+
+// ─── COMPARISON SLIDER ───────────────────────────────────────
+function setComparePosition(pct) {
+  pct = Math.max(2, Math.min(98, pct));
+  cmpDivider.style.left = pct + '%';
+  cmpHandle.style.left = pct + '%';
+  cmpClip.style.clipPath = `inset(0 0 0 ${pct}%)`;
+}
+
+compareWrap.addEventListener('mousedown', e => { isDraggingCompare = true; e.preventDefault(); });
+compareWrap.addEventListener('touchstart', () => { isDraggingCompare = true; }, { passive: true });
+
+document.addEventListener('mousemove', e => {
+  if (!isDraggingCompare) return;
+  const rect = compareContainer.getBoundingClientRect();
+  const pct = ((e.clientX - rect.left) / rect.width) * 100;
+  setComparePosition(pct);
+});
+
+document.addEventListener('touchmove', e => {
+  if (!isDraggingCompare) return;
+  const rect = compareContainer.getBoundingClientRect();
+  const pct = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
+  setComparePosition(pct);
+}, { passive: true });
+
+document.addEventListener('mouseup', () => { isDraggingCompare = false; });
+document.addEventListener('touchend', () => { isDraggingCompare = false; });
+
+// Click on before/after images opens modal
+cmpBefore.addEventListener('click', () => {
+  if (!isDraggingCompare && photos[activePhotoIdx]) openModal(photos[activePhotoIdx].dataUrl, 'Antes');
+});
+cmpAfter.addEventListener('click', () => {
+  if (!isDraggingCompare && generatedUrl) openModal(generatedUrl, 'Después — AI Render');
+});
+
+// ─── MODAL ───────────────────────────────────────────────────
+function openModal(src, label) {
+  modalImg.src = src;
+  modalLabel.textContent = label;
+  modalOverlay.classList.add('open');
+}
+modalClose.addEventListener('click', () => modalOverlay.classList.remove('open'));
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('open'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') modalOverlay.classList.remove('open'); });
+
+// ─── KEYBOARD SHORTCUT ───────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+});
+</script>
+</body>
+</html>

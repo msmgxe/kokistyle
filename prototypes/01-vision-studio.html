@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision Studio — Luxaris Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #16323D;
+    --primary-light: #1e4455;
+    --primary-dark: #0d1f25;
+    --secondary: #F5E9DA;
+    --accent: #7B1838;
+    --success: #4F8A63;
+    --text-soft: #5C6A6E;
+    --border: #E6DDCB;
+    --card-bg: #F7F3EA;
+    --navy: #395886;
+    --gold: #C9A96E;
+    --gold-light: #e2c48a;
+    --glass: rgba(255,255,255,0.06);
+    --glass-border: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--primary-dark);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    height: 60px;
+    background: rgba(13,31,37,0.95);
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--gold), #a07840);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--primary-dark);
+    letter-spacing: -0.5px;
+  }
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+  .logo-text span:first-child {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.5px;
+  }
+  .logo-text span:last-child {
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .title-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(201,169,110,0.12);
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 24px;
+    padding: 6px 16px;
+  }
+  .title-pill .dot {
+    width: 7px;
+    height: 7px;
+    background: var(--gold);
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+  }
+  .title-pill span {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(0.7); }
+  }
+
+  .room-select-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .room-select-wrap label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .room-select {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
+    transition: border-color .2s;
+  }
+  .room-select:hover { border-color: rgba(201,169,110,0.4); }
+  .room-select option { background: #1a3542; }
+
+  /* ── MAIN AREA ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 28px 0;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .panels-row {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    min-height: 0;
+    position: relative;
+  }
+
+  /* ── PANEL ── */
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    max-height: 68vh;
+    transition: border-color .3s;
+  }
+  .panel:hover { border-color: rgba(255,255,255,0.18); }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+  }
+  .panel-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+  }
+  .panel-label.after { color: var(--gold); }
+  .panel-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+  .badge-before {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+  }
+  .badge-after {
+    background: rgba(201,169,110,0.15);
+    color: var(--gold);
+    border: 1px solid rgba(201,169,110,0.3);
+  }
+
+  .panel-body {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: background .2s;
+    padding: 20px;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    background: rgba(201,169,110,0.06);
+  }
+  .drop-zone.drag-over { border: 2px dashed var(--gold); border-radius: 0; }
+  .drop-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px dashed rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .2s, border-color .2s;
+  }
+  .drop-zone:hover .drop-icon {
+    transform: scale(1.05);
+    border-color: rgba(201,169,110,0.5);
+  }
+  .drop-icon svg { opacity: 0.5; }
+  .drop-text {
+    text-align: center;
+  }
+  .drop-text p:first-child {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 4px;
+  }
+  .drop-text p:last-child {
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+  }
+  .drop-btn {
+    background: rgba(201,169,110,0.15);
+    border: 1px solid rgba(201,169,110,0.35);
+    color: var(--gold);
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background .2s, transform .15s;
+  }
+  .drop-btn:hover { background: rgba(201,169,110,0.25); transform: translateY(-1px); }
+
+  /* ── IMAGE PREVIEW ── */
+  .img-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #0d1f27;
+    display: none;
+    position: absolute;
+    inset: 0;
+  }
+  .img-preview.visible { display: block; }
+
+  .img-overlay-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    display: none;
+    transition: background .2s;
+  }
+  .img-overlay-btn:hover { background: rgba(0,0,0,0.75); }
+  .img-overlay-btn.visible { display: block; }
+
+  /* ── SHIMMER / LOADING ── */
+  .shimmer-wrap {
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    position: absolute;
+    inset: 0;
+  }
+  .shimmer-wrap.visible { display: flex; }
+  .shimmer-block {
+    flex: 1;
+    background: linear-gradient(90deg,
+      rgba(255,255,255,0.03) 0%,
+      rgba(255,255,255,0.08) 40%,
+      rgba(201,169,110,0.06) 50%,
+      rgba(255,255,255,0.08) 60%,
+      rgba(255,255,255,0.03) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .shimmer-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .shimmer-spinner {
+    width: 40px;
+    height: 40px;
+    border: 2.5px solid rgba(201,169,110,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .shimmer-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(201,169,110,0.7);
+    letter-spacing: 1px;
+  }
+
+  /* ── GENERATED IMAGE ── */
+  .gen-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #0d1f27;
+    position: absolute;
+    inset: 0;
+    display: none;
+    animation: fadeIn .6s ease;
+  }
+  .gen-img.visible { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:scale(1.02); } to { opacity:1; transform:scale(1); } }
+
+  /* ── EMPTY STATE (after panel) ── */
+  .after-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+  }
+  .after-empty svg { opacity: 0.15; }
+  .after-empty p {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.2);
+    text-align: center;
+    max-width: 160px;
+  }
+
+  /* ── CENTER ORB ── */
+  .center-orb {
+    width: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+  .orb {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold), #8a6030);
+    box-shadow: 0 0 0 0 rgba(201,169,110,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: transform .3s;
+    position: relative;
+  }
+  .orb::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(201,169,110,0.25);
+  }
+  .orb svg { color: var(--primary-dark); }
+  .orb.recording {
+    animation: orb-pulse 1.2s infinite;
+  }
+  @keyframes orb-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(201,169,110,0.5); }
+    50% { box-shadow: 0 0 0 16px rgba(201,169,110,0); }
+  }
+  .orb.loading { animation: orb-spin 2s linear infinite; }
+  @keyframes orb-spin {
+    to { filter: hue-rotate(30deg); }
+  }
+
+  /* ── COMPARISON SLIDER ── */
+  .compare-wrap {
+    position: absolute;
+    inset: 0;
+    display: none;
+    cursor: ew-resize;
+    user-select: none;
+  }
+  .compare-wrap.visible { display: block; }
+  .compare-after-img, .compare-before-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #0d1f27;
+  }
+  .compare-clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .compare-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, var(--gold), var(--gold), transparent);
+    transform: translateX(-50%);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .compare-handle {
+    position: absolute;
+    top: 50%;
+    width: 36px;
+    height: 36px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    z-index: 11;
+    pointer-events: none;
+  }
+  .compare-label {
+    position: absolute;
+    bottom: 14px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    pointer-events: none;
+    z-index: 12;
+  }
+  .compare-label.before-lbl {
+    left: 14px;
+    background: rgba(0,0,0,0.55);
+    color: rgba(255,255,255,0.7);
+    backdrop-filter: blur(6px);
+  }
+  .compare-label.after-lbl {
+    right: 14px;
+    background: rgba(201,169,110,0.8);
+    color: var(--primary-dark);
+    backdrop-filter: blur(6px);
+  }
+
+  /* ── STYLE PILLS ── */
+  .style-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .style-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .style-pill {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .style-pill:hover, .style-pill.active {
+    background: rgba(201,169,110,0.15);
+    border-color: rgba(201,169,110,0.45);
+    color: var(--gold);
+    transform: translateY(-1px);
+  }
+
+  /* ── BOTTOM TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 28px 24px;
+    background: linear-gradient(to top, var(--primary-dark) 60%, transparent);
+    flex-shrink: 0;
+  }
+
+  .prompt-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .mic-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--glass);
+    border: 1.5px solid var(--glass-border);
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .mic-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,169,110,0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity .25s;
+  }
+  .mic-btn:hover { border-color: rgba(201,169,110,0.5); color: var(--gold); }
+  .mic-btn:hover::before { opacity: 1; }
+  .mic-btn.recording {
+    background: rgba(201,169,110,0.15);
+    border-color: var(--gold);
+    color: var(--gold);
+    animation: mic-ring 1.2s infinite;
+  }
+  @keyframes mic-ring {
+    0%,100% { box-shadow: 0 0 0 0 rgba(201,169,110,0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(201,169,110,0); }
+  }
+
+  .prompt-field {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 14px 18px;
+    color: #fff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    min-height: 52px;
+    max-height: 120px;
+    transition: border-color .2s, background .2s;
+    field-sizing: content;
+  }
+  .prompt-field::placeholder { color: rgba(255,255,255,0.25); }
+  .prompt-field:focus {
+    border-color: rgba(201,169,110,0.4);
+    background: rgba(255,255,255,0.07);
+  }
+
+  .generate-btn {
+    height: 52px;
+    padding: 0 28px;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, #a07840 100%);
+    color: var(--primary-dark);
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+    box-shadow: 0 4px 20px rgba(201,169,110,0.3);
+    white-space: nowrap;
+    min-width: 140px;
+  }
+  .generate-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: btn-shimmer 2.5s infinite;
+  }
+  @keyframes btn-shimmer {
+    0% { transform: translateX(-100%); }
+    40%, 100% { transform: translateX(100%); }
+  }
+  .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,169,110,0.4); }
+  .generate-btn:active { transform: translateY(0); }
+  .generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    animation: none;
+  }
+  .generate-btn:disabled::before { animation: none; }
+
+  /* ── DOWNLOAD & ACTIONS ── */
+  .action-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    height: 0;
+    overflow: hidden;
+    transition: height .3s ease;
+  }
+  .action-row.visible { height: 36px; }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.65);
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .2s;
+    text-decoration: none;
+  }
+  .action-btn:hover {
+    background: rgba(201,169,110,0.12);
+    border-color: rgba(201,169,110,0.35);
+    color: var(--gold);
+    transform: translateY(-1px);
+  }
+  .action-btn svg { opacity: 0.8; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: rgba(22,50,61,0.95);
+    border: 1px solid rgba(201,169,110,0.35);
+    backdrop-filter: blur(16px);
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    z-index: 999;
+    transition: transform .3s ease;
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: rgba(79,138,99,0.5); }
+  .toast.error { border-color: rgba(176,73,47,0.5); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .topbar { padding: 0 16px; }
+    .title-pill span { font-size: 11px; letter-spacing: 1px; }
+    .main { padding: 16px 16px 0; }
+    .panels-row { grid-template-columns: 1fr; grid-template-rows: 1fr auto 1fr; }
+    .panel { max-height: 32vh; min-height: 200px; }
+    .center-orb { width: auto; height: 40px; justify-content: center; }
+    .toolbar { padding: 12px 16px 20px; }
+    .generate-btn { min-width: 110px; padding: 0 18px; font-size: 12px; }
+    .logo-text span:last-child { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-mark">LD</div>
+    <div class="logo-text">
+      <span>Luxaris Design</span>
+      <span>Miami · South Florida</span>
+    </div>
+  </div>
+
+  <div class="title-pill">
+    <span class="dot"></span>
+    <span>Vision Studio</span>
+  </div>
+
+  <div class="room-select-wrap">
+    <label>Ambiente</label>
+    <select class="room-select" id="roomSelect">
+      <option value="bathroom">Baño</option>
+      <option value="kitchen">Cocina</option>
+      <option value="living room">Sala</option>
+      <option value="bedroom">Dormitorio</option>
+      <option value="dining room">Comedor</option>
+      <option value="exterior facade">Exterior</option>
+    </select>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="panels-row">
+    <!-- LEFT: ANTES -->
+    <div class="panel" id="panelBefore">
+      <div class="panel-header">
+        <span class="panel-label">Antes</span>
+        <span class="panel-badge badge-before">ORIGINAL</span>
+      </div>
+      <div class="panel-body">
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-text">
+            <p>Arrastra tu foto aquí</p>
+            <p>JPG, PNG, WEBP hasta 20MB</p>
+          </div>
+          <button class="drop-btn" onclick="fileInput.click()">Seleccionar foto</button>
+        </div>
+        <img class="img-preview" id="beforeImg" alt="Before">
+        <button class="img-overlay-btn" id="changeImgBtn" onclick="fileInput.click()">Cambiar foto</button>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+      </div>
+    </div>
+
+    <!-- CENTER ORB -->
+    <div class="center-orb">
+      <div class="orb" id="mainOrb" title="Estado">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- RIGHT: DESPUÉS -->
+    <div class="panel" id="panelAfter">
+      <div class="panel-header">
+        <span class="panel-label after">Después</span>
+        <span class="panel-badge badge-after">AI RENDER</span>
+      </div>
+      <div class="panel-body" id="afterBody">
+        <div class="after-empty" id="afterEmpty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <p>Describe el diseño y presiona Generar</p>
+        </div>
+
+        <div class="shimmer-wrap" id="shimmerWrap">
+          <div class="shimmer-block"></div>
+          <div class="shimmer-text">
+            <div class="shimmer-spinner"></div>
+            <div class="shimmer-label">Generando render...</div>
+          </div>
+        </div>
+
+        <img class="gen-img" id="genImg" alt="AI Render">
+
+        <!-- Comparison slider (overlays both panels) -->
+        <div class="compare-wrap" id="compareWrap">
+          <img class="compare-before-img" id="cmpBefore" alt="Before">
+          <div class="compare-clip" id="cmpClip">
+            <img class="compare-after-img" id="cmpAfter" alt="After">
+          </div>
+          <div class="compare-divider" id="cmpDivider"></div>
+          <div class="compare-handle" id="cmpHandle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--primary-dark)" stroke="var(--primary-dark)" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/></svg>
+          </div>
+          <span class="compare-label before-lbl">ANTES</span>
+          <span class="compare-label after-lbl">DESPUÉS</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- STYLE PILLS -->
+  <div class="style-row">
+    <span class="style-label">Estilo:</span>
+    <button class="style-pill" data-style="modern">Moderno</button>
+    <button class="style-pill" data-style="classic">Clásico</button>
+    <button class="style-pill" data-style="industrial">Industrial</button>
+    <button class="style-pill" data-style="minimalist">Minimalista</button>
+    <button class="style-pill" data-style="rustic">Rústico</button>
+    <button class="style-pill" data-style="tropical">Tropical</button>
+  </div>
+
+</main>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="action-row" id="actionRow">
+    <button class="action-btn" id="compareBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 3H3v18h18V3z"/><path d="M12 3v18"/>
+      </svg>
+      Comparar
+    </button>
+    <a class="action-btn" id="downloadBtn" href="#" download="luxaris-render.jpg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Descargar
+    </a>
+    <button class="action-btn" id="regenerateBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      Regenerar
+    </button>
+  </div>
+
+  <div class="prompt-row">
+    <button class="mic-btn" id="micBtn" title="Hablar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="micIcon">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+
+    <textarea
+      class="prompt-field"
+      id="promptField"
+      placeholder="Describe tu visión: bañera independiente blanca, mármol negro, griferías doradas, luz natural…"
+      rows="1"
+    ></textarea>
+
+    <button class="generate-btn" id="generateBtn">
+      ✦ Generar
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let beforeDataUrl = null;
+let generatedUrl = null;
+let isRecording = false;
+let recognition = null;
+let compareActive = false;
+let isDraggingCompare = false;
+
+// ── ELEMENTS ──
+const dropZone    = document.getElementById('dropZone');
+const fileInput   = document.getElementById('fileInput');
+const beforeImg   = document.getElementById('beforeImg');
+const changeImgBtn= document.getElementById('changeImgBtn');
+const afterEmpty  = document.getElementById('afterEmpty');
+const shimmerWrap = document.getElementById('shimmerWrap');
+const genImg      = document.getElementById('genImg');
+const compareWrap = document.getElementById('compareWrap');
+const cmpBefore   = document.getElementById('cmpBefore');
+const cmpAfter    = document.getElementById('cmpAfter');
+const cmpClip     = document.getElementById('cmpClip');
+const cmpDivider  = document.getElementById('cmpDivider');
+const cmpHandle   = document.getElementById('cmpHandle');
+const micBtn      = document.getElementById('micBtn');
+const promptField = document.getElementById('promptField');
+const generateBtn = document.getElementById('generateBtn');
+const roomSelect  = document.getElementById('roomSelect');
+const actionRow   = document.getElementById('actionRow');
+const downloadBtn = document.getElementById('downloadBtn');
+const compareBtn  = document.getElementById('compareBtn');
+const regenerateBtn=document.getElementById('regenerateBtn');
+const mainOrb     = document.getElementById('mainOrb');
+
+// ── TOAST ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+// ── FILE UPLOAD ──
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) loadImage(file);
+  fileInput.value = '';
+});
+
+function loadImage(file) {
+  if (!file.type.startsWith('image/')) { showToast('Solo se aceptan imágenes', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    beforeDataUrl = ev.target.result;
+    beforeImg.src = beforeDataUrl;
+    beforeImg.classList.add('visible');
+    changeImgBtn.classList.add('visible');
+    dropZone.style.display = 'none';
+    resetAfterPanel();
+    updateOrb('ready');
+    showToast('Foto cargada. Ahora describe el diseño ✦');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── DRAG & DROP ──
+const panelBefore = document.getElementById('panelBefore');
+panelBefore.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+panelBefore.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+panelBefore.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadImage(file);
+});
+
+// ── RESET AFTER PANEL ──
+function resetAfterPanel() {
+  generatedUrl = null;
+  compareActive = false;
+  genImg.classList.remove('visible');
+  shimmerWrap.classList.remove('visible');
+  compareWrap.classList.remove('visible');
+  afterEmpty.style.display = 'flex';
+  actionRow.classList.remove('visible');
+  compareBtn.textContent = '⊡ Comparar';
+}
+
+// ── ORB ──
+const orbIconReady = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-dark)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+const orbIconInfo  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>`;
+const orbIconMic   = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-dark)" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>`;
+const orbIconGen   = `<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary-dark)"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`;
+
+function updateOrb(state) {
+  mainOrb.className = 'orb';
+  if (state === 'ready')     { mainOrb.innerHTML = orbIconReady; }
+  if (state === 'recording') { mainOrb.classList.add('recording'); mainOrb.innerHTML = orbIconMic; }
+  if (state === 'loading')   { mainOrb.classList.add('loading'); mainOrb.innerHTML = orbIconGen; }
+  if (state === 'done')      { mainOrb.innerHTML = orbIconReady; }
+  if (state === 'idle')      { mainOrb.innerHTML = orbIconInfo; }
+}
+
+// ── VOICE ──
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+micBtn.addEventListener('click', () => {
+  if (!SpeechRec) {
+    showToast('Voz no disponible en este navegador — usa Chrome o Safari', 'error');
+    return;
+  }
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+});
+
+function startRecording() {
+  recognition = new SpeechRec();
+  recognition.lang = 'es-ES';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    micBtn.classList.add('recording');
+    updateOrb('recording');
+    showToast('Escuchando… habla ahora');
+  };
+
+  recognition.onresult = e => {
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    if (e.results[e.results.length - 1].isFinal) {
+      const current = promptField.value.trim();
+      promptField.value = current ? current + ', ' + transcript : transcript;
+      promptField.dispatchEvent(new Event('input'));
+    }
+  };
+
+  recognition.onerror = err => {
+    if (err.error !== 'no-speech') showToast('Error de voz: ' + err.error, 'error');
+    stopRecording();
+  };
+
+  recognition.onend = () => stopRecording();
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  micBtn.classList.remove('recording');
+  if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+  updateOrb(generatedUrl ? 'done' : beforeDataUrl ? 'ready' : 'idle');
+}
+
+// ── STYLE PILLS ──
+document.querySelectorAll('.style-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    const style = pill.dataset.style;
+    pill.classList.toggle('active');
+    const styles = [...document.querySelectorAll('.style-pill.active')].map(p => p.dataset.style);
+    const current = promptField.value;
+    // Remove old style keywords, add current ones at start
+    const styleKeywords = ['modern','classic','industrial','minimalist','rustic','tropical'];
+    let cleaned = current;
+    styleKeywords.forEach(k => {
+      cleaned = cleaned.replace(new RegExp(',?\\s*' + k + '\\b', 'gi'), '');
+    });
+    cleaned = cleaned.trim().replace(/^,+/, '').trim();
+    promptField.value = styles.length ? styles.join(', ') + (cleaned ? ', ' + cleaned : '') : cleaned;
+  });
+});
+
+// ── GENERATE ──
+generateBtn.addEventListener('click', generate);
+regenerateBtn.addEventListener('click', generate);
+
+async function generate() {
+  const description = promptField.value.trim();
+  if (!description) {
+    showToast('Describe el diseño antes de generar', 'error');
+    promptField.focus();
+    return;
+  }
+
+  const room = roomSelect.value;
+  const seed = Math.floor(Math.random() * 999999);
+
+  const enhanced =
+    `photorealistic interior design architectural rendering, luxury residential, ` +
+    `${room} remodel, 8k ultra detailed, professional photography, dramatic lighting, ` +
+    `${description}, Houzz magazine quality, high-end construction finish, hyper realistic, ` +
+    `award winning architecture, South Florida luxury home`;
+
+  const encodedPrompt = encodeURIComponent(enhanced);
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=1024&nologo=true&model=flux&seed=${seed}`;
+
+  // Show loading
+  afterEmpty.style.display = 'none';
+  genImg.classList.remove('visible');
+  compareWrap.classList.remove('visible');
+  shimmerWrap.classList.add('visible');
+  actionRow.classList.remove('visible');
+  generateBtn.disabled = true;
+  generateBtn.textContent = '… Generando';
+  updateOrb('loading');
+  compareActive = false;
+
+  try {
+    // Pre-load image
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        generatedUrl = url;
+        genImg.src = url;
+        if (cmpAfter) cmpAfter.src = url;
+        if (beforeDataUrl && cmpBefore) cmpBefore.src = beforeDataUrl;
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    shimmerWrap.classList.remove('visible');
+    genImg.classList.add('visible');
+    actionRow.classList.add('visible');
+    downloadBtn.href = url;
+    updateOrb('done');
+    showToast('Render generado con éxito ✦', 'success');
+  } catch (err) {
+    shimmerWrap.classList.remove('visible');
+    afterEmpty.style.display = 'flex';
+    afterEmpty.querySelector('p').textContent = 'Error al generar. Inténtalo de nuevo.';
+    updateOrb(beforeDataUrl ? 'ready' : 'idle');
+    showToast('No se pudo generar la imagen — verifica tu conexión', 'error');
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = '✦ Generar';
+  }
+}
+
+// ── COMPARE SLIDER ──
+compareBtn.addEventListener('click', () => {
+  if (!generatedUrl || !beforeDataUrl) { showToast('Necesitas antes una foto original y un render', 'error'); return; }
+  compareActive = !compareActive;
+  if (compareActive) {
+    genImg.classList.remove('visible');
+    compareWrap.classList.add('visible');
+    setComparePosition(50);
+    compareBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Ver Render`;
+  } else {
+    compareWrap.classList.remove('visible');
+    genImg.classList.add('visible');
+    compareBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3v18h18V3z"/><path d="M12 3v18"/></svg> Comparar`;
+  }
+});
+
+function setComparePosition(pct) {
+  cmpDivider.style.left = pct + '%';
+  cmpHandle.style.left = pct + '%';
+  cmpClip.style.clipPath = `inset(0 0 0 ${pct}%)`;
+}
+
+compareWrap.addEventListener('mousedown', e => { isDraggingCompare = true; e.preventDefault(); });
+compareWrap.addEventListener('touchstart', e => { isDraggingCompare = true; }, { passive: true });
+
+document.addEventListener('mousemove', e => {
+  if (!isDraggingCompare) return;
+  const rect = compareWrap.getBoundingClientRect();
+  const pct = Math.max(2, Math.min(98, ((e.clientX - rect.left) / rect.width) * 100));
+  setComparePosition(pct);
+});
+
+document.addEventListener('touchmove', e => {
+  if (!isDraggingCompare) return;
+  const rect = compareWrap.getBoundingClientRect();
+  const pct = Math.max(2, Math.min(98, ((e.touches[0].clientX - rect.left) / rect.width) * 100));
+  setComparePosition(pct);
+}, { passive: true });
+
+document.addEventListener('mouseup', () => { isDraggingCompare = false; });
+document.addEventListener('touchend', () => { isDraggingCompare = false; });
+
+// ── KEYBOARD SHORTCUT ──
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    generate();
+  }
+});
+
+// Init orb
+updateOrb('idle');
+</script>
+</body>
+</html>
