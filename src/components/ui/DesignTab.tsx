@@ -183,8 +183,13 @@ export default function DesignTab({ project, toast }: Props) {
           strength,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "API error");
+      let data: Record<string, unknown>;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(res.ok ? "Invalid response" : `HTTP ${res.status}`);
+      }
+      if (!res.ok) throw new Error((data.error as string) ?? "API error");
 
       if (data.output) {
         const url = Array.isArray(data.output) ? data.output[0] : data.output;
@@ -195,18 +200,21 @@ export default function DesignTab({ project, toast }: Props) {
         ]);
         setGenerating(false);
         toast(isEN ? "Render complete ✓" : "Render listo ✓");
-      } else if (data.id) {
-        setPredictionId(data.id);
+      } else if (data.id && typeof data.id === "string") {
+        setPredictionId(data.id as string);
       } else {
         throw new Error("Unexpected response");
       }
     } catch (e) {
       setGenerating(false);
       const msg = e instanceof Error ? e.message : String(e);
-      const isConfig = /REPLICATE|configured/i.test(msg);
+      const isConfig = /REPLICATE|configured|token/i.test(msg);
+      const isHttp   = /HTTP 4|HTTP 5/.test(msg);
       toast(
         isConfig
-          ? (isEN ? "Add REPLICATE_API_TOKEN to environment variables" : "Agrega REPLICATE_API_TOKEN a las variables de entorno")
+          ? (isEN ? "REPLICATE_API_TOKEN not set — add it in Vercel → Environment Variables" : "Falta REPLICATE_API_TOKEN — agrégalo en Vercel → Environment Variables")
+          : isHttp
+          ? (isEN ? `Server error (${msg}). Check Vercel logs.` : `Error del servidor (${msg}). Revisa los logs de Vercel.`)
           : (isEN ? "Connection error. Try again." : "Error de conexión. Intenta de nuevo.")
       );
     }
