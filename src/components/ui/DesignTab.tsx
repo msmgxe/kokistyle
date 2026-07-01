@@ -189,7 +189,10 @@ export default function DesignTab({ project, toast }: Props) {
       } catch {
         throw new Error(res.ok ? "Invalid response" : `HTTP ${res.status}`);
       }
-      if (!res.ok) throw new Error((data.error as string) ?? "API error");
+      if (!res.ok) {
+        const errMsg = (data.error as string) || "API error";
+        throw new Error(`HTTP ${res.status}: ${errMsg}`);
+      }
 
       if (data.output) {
         const url = Array.isArray(data.output) ? data.output[0] : data.output;
@@ -208,13 +211,19 @@ export default function DesignTab({ project, toast }: Props) {
     } catch (e) {
       setGenerating(false);
       const msg = e instanceof Error ? e.message : String(e);
-      const isConfig = /REPLICATE|configured|token/i.test(msg);
-      const isHttp   = /HTTP 4|HTTP 5/.test(msg);
+      const isConfig  = /REPLICATE|configured|token/i.test(msg);
+      const isAuth    = /HTTP 401/.test(msg);
+      const isBilling = /HTTP 402/.test(msg);
+      const isHttp    = /HTTP \d/.test(msg);
       toast(
         isConfig
           ? (isEN ? "REPLICATE_API_TOKEN not set — add it in Vercel → Environment Variables" : "Falta REPLICATE_API_TOKEN — agrégalo en Vercel → Environment Variables")
+          : isAuth
+          ? (isEN ? "Invalid Replicate token. Verify it at replicate.com/account/api-tokens" : "Token de Replicate inválido. Verifícalo en replicate.com/account/api-tokens")
+          : isBilling
+          ? (isEN ? "Add a payment method at replicate.com/account/billing (free credits may be exhausted)" : "Agrega un método de pago en replicate.com/account/billing")
           : isHttp
-          ? (isEN ? `Server error (${msg}). Check Vercel logs.` : `Error del servidor (${msg}). Revisa los logs de Vercel.`)
+          ? (isEN ? `Replicate error: ${msg}` : `Error de Replicate: ${msg}`)
           : (isEN ? "Connection error. Try again." : "Error de conexión. Intenta de nuevo.")
       );
     }

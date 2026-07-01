@@ -54,9 +54,18 @@ export async function POST(req: NextRequest) {
     );
 
     if (!res.ok) {
-      const err = await res.text();
-      console.error("[/api/design-render POST]", res.status, err);
-      return NextResponse.json({ error: err }, { status: res.status });
+      let errDetail: string;
+      try {
+        const errJson = await res.json();
+        errDetail = errJson.detail ?? errJson.error ?? JSON.stringify(errJson);
+      } catch {
+        errDetail = await res.text().catch(() => "");
+      }
+      console.error("[/api/design-render POST]", res.status, errDetail);
+      return NextResponse.json(
+        { error: errDetail || `HTTP ${res.status}`, httpStatus: res.status },
+        { status: res.status }
+      );
     }
 
     const prediction = await res.json();
