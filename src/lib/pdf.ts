@@ -508,55 +508,15 @@ function buildEstimatePdf(
 
   // ── Totals + payment schedule (2-column) ───────────────────────────────────
   y += 4;
-  checkPage(45);
+  checkPage(48);
 
   const totalsStartY = y;
-  const leftBlockW   = 110;
-  const schedW       = CW - leftBlockW - 5;
-  const schedX       = ML + leftBlockW + 5;
+  const schedW       = 90;
+  const schedX       = ML;
+  const rightX       = ML + schedW + 5;
+  const rightBlockW  = CW - schedW - 5;
 
-  // Discount rows inside a cream bordered box
-  if (discountAmt > 0) {
-    doc.setFillColor(247, 243, 234);
-    doc.setDrawColor(230, 221, 203);
-    doc.setLineWidth(0.2);
-    doc.roundedRect(ML, y, leftBlockW, 9, 1.5, 1.5, "FD");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(92, 106, 110);
-    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", ML + 4, y + 3.5);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(22, 50, 61);
-    doc.text(money(laborTotal), ML + leftBlockW - 3, y + 3.5, { align: "right" });
-    y += 4.5;
-    doc.setDrawColor(220, 212, 200);
-    doc.setLineWidth(0.15);
-    doc.line(ML + 2, y, ML + leftBlockW - 2, y);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(92, 106, 110);
-    doc.text(
-      `${estimate.discount_label || "Discount"} (−${estimate.discount_pct}%)`,
-      ML + 4, y + 4.5,
-    );
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(79, 138, 99);
-    doc.text(`−${money(discountAmt)}`, ML + leftBlockW - 3, y + 4.5, { align: "right" });
-    y += 5;
-  }
-
-  // Grand total bar
-  doc.setFillColor(22, 50, 61);
-  doc.roundedRect(ML, y, leftBlockW, 12, 2, 2, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(255, 255, 255);
-  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", ML + 5, y + 5);
-  doc.setFontSize(13);
-  doc.text(money(grandTotal), ML + leftBlockW - 4, y + 8.5, { align: "right" });
-  y += 14;
-
-  // Payment schedule (right column, starts at totalsStartY)
+  // Payment schedule (left column)
   const schedBoxH = 7 + estimate.deposit_schedule.length * 11 + 2;
   doc.setDrawColor(230, 221, 203);
   doc.setLineWidth(0.3);
@@ -598,7 +558,49 @@ function buildEstimatePdf(
     py += 11;
   }
 
-  y = Math.max(y, totalsStartY + schedBoxH + 2);
+  // Discount rows (right column, top)
+  let ry = totalsStartY;
+  if (discountAmt > 0) {
+    doc.setFillColor(247, 243, 234);
+    doc.setDrawColor(230, 221, 203);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(rightX, ry, rightBlockW, 9, 1.5, 1.5, "FD");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(92, 106, 110);
+    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", rightX + 4, ry + 3.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(22, 50, 61);
+    doc.text(money(laborTotal), rightX + rightBlockW - 3, ry + 3.5, { align: "right" });
+    ry += 4.5;
+    doc.setDrawColor(220, 212, 200);
+    doc.setLineWidth(0.15);
+    doc.line(rightX + 2, ry, rightX + rightBlockW - 2, ry);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(92, 106, 110);
+    doc.text(
+      `${estimate.discount_label || "Discount"} (−${estimate.discount_pct}%)`,
+      rightX + 4, ry + 4.5,
+    );
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(79, 138, 99);
+    doc.text(`−${money(discountAmt)}`, rightX + rightBlockW - 3, ry + 4.5, { align: "right" });
+    ry += 9;
+  }
+
+  // Grand total bar (right column)
+  doc.setFillColor(22, 50, 61);
+  doc.roundedRect(rightX, ry, rightBlockW, 14, 2, 2, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", rightX + 5, ry + 5.5);
+  doc.setFontSize(14);
+  doc.text(money(grandTotal), rightX + rightBlockW - 4, ry + 10.5, { align: "right" });
+  ry += 16;
+
+  y = Math.max(ry, totalsStartY + schedBoxH + 2);
 
   // ── Footer ─────────────────────────────────────────────────────────────────
   y += 5;
