@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 
 const TODAY = () => new Date().toISOString().split("T")[0];
 
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4.6",
+      model: anthropic("claude-sonnet-4-6"),
       system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects),
       messages: messages.map(m => ({
         role:    m.role as "user" | "assistant",
