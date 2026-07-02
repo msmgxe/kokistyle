@@ -114,8 +114,11 @@ CREATE TABLE IF NOT EXISTS payments (
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   method TEXT NOT NULL CHECK (method IN ('Efectivo', 'Transferencia', 'Zelle', 'Cheque', 'Tarjeta')),
   type TEXT NOT NULL CHECK (type IN ('abono', 'anticipo', 'final')),
+  concept TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+-- Migration: run if upgrading from older schema
+-- ALTER TABLE payments ADD COLUMN IF NOT EXISTS concept TEXT NOT NULL DEFAULT '';
 
 -- 9b. Notas de proyecto con adjuntos (imágenes, PDFs)
 -- SETUP REQUERIDO en Supabase:

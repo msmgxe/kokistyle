@@ -75,6 +75,7 @@ export interface Payment {
   date: string;
   method: "Efectivo" | "Transferencia" | "Zelle" | "Cheque" | "Tarjeta";
   type: "abono" | "anticipo" | "final";
+  concept?: string;
   created_at?: string;
 }
 

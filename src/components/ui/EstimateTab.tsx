@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Send, Save,
+  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Send, Save, Pencil,
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
@@ -58,7 +58,7 @@ function phonePlaceholder(code: string): string {
   if (code === "+51") return "984 368-710";
   return "123 456 7890";
 }
-import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate } from "@/src/types/project";
+import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { branding } from "@/src/config/branding";
 import DayPlannerModal from "./DayPlannerModal";
@@ -479,6 +479,17 @@ export default function EstimateTab({
   const [waLoading,      setWaLoading]      = useState(false);
   const [confirmDeleteSection, setConfirmDeleteSection] = useState<{ id: string; name: string } | null>(null);
 
+  // ── Deposit payment detail modal ──────────────────────────────────────────
+  const [projectPayments,  setProjectPayments]  = useState<Payment[]>([]);
+  const [depositModal,     setDepositModal]     = useState<number | null>(null); // installment index
+  const [depAmt,           setDepAmt]           = useState("");
+  const [depDate,          setDepDate]          = useState(new Date().toISOString().split("T")[0]);
+  const [depMethod,        setDepMethod]        = useState<Payment["method"]>("Transferencia");
+  const [depConcept,       setDepConcept]       = useState("");
+  const [depSaving,        setDepSaving]        = useState(false);
+  const [editingPayId,     setEditingPayId]     = useState<string | null>(null);
+  const [editForm,         setEditForm]         = useState<{ amount: string; date: string; method: Payment["method"]; concept: string }>({ amount: "", date: "", method: "Transferencia", concept: "" });
+
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true);
@@ -516,6 +527,14 @@ export default function EstimateTab({
       const grandTotal = computeGrandTotal(mappedSections, est.discount_pct ?? 0);
       supabase.from("projects").update({ budget: grandTotal }).eq("id", project.id);
     }
+
+    // Load project payments for deposit detail modal
+    const { data: pmts } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("project_id", project.id)
+      .order("date", { ascending: false });
+    setProjectPayments(pmts ?? []);
 
     setLoading(false);
   }, [project.id]);
@@ -757,48 +776,62 @@ export default function EstimateTab({
     useSensor(TouchSensor,   { activationConstraint: { delay: 250, tolerance: 5 } }),
   );
 
-  // ── Deposit confirmation (creates/deletes payment record) ────────────────
-  const handleDepositToggle = useCallback(async (idx: number, checked: boolean) => {
-    if (!estimate) return;
-    const dep = estimate.deposit_schedule[idx];
-    const amount = Math.round(totals.grandTotal * dep.pct / 100 * 100) / 100;
-    const TYPES: Array<"anticipo" | "abono" | "final"> = ["anticipo", "abono", "final"];
+  // ── Deposit payment helpers ───────────────────────────────────────────────
+  const DEPOSIT_TYPES: Array<"anticipo" | "abono" | "final"> = ["anticipo", "abono", "final"];
 
-    if (checked) {
-      const { data, error } = await supabase.from("payments").insert({
-        project_id: project.id,
-        amount,
-        date:   new Date().toISOString().split("T")[0],
-        method: "Transferencia",
-        type:   TYPES[Math.min(idx, 2)],
-      }).select().single();
+  const depositsForIdx = useCallback((idx: number) => {
+    const type = DEPOSIT_TYPES[Math.min(idx, 2)];
+    return projectPayments.filter(p => p.type === type);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectPayments]);
 
-      if (error || !data) {
-        toast(EN ? "Error recording payment" : "Error al registrar el pago");
-        return;
-      }
+  const addDepositPayment = useCallback(async (idx: number) => {
+    const amount = parseFloat(depAmt);
+    if (!amount || amount <= 0 || !depDate) return;
+    setDepSaving(true);
+    const { data, error } = await supabase.from("payments").insert({
+      project_id: project.id,
+      amount,
+      date:    depDate,
+      method:  depMethod,
+      concept: depConcept.trim() || (EN ? "Partial payment" : "Pago parcial"),
+      type:    DEPOSIT_TYPES[Math.min(idx, 2)],
+    }).select().single();
+    setDepSaving(false);
+    if (error || !data) { toast(EN ? "Error recording payment" : "Error al registrar el pago"); return; }
+    setProjectPayments(p => [data as Payment, ...p]);
+    setDepAmt(""); setDepConcept("");
+    toast(`${EN ? "Payment added" : "Pago registrado"} · ${money(amount)}`);
+    onRefresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [depAmt, depDate, depMethod, depConcept, project.id, EN, toast, onRefresh]);
 
-      const updated = estimate.deposit_schedule.map((d, i) =>
-        i === idx ? { ...d, received: true, payment_id: data.id } : d
-      );
-      setEstimate(p => p ? { ...p, deposit_schedule: updated } : p);
-      await supabase.from("project_estimates").update({ deposit_schedule: updated }).eq("id", estimate.id);
-      toast(`${EN ? "Payment registered" : "Pago registrado"} · ${new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(amount)}`);
-      onRefresh();
+  const removeDepositPayment = useCallback(async (paymentId: string) => {
+    await supabase.from("payments").delete().eq("id", paymentId);
+    setProjectPayments(p => p.filter(x => x.id !== paymentId));
+    if (editingPayId === paymentId) setEditingPayId(null);
+    toast(EN ? "Payment removed" : "Pago eliminado");
+    onRefresh();
+  }, [EN, toast, onRefresh, editingPayId]);
 
-    } else {
-      if (dep.payment_id) {
-        await supabase.from("payments").delete().eq("id", dep.payment_id);
-      }
-      const updated = estimate.deposit_schedule.map((d, i) =>
-        i === idx ? { ...d, received: false, payment_id: undefined } : d
-      );
-      setEstimate(p => p ? { ...p, deposit_schedule: updated } : p);
-      await supabase.from("project_estimates").update({ deposit_schedule: updated }).eq("id", estimate.id);
-      toast(EN ? "Payment removed" : "Pago eliminado");
-      onRefresh();
-    }
-  }, [estimate, totals.grandTotal, project.id, EN, toast, onRefresh]);
+  const updateDepositPayment = useCallback(async () => {
+    if (!editingPayId) return;
+    const amount = parseFloat(editForm.amount);
+    if (!amount || amount <= 0) return;
+    setDepSaving(true);
+    const { error } = await supabase.from("payments").update({
+      amount,
+      date:    editForm.date,
+      method:  editForm.method,
+      concept: editForm.concept.trim(),
+    }).eq("id", editingPayId);
+    setDepSaving(false);
+    if (error) { toast(EN ? "Error updating" : "Error al actualizar"); return; }
+    setProjectPayments(p => p.map(x => x.id !== editingPayId ? x : { ...x, amount, date: editForm.date, method: editForm.method, concept: editForm.concept.trim() }));
+    setEditingPayId(null);
+    toast(EN ? "Payment updated" : "Pago actualizado");
+    onRefresh();
+  }, [editingPayId, editForm, EN, toast, onRefresh]);
 
   // ── PDF export ────────────────────────────────────────────────────────────
   const handleExportPdf = useCallback(() => {
@@ -1102,69 +1135,60 @@ export default function EstimateTab({
             </div>
           </div>
 
-          {/* Right: payment schedule — % editable */}
+          {/* Right: payment schedule */}
           <div>
             <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
               {EN ? "Payment Schedule" : "Calendario de Pagos"}
             </div>
             <div className="space-y-2">
-              {(estimate.deposit_schedule ?? defaultDeposits()).map((dep, i) => (
-                <div key={i} className="flex items-center gap-2.5">
-                  {/* Editable % badge */}
-                  <div
-                    className={`flex h-9 shrink-0 items-center justify-center gap-0.5 rounded-xl px-2 ${DEPOSIT_COLORS[i] ?? "bg-[#5C6A6E]"}`}
-                    title={EN ? "Click to edit %" : "Clic para editar %"}
-                  >
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={dep.pct}
-                      onChange={e => {
-                        const pct = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                        setEstimate(p => p ? {
-                          ...p,
-                          deposit_schedule: p.deposit_schedule.map((d, j) => j === i ? { ...d, pct } : d),
-                        } : p);
-                      }}
-                      className="w-7 appearance-none bg-transparent text-center text-[11px] font-bold text-white focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    />
-                    <span className="text-[11px] font-bold text-white/80">%</span>
-                  </div>
-
-                  {/* Amount + label */}
-                  <div className="flex-1">
-                    <div className={`font-mono text-[12px] font-semibold ${dep.received ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
-                      {money(grandTotal * dep.pct / 100)}
+              {(estimate.deposit_schedule ?? defaultDeposits()).map((dep, i) => {
+                const target   = Math.round(grandTotal * dep.pct / 100 * 100) / 100;
+                const received = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
+                const pct      = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
+                const paid     = target > 0 && received >= target;
+                return (
+                  <div key={i} className="rounded-xl border border-[#E6DDCB] overflow-hidden">
+                    <div className="flex items-center gap-2.5 px-3 py-2">
+                      {/* Editable % badge */}
+                      <div className={`flex h-8 shrink-0 items-center justify-center gap-0.5 rounded-lg px-2 ${DEPOSIT_COLORS[i] ?? "bg-[#5C6A6E]"}`}>
+                        <input
+                          type="number" min={0} max={100} value={dep.pct}
+                          onChange={e => {
+                            const p = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                            setEstimate(prev => prev ? { ...prev, deposit_schedule: prev.deposit_schedule.map((d, j) => j === i ? { ...d, pct: p } : d) } : prev);
+                          }}
+                          className="w-7 appearance-none bg-transparent text-center text-[11px] font-bold text-white focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                        <span className="text-[10px] font-bold text-white/80">%</span>
+                      </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[10px] text-[#5C6A6E] truncate">{EN ? dep.label_en : dep.label_es}</span>
+                          {paid && <span className="text-[9px] font-bold text-[#4F8A63]">✓ {EN ? "PAID" : "COBRADO"}</span>}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`font-mono text-[11px] font-semibold ${paid ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
+                            {money(received)}
+                          </span>
+                          <span className="text-[10px] text-[#5C6A6E]">/ {money(target)}</span>
+                        </div>
+                      </div>
+                      {/* Detail button */}
+                      <button
+                        onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
+                        className="shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#395886] hover:bg-[#EDF3FB] transition"
+                      >
+                        {EN ? "Detail" : "Detalle"}
+                      </button>
                     </div>
-                    <div className="text-[10px] text-[#5C6A6E]">
-                      {EN ? dep.label_en : dep.label_es}
+                    {/* Progress bar */}
+                    <div className="h-[4px] bg-[#F0EBE0]">
+                      <div className={`h-full transition-all duration-500 ${paid ? "bg-[#4F8A63]" : "bg-[#395886]"}`} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
-
-                  {/* Confirmation checkbox */}
-                  <label
-                    className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition ${
-                      dep.received
-                        ? "border-[#4F8A63] bg-[#DCEBDD] text-[#4F8A63]"
-                        : "border-[#E6DDCB] bg-white text-[#5C6A6E] hover:border-[#4F8A63] hover:text-[#4F8A63]"
-                    }`}
-                    title={dep.received
-                      ? (EN ? "Uncheck to remove payment" : "Desmarcar para eliminar el pago")
-                      : (EN ? "Mark as received — creates payment record" : "Marcar como recibido — crea registro de pago")}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={dep.received ?? false}
-                      onChange={e => handleDepositToggle(i, e.target.checked)}
-                      className="sr-only"
-                    />
-                    <span className="text-[10px] font-bold">
-                      {dep.received ? (EN ? "✓ Received" : "✓ Cobrado") : (EN ? "Confirm" : "Confirmar")}
-                    </span>
-                  </label>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1238,6 +1262,184 @@ export default function EstimateTab({
           </div>
         </div>
       )}
+
+      {/* ── Deposit detail modal ──────────────────────────────────────────── */}
+      {depositModal !== null && estimate && (() => {
+        const idx     = depositModal;
+        const dep     = estimate.deposit_schedule[idx] ?? defaultDeposits()[idx];
+        const target  = Math.round(totals.grandTotal * dep.pct / 100 * 100) / 100;
+        const pmts    = depositsForIdx(idx);
+        const received = pmts.reduce((s, p) => s + p.amount, 0);
+        const remaining = Math.max(0, target - received);
+        const pct     = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
+        const label   = EN ? dep.label_en : dep.label_es;
+        return (
+          <div
+            className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={() => setDepositModal(null)}
+          >
+            <div
+              className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#16323D] px-5 py-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+                    {EN ? "Payment Detail" : "Detalle de Pago"} · {dep.pct}%
+                  </p>
+                  <h3 className="mt-0.5 text-base font-bold text-white">{label}</h3>
+                </div>
+                <button onClick={() => setDepositModal(null)} className="text-white/60 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-px bg-[#E6DDCB] border-b border-[#E6DDCB]">
+                {[
+                  { label: EN ? "Target" : "Total a cobrar", value: money(target), color: "text-[#16323D]" },
+                  { label: EN ? "Received" : "Recibido",     value: money(received), color: "text-[#4F8A63]" },
+                  { label: EN ? "Remaining" : "Pendiente",   value: money(remaining), color: remaining > 0 ? "text-[#B0492F]" : "text-[#4F8A63]" },
+                ].map(c => (
+                  <div key={c.label} className="bg-[#F7F3EA] px-4 py-3 text-center">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#5C6A6E]">{c.label}</p>
+                    <p className={`mt-1 font-mono text-[15px] font-bold ${c.color}`}>{c.value}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Progress bar */}
+              <div className="h-1.5 bg-[#E6DDCB]">
+                <div className={`h-full transition-all ${pct >= 100 ? "bg-[#4F8A63]" : "bg-[#395886]"}`} style={{ width: `${pct}%` }} />
+              </div>
+
+              {/* Payments grid */}
+              <div className="max-h-48 overflow-y-auto">
+                {pmts.length === 0 ? (
+                  <p className="py-6 text-center text-[12px] text-[#5C6A6E]">
+                    {EN ? "No payments yet" : "Sin pagos registrados"}
+                  </p>
+                ) : (
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="bg-[#FAFAF8] text-[9px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                        <th className="px-4 py-2 text-left">{EN ? "Date" : "Fecha"}</th>
+                        <th className="px-4 py-2 text-left">{EN ? "Concept" : "Concepto"}</th>
+                        <th className="px-4 py-2 text-left">{EN ? "Method" : "Método"}</th>
+                        <th className="px-4 py-2 text-right">{EN ? "Amount" : "Monto"}</th>
+                        <th className="px-2 py-2" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pmts.map(p => {
+                        const isEditing = editingPayId === p.id;
+                        return (
+                          <tr key={p.id} className={`border-t border-[#F0EBE0] ${isEditing ? "bg-[#EDF3FB]" : "hover:bg-[#FDFAF6]"}`}>
+                            {isEditing ? (
+                              <>
+                                <td className="px-2 py-1.5">
+                                  <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+                                    className="w-full rounded border border-[#D7CBB3] bg-white px-1.5 py-1 text-[11px] focus:outline-none" />
+                                </td>
+                                <td className="px-2 py-1.5">
+                                  <input type="text" value={editForm.concept} onChange={e => setEditForm(f => ({ ...f, concept: e.target.value }))}
+                                    placeholder={EN ? "Concept" : "Concepto"}
+                                    className="w-full rounded border border-[#D7CBB3] bg-white px-1.5 py-1 text-[11px] focus:outline-none" />
+                                </td>
+                                <td className="px-2 py-1.5">
+                                  <select value={editForm.method} onChange={e => setEditForm(f => ({ ...f, method: e.target.value as Payment["method"] }))}
+                                    className="rounded border border-[#D7CBB3] bg-white px-1 py-1 text-[11px] focus:outline-none">
+                                    {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => <option key={m}>{m}</option>)}
+                                  </select>
+                                </td>
+                                <td className="px-2 py-1.5">
+                                  <input type="number" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))}
+                                    className="w-20 rounded border border-[#D7CBB3] bg-white px-1.5 py-1 text-right text-[11px] font-mono focus:outline-none" />
+                                </td>
+                                <td className="px-2 py-1.5">
+                                  <div className="flex gap-1">
+                                    <button onClick={updateDepositPayment} disabled={depSaving}
+                                      className="rounded bg-[#4F8A63] px-2 py-1 text-[10px] font-bold text-white hover:bg-[#3f7051] disabled:opacity-40">
+                                      {depSaving ? "…" : "✓"}
+                                    </button>
+                                    <button onClick={() => setEditingPayId(null)}
+                                      className="rounded border border-[#E6DDCB] px-2 py-1 text-[10px] text-[#5C6A6E] hover:bg-[#F7F3EA]">
+                                      ✕
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="px-4 py-2 text-[#5C6A6E]">{p.date}</td>
+                                <td className="px-4 py-2 text-[#16323D] max-w-[130px] truncate">{p.concept || "—"}</td>
+                                <td className="px-4 py-2 text-[#5C6A6E]">{p.method}</td>
+                                <td className="px-4 py-2 text-right font-mono font-semibold text-[#16323D]">{money(p.amount)}</td>
+                                <td className="px-2 py-2">
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => { setEditingPayId(p.id); setEditForm({ amount: String(p.amount), date: p.date, method: p.method, concept: p.concept ?? "" }); }}
+                                      className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] hover:text-[#395886] transition"
+                                    ><Pencil size={10} /></button>
+                                    <button
+                                      onClick={() => removeDepositPayment(p.id)}
+                                      className="rounded p-1 text-[#C4B89A] hover:bg-[#FDF0ED] hover:text-[#B0492F] transition"
+                                    ><X size={11} /></button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Add payment form */}
+              <div className="border-t border-[#E6DDCB] bg-[#F7F3EA] p-4">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                  {EN ? "Add partial payment" : "Agregar pago a cuenta"}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number" placeholder={EN ? "Amount" : "Monto"} value={depAmt}
+                    onChange={e => setDepAmt(e.target.value)}
+                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                  />
+                  <input
+                    type="date" value={depDate}
+                    onChange={e => setDepDate(e.target.value)}
+                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                  />
+                  <select
+                    value={depMethod}
+                    onChange={e => setDepMethod(e.target.value as Payment["method"])}
+                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                  >
+                    {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text" placeholder={EN ? "Comment (e.g. first deposit)" : "Comentario (ej. primer depósito)"}
+                    value={depConcept} onChange={e => setDepConcept(e.target.value)}
+                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={() => addDepositPayment(idx)}
+                  disabled={depSaving || !depAmt || parseFloat(depAmt) <= 0}
+                  className="mt-2 w-full rounded-xl bg-[#16323D] py-2.5 text-[12px] font-bold text-white transition hover:bg-[#0F2830] disabled:opacity-40"
+                >
+                  {depSaving ? "…" : (EN ? "+ Register payment" : "+ Registrar pago")}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Floating Save FAB ─────────────────────────────────────────────── */}
       <button
