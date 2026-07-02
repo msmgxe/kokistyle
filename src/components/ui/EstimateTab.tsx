@@ -489,6 +489,7 @@ export default function EstimateTab({
   const [depSaving,        setDepSaving]        = useState(false);
   const [editingPayId,     setEditingPayId]     = useState<string | null>(null);
   const [editForm,         setEditForm]         = useState<{ amount: string; date: string; method: Payment["method"]; concept: string }>({ amount: "", date: "", method: "Transferencia", concept: "" });
+  const [confirmDeletePayId, setConfirmDeletePayId] = useState<string | null>(null);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -1276,7 +1277,7 @@ export default function EstimateTab({
         return (
           <div
             className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={() => setDepositModal(null)}
+            onClick={() => { setDepositModal(null); setConfirmDeletePayId(null); setEditingPayId(null); }}
           >
             <div
               className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -1290,7 +1291,7 @@ export default function EstimateTab({
                   </p>
                   <h3 className="mt-0.5 text-base font-bold text-white">{label}</h3>
                 </div>
-                <button onClick={() => setDepositModal(null)} className="text-white/60 hover:text-white">
+                <button onClick={() => { setDepositModal(null); setConfirmDeletePayId(null); setEditingPayId(null); }} className="text-white/60 hover:text-white">
                   <X size={18} />
                 </button>
               </div>
@@ -1382,16 +1383,30 @@ export default function EstimateTab({
                                 <td className="px-4 py-2 text-[#5C6A6E]">{p.method}</td>
                                 <td className="px-4 py-2 text-right font-mono font-semibold text-[#16323D]">{money(p.amount)}</td>
                                 <td className="px-2 py-2">
-                                  <div className="flex gap-1">
-                                    <button
-                                      onClick={() => { setEditingPayId(p.id); setEditForm({ amount: String(p.amount), date: p.date, method: p.method, concept: p.concept ?? "" }); }}
-                                      className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] hover:text-[#395886] transition"
-                                    ><Pencil size={10} /></button>
-                                    <button
-                                      onClick={() => removeDepositPayment(p.id)}
-                                      className="rounded p-1 text-[#C4B89A] hover:bg-[#FDF0ED] hover:text-[#B0492F] transition"
-                                    ><X size={11} /></button>
-                                  </div>
+                                  {confirmDeletePayId === p.id ? (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[9px] text-[#B0492F] font-semibold whitespace-nowrap">{EN ? "Delete?" : "¿Eliminar?"}</span>
+                                      <button
+                                        onClick={() => { removeDepositPayment(p.id); setConfirmDeletePayId(null); }}
+                                        className="rounded bg-[#B0492F] px-2 py-0.5 text-[10px] font-bold text-white hover:bg-[#9a3d27]"
+                                      >{EN ? "Yes" : "Sí"}</button>
+                                      <button
+                                        onClick={() => setConfirmDeletePayId(null)}
+                                        className="rounded border border-[#E6DDCB] px-2 py-0.5 text-[10px] text-[#5C6A6E] hover:bg-[#F7F3EA]"
+                                      >{EN ? "No" : "No"}</button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => { setEditingPayId(p.id); setEditForm({ amount: String(p.amount), date: p.date, method: p.method, concept: p.concept ?? "" }); }}
+                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] hover:text-[#395886] transition"
+                                      ><Pencil size={10} /></button>
+                                      <button
+                                        onClick={() => setConfirmDeletePayId(p.id)}
+                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#FDF0ED] hover:text-[#B0492F] transition"
+                                      ><X size={11} /></button>
+                                    </div>
+                                  )}
                                 </td>
                               </>
                             )}
