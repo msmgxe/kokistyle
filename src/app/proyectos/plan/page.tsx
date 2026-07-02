@@ -252,12 +252,15 @@ export default function PlanPage() {
         </div>
       </div>
 
-      <div className="relative mb-2 h-4" style={{ paddingLeft: "192px" }}>
+      <div className="relative mb-2 flex h-8 items-center overflow-hidden rounded-xl bg-[#16323D]" style={{ paddingLeft: "192px" }}>
+        <div className="absolute left-0 flex h-full w-[192px] items-center px-4">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Proyecto</span>
+        </div>
         {monthLabels.map(({ label, left }) => (
           <span
             key={label + left}
-            className="absolute text-[10px] font-semibold text-[#5C6A6E]"
-            style={{ left: `calc(192px + ${left}%)` }}
+            className="absolute text-[10px] font-bold text-white/70"
+            style={{ left: `calc(192px + ${left}% + 6px)` }}
           >
             {label}
           </span>
