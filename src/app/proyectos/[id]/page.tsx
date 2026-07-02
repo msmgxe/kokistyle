@@ -2574,15 +2574,17 @@ export default function ProjectDetailPage() {
               { key: "end_date",   label: tp.project.endDate,     type: "date",   value: project.end_date ?? "" },
             ],
             onSave: async (vals) => {
-              const { error } = await supabase.from("projects").update(vals).eq("id", project.id);
+              // end_date only exists in project_estimates, not in projects table
+              const { end_date, ...projectVals } = vals;
+              const { error } = await supabase.from("projects").update(projectVals).eq("id", project.id);
               if (error) { showToast(tp.common.errorSaving + error.message); return; }
-              // Sync dates to estimate if one exists
-              if (vals.start_date || vals.end_date) {
+              // Sync dates to estimate
+              if (projectVals.start_date || end_date) {
                 const { data: est } = await supabase.from("project_estimates").select("id").eq("project_id", project.id).maybeSingle();
                 if (est) {
                   const sync: Record<string, string> = {};
-                  if (vals.start_date) sync.start_date = vals.start_date as string;
-                  if (vals.end_date)   sync.end_date   = vals.end_date as string;
+                  if (projectVals.start_date) sync.start_date = projectVals.start_date as string;
+                  if (end_date)               sync.end_date   = end_date as string;
                   await supabase.from("project_estimates").update(sync).eq("id", est.id);
                 }
               }
