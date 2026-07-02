@@ -102,6 +102,12 @@ export default function Navbar() {
           <a className="text-sm font-semibold text-[#0F3D56]" href={`tel:${branding.phone}`}>
             {branding.phone}
           </a>
+          <Link
+            href="/reservas"
+            className="inline-flex items-center rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1E4B5A]"
+          >
+            {t.nav.book}
+          </Link>
           <button
             id="navbar-admin-btn"
             type="button"
@@ -159,6 +165,13 @@ export default function Navbar() {
               >
                 {branding.phone}
               </a>
+              <Link
+                href="/reservas"
+                onClick={() => setMenuOpen(false)}
+                className="inline-flex items-center justify-center rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1E4B5A]"
+              >
+                {t.nav.book}
+              </Link>
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); setAdminOpen(true); }}

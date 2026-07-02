@@ -64,6 +64,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
               <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
               {isSuperAdmin && <PanelTab href="/proyectos/activity" label={t.panel.nav.activity} />}
+              {isSuperAdmin && <PanelTab href="/proyectos/reservas" label={t.panel.nav.bookings} />}
               <PanelTab href="/proyectos/help" label={t.panel.nav.help} />
             </nav>
 

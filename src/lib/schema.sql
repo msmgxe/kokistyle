@@ -302,3 +302,23 @@ CREATE TABLE IF NOT EXISTS voice_actions (
 );
 ALTER TABLE voice_actions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON voice_actions FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- ── Online Bookings ──────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS bookings (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  service       TEXT NOT NULL,
+  service_icon  TEXT,
+  duration_min  INT  NOT NULL DEFAULT 60,
+  booking_date  DATE NOT NULL,
+  booking_time  TEXT NOT NULL,
+  first_name    TEXT NOT NULL,
+  last_name     TEXT NOT NULL,
+  email         TEXT NOT NULL,
+  phone         TEXT NOT NULL,
+  address       TEXT NOT NULL,
+  notes         TEXT,
+  status        TEXT NOT NULL DEFAULT 'pending',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON bookings FOR ALL TO anon USING (true) WITH CHECK (true);
