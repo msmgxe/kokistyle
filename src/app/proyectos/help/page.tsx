@@ -398,6 +398,74 @@ function MockupVoice({ EN }: { EN: boolean }) {
   );
 }
 
+function MockupTeam({ EN }: { EN: boolean }) {
+  const users = EN
+    ? [
+        { initials:"L", bg:"#395886", name:"Lidette",       badge:"👷 Co-worker", tag:"My tasks only", tabs:"Workflow · Day Planner · Notes" },
+        { initials:"G", bg:"#7B6A45", name:"García Family", badge:"👤 Client",    tag:"",              tabs:"Estimate · Workflow · Gantt · Notes · Design" },
+      ]
+    : [
+        { initials:"L", bg:"#395886", name:"Lidette",       badge:"👷 Co-worker", tag:"Solo sus tareas", tabs:"Workflow · Day Planner · Notas" },
+        { initials:"G", bg:"#7B6A45", name:"Familia García", badge:"👤 Cliente",  tag:"",               tabs:"Estimate · Workflow · Gantt · Notas · Design" },
+      ];
+  return (
+    <div className="space-y-2">
+      {/* New user button */}
+      <div className="flex justify-end mb-1">
+        <div className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-3 py-1.5 text-[9px] font-bold text-[#16323D]">
+          + {EN ? "New user" : "Nuevo usuario"}
+        </div>
+      </div>
+      {users.map(u => (
+        <div key={u.name} className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: u.bg }}>
+              {u.initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="text-[10px] font-bold text-[#16323D]">{u.name}</span>
+                <span className="rounded-full border border-[#B8DEC9] bg-[#EBF5F0] px-1.5 py-px text-[7px] font-bold text-[#2E6B50]">
+                  {u.badge}
+                </span>
+                {u.tag && (
+                  <span className="rounded-full border border-[#F0CFA0] bg-[#FEF6ED] px-1.5 py-px text-[7px] font-bold text-[#9B6A2F]">
+                    {u.tag}
+                  </span>
+                )}
+              </div>
+              <div className="mt-0.5 text-[7px] text-[#97A1A0]">{u.tabs}</div>
+            </div>
+            <div className="flex gap-1">
+              <div className="grid h-5 w-5 place-items-center rounded bg-[#F0EAE0] text-[9px]">✏️</div>
+              <div className="grid h-5 w-5 place-items-center rounded bg-[#F0EAE0] text-[9px]">▾</div>
+            </div>
+          </div>
+        </div>
+      ))}
+      {/* Inline preview strip */}
+      <div className="mt-1 grid grid-cols-2 gap-1.5 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-2">
+        <div>
+          <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN?"Co-worker sees:":"Co-worker ve:"}</div>
+          <div className="flex flex-wrap gap-1">
+            {["Workflow","Day Planner","Notes"].map(t => (
+              <span key={t} className="rounded bg-[#16323D] px-1 py-px text-[6px] font-bold text-white">{t}</span>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN?"Client sees:":"Cliente ve:"}</div>
+          <div className="flex flex-wrap gap-1">
+            {["Estimate","Workflow","Gantt","Notes","Design"].map(t => (
+              <span key={t} className="rounded bg-[#395886] px-1 py-px text-[6px] font-bold text-white">{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Feature data ─────────────────────────────────────────────────────────────
 
 function useFeatures(EN: boolean) {
@@ -816,6 +884,47 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
+      id: "team", icon: "👥",
+      title: EN ? "Team Access" : "Acceso del Equipo",
+      desc:  EN ? "Grant co-workers and clients access to specific tabs and data sections — with fine-grained control over what each person can see and do."
+                : "Otorga acceso a co-workers y clientes a tabs y secciones específicas — con control granular sobre lo que cada persona puede ver y hacer.",
+      mockup: <MockupTeam EN={EN} />,
+      steps: EN ? [
+        { t:"Open Team section", d:"On the Dashboard, scroll down to the <b>Team</b> section (visible only to superadmin). Here you see all active team members and clients." },
+        { t:"Create a new user", d:"Click <b>+ New user</b>. First choose the type: <b>👷 Co-worker</b> (field crew, specialists) or <b>👤 Client</b> (owner/client). The type determines the default preset applied automatically." },
+        { t:"Co-worker preset", d:"Co-workers get Workflow + Day Planner + Notes by default and the <b>My tasks only</b> toggle is active — they only see tasks assigned to them in Workflow and Gantt." },
+        { t:"Client preset", d:"Clients get read-only access to Estimate, Workflow (progress view), Gantt, Notes, and Design. No financial data is exposed by default." },
+        { t:"Link a co-worker to a contact", d:"Under the <b>Info</b> sub-tab, select a contact from the dropdown. When <b>My tasks only</b> is active, Workflow and Gantt filter to show only tasks where that contact is assigned." },
+        { t:"Configure visible tabs", d:"Open the <b>Tabs</b> sub-tab and check exactly which project tabs this user can see. Use the preset buttons (👷 Co-worker / 👤 Client) for quick defaults, or customize freely." },
+        { t:"Set data permissions", d:"Under <b>Permisos</b>, control CRUD access for each section: View, Create, Edit, Delete. These control what data they can read or modify within their allowed tabs." },
+        { t:"Assign projects", d:"Under <b>Projects</b>, toggle which projects appear on this user's dashboard. Unassigned projects are invisible to them." },
+        { t:"Edit a user", d:"Click the <b>✏ pencil icon</b> on any user card. The panel expands with 4 sub-tabs: Info · Tabs · Permisos · Projects. Click <b>Save changes</b> after editing." },
+      ] : [
+        { t:"Abrir la sección Equipo", d:"En el Dashboard, baja hasta la sección <b>Equipo</b> (visible solo para el superadmin). Aquí ves todos los miembros activos del equipo y clientes." },
+        { t:"Crear un nuevo usuario", d:"Clic en <b>+ Nuevo usuario</b>. Primero elige el tipo: <b>👷 Co-worker</b> (cuadrilla, especialistas) o <b>👤 Cliente</b> (dueño/cliente). El tipo determina el preset aplicado automáticamente." },
+        { t:"Preset Co-worker", d:"Los co-workers obtienen Workflow + Day Planner + Notas por defecto y el toggle <b>Solo sus tareas</b> está activo — solo ven las tareas asignadas a ellos en Workflow y Gantt." },
+        { t:"Preset Cliente", d:"Los clientes obtienen acceso de solo lectura a Estimate, Workflow (vista de progreso), Gantt, Notas y Design. No se exponen datos financieros por defecto." },
+        { t:"Vincular un co-worker a un contacto", d:"En el sub-tab <b>Info</b>, selecciona un contacto del selector. Con <b>Solo sus tareas</b> activo, el Workflow y Gantt filtran para mostrar solo las tareas donde ese contacto está asignado." },
+        { t:"Configurar tabs visibles", d:"Abre el sub-tab <b>Tabs</b> y marca exactamente qué tabs del proyecto puede ver este usuario. Usa los botones de preset (👷 Co-worker / 👤 Cliente) para configurar rápido, o personaliza libremente." },
+        { t:"Establecer permisos de datos", d:"En <b>Permisos</b>, controla el acceso CRUD por sección: Ver, Crear, Editar, Eliminar. Estos controlan qué datos puede leer o modificar dentro de sus tabs permitidos." },
+        { t:"Asignar proyectos", d:"En <b>Proyectos</b>, activa cuáles proyectos aparecen en el dashboard de este usuario. Los proyectos no asignados son invisibles para ellos." },
+        { t:"Editar un usuario", d:"Clic en el <b>ícono ✏ lápiz</b> de cualquier tarjeta. El panel se expande con 4 sub-tabs: Info · Tabs · Permisos · Proyectos. Clic en <b>Guardar cambios</b> después de editar." },
+      ],
+      tips: EN ? [
+        "👷 <b>My tasks only</b> (co-worker): when a co-worker is linked to a contact and this toggle is on, Workflow and Gantt show <i>only</i> their assigned tasks — perfect for field crew who shouldn't see the full project scope.",
+        "👤 <b>Client access</b>: clients never see Cash Flow or Materials by default — protect sensitive financial info while giving them a professional project tracking experience.",
+        "🗂 <b>Tab access is independent</b> from CRUD permissions. A user can have the Estimate tab visible (tab_access) but still be read-only (permissions: view only). This lets you show the quote without allowing edits.",
+        "🔄 After editing a user, they will see the updated tabs on their next login or page refresh.",
+        "🔐 Only the superadmin can create, edit, or remove team members. Collaborators cannot see the Team section.",
+      ] : [
+        "👷 <b>Solo sus tareas</b> (co-worker): cuando un co-worker está vinculado a un contacto y este toggle está activo, Workflow y Gantt muestran <i>solo</i> sus tareas asignadas — perfecto para cuadrilla que no debe ver el alcance completo del proyecto.",
+        "👤 <b>Acceso cliente</b>: los clientes nunca ven Cash Flow ni Materials por defecto — protege info financiera sensible mientras les das una experiencia profesional de seguimiento del proyecto.",
+        "🗂 <b>El acceso a tabs es independiente</b> de los permisos CRUD. Un usuario puede tener el tab Estimate visible (tab_access) pero ser de solo lectura (permisos: solo Ver). Esto permite mostrar la cotización sin permitir ediciones.",
+        "🔄 Después de editar un usuario, verá los tabs actualizados en su próximo login o al refrescar la página.",
+        "🔐 Solo el superadmin puede crear, editar o eliminar miembros del equipo. Los colaboradores no ven la sección Equipo.",
+      ],
+    },
+    {
       id: "activity", icon: "📋",
       title: EN ? "Activity Log" : "Registro de Actividad",
       desc:  EN ? "Full audit trail of who logged in, what was created and what was deleted — visible only to the superadmin."
@@ -870,7 +979,7 @@ export default function HelpPage() {
         <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
           {EN ? "Features" : "Funcionalidades"}
         </div>
-        {features.map(f => (
+        {features.slice(0, 8).map(f => (
           <button
             key={f.id}
             onClick={() => setActiveId(f.id)}
@@ -889,9 +998,9 @@ export default function HelpPage() {
 
         <div className="mx-4 my-3 border-t border-[#E6DDCB]" />
         <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
-          {EN ? "Assistant" : "Asistente"}
+          {EN ? "Tools & Admin" : "Herramientas"}
         </div>
-        {features.slice(7).map(f => (
+        {features.slice(8).map(f => (
           <button
             key={f.id}
             onClick={() => setActiveId(f.id)}

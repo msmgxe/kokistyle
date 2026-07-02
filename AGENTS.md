@@ -97,7 +97,7 @@ src/
 │   └── ui/
 │       ├── AdminModal.tsx            # Modal de login por PIN (superadmin + colaboradores + recuperación)
 │       ├── AdminSettings.tsx         # Panel cambio de PIN + correo de recuperación + nombre de display
-│       ├── UsersPanel.tsx            # Gestión de colaboradores y permisos granulares
+│       ├── UsersPanel.tsx            # Gestión de equipo: co-workers + clientes, tab_access, contact_id, my_tasks_only
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
 │       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop Estimate→Workflow (@dnd-kit)
@@ -368,15 +368,58 @@ Orden: Dashboard → Gantt G → Contacts → Activity (solo superadmin) → Hel
 - Panel completo: todos los proyectos, gestión de equipo, configuración de seguridad
 - Recuperación de PIN por email vía Resend (código 6 dígitos, 15 min de expiración)
 
-### Colaboradores
-- Creados desde panel "Equipo" del dashboard (solo superadmin puede crear)
-- PIN numérico ≥ 4 dígitos en `app_users`
-- Solo ven proyectos asignados en `user_project_access`
-- Permisos granulares: `view`, `create`, `edit`, `delete` por sección
+### Tipos de usuario (`app_users.user_type`)
 
-### Secciones con permisos granulares
+| Tipo | `user_type` | Default tab_access | Descripción |
+|---|---|---|---|
+| Co-worker | `"coworker"` | workflow, planner, notas | Cuadrilla/especialistas — ve solo sus tareas |
+| Cliente | `"client"` | presupuesto, workflow, plan, notas, design | Dueño/cliente — vista de seguimiento, sin datos financieros |
+
+### Colaboradores y clientes (`app_users`)
+- Creados desde panel "Equipo" del dashboard (solo superadmin puede crear)
+- PIN numérico ≥ 4 dígitos
+- Solo ven proyectos asignados en `user_project_access`
+- Panel de edición con 4 sub-tabs: **Info · Tabs · Permisos · Projects**
+
+### Columnas de `app_users`
+
+| Columna | Tipo | Descripción |
+|---|---|---|
+| `user_type` | `TEXT` | `'coworker'` \| `'client'` — determina preset de acceso |
+| `contact_id` | `UUID` | FK → `contacts(id)` — vincula al co-worker con su ficha de contacto |
+| `tab_access` | `JSONB` | Array de TabId visibles. `null` = usar permisos legacy |
+| `my_tasks_only` | `BOOLEAN` | Si true, Workflow y Gantt filtran a tareas asignadas a `contact_id` |
+| `permissions` | `JSONB` | CRUD granular: view/create/edit/delete por sección de datos |
+
+### Tab access vs Data permissions
+
+- **`tab_access`** — controla qué tabs del proyecto son _visibles_ en la barra de navegación
+- **`permissions`** — controla qué acciones CRUD puede hacer dentro de cada sección
+- Si `tab_access` es `null`, se usa el sistema legacy (derivado de `permissions[section].view`)
+- Si `tab_access` está seteado, toma precedencia absoluta
+
+### Secciones con permisos granulares (CRUD)
 
 `workflow` · `materiales` · `contactos` · `presupuesto` · `pagos` · `notas`
+
+### Filtrado "My tasks only" en detalle de proyecto
+
+En `src/app/proyectos/[id]/page.tsx`:
+```typescript
+const myContactId = currentUser?.my_tasks_only ? (currentUser.contact_id ?? null) : null;
+const filteredTasks = myContactId
+  ? project.tasks.filter(t => t.assigned_contact_id === myContactId)
+  : project.tasks;
+```
+`filteredTasks` se pasa a `WorkflowTab` y `PlanTab`. Day Planner filtra internamente por `assigned_contact_id`.
+
+### SQL de migración (`app_users`)
+```sql
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS user_type     TEXT NOT NULL DEFAULT 'coworker';
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS contact_id    UUID REFERENCES contacts(id) ON DELETE SET NULL;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS tab_access    JSONB;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS my_tasks_only BOOLEAN NOT NULL DEFAULT false;
+```
 
 ### Flujo de login
 1. PIN ingresado en `AdminModal`
