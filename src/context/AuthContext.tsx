@@ -10,11 +10,15 @@ import { FULL_PERMISSIONS } from "@/src/types/auth";
 import { logActivity } from "@/src/lib/activity";
 
 const SUPERADMIN_TEMPLATE: Omit<AppUser, "pin"> = {
-  id:          "superadmin",
-  name:        "Admin",
-  role:        "superadmin",
-  permissions: FULL_PERMISSIONS,
-  active:      true,
+  id:            "superadmin",
+  name:          "Admin",
+  role:          "superadmin",
+  user_type:     "coworker",
+  contact_id:    null,
+  tab_access:    null,
+  my_tasks_only: false,
+  permissions:   FULL_PERMISSIONS,
+  active:        true,
 };
 const SESSION_KEY = "kokistyle-session";
 

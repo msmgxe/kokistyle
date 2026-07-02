@@ -257,6 +257,13 @@ INSERT INTO estimate_section_catalog (name_en, name_es, note_en, note_es, is_mat
   ('MATERIALS',                'MATERIALES',               'Pure materials',     'Solo materiales',    true,  90)
 ON CONFLICT DO NOTHING;
 
+-- ── Team user access (user_type, contact link, tab access) ──────────────────
+-- Migration: run once if upgrading
+-- ALTER TABLE app_users ADD COLUMN IF NOT EXISTS user_type     TEXT NOT NULL DEFAULT 'coworker';
+-- ALTER TABLE app_users ADD COLUMN IF NOT EXISTS contact_id    UUID REFERENCES contacts(id) ON DELETE SET NULL;
+-- ALTER TABLE app_users ADD COLUMN IF NOT EXISTS tab_access    JSONB;
+-- ALTER TABLE app_users ADD COLUMN IF NOT EXISTS my_tasks_only BOOLEAN NOT NULL DEFAULT false;
+
 -- ── Superadmin display name ──────────────────────────────────────────────────
 -- Migration: run once if upgrading (superadmin_config must already exist)
 -- ALTER TABLE superadmin_config ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Admin';

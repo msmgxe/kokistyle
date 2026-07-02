@@ -678,6 +678,7 @@ export default function DashboardPage() {
   const [voicePrefill, setVoicePrefill] = useState<Partial<Project> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [kpiModal, setKpiModal] = useState<KpiType | null>(null);
+  const [allContacts, setAllContacts] = useState<{ id: string; name: string; specialty: string }[]>([]);
   const { setMeta } = useVoice();
   const { currentUser, isSuperAdmin, hasPermission } = useAuth();
   const { t } = useLanguage();
@@ -733,6 +734,13 @@ export default function DashboardPage() {
     window.addEventListener("kokivoice_saved", handler);
     return () => window.removeEventListener("kokivoice_saved", handler);
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    supabase.from("contacts").select("id, name, specialty").order("name").then(({ data }) => {
+      if (data) setAllContacts(data);
+    });
+  }, [isSuperAdmin]);
 
   const handleDelete = useCallback(async (id: string) => {
     await supabase.from("projects").delete().eq("id", id);
@@ -830,7 +838,7 @@ export default function DashboardPage() {
 
       {isSuperAdmin && (
         <>
-          <UsersPanel projects={projects} />
+          <UsersPanel projects={projects} contacts={allContacts} />
           <div className="mt-8">
             <div className="mb-4">
               <h2 className="text-base font-bold text-[#16323D]">{tp.dashboard.security}</h2>

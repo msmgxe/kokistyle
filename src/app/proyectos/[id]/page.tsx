@@ -2427,7 +2427,7 @@ export default function ProjectDetailPage() {
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
   const { setMeta } = useVoice();
-  const { isSuperAdmin, hasPermission } = useAuth();
+  const { currentUser, isSuperAdmin, hasPermission } = useAuth();
   const { t } = useLanguage();
   const tp = t.panel;
 
@@ -2446,9 +2446,18 @@ export default function ProjectDetailPage() {
   // Filter tabs the user is allowed to view
   const visibleTabs = TABS.filter(t => {
     if (isSuperAdmin) return true;
+    // Explicit tab_access list takes precedence (new granular system)
+    if (currentUser?.tab_access) return currentUser.tab_access.includes(t.id);
+    // Legacy: derive from permissions
     const sec = t.id === "pagos" ? "pagos" : t.id === "plan" || t.id === "planner" || t.id === "design" ? "workflow" : t.id as import("@/src/types/auth").PermissionSection;
     return hasPermission(sec, "view");
   });
+
+  // For co-workers with "my tasks only", filter tasks to their assigned ones
+  const myContactId = currentUser?.my_tasks_only ? (currentUser.contact_id ?? null) : null;
+  const filteredTasks = myContactId
+    ? (project?.tasks ?? []).filter(task => task.assigned_contact_id === myContactId)
+    : (project?.tasks ?? []);
 
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
@@ -2592,7 +2601,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Contenido */}
-      {activeTab === "workflow"    && <WorkflowTab    project={project} tasks={tasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "workflow"    && <WorkflowTab    project={project} tasks={filteredTasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "materiales"  && <MaterialesTab  project={project} materials={project.materials} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "contactos"   && <ContactosTab   project={project} contacts={project.contacts} allContacts={allContacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "presupuesto" && <EstimateTab project={project} onRefresh={fetchProject} toast={showToast} />}
@@ -2602,7 +2611,7 @@ export default function ProjectDetailPage() {
         contacts={project.contacts} onRefresh={fetchProject} toast={showToast}
         onSubTabChange={(sub) => setMeta({ context: `project.pagos.${sub}`, projectId: project.id, projectTitle: project.title, contacts: project.contacts?.map((c) => c.name) ?? [] })}
       />}
-      {activeTab === "plan"        && <PlanTab        project={project} tasks={tasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
+      {activeTab === "plan"        && <PlanTab        project={project} tasks={filteredTasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "notas"       && <NotasTab       project={project} notes={project.project_notes ?? []} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "design"      && <DesignTab      project={project} toast={showToast} />}
 

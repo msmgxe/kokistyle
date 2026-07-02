@@ -1,55 +1,66 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, X, ChevronDown, ChevronUp, Trash2, Pencil, Check, FolderOpen } from "lucide-react";
+import { Plus, X, Trash2, Pencil, Check, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
-import type { AppUser, Permissions, PermissionSection, PermissionAction } from "@/src/types/auth";
-import { DEFAULT_PERMISSIONS, SECTION_LABELS } from "@/src/types/auth";
+import type { AppUser, Permissions, PermissionSection, PermissionAction, UserType } from "@/src/types/auth";
+import {
+  DEFAULT_PERMISSIONS, DEFAULT_CLIENT_PERMISSIONS, FULL_PERMISSIONS,
+  SECTION_LABELS, TAB_ACCESS_OPTIONS, DEFAULT_COWORKER_TAB_ACCESS, DEFAULT_CLIENT_TAB_ACCESS,
+} from "@/src/types/auth";
 import type { Project } from "@/src/types/project";
 
+interface Contact { id: string; name: string; specialty: string; }
+
 const ACTIONS: { key: PermissionAction; label: string }[] = [
-  { key: "view",   label: "Ver"      },
-  { key: "create", label: "Crear"    },
-  { key: "edit",   label: "Editar"   },
-  { key: "delete", label: "Eliminar" },
+  { key: "view",   label: "View"   },
+  { key: "create", label: "Create" },
+  { key: "edit",   label: "Edit"   },
+  { key: "delete", label: "Delete" },
 ];
 const SECTIONS = Object.keys(SECTION_LABELS) as PermissionSection[];
 
-function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
+function deepClone<T>(obj: T): T { return JSON.parse(JSON.stringify(obj)); }
+
+// ── Checkbox pill ─────────────────────────────────────────────────────────────
+function Chk({
+  on, onClick, disabled = false,
+}: { on: boolean; onClick?: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || !onClick}
+      className={`mx-auto flex h-5 w-5 items-center justify-center rounded-md border transition ${
+        on ? "border-[#16323D] bg-[#16323D] text-white" : "border-[#D7CBB3] bg-white text-transparent"
+      } ${disabled || !onClick ? "cursor-default" : "hover:opacity-80"}`}
+    >
+      <Check size={10} strokeWidth={3} />
+    </button>
+  );
 }
 
 // ── Permission grid ───────────────────────────────────────────────────────────
 function PermGrid({
-  perms,
-  onChange,
-  readOnly = false,
-}: {
-  perms: Permissions;
-  onChange?: (p: Permissions) => void;
-  readOnly?: boolean;
-}) {
+  perms, onChange,
+}: { perms: Permissions; onChange?: (p: Permissions) => void }) {
   const toggle = (sec: PermissionSection, act: PermissionAction) => {
-    if (readOnly || !onChange) return;
+    if (!onChange) return;
     const next = deepClone(perms);
     next[sec][act] = !next[sec][act];
-    // "view" is required if any other action is enabled
     if (act !== "view" && next[sec][act]) next[sec].view = true;
-    // if view is disabled, disable all
-    if (act === "view" && !next[sec][act]) {
+    if (act === "view" && !next[sec][act])
       next[sec] = { view: false, create: false, edit: false, delete: false };
-    }
     onChange(next);
   };
-
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-[340px] text-[11px]">
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[320px] text-[11px]">
         <thead>
           <tr>
-            <th className="pb-1.5 text-left font-bold text-[#5C6A6E]">Sección</th>
+            <th className="pb-2 text-left font-bold text-[#5C6A6E]">Section</th>
             {ACTIONS.map(a => (
-              <th key={a.key} className="pb-1.5 text-center font-bold text-[#5C6A6E] w-14">{a.label}</th>
+              <th key={a.key} className="pb-2 w-14 text-center font-bold text-[#5C6A6E]">{a.label}</th>
             ))}
           </tr>
         </thead>
@@ -59,18 +70,7 @@ function PermGrid({
               <td className="py-1.5 pr-3 font-semibold text-[#16323D]">{SECTION_LABELS[sec]}</td>
               {ACTIONS.map(a => (
                 <td key={a.key} className="py-1.5 text-center">
-                  <button
-                    type="button"
-                    onClick={() => toggle(sec, a.key)}
-                    disabled={readOnly}
-                    className={`mx-auto flex h-5 w-5 items-center justify-center rounded-md border transition ${
-                      perms[sec][a.key]
-                        ? "border-[#16323D] bg-[#16323D] text-white"
-                        : "border-[#D7CBB3] bg-white text-transparent"
-                    } ${readOnly ? "cursor-default" : "hover:opacity-80"}`}
-                  >
-                    <Check size={10} strokeWidth={3} />
-                  </button>
+                  <Chk on={perms[sec][a.key]} onClick={onChange ? () => toggle(sec, a.key) : undefined} />
                 </td>
               ))}
             </tr>
@@ -81,41 +81,40 @@ function PermGrid({
   );
 }
 
-// ── Project assignment ────────────────────────────────────────────────────────
-function ProjectAssign({
-  userId,
-  projects,
-  assigned,
-  onToggle,
-}: {
-  userId: string;
-  projects: Project[];
-  assigned: Set<string>;
-  onToggle: (projectId: string, add: boolean) => void;
-}) {
+// ── Tab access grid ───────────────────────────────────────────────────────────
+function TabAccessGrid({
+  tabAccess, onChange, userType,
+}: { tabAccess: string[]; onChange?: (t: string[]) => void; userType: UserType }) {
+  const toggle = (id: string) => {
+    if (!onChange) return;
+    const next = tabAccess.includes(id)
+      ? tabAccess.filter(t => t !== id)
+      : [...tabAccess, id];
+    onChange(next);
+  };
   return (
-    <div className="space-y-1.5">
-      {projects.length === 0 && (
-        <p className="text-[11px] text-[#97A1A0]">No hay proyectos aún.</p>
-      )}
-      {projects.map(p => {
-        const on = assigned.has(p.id);
+    <div className="grid grid-cols-3 gap-1">
+      {TAB_ACCESS_OPTIONS.map(tab => {
+        const on = tabAccess.includes(tab.id);
+        const recommended = userType === "coworker" ? tab.coworker : tab.client;
         return (
           <button
-            key={p.id}
+            key={tab.id}
             type="button"
-            onClick={() => onToggle(p.id, !on)}
-            className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition ${
+            onClick={() => onChange && toggle(tab.id)}
+            disabled={!onChange}
+            className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition ${
               on
                 ? "border-[#16323D] bg-[#16323D] text-white"
-                : "border-[#E6DDCB] bg-white text-[#16323D] hover:border-[#B0A08A]"
-            }`}
+                : recommended
+                  ? "border-[#B8DEC9] bg-[#EBF5F0] text-[#16323D] hover:border-[#16323D]"
+                  : "border-[#E6DDCB] bg-white text-[#97A1A0] hover:border-[#B0A08A]"
+            } ${!onChange ? "cursor-default" : "cursor-pointer"}`}
           >
-            <FolderOpen size={12} className="shrink-0" />
-            <span className="truncate font-semibold">{p.title}</span>
-            <span className={`ml-auto text-[10px] ${on ? "text-[#A8C4CC]" : "text-[#97A1A0]"}`}>
-              {p.client}
-            </span>
+            <span className={`text-[11px] font-bold leading-tight ${on ? "text-white" : "text-[#16323D]"}`}>{tab.label}</span>
+            {recommended && !on && (
+              <span className="text-[9px] text-[#4F8A63] font-semibold">recommended</span>
+            )}
           </button>
         );
       })}
@@ -123,36 +122,100 @@ function ProjectAssign({
   );
 }
 
+// ── Project assignment ────────────────────────────────────────────────────────
+function ProjectAssign({
+  userId, projects, assigned, onToggle,
+}: { userId: string; projects: Project[]; assigned: Set<string>; onToggle: (id: string, add: boolean) => void }) {
+  return (
+    <div className="space-y-1.5">
+      {projects.length === 0 && (
+        <p className="text-[11px] text-[#97A1A0]">No projects yet.</p>
+      )}
+      {projects.map(p => {
+        const on = assigned.has(p.id);
+        return (
+          <button key={p.id} type="button" onClick={() => onToggle(p.id, !on)}
+            className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition ${
+              on ? "border-[#16323D] bg-[#16323D] text-white" : "border-[#E6DDCB] bg-white text-[#16323D] hover:border-[#B0A08A]"
+            }`}>
+            <FolderOpen size={12} className="shrink-0" />
+            <span className="truncate font-semibold">{p.title}</span>
+            <span className={`ml-auto text-[10px] ${on ? "text-[#A8C4CC]" : "text-[#97A1A0]"}`}>{p.client}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── User type badge ───────────────────────────────────────────────────────────
+function TypeBadge({ type }: { type: UserType }) {
+  return type === "coworker"
+    ? <span className="rounded-full border border-[#B8DEC9] bg-[#EBF5F0] px-2 py-0.5 text-[10px] font-bold text-[#2E6B50]">👷 Co-worker</span>
+    : <span className="rounded-full border border-[#B8CCEE] bg-[#EDF2FB] px-2 py-0.5 text-[10px] font-bold text-[#2C4A8A]">👤 Client</span>;
+}
+
 // ── User row ──────────────────────────────────────────────────────────────────
+type EditSubTab = "info" | "tabs" | "perms" | "projects";
+
 function UserRow({
-  user,
-  projects,
-  onUpdated,
-  onDeleted,
+  user, projects, contacts, onUpdated, onDeleted,
 }: {
-  user: AppUser;
-  projects: Project[];
-  onUpdated: (u: AppUser) => void;
-  onDeleted: (id: string) => void;
+  user: AppUser; projects: Project[]; contacts: Contact[];
+  onUpdated: (u: AppUser) => void; onDeleted: (id: string) => void;
 }) {
-  const [expanded,   setExpanded]   = useState(false);
-  const [activeTab,  setActiveTab]  = useState<"perms" | "projects">("perms");
-  const [editing,    setEditing]    = useState(false);
-  const [name,       setName]       = useState(user.name);
-  const [pin,        setPin]        = useState(user.pin);
-  const [perms,      setPerms]      = useState<Permissions>(deepClone(user.permissions));
-  const [assigned,   setAssigned]   = useState<Set<string>>(new Set());
-  const [saving,     setSaving]     = useState(false);
+  const [expanded,      setExpanded]      = useState(false);
+  const [editing,       setEditing]       = useState(false);
+  const [editTab,       setEditTab]       = useState<EditSubTab>("info");
+  const [name,          setName]          = useState(user.name);
+  const [pin,           setPin]           = useState(user.pin);
+  const [userType,      setUserType]      = useState<UserType>(user.user_type ?? "coworker");
+  const [contactId,     setContactId]     = useState<string>(user.contact_id ?? "");
+  const [tabAccess,     setTabAccess]     = useState<string[]>(user.tab_access ?? DEFAULT_COWORKER_TAB_ACCESS);
+  const [myTasksOnly,   setMyTasksOnly]   = useState(user.my_tasks_only ?? false);
+  const [perms,         setPerms]         = useState<Permissions>(deepClone(user.permissions));
+  const [assigned,      setAssigned]      = useState<Set<string>>(new Set());
+  const [saving,        setSaving]        = useState(false);
+  const [confirmDel,    setConfirmDel]    = useState(false);
 
   const loadAssigned = useCallback(async () => {
-    const { data } = await supabase
-      .from("user_project_access")
-      .select("project_id")
-      .eq("user_id", user.id);
+    const { data } = await supabase.from("user_project_access").select("project_id").eq("user_id", user.id);
     setAssigned(new Set(data?.map(r => r.project_id) ?? []));
   }, [user.id]);
 
   useEffect(() => { if (expanded) loadAssigned(); }, [expanded, loadAssigned]);
+
+  const startEdit = () => {
+    setName(user.name);
+    setPin(user.pin);
+    setUserType(user.user_type ?? "coworker");
+    setContactId(user.contact_id ?? "");
+    setTabAccess(user.tab_access ?? DEFAULT_COWORKER_TAB_ACCESS);
+    setMyTasksOnly(user.my_tasks_only ?? false);
+    setPerms(deepClone(user.permissions));
+    setEditing(true);
+    setExpanded(true);
+    setEditTab("info");
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    const { data, error } = await supabase.from("app_users").update({
+      name,
+      pin,
+      user_type:     userType,
+      contact_id:    contactId || null,
+      tab_access:    tabAccess,
+      my_tasks_only: myTasksOnly,
+      permissions:   perms,
+    }).eq("id", user.id).select().single();
+    setSaving(false);
+    if (!error && data) { onUpdated(data as AppUser); setEditing(false); }
+  };
 
   const toggleProject = async (projectId: string, add: boolean) => {
     if (add) {
@@ -164,131 +227,323 @@ function UserRow({
     }
   };
 
-  const save = async () => {
-    setSaving(true);
-    const { data, error } = await supabase
-      .from("app_users")
-      .update({ name, pin, permissions: perms })
-      .eq("id", user.id)
-      .select()
-      .single();
-    setSaving(false);
-    if (!error && data) { onUpdated(data as AppUser); setEditing(false); }
-  };
-
   const deactivate = async () => {
-    if (!confirm(`¿Desactivar a ${user.name}?`)) return;
     await supabase.from("app_users").update({ active: false }).eq("id", user.id);
     onDeleted(user.id);
   };
 
+  const applyPreset = (type: UserType) => {
+    setTabAccess(type === "coworker" ? DEFAULT_COWORKER_TAB_ACCESS : DEFAULT_CLIENT_TAB_ACCESS);
+    setPerms(deepClone(type === "coworker" ? DEFAULT_PERMISSIONS : DEFAULT_CLIENT_PERMISSIONS));
+    setMyTasksOnly(type === "coworker");
+  };
+
+  const linkedContact = contacts.find(c => c.id === (user.contact_id ?? ""));
+
+  const SUB_TABS: { id: EditSubTab; label: string }[] = [
+    { id: "info",     label: "Info"     },
+    { id: "tabs",     label: "Tabs"     },
+    { id: "perms",    label: "Permisos" },
+    { id: "projects", label: "Projects" },
+  ];
+
   return (
-    <div className="rounded-2xl border border-[#E6DDCB] bg-white overflow-hidden">
-      {/* Header row */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-sm font-bold text-white">
-          {user.name.charAt(0).toUpperCase()}
+    <>
+      <div className="rounded-2xl border border-[#E6DDCB] bg-white overflow-hidden">
+        {/* Header row */}
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-sm font-bold text-white">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <p className="text-sm font-bold text-[#16323D]">{user.name}</p>
+              <TypeBadge type={user.user_type ?? "coworker"} />
+              {user.my_tasks_only && (
+                <span className="rounded-full border border-[#F0CFA0] bg-[#FEF6ED] px-2 py-0.5 text-[10px] font-bold text-[#9B6A2F]">
+                  My tasks only
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-[11px] text-[#97A1A0]">
+              {linkedContact
+                ? <><span className="font-semibold text-[#5C6A6E]">{linkedContact.name}{linkedContact.specialty ? ` — ${linkedContact.specialty}` : ""}</span></>
+                : user.tab_access
+                  ? <>{user.tab_access.length} tabs visible</>
+                  : "No restrictions set"}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={startEdit}
+              className="grid h-7 w-7 place-items-center rounded-lg text-[#5C6A6E] hover:bg-[#F0EAE0]">
+              <Pencil size={13} />
+            </button>
+            <button onClick={() => setConfirmDel(true)}
+              className="grid h-7 w-7 place-items-center rounded-lg text-[#B0492F] hover:bg-[#FFF0EE]">
+              <Trash2 size={13} />
+            </button>
+            <button onClick={() => setExpanded(e => !e)}
+              className="grid h-7 w-7 place-items-center rounded-lg text-[#5C6A6E] hover:bg-[#F0EAE0]">
+              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          {editing ? (
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full rounded-lg border border-[#D7CBB3] px-2 py-1 text-sm font-bold text-[#16323D] focus:outline-none focus:border-[#16323D]"
-            />
-          ) : (
-            <p className="truncate text-sm font-bold text-[#16323D]">{user.name}</p>
-          )}
-          <p className="text-[11px] text-[#97A1A0]">PIN: {editing ? (
-            <input
-              type="password"
-              value={pin}
-              onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              inputMode="numeric"
-              maxLength={8}
-              className="ml-1 w-20 rounded border border-[#D7CBB3] px-1.5 py-0.5 text-xs text-[#16323D] focus:outline-none"
-            />
-          ) : "••••••••"}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          {editing ? (
-            <>
-              <button onClick={save} disabled={saving}
-                className="rounded-lg bg-[#16323D] px-3 py-1.5 text-xs font-bold text-white hover:opacity-80">
-                {saving ? "…" : "Guardar"}
-              </button>
-              <button onClick={() => { setEditing(false); setName(user.name); setPin(user.pin); setPerms(deepClone(user.permissions)); }}
-                className="rounded-lg bg-[#ECE3D1] px-3 py-1.5 text-xs font-bold text-[#5C6A6E] hover:opacity-80">
-                Cancelar
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => setEditing(true)}
-                className="grid h-7 w-7 place-items-center rounded-lg text-[#5C6A6E] hover:bg-[#F0EAE0]">
-                <Pencil size={13} />
-              </button>
-              <button onClick={deactivate}
-                className="grid h-7 w-7 place-items-center rounded-lg text-[#B0492F] hover:bg-[#FFF0EE]">
-                <Trash2 size={13} />
-              </button>
-              <button onClick={() => setExpanded(e => !e)}
-                className="grid h-7 w-7 place-items-center rounded-lg text-[#5C6A6E] hover:bg-[#F0EAE0]">
-                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-            </>
-          )}
-        </div>
+
+        {/* Expandable panel */}
+        {expanded && (
+          <div className="border-t border-[#F0EAE0] px-4 pb-4 pt-3">
+            {/* Sub-tab bar */}
+            <div className="mb-3 flex gap-1">
+              {SUB_TABS.map(t => (
+                <button key={t.id} onClick={() => setEditTab(t.id)}
+                  className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
+                    editTab === t.id ? "bg-[#16323D] text-white" : "bg-[#F0EAE0] text-[#5C6A6E] hover:bg-[#E6DDCB]"
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* ── Info ── */}
+            {editTab === "info" && (
+              <div className="space-y-3">
+                {editing ? (
+                  <>
+                    {/* Type toggle */}
+                    <div>
+                      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">User type</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["coworker", "client"] as UserType[]).map(type => (
+                          <button key={type} type="button" onClick={() => { setUserType(type); applyPreset(type); }}
+                            className={`flex items-center justify-center gap-2 rounded-xl border py-2 text-[12px] font-bold transition ${
+                              userType === type
+                                ? type === "coworker"
+                                  ? "border-[#2E6B50] bg-[#EBF5F0] text-[#2E6B50]"
+                                  : "border-[#2C4A8A] bg-[#EDF2FB] text-[#2C4A8A]"
+                                : "border-[#E6DDCB] bg-white text-[#5C6A6E] hover:border-[#B0A08A]"
+                            }`}>
+                            {type === "coworker" ? "👷 Co-worker" : "👤 Client"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Name + PIN */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Name</label>
+                        <input value={name} onChange={e => setName(e.target.value)}
+                          className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">PIN</label>
+                        <input type="password" value={pin}
+                          onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                          inputMode="numeric" maxLength={8}
+                          className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                      </div>
+                    </div>
+
+                    {/* Contact link (co-worker only) */}
+                    {userType === "coworker" && (
+                      <>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                            Linked contact <span className="font-normal normal-case text-[#97A1A0]">(filters their tasks)</span>
+                          </label>
+                          <select value={contactId} onChange={e => setContactId(e.target.value)}
+                            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
+                            <option value="">— No linked contact —</option>
+                            {contacts.map(c => (
+                              <option key={c.id} value={c.id}>{c.name}{c.specialty ? ` — ${c.specialty}` : ""}</option>
+                            ))}
+                          </select>
+                          <p className="mt-1 text-[10px] text-[#97A1A0]">When linked, they see only tasks assigned to them in Workflow and Day Planner.</p>
+                        </div>
+                        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
+                          <input type="checkbox" checked={myTasksOnly} onChange={e => setMyTasksOnly(e.target.checked)}
+                            className="h-4 w-4 accent-[#16323D]" />
+                          <div>
+                            <p className="text-[12px] font-bold text-[#16323D]">My tasks only</p>
+                            <p className="text-[10px] text-[#5C6A6E]">Shows only tasks assigned to this user in Workflow & Day Planner</p>
+                          </div>
+                        </label>
+                      </>
+                    )}
+
+                    <div className="flex gap-2 pt-1">
+                      <button onClick={cancelEdit}
+                        className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E] hover:bg-[#D7CBB3]">
+                        Cancel
+                      </button>
+                      <button onClick={save} disabled={saving}
+                        className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                        {saving ? "Saving…" : "Save changes"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  /* Read-only info */
+                  <div className="space-y-2 text-sm">
+                    <div className="flex gap-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">Type</p>
+                        <TypeBadge type={user.user_type ?? "coworker"} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">PIN</p>
+                        <p className="text-sm font-semibold text-[#16323D]">••••</p>
+                      </div>
+                    </div>
+                    {linkedContact && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">Linked contact</p>
+                        <p className="text-sm font-semibold text-[#16323D]">{linkedContact.name} — {linkedContact.specialty}</p>
+                      </div>
+                    )}
+                    {user.my_tasks_only && (
+                      <p className="text-[11px] font-semibold text-[#9B6A2F]">✓ My tasks only is active</p>
+                    )}
+                    <button onClick={startEdit}
+                      className="mt-1 flex items-center gap-1.5 rounded-xl bg-[#F0EAE0] px-4 py-2 text-[12px] font-bold text-[#16323D] hover:bg-[#E6DDCB]">
+                      <Pencil size={12} /> Edit info
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Tab access ── */}
+            {editTab === "tabs" && (
+              <div>
+                {editing && (
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] mr-1 self-center">Presets:</span>
+                    <button onClick={() => applyPreset("coworker")}
+                      className="rounded-md border border-[#B8DEC9] bg-[#EBF5F0] px-2.5 py-1 text-[10px] font-bold text-[#2E6B50] hover:opacity-80">
+                      👷 Co-worker
+                    </button>
+                    <button onClick={() => applyPreset("client")}
+                      className="rounded-md border border-[#B8CCEE] bg-[#EDF2FB] px-2.5 py-1 text-[10px] font-bold text-[#2C4A8A] hover:opacity-80">
+                      👤 Client
+                    </button>
+                    <button onClick={() => setTabAccess(TAB_ACCESS_OPTIONS.map(t => t.id))}
+                      className="rounded-md border border-[#D7CBB3] bg-[#ECE3D1] px-2.5 py-1 text-[10px] font-bold text-[#5C6A6E] hover:opacity-80">
+                      All tabs
+                    </button>
+                  </div>
+                )}
+                <TabAccessGrid
+                  tabAccess={editing ? tabAccess : (user.tab_access ?? [])}
+                  onChange={editing ? setTabAccess : undefined}
+                  userType={editing ? userType : (user.user_type ?? "coworker")}
+                />
+                {editing && (
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={cancelEdit}
+                      className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E]">Cancel</button>
+                    <button onClick={save} disabled={saving}
+                      className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                      {saving ? "Saving…" : "Save changes"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Permissions ── */}
+            {editTab === "perms" && (
+              <div>
+                <PermGrid
+                  perms={editing ? perms : user.permissions}
+                  onChange={editing ? setPerms : undefined}
+                />
+                {editing && (
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={cancelEdit}
+                      className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E]">Cancel</button>
+                    <button onClick={save} disabled={saving}
+                      className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                      {saving ? "Saving…" : "Save changes"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Projects ── */}
+            {editTab === "projects" && (
+              <ProjectAssign userId={user.id} projects={projects} assigned={assigned} onToggle={toggleProject} />
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Expandable permissions + projects */}
-      {expanded && (
-        <div className="border-t border-[#F0EAE0] px-4 pb-4 pt-3">
-          {/* Sub-tabs */}
-          <div className="mb-3 flex gap-1">
-            {(["perms", "projects"] as const).map(t => (
-              <button key={t} onClick={() => setActiveTab(t)}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
-                  activeTab === t
-                    ? "bg-[#16323D] text-white"
-                    : "bg-[#F0EAE0] text-[#5C6A6E] hover:bg-[#E6DDCB]"
-                }`}>
-                {t === "perms" ? "Permisos" : "Proyectos asignados"}
-              </button>
-            ))}
+      {/* Delete confirmation */}
+      {confirmDel && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
+          <div className="w-full max-w-[400px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-bold text-[#16323D]">Remove user</h3>
+            <p className="mb-5 text-sm text-[#5C6A6E]">
+              Remove <strong>{user.name}</strong> from the team? They won&apos;t be able to log in.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDel(false)}
+                className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancel</button>
+              <button onClick={deactivate}
+                className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">Remove</button>
+            </div>
           </div>
-          {activeTab === "perms" ? (
-            <PermGrid perms={editing ? perms : user.permissions} onChange={editing ? setPerms : undefined} readOnly={!editing} />
-          ) : (
-            <ProjectAssign userId={user.id} projects={projects} assigned={assigned} onToggle={toggleProject} />
-          )}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
 // ── Create user form ──────────────────────────────────────────────────────────
 function CreateUserForm({
-  onCreated,
-  onCancel,
-}: {
-  onCreated: (u: AppUser) => void;
-  onCancel:  () => void;
-}) {
-  const [name,   setName]   = useState("");
-  const [pin,    setPin]    = useState("");
-  const [perms,  setPerms]  = useState<Permissions>(deepClone(DEFAULT_PERMISSIONS));
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState("");
+  projects, contacts, onCreated, onCancel,
+}: { projects: Project[]; contacts: Contact[]; onCreated: (u: AppUser) => void; onCancel: () => void }) {
+  const [userType,    setUserType]    = useState<UserType>("coworker");
+  const [name,        setName]        = useState("");
+  const [pin,         setPin]         = useState("");
+  const [contactId,   setContactId]   = useState("");
+  const [tabAccess,   setTabAccess]   = useState<string[]>(DEFAULT_COWORKER_TAB_ACCESS);
+  const [myTasksOnly, setMyTasksOnly] = useState(true);
+  const [perms,       setPerms]       = useState<Permissions>(deepClone(DEFAULT_PERMISSIONS));
+  const [activeTab,   setActiveTab]   = useState<"info" | "tabs" | "perms">("info");
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState("");
+
+  const applyPreset = (type: UserType) => {
+    setTabAccess(type === "coworker" ? DEFAULT_COWORKER_TAB_ACCESS : DEFAULT_CLIENT_TAB_ACCESS);
+    setPerms(deepClone(type === "coworker" ? DEFAULT_PERMISSIONS : DEFAULT_CLIENT_PERMISSIONS));
+    setMyTasksOnly(type === "coworker");
+  };
+
+  const handleTypeChange = (type: UserType) => {
+    setUserType(type);
+    applyPreset(type);
+    if (type === "client") setContactId("");
+  };
 
   const create = async () => {
-    if (!name.trim()) { setError("El nombre es obligatorio"); return; }
-    if (pin.length < 4) { setError("El PIN debe tener al menos 4 dígitos"); return; }
+    if (!name.trim()) { setError("Name is required"); return; }
+    if (pin.length < 4) { setError("PIN must be at least 4 digits"); return; }
     setSaving(true);
     const { data, error: e } = await supabase
       .from("app_users")
-      .insert({ name: name.trim(), pin, role: "colaborador", permissions: perms, active: true })
+      .insert({
+        name: name.trim(),
+        pin,
+        role:          "colaborador",
+        user_type:     userType,
+        contact_id:    contactId || null,
+        tab_access:    tabAccess,
+        my_tasks_only: myTasksOnly,
+        permissions:   perms,
+        active:        true,
+      })
       .select()
       .single();
     setSaving(false);
@@ -296,38 +551,130 @@ function CreateUserForm({
     onCreated(data as AppUser);
   };
 
-  return (
-    <div className="rounded-2xl border border-[#16323D] bg-white p-4 shadow-md">
-      <h4 className="mb-3 text-sm font-bold text-[#16323D]">Nuevo colaborador</h4>
+  const FORM_TABS: { id: "info" | "tabs" | "perms"; label: string }[] = [
+    { id: "info",  label: "Info" },
+    { id: "tabs",  label: "Tab access" },
+    { id: "perms", label: "Permissions" },
+  ];
 
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Nombre</label>
-          <input value={name} onChange={e => setName(e.target.value)}
-            placeholder="Ej: Ana López"
-            className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
-        </div>
-        <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">PIN de acceso</label>
-          <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-            type="password" inputMode="numeric" maxLength={8} placeholder="Mín. 4 dígitos"
-            className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
-        </div>
+  return (
+    <div className="rounded-2xl border-2 border-[#16323D] bg-white p-5 shadow-md">
+      <h4 className="mb-4 text-[12px] font-bold uppercase tracking-widest text-[#16323D]">New team member</h4>
+
+      {/* Form sub-tabs */}
+      <div className="mb-4 flex gap-1">
+        {FORM_TABS.map(t => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)}
+            className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
+              activeTab === t.id ? "bg-[#16323D] text-white" : "bg-[#F0EAE0] text-[#5C6A6E] hover:bg-[#E6DDCB]"
+            }`}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Permisos</label>
-      <PermGrid perms={perms} onChange={setPerms} />
+      {/* Info tab */}
+      {activeTab === "info" && (
+        <div className="space-y-3">
+          {/* Type toggle */}
+          <div>
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">User type</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["coworker", "client"] as UserType[]).map(type => (
+                <button key={type} type="button" onClick={() => handleTypeChange(type)}
+                  className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-[12px] font-bold transition ${
+                    userType === type
+                      ? type === "coworker"
+                        ? "border-[#2E6B50] bg-[#EBF5F0] text-[#2E6B50]"
+                        : "border-[#2C4A8A] bg-[#EDF2FB] text-[#2C4A8A]"
+                      : "border-[#E6DDCB] bg-white text-[#5C6A6E] hover:border-[#B0A08A]"
+                  }`}>
+                  {type === "coworker" ? "👷 Co-worker" : "👤 Client"}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {error && <p className="mt-2 text-[11px] font-semibold text-[#B0492F]">{error}</p>}
+          {/* Name + PIN */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Name</label>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="E.g. Ana López"
+                className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Access PIN</label>
+              <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                type="password" inputMode="numeric" maxLength={8} placeholder="Min. 4 digits"
+                className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+            </div>
+          </div>
 
-      <div className="mt-3 flex gap-2">
+          {/* Co-worker extras */}
+          {userType === "coworker" && (
+            <>
+              <div>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                  Linked contact <span className="font-normal normal-case text-[#97A1A0]">(for task filtering)</span>
+                </label>
+                <select value={contactId} onChange={e => setContactId(e.target.value)}
+                  className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
+                  <option value="">— No linked contact —</option>
+                  {contacts.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}{c.specialty ? ` — ${c.specialty}` : ""}</option>
+                  ))}
+                </select>
+              </div>
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
+                <input type="checkbox" checked={myTasksOnly} onChange={e => setMyTasksOnly(e.target.checked)}
+                  className="h-4 w-4 accent-[#16323D]" />
+                <div>
+                  <p className="text-[12px] font-bold text-[#16323D]">My tasks only</p>
+                  <p className="text-[10px] text-[#5C6A6E]">Shows only tasks assigned to this user in Workflow & Day Planner</p>
+                </div>
+              </label>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Tab access tab */}
+      {activeTab === "tabs" && (
+        <div>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <span className="self-center text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] mr-1">Presets:</span>
+            <button onClick={() => applyPreset("coworker")}
+              className="rounded-md border border-[#B8DEC9] bg-[#EBF5F0] px-2.5 py-1 text-[10px] font-bold text-[#2E6B50]">
+              👷 Co-worker
+            </button>
+            <button onClick={() => applyPreset("client")}
+              className="rounded-md border border-[#B8CCEE] bg-[#EDF2FB] px-2.5 py-1 text-[10px] font-bold text-[#2C4A8A]">
+              👤 Client
+            </button>
+            <button onClick={() => setTabAccess(TAB_ACCESS_OPTIONS.map(t => t.id))}
+              className="rounded-md border border-[#D7CBB3] bg-[#ECE3D1] px-2.5 py-1 text-[10px] font-bold text-[#5C6A6E]">
+              All
+            </button>
+          </div>
+          <TabAccessGrid tabAccess={tabAccess} onChange={setTabAccess} userType={userType} />
+        </div>
+      )}
+
+      {/* Permissions tab */}
+      {activeTab === "perms" && (
+        <PermGrid perms={perms} onChange={setPerms} />
+      )}
+
+      {error && <p className="mt-3 text-[11px] font-semibold text-[#B0492F]">{error}</p>}
+
+      <div className="mt-4 flex gap-2">
         <button onClick={onCancel}
           className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E] hover:bg-[#D7CBB3]">
-          Cancelar
+          Cancel
         </button>
         <button onClick={create} disabled={saving}
-          className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-40">
-          {saving ? "Creando…" : "Crear colaborador"}
+          className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-40">
+          {saving ? "Creating…" : "Create user"}
         </button>
       </div>
     </div>
@@ -335,7 +682,7 @@ function CreateUserForm({
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function UsersPanel({ projects }: { projects: Project[] }) {
+export default function UsersPanel({ projects, contacts }: { projects: Project[]; contacts: Contact[] }) {
   const [users,      setUsers]      = useState<AppUser[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -352,31 +699,28 @@ export default function UsersPanel({ projects }: { projects: Project[] }) {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const handleCreated = (u: AppUser) => {
-    setUsers(prev => [...prev, u]);
-    setShowCreate(false);
-  };
-
   return (
     <div className="mt-8">
-      {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-[#16323D]">Equipo</h2>
-          <p className="text-[11px] text-[#97A1A0]">Gestiona colaboradores y sus permisos</p>
+          <h2 className="text-base font-bold text-[#16323D]">Team</h2>
+          <p className="text-[11px] text-[#97A1A0]">Co-workers and clients — granular access by tab and section</p>
         </div>
-        <button
-          onClick={() => setShowCreate(s => !s)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
-        >
+        <button onClick={() => setShowCreate(s => !s)}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]">
           {showCreate ? <X size={14} /> : <Plus size={14} />}
-          {showCreate ? "Cancelar" : "Nuevo colaborador"}
+          {showCreate ? "Cancel" : "New user"}
         </button>
       </div>
 
       {showCreate && (
         <div className="mb-4">
-          <CreateUserForm onCreated={handleCreated} onCancel={() => setShowCreate(false)} />
+          <CreateUserForm
+            projects={projects}
+            contacts={contacts}
+            onCreated={u => { setUsers(prev => [...prev, u]); setShowCreate(false); }}
+            onCancel={() => setShowCreate(false)}
+          />
         </div>
       )}
 
@@ -386,7 +730,7 @@ export default function UsersPanel({ projects }: { projects: Project[] }) {
         </div>
       ) : users.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#D7CBB3] bg-white py-8 text-center text-sm text-[#97A1A0]">
-          No hay colaboradores aún. Crea el primero.
+          No team members yet. Create the first one.
         </div>
       ) : (
         <div className="space-y-3">
@@ -395,6 +739,7 @@ export default function UsersPanel({ projects }: { projects: Project[] }) {
               key={u.id}
               user={u}
               projects={projects}
+              contacts={contacts}
               onUpdated={updated => setUsers(prev => prev.map(x => x.id === updated.id ? updated : x))}
               onDeleted={id => setUsers(prev => prev.filter(x => x.id !== id))}
             />
