@@ -433,12 +433,12 @@ function useFeatures(EN: boolean) {
     },
     {
       id: "plan", icon: "📅",
-      title: EN ? "Plan (Gantt)" : "Plan (Gantt)",
-      desc:  EN ? "Bird's-eye Gantt view of all tasks in the project. See timelines, filter by status, toggle between week and day resolution."
-                : "Vista Gantt aérea de todas las tareas del proyecto. Visualiza líneas de tiempo, filtra por estado y alterna entre semanas y días.",
+      title: EN ? "Gantt" : "Gantt",
+      desc:  EN ? "Bird's-eye Gantt chart of all tasks in the project. See timelines, filter by status, toggle between week and day resolution."
+                : "Vista Gantt de todas las tareas del proyecto. Visualiza líneas de tiempo, filtra por estado y alterna entre semanas y días.",
       mockup: <MockupPlan EN={EN} />,
       steps: EN ? [
-        { t:"Open the Plan tab", d:"Inside any project, click the <b>Plan</b> tab. All tasks are displayed as horizontal bars on a timeline, ordered by start date." },
+        { t:"Open the Gantt tab", d:"Inside any project, click the <b>Gantt</b> tab. All tasks are displayed as horizontal bars on a timeline, ordered by start date." },
         { t:"Filter by status", d:"Use the filter pills at the top: <b>All · To do · In progress · Done</b>. Only matching tasks are shown — useful to focus on what's still pending." },
         { t:"Toggle Weeks / Days", d:"Switch between <b>Weeks</b> and <b>Days</b> resolution using the toggle in the top-right. Days view gives you finer granularity for short-duration tasks." },
         { t:"Edit a task inline", d:"Click any task bar to open the edit panel. You can update: <b>name, hours, start date, end date, and status</b>. Changes save immediately." },
@@ -453,7 +453,7 @@ function useFeatures(EN: boolean) {
         { t:"Fechas del Planificador por Día", d:"Las tareas generadas por el <b>Planificador por Día</b> llevan una <b>fecha programada</b>. El Gantt respeta esta fecha y posiciona la barra en el día correcto automáticamente." },
       ],
       tips: EN ? [
-        "💡 The Plan tab reads the same <b>scheduled_date</b> field set by the Day Planner — so scheduling in Estimate directly drives the Gantt.",
+        "💡 The Gantt tab reads the same <b>scheduled_date</b> field set by the Day Planner — so scheduling in Estimate directly drives the Gantt.",
         "💡 Use the <b>Days</b> toggle when your project spans less than 2 weeks — individual days become visible columns for precise scheduling.",
         "💡 Changing a task's <b>start/end date</b> in Plan also updates the bar width. Tasks with no dates appear at the top without a bar.",
       ] : [
@@ -587,7 +587,7 @@ function useFeatures(EN: boolean) {
     },
     {
       id: "payments", icon: "💳",
-      title: EN ? "Payments" : "Pagos",
+      title: EN ? "Cash Flow" : "Cash Flow",
       desc:  EN ? "Track all money in (from client) and money out (to workers/suppliers) per project."
                 : "Registra todo el dinero que entra (del cliente) y que sale (a trabajadores/proveedores) por proyecto.",
       mockup: <MockupPayments EN={EN} />,
@@ -622,8 +622,8 @@ function useFeatures(EN: boolean) {
         { t:"Import from Estimate", d:"At the top of the Materials tab, click the blue <b>Import from Estimate</b> banner. The app reads all sections and items from the project's Estimate and creates one material record per item, named <b>\"Compra de [item]\"</b>. Items already imported are skipped automatically — no duplicates." },
         { t:"\"Compra de\" naming", d:"Imported materials follow the naming convention <b>Compra de [ITEM NAME]</b> (e.g., \"Compra de PORCELAIN\"). Cards from the Estimate show a blue <b>FROM EST</b> badge so you can tell them apart from manual entries at a glance." },
         { t:"Edit quantity, unit and notes", d:"Tap any material card to open the edit form. You can set: <b>name, quantity</b> (e.g., 50), <b>unit</b> (e.g., sq.ft, unit, box), <b>supplier, cost, purchase date</b> and free-text <b>notes</b>. All fields are optional." },
-        { t:"Mark as purchased", d:"Click the <b>✓ checkbox</b> on any card once you've bought it. The card dims and the name gets a strikethrough. This <b>automatically creates an expense</b> in the Payments tab with the material's cost — no double entry needed." },
-        { t:"Undo a purchase from Payments", d:"Go to the <b>Payments tab</b> and find the expense with the <b>FROM MAT</b> badge. Tap <b>↩ Unmark</b> to reverse: the expense is deleted and the material checkbox resets to unchecked." },
+        { t:"Mark as purchased", d:"Click the <b>✓ checkbox</b> on any card once you've bought it. The card dims and the name gets a strikethrough. This <b>automatically creates an expense</b> in the Cash Flow tab with the material's cost — no double entry needed." },
+        { t:"Undo a purchase from Cash Flow", d:"Go to the <b>Cash Flow tab</b> and find the expense with the <b>FROM MAT</b> badge. Tap <b>↩ Unmark</b> to reverse: the expense is deleted and the material checkbox resets to unchecked." },
         { t:"Bulk delete", d:"Tap the <b>Select</b> button at the top right. Cards switch to multi-select mode with checkboxes. Check the ones you want to remove and tap the red <b>Delete N</b> bar that appears at the bottom." },
         { t:"Duplicate a card", d:"Use the <b>duplicate</b> action on any card to quickly clone a material — useful when you need the same item from two different suppliers or in different quantities." },
         { t:"Add manually", d:"Click <b>+ Add Material</b> to create a material from scratch — no Estimate needed. Manual entries have no FROM EST badge and can include any name, quantity and supplier you like." },
@@ -632,7 +632,7 @@ function useFeatures(EN: boolean) {
         { t:"Nomenclatura \"Compra de\"", d:"Los materiales importados siguen la convención <b>Compra de [NOMBRE DEL ITEM]</b> (ej. \"Compra de PORCELAIN\"). Las tarjetas del Estimado muestran una etiqueta azul <b>DEL EST</b> para distinguirlas de los registros manuales de un vistazo." },
         { t:"Editar cantidad, unidad y notas", d:"Toca cualquier tarjeta para abrir el formulario de edición. Puedes definir: <b>nombre, cantidad</b> (ej. 50), <b>unidad</b> (ej. sq.ft, unidad, caja), <b>proveedor, costo, fecha de compra</b> y <b>notas</b> en texto libre. Todos los campos son opcionales." },
         { t:"Marcar como comprado", d:"Clic en el <b>checkbox ✓</b> de cualquier tarjeta una vez comprado. La tarjeta se atenúa y el nombre queda tachado. Esto <b>crea automáticamente un egreso</b> en el tab Pagos con el costo del material — sin doble entrada." },
-        { t:"Revertir desde Pagos", d:"Ve al tab <b>Pagos</b> y busca el egreso con la etiqueta <b>FROM MAT</b>. Toca <b>↩ Desmarcar</b> para revertir: se elimina el egreso y el checkbox del material vuelve a desmarcarse." },
+        { t:"Revertir desde Cash Flow", d:"Ve al tab <b>Cash Flow</b> y busca el egreso con la etiqueta <b>FROM MAT</b>. Toca <b>↩ Desmarcar</b> para revertir: se elimina el egreso y el checkbox del material vuelve a desmarcarse." },
         { t:"Eliminación en bloque", d:"Toca el botón <b>Seleccionar</b> arriba a la derecha. Las tarjetas cambian a modo multi-selección con checkboxes. Marca las que quieres eliminar y toca la barra roja <b>Eliminar N</b> que aparece abajo." },
         { t:"Duplicar una tarjeta", d:"Usa la acción <b>duplicar</b> en cualquier tarjeta para clonarla rápidamente — útil cuando necesitas el mismo item de dos proveedores distintos o en diferentes cantidades." },
         { t:"Agregar manualmente", d:"Clic en <b>+ Agregar Material</b> para crear un material desde cero — sin necesitar el Estimado. Los registros manuales no tienen etiqueta DEL EST y admiten cualquier nombre, cantidad y proveedor." },
@@ -813,6 +813,41 @@ function useFeatures(EN: boolean) {
         "📋 Cada comando (confirmado, cancelado o error) se <b>registra automáticamente</b> como auditoría — siempre hay rastro de las acciones por voz.",
         "💡 Habla a <b>ritmo normal</b> — Katy espera un silencio natural antes de procesar. Los montos en palabras se convierten automáticamente.",
         "🌐 Cambia a español con el selector de idioma (arriba a la derecha) y Katy también responderá en español.",
+      ],
+    },
+    {
+      id: "activity", icon: "📋",
+      title: EN ? "Activity Log" : "Registro de Actividad",
+      desc:  EN ? "Full audit trail of who logged in, what was created and what was deleted — visible only to the superadmin."
+                : "Auditoría completa de quién ingresó, qué se creó y qué se eliminó — visible solo para el superadmin.",
+      mockup: null,
+      steps: EN ? [
+        { t:"Open Activity Log", d:"Click <b>Activity</b> in the top navigation bar (only visible when logged in as superadmin). The page lists all recorded events ordered newest first." },
+        { t:"Stats strip", d:"Four KPI cards at the top summarise: <b>Today's events · Logins · Records created · Records deleted</b>. Counts reset at midnight." },
+        { t:"Filter by user", d:"Use the <b>User</b> dropdown to view events from a specific team member. Combine with the <b>Action</b> filter to narrow down login events, creations, or deletions." },
+        { t:"Filter by action type", d:"Select <b>Login · Create · Update · Delete</b> from the Action dropdown. Each event row shows a colored badge with an emoji: 🔑 Login · ➕ Create · ✏️ Update · 🗑 Delete." },
+        { t:"Filter by date range", d:"Use the <b>From / To</b> date pickers to restrict events to a specific period. Useful for reviewing activity during a particular week or month." },
+        { t:"Superadmin display name", d:"Go to <b>Settings → Nombre de display</b> to set the name shown in the Activity Log and the Dashboard greeting. Enter your desired name, confirm with your PIN, and it's saved immediately." },
+      ] : [
+        { t:"Abrir el Registro de Actividad", d:"Clic en <b>Activity</b> en la barra de navegación superior (solo visible cuando estás autenticado como superadmin). La página lista todos los eventos registrados del más reciente al más antiguo." },
+        { t:"Panel de estadísticas", d:"Cuatro tarjetas KPI en la parte superior resumen: <b>Eventos de hoy · Inicios de sesión · Registros creados · Registros eliminados</b>. Los conteos se reinician a medianoche." },
+        { t:"Filtrar por usuario", d:"Usa el selector <b>Usuario</b> para ver eventos de un miembro específico del equipo. Combínalo con el filtro de <b>Acción</b> para ver solo inicios de sesión, creaciones o eliminaciones." },
+        { t:"Filtrar por tipo de acción", d:"Selecciona <b>Login · Crear · Actualizar · Eliminar</b> en el selector de Acción. Cada fila muestra un badge con emoji: 🔑 Login · ➕ Crear · ✏️ Actualizar · 🗑 Eliminar." },
+        { t:"Filtrar por rango de fechas", d:"Usa los selectores <b>Desde / Hasta</b> para restringir los eventos a un período específico. Útil para revisar la actividad de una semana o mes particular." },
+        { t:"Nombre de display del superadmin", d:"Ve a <b>Configuración → Nombre de display</b> para establecer el nombre que aparece en el Registro de Actividad y el saludo del Dashboard. Ingresa el nombre deseado, confirma con tu PIN y se guarda de inmediato." },
+      ],
+      tips: EN ? [
+        "🔐 Only the <b>superadmin</b> can see the Activity tab — it is hidden from all collaborators regardless of their permissions.",
+        "🔑 Every login — both superadmin and collaborator — is automatically recorded with the user name, role and timestamp.",
+        "🤖 Voice commands confirmed through Katy are also logged in the Activity Log as <b>Create</b> events.",
+        "🗑 Delete events capture the entity name so you know what was removed even after it's gone.",
+        "👤 Use the <b>Nombre de display</b> card in Settings to set a personalized name for each superadmin session — useful when multiple people share the superadmin PIN.",
+      ] : [
+        "🔐 Solo el <b>superadmin</b> puede ver el tab Activity — está oculto para todos los colaboradores independientemente de sus permisos.",
+        "🔑 Cada inicio de sesión — tanto del superadmin como de colaboradores — se registra automáticamente con el nombre, rol y timestamp.",
+        "🤖 Los comandos de voz confirmados a través de Katy también se registran en el Activity Log como eventos de <b>Creación</b>.",
+        "🗑 Los eventos de eliminación capturan el nombre de la entidad para saber qué se borró incluso después de que ya no existe.",
+        "👤 Usa la tarjeta <b>Nombre de display</b> en Configuración para establecer un nombre personalizado — útil cuando varias personas comparten el PIN de superadmin.",
       ],
     },
   ];

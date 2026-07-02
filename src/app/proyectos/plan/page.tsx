@@ -139,7 +139,7 @@ export default function PlanPage() {
     const { data } = await supabase
       .from("projects")
       .select("*, tasks(*)")
-      .order("created_at");
+      .order("start_date", { ascending: true });
     if (data) setProjects(data as ProjectWithTasks[]);
     setLoading(false);
   }, []);

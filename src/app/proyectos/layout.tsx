@@ -61,8 +61,8 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
             <nav className="flex flex-1 gap-1 overflow-x-auto [scrollbar-width:none]">
               <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
-              <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
               <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
+              <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
               {isSuperAdmin && <PanelTab href="/proyectos/activity" label={t.panel.nav.activity} />}
               <PanelTab href="/proyectos/help" label={t.panel.nav.help} />
             </nav>

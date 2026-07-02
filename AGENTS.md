@@ -68,19 +68,21 @@ src/
 │   ├── proyectos/
 │   │   ├── layout.tsx                # Layout del panel: nav top, logout, VoiceFAB, LangSwitch
 │   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs + eliminar proyecto)
-│   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Plan · Workflow · Estimate · Payments · Materials · Contacts · Notes
+│   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Workflow · Gantt · Materials · Contacts · Notes · Design
 │   │   ├── cliente-01/page.tsx       # Tour 360° showcase (demo pública)
 │   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
-│   │   ├── plan/page.tsx             # Gantt global (todas las tareas)
+│   │   ├── plan/page.tsx             # Gantt G global (todas las tareas, orden por start_date asc)
+│   │   ├── activity/page.tsx         # Registro de actividad — solo superadmin (login, create, update, delete)
 │   │   └── help/page.tsx             # Página de ayuda — guía paso a paso bilingüe (EN/ES)
 │   └── api/
 │       ├── voice/route.ts            # Asistente de voz Katy (Claude API → intención → acción)
 │       └── auth/
-│           ├── login/route.ts        # Verificar PIN superadmin (server-side, no expone PIN)
+│           ├── login/route.ts        # Verificar PIN superadmin (server-side, no expone PIN) — retorna name
 │           ├── change-pin/route.ts   # Cambiar PIN superadmin
 │           ├── recover/route.ts      # Enviar código 6 dígitos al correo (Resend)
 │           ├── reset-pin/route.ts    # Verificar código y actualizar PIN
-│           └── set-email/route.ts    # Guardar correo de recuperación del superadmin
+│           ├── set-email/route.ts    # Guardar correo de recuperación del superadmin
+│           └── set-name/route.ts     # Actualizar nombre de display del superadmin (verifica PIN, server-side)
 │
 ├── components/
 │   ├── layout/
@@ -94,7 +96,7 @@ src/
 │   │   └── VirtualTour.tsx           # Visor 360° embed en landing
 │   └── ui/
 │       ├── AdminModal.tsx            # Modal de login por PIN (superadmin + colaboradores + recuperación)
-│       ├── AdminSettings.tsx         # Panel cambio de PIN + correo de recuperación
+│       ├── AdminSettings.tsx         # Panel cambio de PIN + correo de recuperación + nombre de display
 │       ├── UsersPanel.tsx            # Gestión de colaboradores y permisos granulares
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
@@ -117,6 +119,7 @@ src/
 │   ├── supabase.ts                   # Cliente Supabase con anon key (browser)
 │   ├── supabase-admin.ts             # Cliente Supabase con service_role (SOLO en API routes)
 │   ├── pdf.ts                        # PDF del estimado (jsPDF) — buildEstimatePdf() interno + exportEstimatePdf() + getEstimatePdfBlob()
+│   ├── activity.ts                   # logActivity() — fire-and-forget insert en activity_log
 │   ├── schema.sql                    # Schema completo de la base de datos (ejecutar en orden)
 │   └── utils.ts                      # money(), formatDate(), todayIso(), addDays()
 │
@@ -328,26 +331,33 @@ Requiere autenticación por PIN. Layout en `src/app/proyectos/layout.tsx`.
 
 ### Tabs del detalle de proyecto (`/proyectos/[id]`)
 
-| Tab | Descripción |
-|---|---|
-| Plan | Vista rápida de avance: progress bars, conteo de tareas |
-| Workflow | Kanban (Pendiente → En Proceso → Listo) + vista Gantt |
-| Estimate | Estimado profesional: secciones, items, PDF, WhatsApp send |
-| Day Planner | Planificador por día embebido — carga el estimado, drag&drop a columnas de días, asignación de co-workers, items custom, auto-assign, guarda tareas en Workflow |
-| Payments | Ingresos y egresos con balance en tiempo real |
-| Materials | Lista de compras con checkbox "comprado" + import desde Estimate |
-| Contacts | Especialistas/proveedores vinculados al proyecto |
-| Notes | Notas con adjuntos (imágenes + PDFs) |
-| Design | AI Render Studio — sube foto, brief de diseño, genera render fotorrealista con Replicate img2img, slider de comparación Antes/Después |
+Orden de tabs (TabId array): `presupuesto · pagos · planner · workflow · plan · materiales · contactos · notas · design`
+
+| Tab (id) | Label UI | Descripción |
+|---|---|---|
+| `presupuesto` | Estimate | Estimado profesional: secciones, items, PDF, WhatsApp send |
+| `pagos` | Cash Flow | Ingresos y egresos con balance en tiempo real |
+| `planner` | Day Planner | Planificador por día embebido — drag&drop, co-workers, custom items, auto-assign |
+| `workflow` | Workflow | Kanban (Pendiente → En Proceso → Listo) + vista Gantt |
+| `plan` | Gantt | Vista Gantt de todas las tareas del proyecto — cabecera `bg-[#16323D]` |
+| `materiales` | Materials | Lista de compras con checkbox "comprado" + import desde Estimate |
+| `contactos` | Contacts | Especialistas/proveedores vinculados al proyecto |
+| `notas` | Notes | Notas con adjuntos (imágenes + PDFs) |
+| `design` | Design | AI Render Studio — sube foto, brief de diseño, render fotorrealista con Replicate |
+
+Tab activo por defecto al abrir un proyecto: `"presupuesto"` (Estimate).
 
 ### Navegación del panel (top nav)
 
-| Link | Ruta |
-|---|---|
-| Dashboard | `/proyectos` |
-| Contacts | `/proyectos/contactos` |
-| Plan | `/proyectos/plan` |
-| Help | `/proyectos/help` |
+Orden: Dashboard → Gantt G → Contacts → Activity (solo superadmin) → Help
+
+| Link | Ruta | Notas |
+|---|---|---|
+| Dashboard | `/proyectos` | — |
+| Gantt G | `/proyectos/plan` | Vista Gantt global, proyectos ordenados por start_date ASC |
+| Contacts | `/proyectos/contactos` | Lista global de contactos |
+| Activity | `/proyectos/activity` | Solo visible para superadmin |
+| Help | `/proyectos/help` | — |
 
 ---
 
@@ -378,6 +388,87 @@ Requiere autenticación por PIN. Layout en `src/app/proyectos/layout.tsx`.
 1. "¿Olvidaste tu PIN?" → ingresar correo en `AdminModal`
 2. POST `/api/auth/recover` → código 6 dígitos → `superadmin_config` → email vía Resend
 3. POST `/api/auth/reset-pin` → verifica código → actualiza PIN
+
+### Nombre de display del superadmin
+
+- Columna `name TEXT NOT NULL DEFAULT 'Admin'` en `superadmin_config`
+- `/api/auth/login` devuelve `name` al cliente (además de `isSuperAdmin`)
+- `AuthContext` usa el `name` recibido para poblar la sesión — ya no hardcodea "Marco"
+- Cambio desde `AdminSettings` → tarjeta "Nombre de display" → PIN de confirmación → POST `/api/auth/set-name`
+- `setDisplayName()` en `AuthContext` actualiza `localStorage` en memoria sin recargar la página
+- El nombre aparece en: saludo del Dashboard, columna `user_name` de `activity_log`
+
+Migración SQL requerida:
+```sql
+ALTER TABLE superadmin_config ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Admin';
+```
+
+### Activity Log (`activity_log`)
+
+- Tabla en Supabase para auditoría de todas las acciones del panel
+- Registra: inicio de sesión, creación, actualización y eliminación de entidades
+- Función `logActivity(entry)` en `src/lib/activity.ts` — fire-and-forget (no bloquea la UI)
+- Se llama desde `AuthContext` en login (superadmin y colaboradores)
+- Página `/proyectos/activity` — solo visible para superadmin
+  - 4 KPI cards: Eventos hoy · Logins · Creados · Eliminados
+  - Filtros: usuario, tipo de acción, rango de fechas
+  - Tabla con avatar (iniciales + color determinístico), badge con emoji, timeAgo
+
+```sql
+CREATE TABLE IF NOT EXISTS activity_log (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      TEXT,
+  user_name    TEXT,
+  user_role    TEXT,
+  action       TEXT NOT NULL,  -- 'login' | 'create' | 'update' | 'delete' | 'mark_bought'
+  entity_type  TEXT,           -- 'project' | 'task' | 'payment' | 'expense' | 'material' | 'contact' | 'note' | 'estimate_item'
+  entity_id    TEXT,
+  entity_name  TEXT,
+  project_id   UUID REFERENCES projects(id) ON DELETE SET NULL,
+  project_name TEXT,
+  details      JSONB,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON activity_log FOR ALL TO anon USING (true) WITH CHECK (true);
+```
+
+---
+
+## Tipografía — Bookman Old Style
+
+- Los títulos de proyectos usan la clase `.font-bookman` definida en `src/app/globals.css`
+- Font stack: `"Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif` (fuentes del sistema — no requiere Google Fonts)
+- Usada en: `h3` de tarjetas del dashboard, `h1` del encabezado del proyecto, cabecera del tab Gantt
+
+```css
+.font-bookman {
+  font-family: "Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif;
+}
+```
+
+---
+
+## Deposit Payment Modal (EstimateTab)
+
+El modal de instalamentos del Estimate (`deposit_schedule`) tiene un detalle expandible por fila que muestra/crea los pagos reales del cliente.
+
+- Tabla `payments` — tipo `anticipo | abono | final` mapeados a índice de instalamento (0, 1, 2)
+- Validación: la suma de pagos de un instalamento **no puede superar el target** (`pct × grandTotal / 100`)
+- Si la suma ya supera el target (datos históricos), se muestra un banner de advertencia rojo
+- Formulario "Add": calcula `remaining = target - received`; bloquea el botón si `wouldExceed`
+- Edición inline: ícono lápiz abre inputs en la misma fila; ✓ guarda, ✕ cancela
+- Eliminación con confirmación: X muestra `¿Eliminar? [Sí] [No]` en la misma fila antes de borrar
+
+---
+
+## Prototypes
+
+Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no en `src/`):
+
+| Archivo | Descripción |
+|---|---|
+| `activity-log-prototype.html` | Prototipo visual del Activity Log con Tailwind CDN y datos de ejemplo |
 
 ---
 

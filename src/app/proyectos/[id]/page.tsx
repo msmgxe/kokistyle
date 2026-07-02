@@ -1855,9 +1855,13 @@ function PlanTab({
 
   return (
     <div className="w-full">
-      <p className="mb-4 text-xs text-[#5C6A6E]">
-        {tp.plan.hint}
-      </p>
+      {/* Gantt header */}
+      <div className="mb-4 rounded-2xl bg-[#16323D] px-5 py-3 flex items-center justify-between">
+        <div>
+          <h2 className="font-bookman text-base font-semibold text-white">{tp.tabs.plan}</h2>
+          <p className="text-[11px] text-white/50">{tp.plan.hint}</p>
+        </div>
+      </div>
 
       {/* Controls: filter + assignee + gantt unit toggle */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -2417,7 +2421,7 @@ export default function ProjectDetailPage() {
   const id = params?.id as string;
   const [project, setProject] = useState<ProjectFull | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabId>("plan");
+  const [activeTab, setActiveTab] = useState<TabId>("presupuesto");
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
@@ -2427,11 +2431,11 @@ export default function ProjectDetailPage() {
   const tp = t.panel;
 
   const TABS: { id: TabId; label: string }[] = [
-    { id: "plan",        label: tp.tabs.plan },
-    { id: "workflow",    label: tp.tabs.workflow },
     { id: "presupuesto", label: tp.tabs.budget },
-    { id: "planner",     label: tp.tabs.planner },
     { id: "pagos",       label: tp.tabs.payments },
+    { id: "planner",     label: tp.tabs.planner },
+    { id: "workflow",    label: tp.tabs.workflow },
+    { id: "plan",        label: tp.tabs.plan },
     { id: "materiales",  label: tp.tabs.materials },
     { id: "contactos",   label: tp.tabs.contacts },
     { id: "notas",       label: tp.tabs.notes },
