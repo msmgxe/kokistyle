@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Propuesta de Valor — Luxaris Design Platform</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&display=swap');
+
+  :root {
+    --teal:    #16323D;
+    --teal2:   #1E4B5A;
+    --navy:    #395886;
+    --cream:   #F5E9DA;
+    --cream2:  #EDE3D3;
+    --cream3:  #F7F3EA;
+    --burg:    #7B1838;
+    --green:   #4F8A63;
+    --red:     #B0492F;
+    --slate:   #5C6A6E;
+    --border:  #E6DDCB;
+    --gold:    #B8921A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    background: #f0ece4;
+    color: #1a2426;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ── PAGES ── */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    margin: 0 auto 24px;
+    padding: 0;
+    box-shadow: 0 4px 40px rgba(0,0,0,.15);
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    background: var(--teal);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 297mm;
+    text-align: center;
+    padding: 60px 50px;
+    position: relative;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 20%, rgba(255,255,255,.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(123,24,56,.25) 0%, transparent 60%);
+  }
+  .cover-badge {
+    width: 72px; height: 72px;
+    background: rgba(255,255,255,.12);
+    border: 2px solid rgba(255,255,255,.2);
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 900; color: white; letter-spacing: -1px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .cover h1 {
+    font-size: 38px; font-weight: 900; color: white; line-height: 1.1;
+    letter-spacing: -1.5px; margin-bottom: 14px; position: relative;
+  }
+  .cover h1 span { color: #A8D5C2; }
+  .cover .subtitle {
+    font-size: 14px; font-weight: 600; color: rgba(255,255,255,.65);
+    letter-spacing: .14em; text-transform: uppercase; margin-bottom: 50px;
+    position: relative;
+  }
+  .cover-divider {
+    width: 60px; height: 3px; background: var(--burg);
+    border-radius: 2px; margin: 0 auto 50px; position: relative;
+  }
+  .cover-pills {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    position: relative; margin-bottom: 60px;
+  }
+  .cover-pill {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 100px; padding: 6px 16px;
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,.85);
+    letter-spacing: .06em;
+  }
+  .cover-footer {
+    position: absolute; bottom: 40px; left: 0; right: 0;
+    display: flex; justify-content: space-between; padding: 0 50px;
+    font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .cover-kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; width: 100%; max-width: 480px; position: relative;
+  }
+  .cover-kpi {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px; padding: 18px 12px; text-align: center;
+  }
+  .cover-kpi .val {
+    font-size: 24px; font-weight: 900; color: white; display: block;
+  }
+  .cover-kpi .lbl {
+    font-size: 9px; font-weight: 700; color: rgba(255,255,255,.5);
+    text-transform: uppercase; letter-spacing: .1em; margin-top: 4px;
+    display: block;
+  }
+
+  /* ── INNER PAGES ── */
+  .page-header {
+    background: var(--teal);
+    padding: 18px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-header .brand {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .page-header .badge-sm {
+    width: 30px; height: 30px; background: rgba(255,255,255,.15);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 900; color: white;
+  }
+  .page-header .brand-name {
+    font-size: 11px; font-weight: 800; color: white; letter-spacing: .04em;
+  }
+  .page-header .section-label {
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5);
+    text-transform: uppercase; letter-spacing: .14em;
+  }
+  .page-body { padding: 32px 40px 40px; }
+
+  /* ── SECTION TITLES ── */
+  .section-title {
+    font-size: 20px; font-weight: 900; color: var(--teal);
+    letter-spacing: -.5px; margin-bottom: 6px;
+  }
+  .section-desc {
+    font-size: 12px; color: var(--slate); margin-bottom: 24px;
+    border-left: 3px solid var(--burg); padding-left: 10px;
+  }
+
+  /* ── MODULE GRID ── */
+  .module-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin-bottom: 20px;
+  }
+  .module-card {
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; background: var(--cream3);
+  }
+  .module-card .icon { font-size: 18px; margin-bottom: 6px; display: block; }
+  .module-card .name { font-size: 11px; font-weight: 800; color: var(--teal); }
+  .module-card .hours { font-size: 10px; color: var(--slate); margin-top: 2px; }
+  .module-card .cost {
+    font-size: 11px; font-weight: 700; color: var(--navy);
+    margin-top: 6px;
+  }
+  .module-card.highlight { background: var(--teal); border-color: var(--teal); }
+  .module-card.highlight .name,
+  .module-card.highlight .hours,
+  .module-card.highlight .cost { color: rgba(255,255,255,.85); }
+  .module-card.highlight .name { color: white; }
+
+  /* ── BAR CHART ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 10px; font-weight: 700; color: var(--teal); width: 150px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 20px; background: var(--cream2); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 8px; }
+  .bar-fill span { font-size: 9px; font-weight: 800; color: white; }
+  .bar-value { font-size: 10px; font-weight: 800; color: var(--slate); width: 80px; text-align: right; }
+
+  /* ── COMPETITOR TABLE ── */
+  .comp-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .comp-table th {
+    background: var(--teal); color: white; font-size: 9px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em; padding: 9px 12px; text-align: left;
+  }
+  .comp-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .comp-table tr:nth-child(even) td { background: var(--cream3); }
+  .comp-table tr.highlight-row td { background: #E8F4EC; }
+  .comp-table tr.highlight-row td:first-child { font-weight: 800; color: var(--green); }
+  .price-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 100px;
+    font-size: 9px; font-weight: 800;
+  }
+  .price-badge.monthly { background: #FEF6ED; color: var(--gold); }
+  .price-badge.own     { background: #DCEBDD; color: var(--green); }
+  .check { color: var(--green); font-weight: 800; }
+  .cross { color: var(--red); }
+  .partial { color: var(--gold); }
+
+  /* ── PROS CONS ── */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pros-box, .cons-box { border-radius: 14px; padding: 16px; }
+  .pros-box { background: #DCEBDD; }
+  .cons-box { background: #FDE8E3; }
+  .pros-box h3 { color: var(--green); font-size: 12px; font-weight: 900; margin-bottom: 10px; }
+  .cons-box h3 { color: var(--red); font-size: 12px; font-weight: 900; margin-bottom: 10px; }
+  .item-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+  .item-row .dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 900; flex-shrink: 0; margin-top: 1px;
+  }
+  .pros-box .dot { background: var(--green); color: white; }
+  .cons-box .dot { background: var(--red); color: white; }
+  .item-text strong { display: block; font-size: 10.5px; font-weight: 800; color: var(--teal); }
+  .item-text span { font-size: 10px; color: var(--slate); }
+
+  /* ── KPI BOXES ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .kpi-box {
+    border-radius: 14px; padding: 16px 12px; text-align: center;
+    border: 1px solid var(--border);
+  }
+  .kpi-box .val { font-size: 22px; font-weight: 900; display: block; }
+  .kpi-box .lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--slate); margin-top: 4px; display: block; }
+  .kpi-box.blue  { background: #EDF3FB; border-color: #C5D8F5; } .kpi-box.blue .val  { color: var(--navy); }
+  .kpi-box.green { background: #DCEBDD; border-color: #A8D5B4; } .kpi-box.green .val { color: var(--green); }
+  .kpi-box.teal  { background: #DDE9EC; border-color: #9DC4CE; } .kpi-box.teal .val  { color: var(--teal); }
+  .kpi-box.burg  { background: #F5E0E7; border-color: #E0A0B5; } .kpi-box.burg .val  { color: var(--burg); }
+
+  /* ── ROI TIMELINE ── */
+  .timeline { display: flex; align-items: stretch; gap: 0; margin: 24px 0; }
+  .tl-step {
+    flex: 1; text-align: center; position: relative;
+    padding: 16px 8px 12px;
+    border-radius: 12px; margin: 0 4px;
+  }
+  .tl-step .tl-num {
+    font-size: 22px; font-weight: 900; display: block; margin-bottom: 4px;
+  }
+  .tl-step .tl-period {
+    font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+    display: block; margin-bottom: 6px;
+  }
+  .tl-step .tl-desc { font-size: 10px; color: var(--slate); }
+  .tl-step.s1 { background: #EDF3FB; }        .tl-step.s1 .tl-num { color: var(--navy); } .tl-step.s1 .tl-period { color: var(--navy); }
+  .tl-step.s2 { background: #F5E0E7; }        .tl-step.s2 .tl-num { color: var(--burg); } .tl-step.s2 .tl-period { color: var(--burg); }
+  .tl-step.s3 { background: #DCEBDD; }        .tl-step.s3 .tl-num { color: var(--green); } .tl-step.s3 .tl-period { color: var(--green); }
+  .tl-step.s4 { background: var(--teal); }    .tl-step.s4 .tl-num { color: white; } .tl-step.s4 .tl-period { color: rgba(255,255,255,.7); } .tl-step.s4 .tl-desc { color: rgba(255,255,255,.65); }
+
+  /* ── COST COMPARISON VISUAL ── */
+  .cost-compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 20px 0; }
+  .cost-card {
+    border-radius: 14px; border: 1px solid var(--border);
+    overflow: hidden; text-align: center;
+  }
+  .cost-card .cc-head {
+    padding: 12px; font-size: 11px; font-weight: 800; color: white;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .cost-card.latam .cc-head { background: var(--navy); }
+  .cost-card.usa   .cc-head { background: var(--teal); }
+  .cost-card.saas  .cc-head { background: var(--burg); }
+  .cost-card .cc-body { padding: 16px 12px; background: var(--cream3); }
+  .cost-card .cc-price {
+    font-size: 26px; font-weight: 900; display: block; line-height: 1.1;
+  }
+  .cost-card.latam .cc-price { color: var(--navy); }
+  .cost-card.usa   .cc-price { color: var(--teal); }
+  .cost-card.saas  .cc-price { color: var(--burg); }
+  .cost-card .cc-note { font-size: 10px; color: var(--slate); margin-top: 6px; display: block; }
+  .cost-card .cc-tag {
+    display: inline-block; margin-top: 10px; padding: 3px 10px; border-radius: 100px;
+    font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+  }
+  .cost-card.latam .cc-tag { background: #C5D8F5; color: var(--navy); }
+  .cost-card.usa   .cc-tag { background: #DDE9EC; color: var(--teal); }
+  .cost-card.saas  .cc-tag { background: #F5E0E7; color: var(--burg); }
+
+  /* ── TECH STACK ── */
+  .tech-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 20px; }
+  .tech-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--teal); border-radius: 8px; padding: 5px 12px;
+    font-size: 10px; font-weight: 700; color: white;
+  }
+  .tech-pill.light { background: var(--cream2); color: var(--teal); }
+
+  /* ── QUOTE BOX ── */
+  .quote-box {
+    background: var(--teal); border-radius: 14px;
+    padding: 20px 24px; margin: 20px 0;
+  }
+  .quote-box p { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); line-height: 1.7; }
+  .quote-box strong { color: #A8D5C2; }
+
+  /* ── FOOTER ── */
+  .page-footer {
+    background: var(--cream2); border-top: 1px solid var(--border);
+    padding: 10px 40px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-footer span { font-size: 9px; color: var(--slate); font-weight: 600; letter-spacing: .06em; }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; page-break-after: always; }
+    @page { size: A4; margin: 0; }
+  }
+
+  /* ── INFOGRAPHIC: DONUT FAKE ── */
+  .infographic-row { display: flex; gap: 16px; align-items: stretch; }
+  .infographic-row .chart-side { flex: 1; }
+  .infographic-row .legend-side { width: 180px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .legend-item span { font-size: 10px; color: var(--slate); }
+  .legend-item strong { font-size: 10.5px; color: var(--teal); }
+
+  /* ── STACKED BAR ── */
+  .stacked-bar-container { margin: 16px 0; }
+  .stacked-bar { display: flex; height: 28px; border-radius: 8px; overflow: hidden; gap: 2px; }
+  .stacked-seg { display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: white; transition: all .3s; }
+  .stacked-labels { display: flex; margin-top: 8px; gap: 2px; }
+  .stacked-label { font-size: 9px; color: var(--slate); text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ PÁGINA 1: PORTADA ══════════════════ -->
+<div class="page">
+  <div class="cover">
+    <div class="cover-badge">LD</div>
+    <h1>Plataforma Digital<br><span>Luxaris Design</span></h1>
+    <p class="subtitle">Propuesta de Valor &amp; Análisis de Costo</p>
+    <div class="cover-divider"></div>
+    <div class="cover-pills">
+      <span class="cover-pill">🌐 Landing Pública</span>
+      <span class="cover-pill">🏗️ Gestión de Proyectos</span>
+      <span class="cover-pill">📄 Estimados PDF</span>
+      <span class="cover-pill">🤖 IA de Voz</span>
+      <span class="cover-pill">🎨 AI Render Studio</span>
+      <span class="cover-pill">📅 Reservas Online</span>
+      <span class="cover-pill">👥 Multi-rol</span>
+      <span class="cover-pill">🌎 Bilingüe EN/ES</span>
+    </div>
+    <div class="cover-kpis">
+      <div class="cover-kpi"><span class="val">21</span><span class="lbl">Módulos</span></div>
+      <div class="cover-kpi"><span class="val">1,080h</span><span class="lbl">Desarrollo</span></div>
+      <div class="cover-kpi"><span class="val">$55K</span><span class="lbl">Valor Estimado</span></div>
+    </div>
+    <div class="cover-footer">
+      <span>Luxaris Design LLC · South Florida</span>
+      <span>Confidencial · 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PÁGINA 2: QUÉ SE CONSTRUYÓ ══════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand">
+      <div class="badge-sm">LD</div>
+      <span class="brand-name">Luxaris Design Platform</span>
+    </div>
+    <span class="section-label">01 — Plataforma Completa</span>
+  </div>
+  <div class="page-body">
+    <p class="section-title">¿Qué se construyó?</p>
+    <p class="section-desc">Una plataforma SaaS a medida de nivel enterprise para empresas de remodelación premium en el mercado de South Florida / USA</p>
+
+    <div class="tech-grid">
+      <span class="tech-pill">Next.js 15</span>
+      <span class="tech-pill">TypeScript</span>
+      <span class="tech-pill">Supabase</span>
+      <span class="tech-pill">TailwindCSS v4</span>
+      <span class="tech-pill">Vercel</span>
+      <span class="tech-pill">Claude AI</span>
+      <span class="tech-pill">Replicate AI</span>
+      <span class="tech-pill">jsPDF</span>
+      <span class="tech-pill light">~1,080 horas de desarrollo</span>
+      <span class="tech-pill light">Código 100% propio</span>
+    </div>
+
+    <div class="module-grid">
+      <div class="module-card highlight">
+        <span class="icon">🌐</span>
+        <div class="name">Landing Pública</div>
+        <div class="hours">40–60h · Hero, Services, Tours 360°, Before/After</div>
+        <div class="cost">$1,400–$9,000</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">📅</span>
+        <div class="name">Reservas Online</div>
+        <div class="hours">55–80h · 4 pasos, calendario, admin panel</div>
+        <div class="cost">$1,925–$12,000</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">🔐</span>
+        <div class="name">Autenticación</div>
+        <div class="hours">45–65h · PIN, roles, recuperación email</div>
+        <div class="cost">$1,575–$9,750</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">📊</span>
+        <div class="name">Dashboard + KPIs</div>
+        <div class="hours">30–45h · métricas financieras en tiempo real</div>
+        <div class="cost">$1,050–$6,750</div>
+      </div>
+      <div class="module-card highlight">
+        <span class="icon">📄</span>
+        <div class="name">Módulo Estimate</div>
+        <div class="hours">90–130h · el más complejo — PDF, WhatsApp, Payment Schedule</div>
+        <div class="cost">$3,150–$19,500</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">💰</span>
+        <div class="name">Cash Flow</div>
+        <div class="hours">35–50h · ingresos, egresos, balance</div>
+        <div class="cost">$1,225–$7,500</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">🗓️</span>
+        <div class="name">Day Planner</div>
+        <div class="hours">70–100h · drag &amp; drop, auto-assign por fase</div>
+        <div class="cost">$2,450–$15,000</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">📋</span>
+        <div class="name">Workflow / Kanban</div>
+        <div class="hours">35–55h · 3 columnas, métricas, filtros</div>
+        <div class="cost">$1,225–$8,250</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">📅</span>
+        <div class="name">Gantt Global + Local</div>
+        <div class="hours">50–75h · cronograma visual por proyecto y global</div>
+        <div class="cost">$1,750–$11,250</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">🛒</span>
+        <div class="name">Materials</div>
+        <div class="hours">35–50h · lista de compras + import desde Estimate</div>
+        <div class="cost">$1,225–$7,500</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">👤</span>
+        <div class="name">Contacts</div>
+        <div class="hours">30–45h · global + por proyecto, teléfono US</div>
+        <div class="cost">$1,050–$6,750</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">📝</span>
+        <div class="name">Notes + Adjuntos</div>
+        <div class="hours">30–45h · imágenes + PDFs en Supabase Storage</div>
+        <div class="cost">$1,050–$6,750</div>
+      </div>
+      <div class="module-card highlight">
+        <span class="icon">🎨</span>
+        <div class="name">AI Render Studio</div>
+        <div class="hours">50–75h · img2img Replicate, slider antes/después</div>
+        <div class="cost">$1,750–$11,250</div>
+      </div>
+      <div class="module-card highlight">
+        <span class="icon">🎙️</span>
+        <div class="name">Asistente de Voz Katy</div>
+        <div class="hours">80–115h · Claude API, 7 acciones, auditoría</div>
+        <div class="cost">$2,800–$17,250</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">🔑</span>
+        <div class="name">Permisos Granulares</div>
+        <div class="hours">45–65h · tab_access, CRUD por sección, multi-rol</div>
+        <div class="cost">$1,575–$9,750</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+      <div class="module-card">
+        <span class="icon">📜</span>
+        <div class="name">Activity Log</div>
+        <div class="hours">25–40h · auditoría completa de acciones</div>
+        <div class="cost">$875–$6,000</div>
+      </div>
+      <div class="module-card">
+        <span class="icon">🌎</span>
+        <div class="name">Sistema Bilingüe EN/ES</div>
+        <div class="hours">25–40h · toda la plataforma + PDFs</div>
+        <div class="cost">$875–$6,000</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Luxaris Design LLC — Propuesta de Valor</span>
+    <span>Página 2 de 5</span>
+  </div>
+</div>
+
+<!-- ══════════════════ PÁGINA 3: COSTO DE DESARROLLO ══════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand">
+      <div class="badge-sm">LD</div>
+      <span class="brand-name">Luxaris Design Platform</span>
+    </div>
+    <span class="section-label">02 — Costo de Desarrollo</span>
+  </div>
+  <div class="page-body">
+    <p class="section-title">Inversión por módulo</p>
+    <p class="section-desc">Estimación basada en tarifas reales de mercado · 870–1,290 horas totales de ingeniería</p>
+
+    <div class="bar-chart">
+      <div class="bar-row"><div class="bar-label">Módulo Estimate + PDF</div><div class="bar-track"><div class="bar-fill" style="width:95%;background:var(--teal)"><span>Más complejo</span></div></div><div class="bar-value">$3,150–19,500</div></div>
+      <div class="bar-row"><div class="bar-label">Asistente de Voz Katy</div><div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--burg)"><span>IA + Auditoría</span></div></div><div class="bar-value">$2,800–17,250</div></div>
+      <div class="bar-row"><div class="bar-label">Day Planner drag&amp;drop</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--navy)"><span>Complejo</span></div></div><div class="bar-value">$2,450–15,000</div></div>
+      <div class="bar-row"><div class="bar-label">Gantt Global + Local</div><div class="bar-track"><div class="bar-fill" style="width:62%;background:#4E7A82"><span></span></div></div><div class="bar-value">$1,750–11,250</div></div>
+      <div class="bar-row"><div class="bar-label">AI Render Studio</div><div class="bar-track"><div class="bar-fill" style="width:62%;background:#5C6A6E"><span></span></div></div><div class="bar-value">$1,750–11,250</div></div>
+      <div class="bar-row"><div class="bar-label">Permisos Granulares</div><div class="bar-track"><div class="bar-fill" style="width:56%;background:var(--navy)"><span></span></div></div><div class="bar-value">$1,575–9,750</div></div>
+      <div class="bar-row"><div class="bar-label">Autenticación</div><div class="bar-track"><div class="bar-fill" style="width:56%;background:#4E7A82"><span></span></div></div><div class="bar-value">$1,575–9,750</div></div>
+      <div class="bar-row"><div class="bar-label">Booking / Reservas</div><div class="bar-track"><div class="bar-fill" style="width:54%;background:var(--green)"><span></span></div></div><div class="bar-value">$1,925–12,000</div></div>
+      <div class="bar-row"><div class="bar-label">Workflow / Kanban</div><div class="bar-track"><div class="bar-fill" style="width:46%;background:#7B6A45"><span></span></div></div><div class="bar-value">$1,225–8,250</div></div>
+      <div class="bar-row"><div class="bar-label">Cash Flow</div><div class="bar-track"><div class="bar-fill" style="width:44%;background:var(--slate)"><span></span></div></div><div class="bar-value">$1,225–7,500</div></div>
+      <div class="bar-row"><div class="bar-label">Landing Pública</div><div class="bar-track"><div class="bar-fill" style="width:42%;background:var(--teal2)"><span></span></div></div><div class="bar-value">$1,400–9,000</div></div>
+      <div class="bar-row"><div class="bar-label">Dashboard + KPIs</div><div class="bar-track"><div class="bar-fill" style="width:34%;background:#4E7A82"><span></span></div></div><div class="bar-value">$1,050–6,750</div></div>
+      <div class="bar-row"><div class="bar-label">Setup + Arquitectura</div><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--teal)"><span></span></div></div><div class="bar-value">$1,050–6,750</div></div>
+      <div class="bar-row"><div class="bar-label">QA + Deploy</div><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--navy)"><span></span></div></div><div class="bar-value">$1,400–9,000</div></div>
+      <div class="bar-row"><div class="bar-label">Bilingüe + Activity Log</div><div class="bar-track"><div class="bar-fill" style="width:24%;background:var(--slate)"><span></span></div></div><div class="bar-value">$1,750–12,000</div></div>
+    </div>
+
+    <div style="height:20px;"></div>
+
+    <div class="cost-compare">
+      <div class="cost-card latam">
+        <div class="cc-head">Agencia LATAM Senior</div>
+        <div class="cc-body">
+          <span class="cc-price">$30K–$84K</span>
+          <span class="cc-note">Tarifa $35–65/hr<br>870–1,290h estimadas</span>
+          <span class="cc-tag">Más accesible</span>
+        </div>
+      </div>
+      <div class="cost-card usa">
+        <div class="cc-head">Agencia USA / Europa</div>
+        <div class="cc-body">
+          <span class="cc-price">$74K–$194K</span>
+          <span class="cc-note">Tarifa $85–150/hr<br>870–1,290h estimadas</span>
+          <span class="cc-tag">Mercado estándar</span>
+        </div>
+      </div>
+      <div class="cost-card saas">
+        <div class="cc-head">SaaS Competidor (5 años)</div>
+        <div class="cc-body">
+          <span class="cc-price">$30K–$90K</span>
+          <span class="cc-note">$499–$1,500/mes<br>pagado sin ser tuyo nunca</span>
+          <span class="cc-tag">Sin retorno</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="quote-box">
+      <p>💡 <strong>Punto clave:</strong> En 3–5 años una empresa que pague licencias SaaS habrá gastado el mismo monto que cuesta esta plataforma a medida — y seguirá dependiendo del proveedor, con funcionalidades genéricas y sin posibilidad de personalización. Con esta plataforma, <strong>el código es suyo para siempre</strong>.</p>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Luxaris Design LLC — Propuesta de Valor</span>
+    <span>Página 3 de 5</span>
+  </div>
+</div>
+
+<!-- ══════════════════ PÁGINA 4: COMPARATIVA COMPETIDORES ══════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand">
+      <div class="badge-sm">LD</div>
+      <span class="brand-name">Luxaris Design Platform</span>
+    </div>
+    <span class="section-label">03 — Benchmark Competidores</span>
+  </div>
+  <div class="page-body">
+    <p class="section-title">Comparativa con el mercado</p>
+    <p class="section-desc">Principales plataformas de gestión para remodelación y construcción disponibles comercialmente en USA</p>
+
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Plataforma</th>
+          <th>Precio</th>
+          <th>Estimados PDF</th>
+          <th>IA / Voz</th>
+          <th>AI Render</th>
+          <th>Booking</th>
+          <th>Bilingüe</th>
+          <th>Kanban+Gantt</th>
+          <th>Código propio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Buildertrend</strong></td>
+          <td><span class="price-badge monthly">$199–$999/mes</span></td>
+          <td class="partial">⚬ Básico</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="check">✓</td>
+          <td class="cross">✗</td>
+          <td class="check">✓</td>
+          <td class="cross">✗</td>
+        </tr>
+        <tr>
+          <td><strong>Procore</strong></td>
+          <td><span class="price-badge monthly">$375–$1,500/mes</span></td>
+          <td class="check">✓</td>
+          <td class="partial">⚬ Básico</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="partial">⚬ Parcial</td>
+          <td class="check">✓</td>
+          <td class="cross">✗</td>
+        </tr>
+        <tr>
+          <td><strong>CoConstruct</strong></td>
+          <td><span class="price-badge monthly">$99–$399/mes</span></td>
+          <td class="partial">⚬ Básico</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="partial">⚬ Parcial</td>
+          <td class="cross">✗</td>
+        </tr>
+        <tr>
+          <td><strong>Houzz Pro</strong></td>
+          <td><span class="price-badge monthly">$65–$149/mes</span></td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="partial">⚬ Beta</td>
+          <td class="check">✓</td>
+          <td class="partial">⚬ Parcial</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+        </tr>
+        <tr>
+          <td><strong>JobNimbus</strong></td>
+          <td><span class="price-badge monthly">$25–$85/usuario</span></td>
+          <td class="partial">⚬ Básico</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="partial">⚬ Solo Kanban</td>
+          <td class="cross">✗</td>
+        </tr>
+        <tr>
+          <td><strong>Contractor Foreman</strong></td>
+          <td><span class="price-badge monthly">$49–$299/mes</span></td>
+          <td class="partial">⚬ Básico</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="cross">✗</td>
+          <td class="check">✓</td>
+          <td class="cross">✗</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>✦ Esta Plataforma</strong></td>
+          <td><span class="price-badge own">Inversión única</span></td>
+          <td class="check">✓ Premium</td>
+          <td class="check">✓ Claude AI</td>
+          <td class="check">✓ Replicate</td>
+          <td class="check">✓ Completo</td>
+          <td class="check">✓ EN/ES</td>
+          <td class="check">✓ Completo</td>
+          <td class="check">✓ 100%</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="height:20px;"></div>
+
+    <div class="kpi-grid">
+      <div class="kpi-box blue">
+        <span class="val">$0</span>
+        <span class="lbl">Licencia mensual<br>de por vida</span>
+      </div>
+      <div class="kpi-box green">
+        <span class="val">9/9</span>
+        <span class="lbl">Funcionalidades<br>comparadas ganadas</span>
+      </div>
+      <div class="kpi-box teal">
+        <span class="val">100%</span>
+        <span class="lbl">Código fuente<br>propiedad del cliente</span>
+      </div>
+      <div class="kpi-box burg">
+        <span class="val">2</span>
+        <span class="lbl">Funcionalidades IA<br>únicas en el mercado</span>
+      </div>
+    </div>
+
+    <p style="font-size:11px;color:var(--slate);font-style:italic;margin-top:8px;">
+      ⚬ Parcial = funcionalidad disponible pero limitada o sin personalización · ✗ = no disponible · ✓ = completo<br>
+      Precios verificados en sitios oficiales de cada plataforma, Q1 2026. Sujetos a cambio.
+    </p>
+  </div>
+  <div class="page-footer">
+    <span>Luxaris Design LLC — Propuesta de Valor</span>
+    <span>Página 4 de 5</span>
+  </div>
+</div>
+
+<!-- ══════════════════ PÁGINA 5: PROS CONTRAS + RESUMEN EJECUTIVO ══════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand">
+      <div class="badge-sm">LD</div>
+      <span class="brand-name">Luxaris Design Platform</span>
+    </div>
+    <span class="section-label">04 — Resumen Ejecutivo</span>
+  </div>
+  <div class="page-body">
+    <p class="section-title">Análisis de Beneficios y Riesgos</p>
+    <p class="section-desc">Evaluación objetiva para la toma de decisión de inversión</p>
+
+    <div class="pros-cons">
+      <div class="pros-box">
+        <h3>✅ Ventajas / Beneficios</h3>
+        <div class="item-row"><div class="dot">✓</div><div class="item-text"><strong>Propiedad total del software</strong><span>Código fuente entregado. Sin dependencia de terceros para modificaciones.</span></div></div>
+        <div class="item-row"><div class="dot">✓</div><div class="item-text"><strong>IA generativa integrada desde el origen</strong><span>Asistente de voz Katy + AI Render Studio — diferenciadores que los competidores no tienen.</span></div></div>
+        <div class="item-row"><div class="dot">✓</div><div class="item-text"><strong>Experiencia visual premium</strong><span>UI diseñada para vender. Impresiona al cliente desde el primer estimado PDF.</span></div></div>
+        <div class="item-row"><div class="dot">✓</div><div class="item-text"><strong>100% bilingüe EN/ES</strong><span>Crítico en South Florida. Toda la plataforma y los PDFs en ambos idiomas.</span></div></div>
+        <div class="item-row"><div class="dot">✓</div><div class="item-text"><strong>Sin licencias mensuales de software</strong><span>Solo infraestructura: ~$45–70/mes total (Vercel + Supabase + Resend).</span></div></div>
+        <div class="item-row"><div class="dot">✓</div><div class="item-text"><strong>Booking online 24/7</strong><span>Captación de clientes potenciales automática. ROI directo en ventas.</span></div></div>
+        <div class="item-row"><div class="dot">✓</div><div class="item-text"><strong>Escalable sin costo adicional</strong><span>Nuevos proyectos, usuarios y módulos sin subir licencias. La plataforma crece con el negocio.</span></div></div>
+      </div>
+      <div class="cons-box">
+        <h3>⚠️ Riesgos / Contras</h3>
+        <div class="item-row"><div class="dot">!</div><div class="item-text"><strong>Mantenimiento técnico requerido</strong><span>Sin equipo técnico propio, las actualizaciones requieren soporte externo ($500–1,500/mes).</span></div></div>
+        <div class="item-row"><div class="dot">!</div><div class="item-text"><strong>Sin app nativa móvil (iOS/Android)</strong><span>Funciona como web app responsive. Sin notificaciones push nativas. Fase 2 opcional.</span></div></div>
+        <div class="item-row"><div class="dot">!</div><div class="item-text"><strong>Curva de adopción del equipo</strong><span>Mitigado con la página de ayuda bilingüe y el asistente Katy integrado.</span></div></div>
+        <div class="item-row"><div class="dot">!</div><div class="item-text"><strong>Costo de IA variable por uso</strong><span>Replicate ~$0.01/render · Claude API por tokens. Monitoreable y limitable.</span></div></div>
+        <div class="item-row"><div class="dot">!</div><div class="item-text"><strong>Sin integración contable nativa</strong><span>No conecta con QuickBooks/FreshBooks directamente. Exportación manual disponible. Fase 2.</span></div></div>
+      </div>
+    </div>
+
+    <div style="height:18px;"></div>
+
+    <p class="section-title" style="font-size:16px;">Retorno de Inversión (ROI)</p>
+    <div class="timeline">
+      <div class="tl-step s1">
+        <span class="tl-num">Mes 1–3</span>
+        <span class="tl-period">Arranque</span>
+        <p class="tl-desc">Implementación, onboarding del equipo. Primeros estimados PDF enviados a clientes.</p>
+      </div>
+      <div class="tl-step s2">
+        <span class="tl-num">Mes 3–6</span>
+        <span class="tl-period">Recuperación</span>
+        <p class="tl-desc">2 proyectos adicionales / mes gracias al booking online y la imagen premium cubren la inversión inicial.</p>
+      </div>
+      <div class="tl-step s3">
+        <span class="tl-num">Año 1–2</span>
+        <span class="tl-period">Ganancia</span>
+        <p class="tl-desc">Ahorro acumulado vs. licencias SaaS: $6,000–18,000/año. Productividad del equipo medible en horas.</p>
+      </div>
+      <div class="tl-step s4">
+        <span class="tl-num">Año 3+</span>
+        <span class="tl-period">Ventaja competitiva</span>
+        <p class="tl-desc">Plataforma completamente amortizada. Diferenciación de marca sostenida frente a la competencia.</p>
+      </div>
+    </div>
+
+    <div class="quote-box">
+      <p>
+        <strong>Precio recomendado para empresa tipo PYME Florida:</strong> <strong style="font-size:18px;">$35,000 – $65,000 USD</strong> (pago único).<br>
+        Alternativa retainer: <strong>$3,500–$5,500 setup</strong> + <strong>$800–$1,500/mes</strong> mantenimiento y evolución.<br><br>
+        Infraestructura mensual de por vida: <strong>~$45–70/mes</strong> (Vercel + Supabase + Resend).
+        Sin royalties. Sin sorpresas. El software es suyo.
+      </p>
+    </div>
+
+    <p style="font-size:10px;color:var(--slate);text-align:center;margin-top:16px;">
+      Propuesta preparada por Luxaris Design LLC · South Florida · 2026 · Confidencial — solo para uso interno del cliente
+    </p>
+  </div>
+  <div class="page-footer">
+    <span>Luxaris Design LLC — Propuesta de Valor</span>
+    <span>Página 5 de 5</span>
+  </div>
+</div>
+
+<!-- ── PRINT BUTTON (no se imprime) ── -->
+<div style="text-align:center;padding:24px;print:hidden" class="no-print">
+  <button onclick="window.print()" style="background:var(--teal);color:white;border:none;border-radius:12px;padding:14px 32px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.04em;">
+    ⬇ Guardar como PDF (Ctrl+P → Guardar en PDF)
+  </button>
+</div>
+<style>@media print { .no-print { display:none; } }</style>
+
+</body>
+</html>
