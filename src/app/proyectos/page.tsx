@@ -784,7 +784,7 @@ export default function DashboardPage() {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">
+        <h1 className="font-bookman text-[28px] font-semibold tracking-tight text-white">
           {tp.dashboard.greeting}, {currentUser?.name ?? ""}
         </h1>
         <p className="mt-1 text-sm text-[#B1C9EF]">
