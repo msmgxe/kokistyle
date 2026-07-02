@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Log — Luxaris Design (Prototipo)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'DM Sans', system-ui, sans-serif; }
+    .font-bookman { font-family: "Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif; }
+  </style>
+</head>
+<body class="bg-[#F7F3EB] min-h-screen">
+
+  <!-- NAV -->
+  <nav class="sticky top-0 z-30 border-b border-[#D5DEEF] bg-[#F7F3EB]">
+    <div class="mx-auto flex max-w-[1180px] items-center gap-4 px-6 py-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-[#16323D] rounded-lg flex items-center justify-center text-white font-bold text-sm">LD</div>
+        <div>
+          <div class="text-[#16323D] font-bold text-base leading-none">Luxaris Design</div>
+          <div class="text-[#5C6A6E] text-[10px] uppercase tracking-[0.22em] mt-0.5">Panel</div>
+        </div>
+      </div>
+      <div class="flex flex-1 gap-1">
+        <a href="#" class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-[#628ECB] hover:bg-[#F0F3FA]">Dashboard</a>
+        <a href="#" class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-[#628ECB] hover:bg-[#F0F3FA]">Contactos</a>
+        <a href="#" class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-[#628ECB] hover:bg-[#F0F3FA]">Plan</a>
+        <a href="#" class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold bg-[#395886] text-white shadow-sm">Actividad</a>
+        <a href="#" class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-[#628ECB] hover:bg-[#F0F3FA]">Ayuda</a>
+      </div>
+      <div class="flex rounded-lg border border-[#D5DEEF] bg-[#F0F3FA] p-0.5">
+        <button class="rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide bg-[#395886] text-white">en</button>
+        <button class="rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#628ECB]">es</button>
+      </div>
+      <button class="inline-flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[#16323D]">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
+    </div>
+  </nav>
+
+  <main class="mx-auto max-w-[1180px] px-6 pb-28 pt-7">
+
+    <!-- HEADER BLUE -->
+    <div class="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
+      <h1 class="font-bookman text-xl font-semibold text-white">Activity Log</h1>
+      <p class="text-[#B1C9EF] text-sm mt-1">Team actions · Last 100 entries · Only visible to superadmin</p>
+    </div>
+
+    <!-- STATS STRIP -->
+    <div class="mb-5 grid grid-cols-4 gap-3">
+      <div class="rounded-xl bg-white border border-[#E6DDCB] px-4 py-3 text-center">
+        <div class="text-[10px] uppercase tracking-widest font-bold text-[#5C6A6E]">Total hoy</div>
+        <div class="text-2xl font-bold text-[#16323D] mt-1">23</div>
+      </div>
+      <div class="rounded-xl bg-white border border-[#E6DDCB] px-4 py-3 text-center">
+        <div class="text-[10px] uppercase tracking-widest font-bold text-[#5C6A6E]">Logins</div>
+        <div class="text-2xl font-bold text-[#395886] mt-1">5</div>
+      </div>
+      <div class="rounded-xl bg-white border border-[#E6DDCB] px-4 py-3 text-center">
+        <div class="text-[10px] uppercase tracking-widest font-bold text-[#5C6A6E]">Creados</div>
+        <div class="text-2xl font-bold text-[#4F8A63] mt-1">14</div>
+      </div>
+      <div class="rounded-xl bg-white border border-[#E6DDCB] px-4 py-3 text-center">
+        <div class="text-[10px] uppercase tracking-widest font-bold text-[#5C6A6E]">Eliminados</div>
+        <div class="text-2xl font-bold text-[#B0492F] mt-1">4</div>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="bg-white rounded-2xl border border-[#E6DDCB] px-5 py-4 mb-4 flex flex-wrap gap-3 items-center">
+      <select class="rounded-lg border border-[#E6DDCB] px-3 py-2 text-sm text-[#16323D] focus:outline-none bg-[#F7F3EA]">
+        <option>All users</option>
+        <option>Marco (Superadmin)</option>
+        <option>Koky</option>
+        <option>Lidette</option>
+      </select>
+      <select class="rounded-lg border border-[#E6DDCB] px-3 py-2 text-sm text-[#16323D] focus:outline-none bg-[#F7F3EA]">
+        <option>All actions</option>
+        <option>🔑 Login</option>
+        <option>✅ Create</option>
+        <option>🗑 Delete</option>
+        <option>✏️ Update</option>
+        <option>🛒 Bought</option>
+      </select>
+      <input type="date" value="2026-07-01" class="rounded-lg border border-[#E6DDCB] px-3 py-2 text-sm text-[#16323D] focus:outline-none bg-[#F7F3EA]">
+      <input type="date" value="2026-07-02" class="rounded-lg border border-[#E6DDCB] px-3 py-2 text-sm text-[#16323D] focus:outline-none bg-[#F7F3EA]">
+      <button class="px-4 py-2 bg-[#16323D] text-white text-sm rounded-lg font-semibold">Filter</button>
+      <button class="px-4 py-2 border border-[#E6DDCB] text-[#5C6A6E] text-sm rounded-lg">Clear</button>
+    </div>
+
+    <!-- LOG TABLE -->
+    <div class="bg-white rounded-2xl border border-[#E6DDCB] overflow-hidden">
+      <table class="w-full text-[13px]">
+        <thead>
+          <tr class="bg-[#F7F3EA] border-b border-[#E6DDCB]">
+            <th class="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">User</th>
+            <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">Action</th>
+            <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">Project</th>
+            <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">Detail</th>
+            <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">Time</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- ROW 1: Login -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#16323D] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">MA</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Marco</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Superadmin</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#EDF3FB] text-[#395886] rounded-full px-2.5 py-1 font-semibold">🔑 Login</span>
+            </td>
+            <td class="px-4 py-3 text-[#5C6A6E]">—</td>
+            <td class="px-4 py-3 text-[#5C6A6E]">Web session</td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">2 min ago</td>
+          </tr>
+
+          <!-- ROW 2: Payment created -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#4F8A63] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">KO</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Koky</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Colaboradora</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#EAF5EE] text-[#4F8A63] rounded-full px-2.5 py-1 font-semibold">💰 Creó pago</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-[#395886] font-medium">Nahir Jiminian</span>
+              <div class="text-[10px] text-[#5C6A6E]">Coral Springs</div>
+            </td>
+            <td class="px-4 py-3 font-mono font-bold text-[#4F8A63]">$2,400</td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">15 min ago</td>
+          </tr>
+
+          <!-- ROW 3: Task created -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#7B1838] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">LI</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Lidette</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Colaboradora</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#F0F7FF] text-[#395886] rounded-full px-2.5 py-1 font-semibold">✅ Creó tarea</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-[#395886] font-medium">Garcia</span>
+              <div class="text-[10px] text-[#5C6A6E]">Brickell Miami</div>
+            </td>
+            <td class="px-4 py-3 text-[#16323D]">Install bathroom tile</td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">1h ago</td>
+          </tr>
+
+          <!-- ROW 4: Material deleted -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#16323D] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">MA</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Marco</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Superadmin</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#FDF0ED] text-[#B0492F] rounded-full px-2.5 py-1 font-semibold">🗑 Eliminó material</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-[#395886] font-medium">Nahir Jiminian</span>
+              <div class="text-[10px] text-[#5C6A6E]">Coral Springs</div>
+            </td>
+            <td class="px-4 py-3 text-[#16323D]">Ceramic tile 12x24</td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">Yesterday 4:32pm</td>
+          </tr>
+
+          <!-- ROW 5: Login Koky -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#4F8A63] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">KO</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Koky</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Colaboradora</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#EDF3FB] text-[#395886] rounded-full px-2.5 py-1 font-semibold">🔑 Login</span>
+            </td>
+            <td class="px-4 py-3 text-[#5C6A6E]">—</td>
+            <td class="px-4 py-3 text-[#5C6A6E]">Project: Nahir Jiminian</td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">Yesterday 9:15am</td>
+          </tr>
+
+          <!-- ROW 6: Project created -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#16323D] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">MA</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Marco</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Superadmin</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#EAF5EE] text-[#4F8A63] rounded-full px-2.5 py-1 font-semibold">🏠 Creó proyecto</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-[#395886] font-medium">Goldstein</span>
+              <div class="text-[10px] text-[#5C6A6E]">Boca Raton</div>
+            </td>
+            <td class="px-4 py-3 text-[#5C6A6E]">Kitchen remodel · <span class="font-mono font-bold text-[#16323D]">$45,000</span></td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">Yesterday 8:00am</td>
+          </tr>
+
+          <!-- ROW 7: Material marked bought -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#7B1838] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">LI</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Lidette</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Colaboradora</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#F5F0FF] text-[#6B46C1] rounded-full px-2.5 py-1 font-semibold">🛒 Comprado</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-[#395886] font-medium">Goldstein</span>
+              <div class="text-[10px] text-[#5C6A6E]">Boca Raton</div>
+            </td>
+            <td class="px-4 py-3 text-[#16323D]">Moen faucet set · <span class="font-mono font-bold text-[#16323D]">$320</span></td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">07/02 10:22am</td>
+          </tr>
+
+          <!-- ROW 8: Expense created -->
+          <tr class="border-b border-[#F0EBE0] hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#4F8A63] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">KO</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Koky</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Colaboradora</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#FDF5ED] text-[#B06020] rounded-full px-2.5 py-1 font-semibold">💸 Creó egreso</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-[#395886] font-medium">Nahir Jiminian</span>
+              <div class="text-[10px] text-[#5C6A6E]">Coral Springs</div>
+            </td>
+            <td class="px-4 py-3 text-[#16323D]">Jorge plomero · <span class="font-mono font-bold text-[#B0492F]">$800</span></td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">07/01 3:45pm</td>
+          </tr>
+
+          <!-- ROW 9: Project deleted -->
+          <tr class="hover:bg-[#FDFAF6]">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-[#16323D] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">MA</div>
+                <div>
+                  <div class="font-semibold text-[#16323D]">Marco</div>
+                  <div class="text-[10px] text-[#5C6A6E]">Superadmin</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-[11px] bg-[#FDF0ED] text-[#B0492F] rounded-full px-2.5 py-1 font-semibold">🗑 Eliminó proyecto</span>
+            </td>
+            <td class="px-4 py-3 text-[#5C6A6E] line-through">Rodriguez — Hialeah</td>
+            <td class="px-4 py-3 text-[#5C6A6E] text-[11px]">Proyecto eliminado permanentemente</td>
+            <td class="px-4 py-3 text-right text-[11px] text-[#C4B89A]">07/01 11:00am</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="mt-4 flex items-center justify-between text-sm text-[#5C6A6E]">
+      <span>Showing 9 of 83 entries</span>
+      <div class="flex gap-2">
+        <button class="px-3 py-1.5 rounded-lg border border-[#E6DDCB] text-[#5C6A6E] bg-white opacity-40 cursor-not-allowed">← Prev</button>
+        <button class="px-3 py-1.5 rounded-lg border border-[#E6DDCB] text-[#5C6A6E] bg-white hover:bg-[#F7F3EA]">Next →</button>
+      </div>
+    </div>
+
+    <!-- NOTE -->
+    <div class="mt-6 rounded-xl border border-[#D5DEEF] bg-[#EDF3FB] px-5 py-4 text-[12px] text-[#395886]">
+      <strong>ℹ️ Note:</strong> This log is only visible to the superadmin. Collaborators do not see it.
+      Actions tracked: Login · Create project · Delete project · Create task · Create payment · Create expense · Mark material bought · Delete records.
+    </div>
+
+  </main>
+</body>
+</html>
