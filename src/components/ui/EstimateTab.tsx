@@ -1333,6 +1333,9 @@ export default function EstimateTab({
                     <tbody>
                       {pmts.map(p => {
                         const isEditing = editingPayId === p.id;
+                        const otherTotal = pmts.filter(x => x.id !== p.id).reduce((s, x) => s + x.amount, 0);
+                        const editAmt = parseFloat(editForm.amount) || 0;
+                        const editWouldExceed = isEditing && editAmt > 0 && otherTotal + editAmt > target + 0.005;
                         return (
                           <tr key={p.id} className={`border-t border-[#F0EBE0] ${isEditing ? "bg-[#EDF3FB]" : "hover:bg-[#FDFAF6]"}`}>
                             {isEditing ? (
@@ -1354,11 +1357,14 @@ export default function EstimateTab({
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <input type="number" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))}
-                                    className="w-20 rounded border border-[#D7CBB3] bg-white px-1.5 py-1 text-right text-[11px] font-mono focus:outline-none" />
+                                    className={`w-20 rounded border px-1.5 py-1 text-right text-[11px] font-mono focus:outline-none ${editWouldExceed ? "border-[#B0492F] bg-[#FDF0ED]" : "border-[#D7CBB3] bg-white"}`} />
+                                  {editWouldExceed && (
+                                    <p className="mt-0.5 text-[9px] text-[#B0492F]">Máx: {money(Math.max(0, target - otherTotal))}</p>
+                                  )}
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <div className="flex gap-1">
-                                    <button onClick={updateDepositPayment} disabled={depSaving}
+                                    <button onClick={updateDepositPayment} disabled={depSaving || editWouldExceed}
                                       className="rounded bg-[#4F8A63] px-2 py-1 text-[10px] font-bold text-white hover:bg-[#3f7051] disabled:opacity-40">
                                       {depSaving ? "…" : "✓"}
                                     </button>
@@ -1399,42 +1405,74 @@ export default function EstimateTab({
 
               {/* Add payment form */}
               <div className="border-t border-[#E6DDCB] bg-[#F7F3EA] p-4">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">
-                  {EN ? "Add partial payment" : "Agregar pago a cuenta"}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="number" placeholder={EN ? "Amount" : "Monto"} value={depAmt}
-                    onChange={e => setDepAmt(e.target.value)}
-                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
-                  />
-                  <input
-                    type="date" value={depDate}
-                    onChange={e => setDepDate(e.target.value)}
-                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
-                  />
-                  <select
-                    value={depMethod}
-                    onChange={e => setDepMethod(e.target.value as Payment["method"])}
-                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
-                  >
-                    {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="text" placeholder={EN ? "Comment (e.g. first deposit)" : "Comentario (ej. primer depósito)"}
-                    value={depConcept} onChange={e => setDepConcept(e.target.value)}
-                    className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
-                  />
-                </div>
-                <button
-                  onClick={() => addDepositPayment(idx)}
-                  disabled={depSaving || !depAmt || parseFloat(depAmt) <= 0}
-                  className="mt-2 w-full rounded-xl bg-[#16323D] py-2.5 text-[12px] font-bold text-white transition hover:bg-[#0F2830] disabled:opacity-40"
-                >
-                  {depSaving ? "…" : (EN ? "+ Register payment" : "+ Registrar pago")}
-                </button>
+                {/* Overage warning when already exceeded */}
+                {received > target + 0.005 && (
+                  <div className="mb-3 rounded-lg border border-[#F5C6B5] bg-[#FDF0ED] px-3 py-2 text-[11px] text-[#B0492F]">
+                    ⚠️ {EN
+                      ? `Total received (${money(received)}) exceeds target (${money(target)}) by ${money(received - target)}. Remove a payment to correct this.`
+                      : `El total recibido (${money(received)}) supera el objetivo (${money(target)}) por ${money(received - target)}. Elimina un pago para corregirlo.`}
+                  </div>
+                )}
+                {(() => {
+                  const newAmt = parseFloat(depAmt) || 0;
+                  const remaining = Math.max(0, target - received);
+                  const wouldExceed = newAmt > 0 && received + newAmt > target + 0.005;
+                  return (
+                    <>
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                        {EN ? "Add partial payment" : "Agregar pago a cuenta"}
+                        {remaining > 0 && <span className="ml-2 font-normal normal-case text-[#395886]">({EN ? "pending" : "pendiente"}: {money(remaining)})</span>}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <input
+                            type="number" placeholder={EN ? "Amount" : "Monto"} value={depAmt}
+                            onChange={e => setDepAmt(e.target.value)}
+                            className={`w-full rounded-lg border px-3 py-2 text-[12px] focus:outline-none ${wouldExceed ? "border-[#B0492F] bg-[#FDF0ED] focus:border-[#B0492F]" : "border-[#E6DDCB] bg-white focus:border-[#395886]"}`}
+                          />
+                          {wouldExceed && (
+                            <p className="mt-1 text-[10px] text-[#B0492F]">
+                              {EN ? `Max: ${money(remaining)}` : `Máx: ${money(remaining)}`}
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="date" value={depDate}
+                          onChange={e => setDepDate(e.target.value)}
+                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                        />
+                        <select
+                          value={depMethod}
+                          onChange={e => setDepMethod(e.target.value as Payment["method"])}
+                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                        >
+                          {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="text" placeholder={EN ? "Comment (e.g. first deposit)" : "Comentario (ej. primer depósito)"}
+                          value={depConcept} onChange={e => setDepConcept(e.target.value)}
+                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                        />
+                      </div>
+                      {wouldExceed && (
+                        <p className="mt-2 rounded-lg border border-[#F5C6B5] bg-[#FDF0ED] px-3 py-2 text-[11px] text-[#B0492F]">
+                          ⚠️ {EN
+                            ? `This amount would exceed the target. You can only add up to ${money(remaining)}.`
+                            : `Este monto supera el objetivo. Solo puedes agregar hasta ${money(remaining)}.`}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => addDepositPayment(idx)}
+                        disabled={depSaving || !depAmt || parseFloat(depAmt) <= 0 || wouldExceed}
+                        className="mt-2 w-full rounded-xl bg-[#16323D] py-2.5 text-[12px] font-bold text-white transition hover:bg-[#0F2830] disabled:opacity-40"
+                      >
+                        {depSaving ? "…" : (EN ? "+ Register payment" : "+ Registrar pago")}
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
