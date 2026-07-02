@@ -221,7 +221,7 @@ export default function PlanPage() {
       <div>
         <BlueHeader />
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
-          Sin proyectos aún. Créalos desde el Dashboard.
+          {tp.globalPlan.noProjects}
         </div>
       </div>
     );
@@ -229,7 +229,7 @@ export default function PlanPage() {
 
   const visibleProjects = filterStatus === "all" ? projects : projects.filter((p) => p.status === filterStatus);
   const STATUS_FILTER_OPTS = [
-    { key: "all",          label: "All" },
+    { key: "all",          label: tp.globalPlan.tabAll },
     { key: "presupuesto",  label: tp.status.presupuesto },
     { key: "aprobado",     label: tp.status.aprobado },
     { key: "en_obra",      label: tp.status.en_obra },
@@ -254,7 +254,7 @@ export default function PlanPage() {
 
       <div className="relative mb-2 flex h-8 items-center overflow-hidden rounded-xl bg-[#16323D]" style={{ paddingLeft: "192px" }}>
         <div className="absolute left-0 flex h-full w-[192px] items-center px-4">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Proyecto</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">{tp.globalPlan.colProject}</span>
         </div>
         {monthLabels.map(({ label, left }) => (
           <span

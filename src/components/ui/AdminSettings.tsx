@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { KeyRound, Mail, Eye, EyeOff, CheckCircle, User } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
+import { useLanguage } from "@/src/context/LanguageContext";
 
 async function fetchRecoveryEmail(pin: string): Promise<string | null> {
   try {
@@ -27,11 +28,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function SaveBtn({ loading, disabled }: { loading: boolean; disabled?: boolean }) {
+function SaveBtn({ loading, disabled, save, saving }: { loading: boolean; disabled?: boolean; save: string; saving: string }) {
   return (
     <button type="submit" disabled={loading || disabled}
       className="w-full rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-40">
-      {loading ? "Guardando…" : "Guardar"}
+      {loading ? saving : save}
     </button>
   );
 }
@@ -40,6 +41,8 @@ type SecurityTab = "name" | "pin" | "email";
 
 export default function AdminSettings() {
   const { currentUser, changePin, setRecoveryEmail, setDisplayName } = useAuth();
+  const { t } = useLanguage();
+  const ts = t.panel.settings;
   const [secTab, setSecTab] = useState<SecurityTab>("name");
 
   // ── Display name ──────────────────────────────────────────────────────────
@@ -50,13 +53,13 @@ export default function AdminSettings() {
 
   const handleSetName = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!displayName.trim()) { setNameMsg({ ok: false, text: "Ingresa un nombre" }); return; }
-    if (namePin.length < 4)  { setNameMsg({ ok: false, text: "Confirma tu PIN actual" }); return; }
+    if (!displayName.trim()) { setNameMsg({ ok: false, text: ts.enterName }); return; }
+    if (namePin.length < 4)  { setNameMsg({ ok: false, text: ts.confirmCurrentPin }); return; }
     setNameLoad(true); setNameMsg(null);
     const res = await setDisplayName(namePin, displayName.trim());
     setNameLoad(false);
-    if (res.ok) { setNameMsg({ ok: true, text: "Nombre actualizado" }); setNamePin(""); }
-    else        { setNameMsg({ ok: false, text: res.error ?? "Error al guardar" }); }
+    if (res.ok) { setNameMsg({ ok: true, text: ts.nameUpdated }); setNamePin(""); }
+    else        { setNameMsg({ ok: false, text: res.error ?? ts.errorSaving }); }
   };
 
   // ── Change PIN ─────────────────────────────────────────────────────────────
@@ -85,38 +88,38 @@ export default function AdminSettings() {
 
   const handleChangePin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (np1.length < 4)   { setPinMsg({ ok: false, text: "Mínimo 4 dígitos" }); return; }
-    if (np1 !== np2)      { setPinMsg({ ok: false, text: "Los PIN no coinciden" }); return; }
+    if (np1.length < 4)   { setPinMsg({ ok: false, text: ts.minDigits }); return; }
+    if (np1 !== np2)      { setPinMsg({ ok: false, text: ts.pinMismatch }); return; }
     setPinLoad(true); setPinMsg(null);
     const res = await changePin(curPin, np1);
     setPinLoad(false);
     if (res.ok) {
-      setPinMsg({ ok: true,  text: "PIN actualizado correctamente" });
+      setPinMsg({ ok: true,  text: ts.pinUpdated });
       setCurPin(""); setNp1(""); setNp2("");
     } else {
-      setPinMsg({ ok: false, text: res.error ?? "Error al cambiar PIN" });
+      setPinMsg({ ok: false, text: res.error ?? ts.errorPin });
     }
   };
 
   const handleSetEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.includes("@"))    { setEmailMsg({ ok: false, text: "Email inválido" }); return; }
-    if (emailPin.length < 4)     { setEmailMsg({ ok: false, text: "Confirma tu PIN actual" }); return; }
+    if (!email.includes("@"))    { setEmailMsg({ ok: false, text: ts.emailInvalid }); return; }
+    if (emailPin.length < 4)     { setEmailMsg({ ok: false, text: ts.confirmCurrentPin }); return; }
     setEmailLoad(true); setEmailMsg(null);
     const res = await setRecoveryEmail(emailPin, email);
     setEmailLoad(false);
     if (res.ok) {
-      setEmailMsg({ ok: true,  text: "Correo de recuperación guardado" });
+      setEmailMsg({ ok: true,  text: ts.emailSaved });
       setEmailPin("");
     } else {
-      setEmailMsg({ ok: false, text: res.error ?? "Error al guardar" });
+      setEmailMsg({ ok: false, text: res.error ?? ts.errorSaving });
     }
   };
 
   const TABS: { id: SecurityTab; icon: React.ReactNode; label: string }[] = [
-    { id: "name",  icon: <User size={13} />,     label: "Nombre de display" },
-    { id: "pin",   icon: <KeyRound size={13} />, label: "Cambiar PIN" },
-    { id: "email", icon: <Mail size={13} />,     label: "Correo de recuperación" },
+    { id: "name",  icon: <User size={13} />,     label: ts.tabDisplayName },
+    { id: "pin",   icon: <KeyRound size={13} />, label: ts.tabChangePin },
+    { id: "email", icon: <Mail size={13} />,     label: ts.tabRecoveryEmail },
   ];
 
   return (
@@ -125,7 +128,7 @@ export default function AdminSettings() {
       {/* ── Section header ───────────────────────────────────────────────────── */}
       <div className="mb-4 flex items-center gap-2">
         <div className="h-4 w-1 rounded-full bg-[#16323D]" />
-        <h2 className="text-sm font-bold uppercase tracking-widest text-[#16323D]">Seguridad</h2>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-[#16323D]">{ts.sectionTitle}</h2>
       </div>
 
       {/* ── Tab panel ────────────────────────────────────────────────────────── */}
@@ -155,20 +158,18 @@ export default function AdminSettings() {
         {/* Tab content */}
         <div className="p-5">
 
-          {/* ── Nombre de display ── */}
+          {/* ── Display name ── */}
           {secTab === "name" && (
             <form onSubmit={handleSetName} className="space-y-3">
-              <p className="mb-1 text-[11px] text-[#97A1A0]">
-                Este nombre aparece en el saludo del panel y en el registro de actividad.
-              </p>
-              <Field label="Tu nombre">
+              <p className="mb-1 text-[11px] text-[#97A1A0]">{ts.displayNameDesc}</p>
+              <Field label={ts.yourName}>
                 <input type="text" value={displayName}
                   onChange={e => { setDisplayNameVal(e.target.value); setNameMsg(null); }}
                   className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
-                  placeholder="Ej. Marco, Koky, Lidette"
+                  placeholder={ts.namePlaceholder}
                 />
               </Field>
-              <Field label="Confirma tu PIN actual">
+              <Field label={ts.confirmCurrentPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={namePin} onChange={e => setNamePin(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
@@ -183,14 +184,14 @@ export default function AdminSettings() {
                   {nameMsg.text}
                 </div>
               )}
-              <SaveBtn loading={nameLoad} disabled={!displayName.trim() || namePin.length < 4} />
+              <SaveBtn loading={nameLoad} disabled={!displayName.trim() || namePin.length < 4} save={ts.save} saving={ts.saving} />
             </form>
           )}
 
-          {/* ── Cambiar PIN ── */}
+          {/* ── Change PIN ── */}
           {secTab === "pin" && (
             <form onSubmit={handleChangePin} className="space-y-3">
-              <Field label="PIN actual">
+              <Field label={ts.currentPin}>
                 <div className="relative">
                   <input
                     type={showCur ? "text" : "password"} inputMode="numeric" maxLength={8}
@@ -204,18 +205,18 @@ export default function AdminSettings() {
                   </button>
                 </div>
               </Field>
-              <Field label="Nuevo PIN">
+              <Field label={ts.newPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={np1} onChange={e => setNp1(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
-                  placeholder="Mín. 4 dígitos"
+                  placeholder={ts.minDigits}
                 />
               </Field>
-              <Field label="Confirmar nuevo PIN">
+              <Field label={ts.confirmNewPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={np2} onChange={e => setNp2(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
-                  placeholder="Repite el nuevo PIN"
+                  placeholder="••••••••"
                 />
               </Field>
               {pinMsg && (
@@ -226,28 +227,26 @@ export default function AdminSettings() {
                   {pinMsg.text}
                 </div>
               )}
-              <SaveBtn loading={pinLoad} disabled={curPin.length < 4 || np1.length < 4} />
+              <SaveBtn loading={pinLoad} disabled={curPin.length < 4 || np1.length < 4} save={ts.save} saving={ts.saving} />
             </form>
           )}
 
-          {/* ── Correo de recuperación ── */}
+          {/* ── Recovery email ── */}
           {secTab === "email" && (
             <form onSubmit={handleSetEmail} className="space-y-3">
-              <p className="mb-1 text-[11px] text-[#97A1A0]">
-                Si olvidas tu PIN, te enviaremos un código de recuperación a este correo.
-              </p>
-              <Field label="Correo electrónico">
+              <p className="mb-1 text-[11px] text-[#97A1A0]">{ts.recoveryEmailDesc}</p>
+              <Field label={ts.emailAddress}>
                 {loadingEmail ? (
                   <div className="h-10 animate-pulse rounded-xl bg-[#F0EAE0]" />
                 ) : (
                   <input type="email" value={email}
                     onChange={e => { setEmail(e.target.value); setEmailMsg(null); }}
                     className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
-                    placeholder="tu@correo.com"
+                    placeholder={ts.emailPlaceholder}
                   />
                 )}
               </Field>
-              <Field label="Confirma tu PIN actual">
+              <Field label={ts.confirmCurrentPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={emailPin} onChange={e => setEmailPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
@@ -262,7 +261,7 @@ export default function AdminSettings() {
                   {emailMsg.text}
                 </div>
               )}
-              <SaveBtn loading={emailLoad} disabled={!email || emailPin.length < 4} />
+              <SaveBtn loading={emailLoad} disabled={!email || emailPin.length < 4} save={ts.save} saving={ts.saving} />
             </form>
           )}
 
