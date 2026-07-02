@@ -207,6 +207,9 @@ interface SortableSectionProps {
   setNewItemDesc:    (v: string) => void;
   newItemAmt:        string;
   setNewItemAmt:     (v: string) => void;
+  editingNameId:     string | null;
+  setEditingNameId:  (id: string | null) => void;
+  onSaveName:        (sectionId: string, name: string) => void;
 }
 
 function SortableSection({
@@ -214,6 +217,7 @@ function SortableSection({
   onToggle, onUpdateField, onDelete,
   onUpdateItem, onSaveItem, onDeleteItem, onItemsReorder, onAddItem,
   addingItemTo, setAddingItemTo, newItemDesc, setNewItemDesc, newItemAmt, setNewItemAmt,
+  editingNameId, setEditingNameId, onSaveName,
 }: SortableSectionProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: section.id });
@@ -242,6 +246,15 @@ function SortableSection({
   }
 
   const name = EN ? section.name_en : section.name_es;
+  const [localName, setLocalName] = useState(name);
+  useEffect(() => { setLocalName(name); }, [name]);
+
+  const isEditingName = editingNameId === section.id;
+
+  const commitName = () => {
+    onSaveName(section.id, localName);
+    setEditingNameId(null);
+  };
 
   return (
     <div
@@ -267,8 +280,34 @@ function SortableSection({
           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm ${section.is_material_type ? "bg-[#FDF0ED]" : "bg-[#EDF3FB]"}`}>
             {section.is_material_type ? "📦" : "🔨"}
           </div>
-          <div className="min-w-0">
-            <div className="truncate text-[12px] font-bold uppercase tracking-wide text-[#16323D]">{name}</div>
+          <div className="min-w-0 flex-1">
+            {isEditingName ? (
+              <input
+                autoFocus
+                value={localName}
+                onChange={e => setLocalName(e.target.value)}
+                onBlur={commitName}
+                onKeyDown={e => {
+                  if (e.key === "Enter")  commitName();
+                  if (e.key === "Escape") { setLocalName(name); setEditingNameId(null); }
+                }}
+                onClick={e => e.stopPropagation()}
+                placeholder={EN ? "Section name" : "Nombre de sección"}
+                className="w-full max-w-[220px] rounded-md border border-[#395886] bg-white px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide text-[#16323D] focus:outline-none"
+              />
+            ) : (
+              <div
+                className="truncate text-[12px] font-bold uppercase tracking-wide text-[#16323D] cursor-pointer hover:text-[#395886]"
+                title={EN ? "Click to rename" : "Clic para renombrar"}
+                onClick={e => {
+                  e.stopPropagation();
+                  setLocalName(name);
+                  setEditingNameId(section.id);
+                }}
+              >
+                {name}
+              </div>
+            )}
             {section.note && <div className="text-[10px] text-[#5C6A6E]">{section.note}</div>}
           </div>
         </div>
@@ -419,14 +458,12 @@ function SortableSection({
               </button>
             </div>
           ) : (
-            <div className="px-4 py-2">
-              <button
-                onClick={() => { setAddingItemTo(section.id); setNewItemDesc(""); setNewItemAmt(""); }}
-                className="flex items-center gap-1 text-[11px] font-semibold text-[#395886] hover:underline"
-              >
-                <Plus size={11} /> {EN ? "Add item" : "Agregar item"}
-              </button>
-            </div>
+            <button
+              onClick={() => { setAddingItemTo(section.id); setNewItemDesc(""); setNewItemAmt(""); }}
+              className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold text-[#395886] transition hover:bg-[#F7F3EA] hover:text-[#16323D]"
+            >
+              <Plus size={11} /> {EN ? "Add item" : "Agregar item"}
+            </button>
           )}
         </div>
       )}
@@ -474,6 +511,7 @@ export default function EstimateTab({
   const [addingItemTo,   setAddingItemTo]   = useState<string | null>(null);
   const [newItemDesc,    setNewItemDesc]    = useState("");
   const [newItemAmt,     setNewItemAmt]     = useState("");
+  const [editingNameId,  setEditingNameId]  = useState<string | null>(null);
   const [waCode,         setWaCode]         = useState("+1");
   const [waPhone,        setWaPhone]        = useState("");
   const [waLoading,      setWaLoading]      = useState(false);
@@ -670,6 +708,7 @@ export default function EstimateTab({
     if (data) {
       setEstimate(p => p ? ({ ...p, sections: [...p.sections, { ...data, items: [] }] }) : p);
       setExpanded(prev => new Set([...prev, data.id]));
+      if (!cat) setEditingNameId(data.id);
     }
     setShowAddSection(false);
   }, [estimate, EN]);
@@ -678,6 +717,15 @@ export default function EstimateTab({
     await supabase.from("estimate_sections").delete().eq("id", sectionId);
     setEstimate(p => p ? ({ ...p, sections: p.sections.filter(s => s.id !== sectionId) }) : p);
   }, []);
+
+  const saveSectionName = useCallback(async (sectionId: string, name: string) => {
+    const clean = name.trim() || (EN ? "NEW SECTION" : "NUEVA SECCIÓN");
+    setEstimate(p => p ? ({
+      ...p,
+      sections: p.sections.map(s => s.id === sectionId ? { ...s, name_en: clean, name_es: clean } : s),
+    }) : p);
+    await supabase.from("estimate_sections").update({ name_en: clean, name_es: clean }).eq("id", sectionId);
+  }, [EN]);
 
   const updateSectionField = useCallback(async (
     sectionId: string,
@@ -1077,6 +1125,9 @@ export default function EstimateTab({
                   setNewItemDesc={setNewItemDesc}
                   newItemAmt={newItemAmt}
                   setNewItemAmt={setNewItemAmt}
+                  editingNameId={editingNameId}
+                  setEditingNameId={setEditingNameId}
+                  onSaveName={saveSectionName}
                 />
               );
             })}
