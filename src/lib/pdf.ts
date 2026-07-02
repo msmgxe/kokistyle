@@ -266,6 +266,7 @@ function buildEstimatePdf(
   discountAmt: number,
   language: "en" | "es" = "en",
   projectTitle?: string,
+  mode: "full" | "summary" = "full",
 ): { doc: jsPDF; filename: string } {
   const EN  = language === "en";
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -381,8 +382,15 @@ function buildEstimatePdf(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(255, 255, 255);
-  doc.text(EN ? "SECTION / ITEM" : "SECCIÓN / PARTIDA", ML + 4, y + 4.8);
-  doc.text(EN ? "AMOUNT (USD)" : "MONTO (USD)", MR - 2, y + 4.8, { align: "right" });
+  doc.text(
+    mode === "summary"
+      ? (EN ? "SCOPE OF WORK" : "ALCANCE DE TRABAJO")
+      : (EN ? "SECTION / ITEM" : "SECCIÓN / PARTIDA"),
+    ML + 4, y + 4.8,
+  );
+  if (mode === "full") {
+    doc.text(EN ? "AMOUNT (USD)" : "MONTO (USD)", MR - 2, y + 4.8, { align: "right" });
+  }
   y += 9;
 
   // ── Sections ───────────────────────────────────────────────────────────────
@@ -430,15 +438,13 @@ function buildEstimatePdf(
       doc.text(section.note, ML + 5, y + 6.5);
     }
 
-    // Section total
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    if (isMat) {
-      doc.setTextColor(176, 73, 47);
-    } else {
-      doc.setTextColor(22, 50, 61);
+    // Section total (full mode only)
+    if (mode === "full") {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(isMat ? 176 : 22, isMat ? 73 : 50, isMat ? 47 : 61);
+      doc.text(money(secTotal), MR - 2, nameY, { align: "right" });
     }
-    doc.text(money(secTotal), MR - 2, nameY, { align: "right" });
     y += secHdrH;
 
     // Items in 2-column grid
@@ -470,14 +476,17 @@ function buildEstimatePdf(
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7.5);
         doc.setTextColor(58, 58, 58);
-        doc.text(`• ${left.description}`, c1x + 2, y + 2.8, { maxWidth: halfCW - 22 });
-        doc.setFont("helvetica", "bold");
-        if (left.amount > 0) {
-          doc.setTextColor(22, 50, 61);
-          doc.text(money(left.amount), c2x - 2, y + 2.8, { align: "right" });
-        } else {
-          doc.setTextColor(200, 200, 200);
-          doc.text("—", c2x - 2, y + 2.8, { align: "right" });
+        const leftMaxW = mode === "summary" ? halfCW - 6 : halfCW - 22;
+        doc.text(`• ${left.description}`, c1x + 2, y + 2.8, { maxWidth: leftMaxW });
+        if (mode === "full") {
+          doc.setFont("helvetica", "bold");
+          if (left.amount > 0) {
+            doc.setTextColor(22, 50, 61);
+            doc.text(money(left.amount), c2x - 2, y + 2.8, { align: "right" });
+          } else {
+            doc.setTextColor(200, 200, 200);
+            doc.text("—", c2x - 2, y + 2.8, { align: "right" });
+          }
         }
 
         // Right item
@@ -485,14 +494,17 @@ function buildEstimatePdf(
           doc.setFont("helvetica", "normal");
           doc.setFontSize(7.5);
           doc.setTextColor(58, 58, 58);
-          doc.text(`• ${right.description}`, c2x + 2, y + 2.8, { maxWidth: halfCW - 22 });
-          doc.setFont("helvetica", "bold");
-          if (right.amount > 0) {
-            doc.setTextColor(22, 50, 61);
-            doc.text(money(right.amount), MR - 2, y + 2.8, { align: "right" });
-          } else {
-            doc.setTextColor(200, 200, 200);
-            doc.text("—", MR - 2, y + 2.8, { align: "right" });
+          const rightMaxW = mode === "summary" ? halfCW - 6 : halfCW - 22;
+          doc.text(`• ${right.description}`, c2x + 2, y + 2.8, { maxWidth: rightMaxW });
+          if (mode === "full") {
+            doc.setFont("helvetica", "bold");
+            if (right.amount > 0) {
+              doc.setTextColor(22, 50, 61);
+              doc.text(money(right.amount), MR - 2, y + 2.8, { align: "right" });
+            } else {
+              doc.setTextColor(200, 200, 200);
+              doc.text("—", MR - 2, y + 2.8, { align: "right" });
+            }
           }
         }
         y += itemRowH;
@@ -643,9 +655,26 @@ export function exportEstimatePdf(
   discountAmt: number,
   language: "en" | "es" = "en",
   projectTitle?: string,
+  mode: "full" | "summary" = "full",
 ) {
-  const { doc, filename } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle);
+  const { doc, filename } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle, mode);
   doc.save(filename);
+}
+
+export function openEstimatePdfInBrowser(
+  estimate: ProjectEstimate,
+  grandTotal: number,
+  laborTotal: number,
+  discountAmt: number,
+  language: "en" | "es" = "en",
+  projectTitle?: string,
+  mode: "full" | "summary" = "full",
+) {
+  const { doc } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle, mode);
+  const blob = doc.output("blob") as Blob;
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function getEstimatePdfBlob(
@@ -655,7 +684,8 @@ export function getEstimatePdfBlob(
   discountAmt: number,
   language: "en" | "es" = "en",
   projectTitle?: string,
+  mode: "full" | "summary" = "full",
 ): Blob {
-  const { doc } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle);
+  const { doc } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle, mode);
   return doc.output("blob") as Blob;
 }

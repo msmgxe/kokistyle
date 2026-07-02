@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
-import { exportEstimatePdf, getEstimatePdfBlob } from "@/src/lib/pdf";
+import { openEstimatePdfInBrowser, getEstimatePdfBlob } from "@/src/lib/pdf";
 
 const WA_CODES = [
   { code: "+1",   flag: "🇺🇸", label: "US/CA" },
@@ -512,6 +512,7 @@ export default function EstimateTab({
   const [newItemDesc,    setNewItemDesc]    = useState("");
   const [newItemAmt,     setNewItemAmt]     = useState("");
   const [editingNameId,  setEditingNameId]  = useState<string | null>(null);
+  const [showPdfModal,   setShowPdfModal]   = useState(false);
   const [waCode,         setWaCode]         = useState("+1");
   const [waPhone,        setWaPhone]        = useState("");
   const [waLoading,      setWaLoading]      = useState(false);
@@ -883,15 +884,16 @@ export default function EstimateTab({
   }, [editingPayId, editForm, EN, toast, onRefresh]);
 
   // ── PDF export ────────────────────────────────────────────────────────────
-  const handleExportPdf = useCallback(() => {
+  const handleOpenPdf = useCallback((mode: "full" | "summary") => {
     if (!estimate) return;
     try {
       const { grandTotal, laborTotal, discountAmt } = totals;
-      exportEstimatePdf(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title);
+      openEstimatePdfInBrowser(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title, mode);
     } catch (err) {
-      console.error("[EstimateTab] PDF export error:", err);
+      console.error("[EstimateTab] PDF error:", err);
       toast(EN ? "Error generating PDF — check console" : "Error al generar PDF — revisa la consola");
     }
+    setShowPdfModal(false);
   }, [estimate, totals, language, EN, toast]);
 
   // ── WhatsApp send ─────────────────────────────────────────────────────────
@@ -1002,7 +1004,7 @@ export default function EstimateTab({
             {saving ? "…" : (EN ? "Save" : "Guardar")}
           </button>
           <button
-            onClick={handleExportPdf}
+            onClick={() => setShowPdfModal(true)}
             title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
             className="inline-flex items-center gap-1.5 rounded-xl bg-[#16323D] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#0F2830]"
           >
@@ -1256,7 +1258,7 @@ export default function EstimateTab({
           {EN ? "Generate Workflow Tasks" : "Generar Tareas en Workflow"}
         </button>
         <button
-          onClick={handleExportPdf}
+          onClick={() => setShowPdfModal(true)}
           title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
           className="inline-flex items-center gap-2 rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0F2830]"
         >
@@ -1600,6 +1602,40 @@ export default function EstimateTab({
                 className="flex-1 rounded-xl bg-[#B0492F] py-2.5 text-sm font-bold text-white transition hover:bg-[#963d27]"
               >
                 {EN ? "Delete" : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PDF mode modal ─────────────────────────────────────────────────── */}
+      {showPdfModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#16323D] px-5 py-4 rounded-t-2xl">
+              <p className="text-sm font-bold text-white">{EN ? "Choose PDF format" : "Elige el formato PDF"}</p>
+              <button onClick={() => setShowPdfModal(false)} className="text-white/60 hover:text-white"><X size={18} /></button>
+            </div>
+            <div className="flex flex-col gap-3 p-5">
+              <button
+                onClick={() => handleOpenPdf("full")}
+                className="flex items-start gap-4 rounded-xl border-2 border-[#16323D] bg-[#F7F3EA] p-4 text-left transition hover:bg-[#EDE8E0]"
+              >
+                <FileText size={28} className="mt-0.5 flex-none text-[#16323D]" />
+                <div>
+                  <p className="font-bold text-[#16323D]">{EN ? "Estimate with detail" : "Estimado con detalle"}</p>
+                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Shows all section totals and item amounts" : "Muestra totales de secciones y montos de items"}</p>
+                </div>
+              </button>
+              <button
+                onClick={() => handleOpenPdf("summary")}
+                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] bg-white p-4 text-left transition hover:border-[#395886] hover:bg-[#F0F3FA]"
+              >
+                <FileText size={28} className="mt-0.5 flex-none text-[#395886]" />
+                <div>
+                  <p className="font-bold text-[#16323D]">{EN ? "Estimate without detail" : "Estimado sin detalle"}</p>
+                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Scope of work only — no amounts shown, payment schedule included" : "Solo alcance de trabajo — sin montos, incluye plan de pagos"}</p>
+                </div>
               </button>
             </div>
           </div>
