@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, MapPin, User, X, Trash2 } from "lucide-react";
+import { Plus, MapPin, User, X, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import {
   money,
@@ -158,11 +158,13 @@ function ProjectCard({
   budget,
   canDelete,
   onDelete,
+  onEdit,
 }: {
   project: ProjectWithData;
   budget: number;
   canDelete: boolean;
   onDelete: (id: string) => void;
+  onEdit: (p: ProjectWithData) => void;
 }) {
   const { t, language } = useLanguage();
   const EN = language === "en";
@@ -189,6 +191,15 @@ function ProjectCard({
                 : (EN ? "budget" : "presupuesto")}
             </span>
           </div>
+          {!showConfirm && (
+            <button
+              onClick={() => onEdit(project)}
+              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#EDF3FB] hover:text-[#395886]"
+              aria-label={EN ? "Edit project" : "Editar proyecto"}
+            >
+              <Pencil size={13} />
+            </button>
+          )}
           {canDelete && !showConfirm && (
             <button
               onClick={() => setShowConfirm(true)}
@@ -618,6 +629,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectWithData | null>(null);
   const [voicePrefill, setVoicePrefill] = useState<Partial<Project> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [kpiModal, setKpiModal] = useState<KpiType | null>(null);
@@ -765,6 +777,7 @@ export default function DashboardPage() {
               budget={p.budget}
               canDelete={isSuperAdmin}
               onDelete={handleDelete}
+              onEdit={setEditingProject}
             />
           ))}
         </div>
@@ -794,6 +807,15 @@ export default function DashboardPage() {
           initialValues={voicePrefill ?? undefined}
           onClose={() => { setShowModal(false); setVoicePrefill(null); }}
           onSaved={fetchData}
+          toast={showToast}
+        />
+      )}
+
+      {editingProject && (
+        <ProjectFormModal
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onSaved={() => { setEditingProject(null); fetchData(); }}
           toast={showToast}
         />
       )}
