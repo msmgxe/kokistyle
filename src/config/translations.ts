@@ -156,7 +156,7 @@ export const translations = {
         design: "Design",
       },
       status: {
-        presupuesto: "Estimate",
+        presupuesto: "Quote",
         aprobado: "Approved",
         en_obra: "In Progress",
         terminado: "Completed",

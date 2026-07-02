@@ -28,6 +28,7 @@ interface ProjectWithData extends Project {
   payments: Payment[];
   expenses: Expense[];
   tasks: Task[];
+  hasEstimate?: boolean;
 }
 
 // Queries estimate totals independently and overwrites project.budget
@@ -67,6 +68,7 @@ async function enrichWithEstimateBudgets(projects: Project[]): Promise<ProjectWi
   return projects.map(p => ({
     ...p,
     budget: budgetByProject.has(p.id) ? budgetByProject.get(p.id)! : p.budget,
+    hasEstimate: budgetByProject.has(p.id),
   })) as ProjectWithData[];
 }
 
@@ -173,13 +175,20 @@ function ProjectCard({
 
   return (
     <div className="relative overflow-hidden rounded-[18px] border border-[#E6DDCB] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]">
-      {/* Header row: status · amount · trash (separated, not nested in Link) */}
+      {/* Header row: status · amount · source badge · trash */}
       <div className="flex items-center justify-between gap-2 px-[17px] pb-3 pt-[17px]">
         <StatusChip status={project.status} />
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[17px] font-semibold text-[#16323D]">
-            {money(budget)}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="font-mono text-[17px] font-semibold text-[#16323D]">
+              {money(budget)}
+            </span>
+            <span className={`text-[9px] font-bold uppercase tracking-wide ${project.hasEstimate ? "text-[#395886]" : "text-[#5C6A6E]"}`}>
+              {project.hasEstimate
+                ? (EN ? "from estimate" : "del estimado")
+                : (EN ? "budget" : "presupuesto")}
+            </span>
+          </div>
           {canDelete && !showConfirm && (
             <button
               onClick={() => setShowConfirm(true)}
