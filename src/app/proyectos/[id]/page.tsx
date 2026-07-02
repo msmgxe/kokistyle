@@ -2513,7 +2513,7 @@ export default function ProjectDetailPage() {
 
       {/* Blue header */}
       <div className="relative mb-2 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-display text-xl font-medium tracking-[0.08em] uppercase text-white pr-10">{project.title}</h1>
+        <h1 className="font-bookman text-xl font-semibold text-white pr-10">{project.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
           <StatusChipOnBlue status={project.status} />
           <span>· {project.client}</span>

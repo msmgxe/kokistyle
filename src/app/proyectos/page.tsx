@@ -218,7 +218,7 @@ function ProjectCard({
         className="block px-[17px] pb-[17px]"
         aria-label={`Ver detalle de ${project.title}`}
       >
-        <h3 className="text-sm font-bold uppercase tracking-widest leading-tight text-[#16323D]">
+        <h3 className="font-bookman text-[15px] font-semibold leading-tight text-[#16323D]">
           {project.title}
         </h3>
         <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E]">

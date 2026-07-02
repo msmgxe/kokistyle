@@ -36,6 +36,11 @@ h1, h2, h3 {
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
 }
 
+/* Bookman Old Style — project titles */
+.font-bookman {
+  font-family: "Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif;
+}
+
 html {
   scroll-behavior: smooth;
 }
