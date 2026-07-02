@@ -9,7 +9,7 @@ import {
   useEffect, useState, useCallback, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, CalendarDays } from "lucide-react";
+import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, CalendarDays, Camera } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -2423,6 +2423,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("presupuesto");
   const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
   const { setMeta } = useVoice();
@@ -2516,12 +2517,29 @@ export default function ProjectDetailPage() {
       </button>
 
       {/* Blue header */}
-      <div className="relative mb-2 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-bookman text-xl font-semibold text-white pr-10">{project.title}</h1>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
-          <StatusChipOnBlue status={project.status} />
-          <span>· {project.client}</span>
-          <span>· {money(project.budget)}</span>
+      <div className="relative mb-2 overflow-hidden rounded-2xl bg-[#395886]">
+        {/* Cover photo strip */}
+        {project.photo_url && (
+          <button
+            type="button"
+            onClick={() => setPhotoOpen(true)}
+            className="relative block h-36 w-full overflow-hidden"
+            aria-label={tp.project.photoView}
+          >
+            <img src={project.photo_url} alt="" className="h-full w-full object-cover opacity-70" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#395886]/80 to-transparent" />
+            <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/30 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+              <Camera size={10} /> {tp.project.photoView}
+            </div>
+          </button>
+        )}
+        <div className="px-6 py-5">
+          <h1 className="font-bookman text-xl font-semibold text-white pr-10">{project.title}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
+            <StatusChipOnBlue status={project.status} />
+            <span>· {project.client}</span>
+            <span>· {money(project.budget)}</span>
+          </div>
         </div>
         {isSuperAdmin && (
           <button
@@ -2533,6 +2551,31 @@ export default function ProjectDetailPage() {
           </button>
         )}
       </div>
+
+      {/* Photo lightbox */}
+      {photoOpen && project.photo_url && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 backdrop-blur-sm"
+          onClick={() => setPhotoOpen(false)}
+        >
+          <button
+            onClick={() => setPhotoOpen(false)}
+            className="absolute right-5 top-5 grid size-9 place-items-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/35"
+            aria-label="Cerrar"
+          >
+            <X size={18} />
+          </button>
+          <img
+            src={project.photo_url}
+            alt={project.title}
+            className="max-h-[88vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          />
+          <p className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-[12px] font-semibold text-white backdrop-blur-sm">
+            {project.title}
+          </p>
+        </div>
+      )}
 
       {/* Pill tabs */}
       <div className="mb-6 flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">

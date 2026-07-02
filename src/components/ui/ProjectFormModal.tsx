@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Camera, X } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
+import { useLanguage } from "@/src/context/LanguageContext";
 import type { Project } from "@/src/types/project";
 
 interface Props {
@@ -19,9 +21,24 @@ const STATUS_OPTIONS = [
   { value: "terminado",   label: "Terminado" },
 ];
 
+async function uploadPhoto(projectId: string, file: File): Promise<string | null> {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const path = `project-photos/${projectId}/cover.${ext}`;
+  const { error } = await supabase.storage
+    .from("kokistyle-files")
+    .upload(path, file, { upsert: true });
+  if (error) return null;
+  const { data } = supabase.storage.from("kokistyle-files").getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export default function ProjectFormModal({ project, initialValues, onClose, onSaved, toast }: Props) {
+  const { t, language } = useLanguage();
+  const EN = language === "en";
+  const tp = t.panel;
   const isEdit = !!project;
   const iv = isEdit ? undefined : initialValues;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     title:      project?.title      ?? iv?.title      ?? "",
@@ -35,6 +52,11 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
   const [saving, setSaving]         = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
 
+  // Photo state
+  const [photoPreview,   setPhotoPreview]   = useState<string>(project?.photo_url ?? "");
+  const [photoFile,      setPhotoFile]      = useState<File | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+
   useEffect(() => {
     if (project) {
       setForm({
@@ -45,6 +67,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
         start_date: project.start_date,
         status:     project.status,
       });
+      setPhotoPreview(project.photo_url ?? "");
     }
   }, [project]);
 
@@ -63,10 +86,32 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
     return Object.keys(e).length === 0;
   };
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
+
     if (isEdit) {
+      let photoUrl = project!.photo_url ?? null;
+      if (photoFile) {
+        setPhotoUploading(true);
+        photoUrl = await uploadPhoto(project!.id, photoFile);
+        setPhotoUploading(false);
+      } else if (!photoPreview && project!.photo_url) {
+        photoUrl = null;
+      }
       const { error } = await supabase.from("projects").update({
         title:      form.title.trim(),
         client:     form.client.trim(),
@@ -74,20 +119,27 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
         budget:     Number(form.budget) || 0,
         start_date: form.start_date,
         status:     form.status,
+        photo_url:  photoUrl,
       }).eq("id", project!.id);
       if (error) { toast("Error al guardar: " + error.message); setSaving(false); return; }
-      toast("Proyecto actualizado.");
+      toast(EN ? "Project updated." : "Proyecto actualizado.");
     } else {
-      const { error } = await supabase.from("projects").insert({
+      const { data: created, error } = await supabase.from("projects").insert({
         title:      form.title.trim(),
         client:     form.client.trim(),
         address:    form.address.trim(),
         budget:     Number(form.budget) || 0,
         start_date: form.start_date,
         status:     form.status,
-      });
-      if (error) { toast("Error al crear: " + error.message); setSaving(false); return; }
-      toast("Proyecto creado.");
+      }).select("id").single();
+      if (error || !created) { toast("Error al crear: " + (error?.message ?? "")); setSaving(false); return; }
+      if (photoFile) {
+        setPhotoUploading(true);
+        const photoUrl = await uploadPhoto(created.id, photoFile);
+        if (photoUrl) await supabase.from("projects").update({ photo_url: photoUrl }).eq("id", created.id);
+        setPhotoUploading(false);
+      }
+      toast(EN ? "Project created." : "Proyecto creado.");
     }
     setSaving(false);
     onSaved();
@@ -97,7 +149,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
   const handleDelete = async () => {
     if (!isEdit) return;
     await supabase.from("projects").delete().eq("id", project!.id);
-    toast("Proyecto eliminado.");
+    toast(EN ? "Project deleted." : "Proyecto eliminado.");
     onSaved();
     onClose();
   };
@@ -109,151 +161,204 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
         : "border-[#D7CBB3] bg-white focus:border-[#16323D]"
     }`;
 
+  const isBusy = saving || photoUploading;
+
   return (
     <>
       <div
         className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
-        <div className="w-full max-w-[480px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh]">
-          <h3 className="mb-5 text-xl font-bold text-[#16323D]">
-            {isEdit ? "Editar proyecto" : "Nuevo proyecto"}
-          </h3>
+        <div className="w-full max-w-[480px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] shadow-2xl sm:rounded-[20px] max-h-[92vh]">
 
-          <div className="space-y-3">
-            {/* Tipo de proyecto (status) */}
-            <div>
-              <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-                Tipo de proyecto <span className="text-[#B0492F]">*</span>
-              </label>
-              <select
-                value={form.status}
-                onChange={e => set("status", e.target.value)}
-                className={field("status")}
+          {/* Photo zone */}
+          <div className="relative">
+            {photoPreview ? (
+              <div className="relative h-40 overflow-hidden rounded-t-[22px] sm:rounded-t-[20px]">
+                <img src={photoPreview} alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                <div className="absolute bottom-3 right-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-black/60"
+                  >
+                    <Camera size={12} />
+                    {tp.project.photoChange}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="flex items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-black/60"
+                  >
+                    <X size={12} />
+                    {tp.project.photoRemove}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-16 w-full items-center justify-center gap-2 rounded-t-[22px] border-b border-[#D7CBB3] bg-[#ECE3D1] text-[12px] font-semibold text-[#5C6A6E] transition hover:bg-[#E0D5BF] sm:rounded-t-[20px]"
               >
-                {STATUS_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              {errors.status && (
-                <p className="mt-1 text-[11px] text-[#B0492F]">Selecciona el tipo de proyecto</p>
-              )}
-            </div>
+                <Camera size={16} className="opacity-60" />
+                {tp.project.photoAdd}
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoSelect}
+            />
+          </div>
 
-            {/* Nombre */}
-            <div>
-              <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-                Nombre del proyecto <span className="text-[#B0492F]">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="ej. Master Bathroom — Brickell"
-                value={form.title}
-                onChange={e => set("title", e.target.value)}
-                className={field("title")}
-              />
-              {errors.title && (
-                <p className="mt-1 text-[11px] text-[#B0492F]">El nombre del proyecto es obligatorio</p>
-              )}
-            </div>
+          <div className="p-6 pt-5">
+            <h3 className="mb-5 text-xl font-bold text-[#16323D]">
+              {isEdit ? tp.project.editTitle : tp.project.name}
+            </h3>
 
-            {/* Cliente */}
-            <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-                Cliente
-              </label>
-              <input
-                type="text"
-                placeholder="ej. Familia García"
-                value={form.client}
-                onChange={e => set("client", e.target.value)}
-                className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
-              />
-            </div>
-
-            {/* Dirección */}
-            <div>
-              <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-                Dirección <span className="text-[#B0492F]">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="ej. 1820 Catalonia Ave, Coral Gables"
-                value={form.address}
-                onChange={e => set("address", e.target.value)}
-                className={field("address")}
-              />
-              {errors.address && (
-                <p className="mt-1 text-[11px] text-[#B0492F]">La dirección es obligatoria</p>
-              )}
-            </div>
-
-            {/* Fecha inicio + Presupuesto */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
+              {/* Tipo de proyecto (status) */}
               <div>
                 <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-                  Fecha inicio <span className="text-[#B0492F]">*</span>
+                  {EN ? "Project type" : "Tipo de proyecto"} <span className="text-[#B0492F]">*</span>
                 </label>
-                <input
-                  type="date"
-                  value={form.start_date}
-                  onChange={e => set("start_date", e.target.value)}
-                  className={field("start_date")}
-                />
-                {errors.start_date && (
-                  <p className="mt-1 text-[11px] text-[#B0492F]">Requerida</p>
+                <select
+                  value={form.status}
+                  onChange={e => set("status", e.target.value)}
+                  className={field("status")}
+                >
+                  {STATUS_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                {errors.status && (
+                  <p className="mt-1 text-[11px] text-[#B0492F]">{EN ? "Select a project type" : "Selecciona el tipo de proyecto"}</p>
                 )}
               </div>
+
+              {/* Nombre */}
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-                  Presupuesto (USD)
+                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                  {tp.project.name} <span className="text-[#B0492F]">*</span>
                 </label>
                 <input
-                  type="number"
-                  min={0}
-                  value={form.budget}
-                  onChange={e => set("budget", parseFloat(e.target.value) || 0)}
+                  type="text"
+                  placeholder={EN ? "e.g. Master Bathroom — Brickell" : "ej. Master Bathroom — Brickell"}
+                  value={form.title}
+                  onChange={e => set("title", e.target.value)}
+                  className={field("title")}
+                />
+                {errors.title && (
+                  <p className="mt-1 text-[11px] text-[#B0492F]">{EN ? "Project name is required" : "El nombre del proyecto es obligatorio"}</p>
+                )}
+              </div>
+
+              {/* Cliente */}
+              <div>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                  {tp.project.client}
+                </label>
+                <input
+                  type="text"
+                  placeholder={EN ? "e.g. García Family" : "ej. Familia García"}
+                  value={form.client}
+                  onChange={e => set("client", e.target.value)}
                   className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
                 />
               </div>
+
+              {/* Dirección */}
+              <div>
+                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                  {tp.project.address} <span className="text-[#B0492F]">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={EN ? "e.g. 1820 Catalonia Ave, Coral Gables" : "ej. 1820 Catalonia Ave, Coral Gables"}
+                  value={form.address}
+                  onChange={e => set("address", e.target.value)}
+                  className={field("address")}
+                />
+                {errors.address && (
+                  <p className="mt-1 text-[11px] text-[#B0492F]">{EN ? "Address is required" : "La dirección es obligatoria"}</p>
+                )}
+              </div>
+
+              {/* Fecha inicio + Presupuesto */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                    {tp.project.startDate} <span className="text-[#B0492F]">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={form.start_date}
+                    onChange={e => set("start_date", e.target.value)}
+                    className={field("start_date")}
+                  />
+                  {errors.start_date && (
+                    <p className="mt-1 text-[11px] text-[#B0492F]">{EN ? "Required" : "Requerida"}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                    {tp.project.budget}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.budget}
+                    onChange={e => set("budget", parseFloat(e.target.value) || 0)}
+                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Acciones */}
-          <div className="mt-5 flex gap-3">
-            <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">
-              Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white disabled:opacity-50"
-            >
-              {saving ? "Guardando…" : isEdit ? "Guardar" : "Crear proyecto"}
-            </button>
-          </div>
+            {/* Acciones */}
+            <div className="mt-5 flex gap-3">
+              <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">
+                {EN ? "Cancel" : "Cancelar"}
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isBusy}
+                className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white disabled:opacity-50"
+              >
+                {isBusy
+                  ? (photoUploading ? tp.project.photoUploading : (EN ? "Saving…" : "Guardando…"))
+                  : isEdit ? (EN ? "Save" : "Guardar") : (EN ? "Create project" : "Crear proyecto")}
+              </button>
+            </div>
 
-          {isEdit && (
-            <button
-              onClick={() => setConfirmDel(true)}
-              className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-bold text-[#B0492F]"
-            >
-              Eliminar proyecto
-            </button>
-          )}
+            {isEdit && (
+              <button
+                onClick={() => setConfirmDel(true)}
+                className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-bold text-[#B0492F]"
+              >
+                {EN ? "Delete project" : "Eliminar proyecto"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {confirmDel && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 text-lg font-bold text-[#16323D]">Eliminar proyecto</h3>
+            <h3 className="mb-2 text-lg font-bold text-[#16323D]">{EN ? "Delete project" : "Eliminar proyecto"}</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">
-              Se eliminarán &ldquo;{project?.title}&rdquo; y todos sus datos. Esta acción no se puede deshacer.
+              {EN
+                ? `"${project?.title}" will be deleted along with all its data. This cannot be undone.`
+                : `Se eliminarán "${project?.title}" y todos sus datos. Esta acción no se puede deshacer.`}
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
-              <button onClick={handleDelete} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">Eliminar</button>
+              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{EN ? "Cancel" : "Cancelar"}</button>
+              <button onClick={handleDelete} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">{EN ? "Delete" : "Eliminar"}</button>
             </div>
           </div>
         </div>

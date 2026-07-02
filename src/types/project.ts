@@ -7,6 +7,7 @@ export interface Project {
   budget: number;
   start_date: string;
   end_date?: string | null;
+  photo_url?: string | null;
   created_at?: string;
 }
 

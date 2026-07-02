@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, MapPin, User, X, Trash2, Pencil } from "lucide-react";
+import { Plus, MapPin, User, X, Trash2, Pencil, Camera } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import {
   money,
@@ -174,9 +174,28 @@ function ProjectCard({
   const pp = paymentPct(budget, project.payments);
   const paid = balanceDue(budget, project.payments) <= 0;
   const [showConfirm, setShowConfirm] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   return (
+    <>
     <div className="relative overflow-hidden rounded-[18px] border border-[#E6DDCB] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]">
+
+      {/* Cover photo */}
+      {project.photo_url && (
+        <button
+          type="button"
+          onClick={() => setPhotoOpen(true)}
+          className="relative block h-36 w-full overflow-hidden"
+          aria-label={tp.project.photoView}
+        >
+          <img src={project.photo_url} alt="" className="h-full w-full object-cover transition hover:scale-105 duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/35 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+            <Camera size={10} /> {tp.project.photoView}
+          </div>
+        </button>
+      )}
+
       {/* Header row: status · amount · source badge · trash */}
       <div className="flex items-center justify-between gap-2 px-[17px] pb-3 pt-[17px]">
         <StatusChip status={project.status} />
@@ -275,6 +294,32 @@ function ProjectCard({
         </div>
       )}
     </div>
+
+    {/* Photo lightbox */}
+    {photoOpen && project.photo_url && (
+      <div
+        className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 backdrop-blur-sm"
+        onClick={() => setPhotoOpen(false)}
+      >
+        <button
+          onClick={() => setPhotoOpen(false)}
+          className="absolute right-5 top-5 grid size-9 place-items-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/35"
+          aria-label="Cerrar"
+        >
+          <X size={18} />
+        </button>
+        <img
+          src={project.photo_url}
+          alt={project.title}
+          className="max-h-[88vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        />
+        <p className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-[12px] font-semibold text-white backdrop-blur-sm">
+          {project.title}
+        </p>
+      </div>
+    )}
+    </>
   );
 }
 

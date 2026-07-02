@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 -- Migration: run if upgrading from older schema
 -- ALTER TABLE projects ADD COLUMN IF NOT EXISTS end_date DATE;
+-- ALTER TABLE projects ADD COLUMN IF NOT EXISTS photo_url TEXT;
 
 -- 3. Tabla de Contactos (Especialistas / Proveedores)
 CREATE TABLE IF NOT EXISTS contacts (
