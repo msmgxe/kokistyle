@@ -25,7 +25,7 @@ function LangSwitch() {
 }
 
 export default function ProyectosLayout({ children }: { children: React.ReactNode }) {
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, isSuperAdmin, logout } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -63,6 +63,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
               <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
               <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
+              {isSuperAdmin && <PanelTab href="/proyectos/activity" label={t.panel.nav.activity} />}
               <PanelTab href="/proyectos/help" label={t.panel.nav.help} />
             </nav>
 

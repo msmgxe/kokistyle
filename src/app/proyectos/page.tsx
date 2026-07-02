@@ -651,7 +651,7 @@ export default function DashboardPage() {
       const { data, error } = await supabase
         .from("projects")
         .select(`*, payments(*), expenses(*), tasks(*)`)
-        .order("created_at", { ascending: false });
+        .order("start_date", { ascending: false });
       if (error) { setError("Error al cargar los proyectos."); }
       else        { setProjects(await enrichWithEstimateBudgets(data ?? [])); }
     } else {
@@ -665,7 +665,7 @@ export default function DashboardPage() {
         .from("projects")
         .select(`*, payments(*), expenses(*), tasks(*)`)
         .in("id", ids)
-        .order("created_at", { ascending: false });
+        .order("start_date", { ascending: false });
       if (error) { setError("Error al cargar los proyectos."); }
       else        { setProjects(await enrichWithEstimateBudgets(data ?? [])); }
     }

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
     const { data } = await getSupabaseAdmin()
       .from("superadmin_config")
-      .select("pin, email")
+      .select("pin, email, name")
       .eq("id", true)
       .maybeSingle();
 
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       isSuperAdmin,
       email: isSuperAdmin ? (data?.email ?? null) : null,
+      name:  isSuperAdmin ? (data?.name  ?? "Admin") : null,
     });
   } catch {
     return NextResponse.json({ isSuperAdmin: false }, { status: 500 });

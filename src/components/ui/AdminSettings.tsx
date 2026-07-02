@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { KeyRound, Mail, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { KeyRound, Mail, Eye, EyeOff, CheckCircle, User } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
 
 async function fetchRecoveryEmail(pin: string): Promise<string | null> {
@@ -37,7 +37,24 @@ function SaveBtn({ loading, disabled }: { loading: boolean; disabled?: boolean }
 }
 
 export default function AdminSettings() {
-  const { currentUser, changePin, setRecoveryEmail } = useAuth();
+  const { currentUser, changePin, setRecoveryEmail, setDisplayName } = useAuth();
+
+  // ── Display name ──────────────────────────────────────────────────────────
+  const [displayName,    setDisplayNameVal] = useState(currentUser?.name ?? "");
+  const [namePin,        setNamePin]        = useState("");
+  const [nameMsg,        setNameMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  const [nameLoad,       setNameLoad]       = useState(false);
+
+  const handleSetName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!displayName.trim()) { setNameMsg({ ok: false, text: "Ingresa un nombre" }); return; }
+    if (namePin.length < 4)  { setNameMsg({ ok: false, text: "Confirma tu PIN actual" }); return; }
+    setNameLoad(true); setNameMsg(null);
+    const res = await setDisplayName(namePin, displayName.trim());
+    setNameLoad(false);
+    if (res.ok) { setNameMsg({ ok: true, text: "Nombre actualizado" }); setNamePin(""); }
+    else        { setNameMsg({ ok: false, text: res.error ?? "Error al guardar" }); }
+  };
 
   // ── Change PIN ─────────────────────────────────────────────────────────────
   const [curPin,  setCurPin]  = useState("");
@@ -95,6 +112,44 @@ export default function AdminSettings() {
 
   return (
     <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+      {/* ── Nombre de display ────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="grid size-7 place-items-center rounded-lg bg-[#16323D] text-white">
+            <User size={13} />
+          </span>
+          <h3 className="text-sm font-bold text-[#16323D]">Nombre de display</h3>
+        </div>
+        <p className="mb-3 text-[11px] text-[#97A1A0]">
+          Este nombre aparece en el saludo del panel y en el registro de actividad.
+        </p>
+        <form onSubmit={handleSetName} className="space-y-3">
+          <Field label="Tu nombre">
+            <input type="text" value={displayName}
+              onChange={e => { setDisplayNameVal(e.target.value); setNameMsg(null); }}
+              className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+              placeholder="Ej. Marco, Koky, Lidette"
+            />
+          </Field>
+          <Field label="Confirma tu PIN actual">
+            <input type="password" inputMode="numeric" maxLength={8}
+              value={namePin} onChange={e => setNamePin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+              className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+              placeholder="••••••••"
+            />
+          </Field>
+          {nameMsg && (
+            <div className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-semibold ${
+              nameMsg.ok ? "bg-[#EDF7F0] text-[#4F8A63]" : "bg-[#FFF0EE] text-[#B0492F]"
+            }`}>
+              {nameMsg.ok && <CheckCircle size={12} />}
+              {nameMsg.text}
+            </div>
+          )}
+          <SaveBtn loading={nameLoad} disabled={!displayName.trim() || namePin.length < 4} />
+        </form>
+      </div>
 
       {/* ── Cambiar PIN ──────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-[#E6DDCB] bg-white p-5">

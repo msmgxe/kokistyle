@@ -7,10 +7,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { AppUser, PermissionSection, PermissionAction } from "@/src/types/auth";
 import { FULL_PERMISSIONS } from "@/src/types/auth";
+import { logActivity } from "@/src/lib/activity";
 
 const SUPERADMIN_TEMPLATE: Omit<AppUser, "pin"> = {
   id:          "superadmin",
-  name:        "Marco",
+  name:        "Admin",
   role:        "superadmin",
   permissions: FULL_PERMISSIONS,
   active:      true,
@@ -26,6 +27,7 @@ interface AuthContextType {
   verifyPin:     (pin: string) => Promise<boolean>;
   changePin:     (currentPin: string, newPin: string) => Promise<{ ok: boolean; error?: string }>;
   setRecoveryEmail: (pin: string, email: string) => Promise<{ ok: boolean; error?: string }>;
+  setDisplayName:   (pin: string, name: string) => Promise<{ ok: boolean; error?: string }>;
   hasPermission: (section: PermissionSection, action: PermissionAction) => boolean;
 }
 
@@ -54,11 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin }),
       });
-      const { isSuperAdmin } = await res.json();
+      const { isSuperAdmin, name } = await res.json();
       if (isSuperAdmin) {
-        const user: AppUser = { ...SUPERADMIN_TEMPLATE, pin };
+        const user: AppUser = { ...SUPERADMIN_TEMPLATE, pin, name: name ?? "Admin" };
         setCurrentUser(user);
         localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        logActivity({ user_id: "superadmin", user_name: user.name, user_role: "superadmin", action: "login" });
         return true;
       }
     } catch { /* API unavailable — continue to collaborator check */ }
@@ -74,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const user = data as AppUser;
     setCurrentUser(user);
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    logActivity({ user_id: user.id, user_name: user.name, user_role: "collaborator", action: "login" });
     return true;
   }, []);
 
@@ -134,6 +138,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.json();
   }, []);
 
+  // ── Set display name ───────────────────────────────────────────────────────
+  const setDisplayName = useCallback(async (
+    pin: string,
+    name: string
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const res = await fetch("/api/auth/set-name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin, name }),
+    });
+    const data = await res.json();
+    if (data.ok && currentUser?.role === "superadmin") {
+      const updated = { ...currentUser, name };
+      setCurrentUser(updated);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    }
+    return data;
+  }, [currentUser]);
+
   // ── Permission check ───────────────────────────────────────────────────────
   const hasPermission = useCallback(
     (section: PermissionSection, action: PermissionAction): boolean => {
@@ -149,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentUser,
       isAdmin:      !!currentUser,
       isSuperAdmin: currentUser?.role === "superadmin",
-      login, logout, verifyPin, changePin, setRecoveryEmail, hasPermission,
+      login, logout, verifyPin, changePin, setRecoveryEmail, setDisplayName, hasPermission,
     }}>
       {!isLoading && children}
     </AuthContext.Provider>

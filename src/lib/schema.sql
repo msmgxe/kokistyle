@@ -256,6 +256,29 @@ INSERT INTO estimate_section_catalog (name_en, name_es, note_en, note_es, is_mat
   ('MATERIALS',                'MATERIALES',               'Pure materials',     'Solo materiales',    true,  90)
 ON CONFLICT DO NOTHING;
 
+-- ── Superadmin display name ──────────────────────────────────────────────────
+-- Migration: run once if upgrading (superadmin_config must already exist)
+-- ALTER TABLE superadmin_config ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Admin';
+
+-- ── Activity Log ─────────────────────────────────────────────────────────────
+-- Migration: run once
+CREATE TABLE IF NOT EXISTS activity_log (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      TEXT,
+  user_name    TEXT,
+  user_role    TEXT,
+  action       TEXT NOT NULL,
+  entity_type  TEXT,
+  entity_id    TEXT,
+  entity_name  TEXT,
+  project_id   UUID REFERENCES projects(id) ON DELETE SET NULL,
+  project_name TEXT,
+  details      JSONB,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON activity_log FOR ALL TO anon USING (true) WITH CHECK (true);
+
 -- ── Voice Actions Audit Log ──────────────────────────────────────────────────
 -- Migration: run once if upgrading
 CREATE TABLE IF NOT EXISTS voice_actions (
