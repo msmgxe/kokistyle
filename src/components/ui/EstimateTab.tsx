@@ -527,8 +527,8 @@ export default function EstimateTab({
   // Edit-installment modal
   const [editDepositIdx,   setEditDepositIdx]   = useState<number | null>(null);
   const [editDepositLabel, setEditDepositLabel] = useState("");
-  const [editDepositMode,  setEditDepositMode]  = useState<"pct" | "amount">("pct");
-  const [editDepositValue, setEditDepositValue] = useState("");
+  const [editDepositPct,   setEditDepositPct]   = useState("");
+  const [editDepositAmt,   setEditDepositAmt]   = useState("");
   const [depMethod,        setDepMethod]        = useState<Payment["method"]>("Transferencia");
   const [depConcept,       setDepConcept]       = useState("");
   const [depSaving,        setDepSaving]        = useState(false);
@@ -904,35 +904,44 @@ export default function EstimateTab({
     if (!estimate) return;
     const dep = estimate.deposit_schedule[idx];
     if (!dep) return;
+    const gt  = totals.grandTotal;
+    const pct = dep.pct;
+    const amt = dep.mode === "amount" && dep.fixed_amount != null
+      ? dep.fixed_amount
+      : Math.round(gt * pct / 100 * 100) / 100;
     setEditDepositIdx(idx);
     setEditDepositLabel(EN ? dep.label_en : dep.label_es);
-    setEditDepositMode(dep.mode ?? "pct");
-    setEditDepositValue(
-      dep.mode === "amount" ? String(dep.fixed_amount ?? 0) : String(dep.pct)
-    );
-  }, [estimate, EN]);
+    setEditDepositPct(String(Math.round(pct * 10) / 10));
+    setEditDepositAmt(String(amt));
+  }, [estimate, EN, totals.grandTotal]);
+
+  const onEditDepositPctChange = useCallback((raw: string) => {
+    setEditDepositPct(raw);
+    const pct = parseFloat(raw) || 0;
+    const gt  = totals.grandTotal;
+    setEditDepositAmt(String(Math.round(gt * pct / 100 * 100) / 100));
+  }, [totals.grandTotal]);
+
+  const onEditDepositAmtChange = useCallback((raw: string) => {
+    setEditDepositAmt(raw);
+    const amt = parseFloat(raw) || 0;
+    const gt  = totals.grandTotal;
+    const pct = gt > 0 ? Math.round(amt / gt * 1000) / 10 : 0;
+    setEditDepositPct(String(pct));
+  }, [totals.grandTotal]);
 
   const saveDepositEdit = useCallback(() => {
     if (editDepositIdx === null || !estimate) return;
-    const raw = parseFloat(editDepositValue) || 0;
-    const gt  = totals.grandTotal;
+    const pct   = Math.max(0, parseFloat(editDepositPct) || 0);
     const label = editDepositLabel.trim() || (EN ? "PAYMENT" : "PAGO");
-    let pct: number, fixed_amount: number | undefined;
-    if (editDepositMode === "amount") {
-      fixed_amount = raw;
-      pct = gt > 0 ? Math.round(raw / gt * 1000) / 10 : 0;
-    } else {
-      pct = Math.max(0, raw);
-      fixed_amount = undefined;
-    }
     setEstimate(prev => prev ? {
       ...prev,
       deposit_schedule: prev.deposit_schedule.map((d, j) => j === editDepositIdx ? {
-        ...d, label_en: label, label_es: label, mode: editDepositMode, pct, fixed_amount,
+        ...d, label_en: label, label_es: label, mode: "pct", pct, fixed_amount: undefined,
       } : d),
     } : prev);
     setEditDepositIdx(null);
-  }, [editDepositIdx, editDepositLabel, editDepositMode, editDepositValue, estimate, totals.grandTotal, EN]);
+  }, [editDepositIdx, editDepositLabel, editDepositPct, estimate, EN]);
 
   const addInstallment = useCallback(() => {
     setEstimate(prev => prev ? {
@@ -1269,9 +1278,6 @@ export default function EstimateTab({
                 const receivedPct = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
                 const paid     = target > 0 && received >= target;
                 const isConfirmDelete = confirmDeleteDepositIdx === i;
-                const displayPct = dep.mode === "amount" && grandTotal > 0
-                  ? Math.round((dep.fixed_amount ?? 0) / grandTotal * 100)
-                  : Math.round(dep.pct);
 
                 return (
                   <div key={i} className="rounded-xl border border-[#E6DDCB] overflow-hidden">
@@ -1280,18 +1286,14 @@ export default function EstimateTab({
                       <button
                         onClick={() => openDepositEdit(i)}
                         title={EN ? "Edit installment" : "Editar cuota"}
-                        className="flex shrink-0 flex-col items-center rounded-lg px-3 py-2 transition hover:opacity-80 active:scale-95"
+                        className="flex shrink-0 flex-col items-center rounded-xl px-4 py-2.5 transition hover:opacity-80 active:scale-95"
                         style={{ background: color }}
                       >
-                        <span className="text-[13px] font-bold leading-tight text-white">
-                          {dep.mode === "amount"
-                            ? money(dep.fixed_amount ?? 0)
-                            : `${Math.round(dep.pct)} %`}
+                        <span className="text-[15px] font-extrabold leading-tight text-white">
+                          {Math.round(dep.pct)}%
                         </span>
-                        <span className="text-[9px] text-white/65 leading-snug">
-                          {dep.mode === "amount"
-                            ? `${displayPct}%`
-                            : money(target)}
+                        <span className="text-[10px] font-semibold text-white/75 leading-snug">
+                          {money(target)}
                         </span>
                       </button>
 
@@ -1729,91 +1731,70 @@ export default function EstimateTab({
 
       {/* ── Edit installment modal ────────────────────────────────────────── */}
       {editDepositIdx !== null && estimate && (() => {
-        const dep = estimate.deposit_schedule[editDepositIdx];
+        const dep   = estimate.deposit_schedule[editDepositIdx];
         const color = DEPOSIT_PALETTE[editDepositIdx % DEPOSIT_PALETTE.length];
-        const gt    = totals.grandTotal;
-        const raw   = parseFloat(editDepositValue) || 0;
-        const computedEquiv = editDepositMode === "amount"
-          ? `${gt > 0 ? Math.round(raw / gt * 100) : 0}%`
-          : money(Math.round(gt * raw / 100 * 100) / 100);
         return (
           <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={() => setEditDepositIdx(null)}>
             <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
               onClick={e => e.stopPropagation()}>
+
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4" style={{ background: color }}>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-                    {EN ? "Edit installment" : "Editar cuota"} #{editDepositIdx + 1}
-                  </p>
-                  <p className="mt-0.5 text-sm font-bold text-white">{dep ? (EN ? dep.label_en : dep.label_es) : ""}</p>
-                </div>
-                <button onClick={() => setEditDepositIdx(null)} className="text-white/60 hover:text-white"><X size={18} /></button>
+              <div className="flex items-center justify-between px-5 py-3" style={{ background: color }}>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-white/70">
+                  {EN ? "Edit installment" : "Editar cuota"} #{editDepositIdx + 1}
+                </p>
+                <button onClick={() => setEditDepositIdx(null)} className="text-white/60 hover:text-white"><X size={16} /></button>
               </div>
 
-              {/* Form */}
-              <div className="space-y-4 p-5">
-                {/* Concept */}
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
-                    {EN ? "Concept" : "Concepto"}
+              {/* Two-box value editor */}
+              <div className="grid grid-cols-2 divide-x divide-[#E6DDCB] border-b border-[#E6DDCB]">
+                {/* % box */}
+                <div className="flex flex-col items-center px-5 py-5" style={{ background: color }}>
+                  <label className="mb-1 text-[10px] font-bold uppercase tracking-widest text-white/60">
+                    {EN ? "Percentage" : "Porcentaje"}
                   </label>
-                  <input
-                    autoFocus
-                    value={editDepositLabel}
-                    onChange={e => setEditDepositLabel(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
-                    className="w-full rounded-xl border border-[#E6DDCB] px-3 py-2 text-sm font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
-                    placeholder={EN ? "e.g. At sign contract" : "Ej. Al firmar contrato"}
-                  />
-                </div>
-
-                {/* Mode + Value */}
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
-                    {EN ? "Amount type & value" : "Tipo de monto y valor"}
-                  </label>
-                  <div className="flex gap-2">
-                    {/* Mode toggle */}
-                    <div className="flex overflow-hidden rounded-xl border border-[#E6DDCB]">
-                      <button
-                        onClick={() => setEditDepositMode("pct")}
-                        className={`px-4 py-2 text-sm font-bold transition ${editDepositMode === "pct" ? "text-white" : "text-[#628ECB] hover:bg-[#F0F3FA]"}`}
-                        style={editDepositMode === "pct" ? { background: color } : {}}
-                      >%</button>
-                      <button
-                        onClick={() => setEditDepositMode("amount")}
-                        className={`px-4 py-2 text-sm font-bold transition ${editDepositMode === "amount" ? "text-white" : "text-[#628ECB] hover:bg-[#F0F3FA]"}`}
-                        style={editDepositMode === "amount" ? { background: color } : {}}
-                      >$</button>
-                    </div>
-                    {/* Value input */}
-                    <div className="relative flex-1">
-                      {editDepositMode === "amount" && (
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#97A1A0]">$</span>
-                      )}
-                      <input
-                        type="number" min={0}
-                        value={editDepositValue}
-                        onChange={e => setEditDepositValue(e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); }}
-                        className={`w-full rounded-xl border border-[#E6DDCB] py-2 text-sm font-bold text-[#16323D] focus:border-[#395886] focus:outline-none ${editDepositMode === "amount" ? "pl-7 pr-3" : "pl-3 pr-3 text-right"}`}
-                      />
-                      {editDepositMode === "pct" && (
-                        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#97A1A0]">%</span>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number" min={0} max={9999}
+                      value={editDepositPct}
+                      onChange={e => onEditDepositPctChange(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
+                      className="w-16 appearance-none bg-transparent text-center text-[28px] font-extrabold text-white focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <span className="text-[20px] font-bold text-white/70">%</span>
                   </div>
-                  {/* Computed equivalent */}
-                  {gt > 0 && (
-                    <p className="mt-1.5 text-[11px] text-[#5C6A6E]">
-                      {editDepositMode === "amount"
-                        ? (EN ? `Represents ${computedEquiv} of the grand total (${money(gt)})` : `Representa ${computedEquiv} del total (${money(gt)})`)
-                        : (EN ? `Equivalent to ${computedEquiv}` : `Equivale a ${computedEquiv}`)}
-                    </p>
-                  )}
                 </div>
+                {/* $ box */}
+                <div className="flex flex-col items-center px-5 py-5 bg-[#F7F3EA]">
+                  <label className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#97A1A0]">
+                    {EN ? "Amount" : "Monto"}
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[20px] font-bold text-[#97A1A0]">$</span>
+                    <input
+                      type="number" min={0}
+                      value={editDepositAmt}
+                      onChange={e => onEditDepositAmtChange(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); }}
+                      className="w-24 appearance-none bg-transparent text-center text-[22px] font-extrabold text-[#16323D] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Concept */}
+              <div className="px-5 py-4">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                  {EN ? "Concept" : "Concepto"}
+                </label>
+                <input
+                  value={editDepositLabel}
+                  onChange={e => setEditDepositLabel(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
+                  className="w-full rounded-xl border border-[#E6DDCB] px-3 py-2.5 text-sm font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
+                  placeholder={EN ? "e.g. At sign contract" : "Ej. Al firmar contrato"}
+                />
               </div>
 
               {/* Footer */}
