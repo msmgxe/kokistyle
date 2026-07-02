@@ -477,6 +477,7 @@ export default function EstimateTab({
   const [waCode,         setWaCode]         = useState("+1");
   const [waPhone,        setWaPhone]        = useState("");
   const [waLoading,      setWaLoading]      = useState(false);
+  const [confirmDeleteSection, setConfirmDeleteSection] = useState<{ id: string; name: string } | null>(null);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -1027,7 +1028,10 @@ export default function EstimateTab({
                     return n;
                   })}
                   onUpdateField={updateSectionField}
-                  onDelete={deleteSection}
+                  onDelete={(id) => {
+                    const sec = estimate.sections.find(s => s.id === id);
+                    setConfirmDeleteSection({ id, name: EN ? (sec?.name_en ?? "") : (sec?.name_es ?? "") });
+                  }}
                   onUpdateItem={updateItemLocal}
                   onSaveItem={saveItemField}
                   onDeleteItem={deleteItem}
@@ -1230,6 +1234,52 @@ export default function EstimateTab({
                   {EN ? "+ Custom section" : "+ Sección personalizada"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm delete section ────────────────────────────────────────── */}
+      {confirmDeleteSection && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => setConfirmDeleteSection(null)}
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 border-b border-[#E6DDCB] px-5 py-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDF0ED] text-lg">
+                🗑
+              </div>
+              <h3 className="font-bold text-[#16323D]">
+                {EN ? "Delete section?" : "¿Eliminar sección?"}
+              </h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-[#5C6A6E]">
+                {EN
+                  ? <>The section <strong className="text-[#16323D]">{confirmDeleteSection.name}</strong> and all its items will be permanently deleted. This cannot be undone.</>
+                  : <>La sección <strong className="text-[#16323D]">{confirmDeleteSection.name}</strong> y todos sus ítems serán eliminados permanentemente. Esta acción no se puede deshacer.</>}
+              </p>
+            </div>
+            <div className="flex gap-2 border-t border-[#E6DDCB] px-5 py-4">
+              <button
+                onClick={() => setConfirmDeleteSection(null)}
+                className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-semibold text-[#5C6A6E] transition hover:bg-[#F7F3EA]"
+              >
+                {EN ? "Cancel" : "Cancelar"}
+              </button>
+              <button
+                onClick={() => {
+                  deleteSection(confirmDeleteSection.id);
+                  setConfirmDeleteSection(null);
+                }}
+                className="flex-1 rounded-xl bg-[#B0492F] py-2.5 text-sm font-bold text-white transition hover:bg-[#963d27]"
+              >
+                {EN ? "Delete" : "Eliminar"}
+              </button>
             </div>
           </div>
         </div>
