@@ -520,12 +520,15 @@ export default function EstimateTab({
 
   // ── Deposit payment detail modal ──────────────────────────────────────────
   const [projectPayments,  setProjectPayments]  = useState<Payment[]>([]);
-  const [depositModal,          setDepositModal]          = useState<number | null>(null);
-  const [depAmt,                setDepAmt]                = useState("");
-  const [depDate,               setDepDate]               = useState(new Date().toISOString().split("T")[0]);
-  const [editingDepositLabelIdx, setEditingDepositLabelIdx] = useState<number | null>(null);
-  const [localDepositLabel,     setLocalDepositLabel]     = useState("");
+  const [depositModal,            setDepositModal]            = useState<number | null>(null);
+  const [depAmt,                  setDepAmt]                  = useState("");
+  const [depDate,                 setDepDate]                 = useState(new Date().toISOString().split("T")[0]);
   const [confirmDeleteDepositIdx, setConfirmDeleteDepositIdx] = useState<number | null>(null);
+  // Edit-installment modal
+  const [editDepositIdx,   setEditDepositIdx]   = useState<number | null>(null);
+  const [editDepositLabel, setEditDepositLabel] = useState("");
+  const [editDepositMode,  setEditDepositMode]  = useState<"pct" | "amount">("pct");
+  const [editDepositValue, setEditDepositValue] = useState("");
   const [depMethod,        setDepMethod]        = useState<Payment["method"]>("Transferencia");
   const [depConcept,       setDepConcept]       = useState("");
   const [depSaving,        setDepSaving]        = useState(false);
@@ -897,47 +900,39 @@ export default function EstimateTab({
       : Math.round(gt * dep.pct / 100 * 100) / 100,
   []);
 
-  const updateDepositValue = useCallback((idx: number, raw: string) => {
-    setEstimate(prev => {
-      if (!prev) return prev;
-      const dep = prev.deposit_schedule[idx];
-      if (!dep) return prev;
-      if (dep.mode === "amount") {
-        const fa = parseFloat(raw) || 0;
-        const gt = computeGrandTotal(prev.sections, prev.discount_pct ?? 0);
-        const pct = gt > 0 ? Math.round(fa / gt * 1000) / 10 : 0;
-        return { ...prev, deposit_schedule: prev.deposit_schedule.map((d, j) => j === idx ? { ...d, fixed_amount: fa, pct } : d) };
-      } else {
-        const pct = Math.max(0, Math.min(9999, parseFloat(raw) || 0));
-        return { ...prev, deposit_schedule: prev.deposit_schedule.map((d, j) => j === idx ? { ...d, pct } : d) };
-      }
-    });
-  }, []);
+  const openDepositEdit = useCallback((idx: number) => {
+    if (!estimate) return;
+    const dep = estimate.deposit_schedule[idx];
+    if (!dep) return;
+    setEditDepositIdx(idx);
+    setEditDepositLabel(EN ? dep.label_en : dep.label_es);
+    setEditDepositMode(dep.mode ?? "pct");
+    setEditDepositValue(
+      dep.mode === "amount" ? String(dep.fixed_amount ?? 0) : String(dep.pct)
+    );
+  }, [estimate, EN]);
 
-  const toggleDepositMode = useCallback((idx: number) => {
-    setEstimate(prev => {
-      if (!prev) return prev;
-      const dep = prev.deposit_schedule[idx];
-      if (!dep) return prev;
-      const gt = computeGrandTotal(prev.sections, prev.discount_pct ?? 0);
-      if (dep.mode === "amount") {
-        const pct = gt > 0 ? Math.round((dep.fixed_amount ?? 0) / gt * 1000) / 10 : dep.pct;
-        return { ...prev, deposit_schedule: prev.deposit_schedule.map((d, j) => j === idx ? { ...d, mode: "pct", pct } : d) };
-      } else {
-        const fixed_amount = Math.round(gt * dep.pct / 100 * 100) / 100;
-        return { ...prev, deposit_schedule: prev.deposit_schedule.map((d, j) => j === idx ? { ...d, mode: "amount", fixed_amount } : d) };
-      }
-    });
-  }, []);
-
-  const saveDepositLabel = useCallback((idx: number) => {
-    const clean = localDepositLabel.trim() || (EN ? "PAYMENT" : "PAGO");
+  const saveDepositEdit = useCallback(() => {
+    if (editDepositIdx === null || !estimate) return;
+    const raw = parseFloat(editDepositValue) || 0;
+    const gt  = totals.grandTotal;
+    const label = editDepositLabel.trim() || (EN ? "PAYMENT" : "PAGO");
+    let pct: number, fixed_amount: number | undefined;
+    if (editDepositMode === "amount") {
+      fixed_amount = raw;
+      pct = gt > 0 ? Math.round(raw / gt * 1000) / 10 : 0;
+    } else {
+      pct = Math.max(0, raw);
+      fixed_amount = undefined;
+    }
     setEstimate(prev => prev ? {
       ...prev,
-      deposit_schedule: prev.deposit_schedule.map((d, j) => j === idx ? { ...d, label_en: clean, label_es: clean } : d),
+      deposit_schedule: prev.deposit_schedule.map((d, j) => j === editDepositIdx ? {
+        ...d, label_en: label, label_es: label, mode: editDepositMode, pct, fixed_amount,
+      } : d),
     } : prev);
-    setEditingDepositLabelIdx(null);
-  }, [localDepositLabel, EN]);
+    setEditDepositIdx(null);
+  }, [editDepositIdx, editDepositLabel, editDepositMode, editDepositValue, estimate, totals.grandTotal, EN]);
 
   const addInstallment = useCallback(() => {
     setEstimate(prev => prev ? {
@@ -1273,7 +1268,6 @@ export default function EstimateTab({
                 const received = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
                 const receivedPct = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
                 const paid     = target > 0 && received >= target;
-                const isEditingLabel = editingDepositLabelIdx === i;
                 const isConfirmDelete = confirmDeleteDepositIdx === i;
                 const displayPct = dep.mode === "amount" && grandTotal > 0
                   ? Math.round((dep.fixed_amount ?? 0) / grandTotal * 100)
@@ -1282,57 +1276,37 @@ export default function EstimateTab({
                 return (
                   <div key={i} className="rounded-xl border border-[#E6DDCB] overflow-hidden">
                     <div className="flex items-center gap-3 px-3 py-2">
-                      {/* Value badge — click $ or % symbol to toggle mode */}
-                      <div className="flex shrink-0 flex-col items-center rounded-lg pt-1.5 pb-1 px-0" style={{ background: color }}>
-                        <div className="flex items-center">
-                          {dep.mode === "amount" && (
-                            <button onClick={() => toggleDepositMode(i)}
-                              title={EN ? "Switch to %" : "Cambiar a %"}
-                              className="select-none pl-2.5 pr-0.5 text-[12px] font-bold text-white/80 hover:text-white transition">$</button>
-                          )}
-                          <input
-                            type="number" min={0}
-                            value={dep.mode === "amount" ? (dep.fixed_amount ?? 0) : dep.pct}
-                            onChange={e => updateDepositValue(i, e.target.value)}
-                            className="w-14 appearance-none bg-transparent text-center text-[12px] font-bold text-white focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                          />
-                          {dep.mode !== "amount" && (
-                            <button onClick={() => toggleDepositMode(i)}
-                              title={EN ? "Switch to $" : "Cambiar a $"}
-                              className="select-none pr-2.5 pl-0.5 text-[12px] font-bold text-white/80 hover:text-white transition">%</button>
-                          )}
-                        </div>
-                        {/* Computed equivalent hint */}
-                        <span className="pb-1 text-[9px] text-white/60 leading-tight">
+                      {/* Value badge — click to open edit modal */}
+                      <button
+                        onClick={() => openDepositEdit(i)}
+                        title={EN ? "Edit installment" : "Editar cuota"}
+                        className="flex shrink-0 flex-col items-center rounded-lg px-3 py-2 transition hover:opacity-80 active:scale-95"
+                        style={{ background: color }}
+                      >
+                        <span className="text-[13px] font-bold leading-tight text-white">
+                          {dep.mode === "amount"
+                            ? money(dep.fixed_amount ?? 0)
+                            : `${Math.round(dep.pct)} %`}
+                        </span>
+                        <span className="text-[9px] text-white/65 leading-snug">
                           {dep.mode === "amount"
                             ? `${displayPct}%`
                             : money(target)}
                         </span>
-                      </div>
+                      </button>
 
-                      {/* Editable label + received / target */}
-                      <div className="flex-1 min-w-0 pl-1">
-                        {isEditingLabel ? (
-                          <input
-                            autoFocus
-                            value={localDepositLabel}
-                            onChange={e => setLocalDepositLabel(e.target.value)}
-                            onBlur={() => saveDepositLabel(i)}
-                            onKeyDown={e => { if (e.key === "Enter") saveDepositLabel(i); if (e.key === "Escape") setEditingDepositLabelIdx(null); }}
-                            className="mb-0.5 w-full rounded border border-[#395886] bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[#16323D] focus:outline-none"
-                          />
-                        ) : (
-                          <button
-                            className="group mb-0.5 flex items-center gap-1 text-left"
-                            onClick={() => { setLocalDepositLabel(EN ? dep.label_en : dep.label_es); setEditingDepositLabelIdx(i); }}
-                            title={EN ? "Click to edit" : "Clic para editar"}
-                          >
-                            <span className="text-[10px] font-semibold uppercase text-[#5C6A6E] group-hover:text-[#395886] truncate max-w-[140px]">
-                              {EN ? dep.label_en : dep.label_es}
-                            </span>
-                            <Pencil size={8} className="shrink-0 text-[#C4B89A] group-hover:text-[#395886]" />
-                          </button>
-                        )}
+                      {/* Label + received / target */}
+                      <div className="flex-1 min-w-0">
+                        <button
+                          className="group mb-0.5 flex items-center gap-1 text-left"
+                          onClick={() => openDepositEdit(i)}
+                          title={EN ? "Click to edit" : "Clic para editar"}
+                        >
+                          <span className="text-[10px] font-semibold uppercase text-[#5C6A6E] group-hover:text-[#395886] truncate max-w-[150px]">
+                            {EN ? dep.label_en : dep.label_es}
+                          </span>
+                          <Pencil size={8} className="shrink-0 text-[#C4B89A] group-hover:text-[#395886]" />
+                        </button>
                         <div className="flex items-center gap-1.5">
                           <span className={`font-mono text-[11px] font-semibold ${paid ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
                             {money(received)}
@@ -1487,24 +1461,7 @@ export default function EstimateTab({
                       ? ` (${Math.round((dep.fixed_amount ?? 0) / (totals.grandTotal || 1) * 100)}%)`
                       : ` (${Math.round(dep.pct)}%)`}
                   </p>
-                  {editingDepositLabelIdx === idx ? (
-                    <input
-                      autoFocus
-                      value={localDepositLabel}
-                      onChange={e => setLocalDepositLabel(e.target.value)}
-                      onBlur={() => saveDepositLabel(idx)}
-                      onKeyDown={e => { if (e.key === "Enter") saveDepositLabel(idx); if (e.key === "Escape") setEditingDepositLabelIdx(null); }}
-                      className="mt-0.5 w-full rounded border border-white/30 bg-white/10 px-2 py-0.5 text-base font-bold text-white focus:outline-none"
-                    />
-                  ) : (
-                    <button
-                      onClick={() => { setLocalDepositLabel(label); setEditingDepositLabelIdx(idx); }}
-                      className="group mt-0.5 flex items-center gap-1.5 text-left"
-                    >
-                      <h3 className="text-base font-bold text-white group-hover:opacity-80">{label}</h3>
-                      <Pencil size={11} className="text-white/40 group-hover:text-white/70" />
-                    </button>
-                  )}
+                  <h3 className="mt-0.5 text-base font-bold text-white">{label}</h3>
                 </div>
                 <button onClick={() => { setDepositModal(null); setConfirmDeletePayId(null); setEditingPayId(null); }} className="shrink-0 text-white/60 hover:text-white">
                   <X size={18} />
@@ -1769,6 +1726,112 @@ export default function EstimateTab({
           </div>
         </div>
       )}
+
+      {/* ── Edit installment modal ────────────────────────────────────────── */}
+      {editDepositIdx !== null && estimate && (() => {
+        const dep = estimate.deposit_schedule[editDepositIdx];
+        const color = DEPOSIT_PALETTE[editDepositIdx % DEPOSIT_PALETTE.length];
+        const gt    = totals.grandTotal;
+        const raw   = parseFloat(editDepositValue) || 0;
+        const computedEquiv = editDepositMode === "amount"
+          ? `${gt > 0 ? Math.round(raw / gt * 100) : 0}%`
+          : money(Math.round(gt * raw / 100 * 100) / 100);
+        return (
+          <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={() => setEditDepositIdx(null)}>
+            <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4" style={{ background: color }}>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+                    {EN ? "Edit installment" : "Editar cuota"} #{editDepositIdx + 1}
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-white">{dep ? (EN ? dep.label_en : dep.label_es) : ""}</p>
+                </div>
+                <button onClick={() => setEditDepositIdx(null)} className="text-white/60 hover:text-white"><X size={18} /></button>
+              </div>
+
+              {/* Form */}
+              <div className="space-y-4 p-5">
+                {/* Concept */}
+                <div>
+                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                    {EN ? "Concept" : "Concepto"}
+                  </label>
+                  <input
+                    autoFocus
+                    value={editDepositLabel}
+                    onChange={e => setEditDepositLabel(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
+                    className="w-full rounded-xl border border-[#E6DDCB] px-3 py-2 text-sm font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
+                    placeholder={EN ? "e.g. At sign contract" : "Ej. Al firmar contrato"}
+                  />
+                </div>
+
+                {/* Mode + Value */}
+                <div>
+                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                    {EN ? "Amount type & value" : "Tipo de monto y valor"}
+                  </label>
+                  <div className="flex gap-2">
+                    {/* Mode toggle */}
+                    <div className="flex overflow-hidden rounded-xl border border-[#E6DDCB]">
+                      <button
+                        onClick={() => setEditDepositMode("pct")}
+                        className={`px-4 py-2 text-sm font-bold transition ${editDepositMode === "pct" ? "text-white" : "text-[#628ECB] hover:bg-[#F0F3FA]"}`}
+                        style={editDepositMode === "pct" ? { background: color } : {}}
+                      >%</button>
+                      <button
+                        onClick={() => setEditDepositMode("amount")}
+                        className={`px-4 py-2 text-sm font-bold transition ${editDepositMode === "amount" ? "text-white" : "text-[#628ECB] hover:bg-[#F0F3FA]"}`}
+                        style={editDepositMode === "amount" ? { background: color } : {}}
+                      >$</button>
+                    </div>
+                    {/* Value input */}
+                    <div className="relative flex-1">
+                      {editDepositMode === "amount" && (
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#97A1A0]">$</span>
+                      )}
+                      <input
+                        type="number" min={0}
+                        value={editDepositValue}
+                        onChange={e => setEditDepositValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); }}
+                        className={`w-full rounded-xl border border-[#E6DDCB] py-2 text-sm font-bold text-[#16323D] focus:border-[#395886] focus:outline-none ${editDepositMode === "amount" ? "pl-7 pr-3" : "pl-3 pr-3 text-right"}`}
+                      />
+                      {editDepositMode === "pct" && (
+                        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#97A1A0]">%</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Computed equivalent */}
+                  {gt > 0 && (
+                    <p className="mt-1.5 text-[11px] text-[#5C6A6E]">
+                      {editDepositMode === "amount"
+                        ? (EN ? `Represents ${computedEquiv} of the grand total (${money(gt)})` : `Representa ${computedEquiv} del total (${money(gt)})`)
+                        : (EN ? `Equivalent to ${computedEquiv}` : `Equivale a ${computedEquiv}`)}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-2 border-t border-[#E6DDCB] px-5 py-4">
+                <button onClick={() => setEditDepositIdx(null)}
+                  className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#F7F3EA]">
+                  {EN ? "Cancel" : "Cancelar"}
+                </button>
+                <button onClick={saveDepositEdit}
+                  className="flex-1 rounded-xl py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                  style={{ background: color }}>
+                  {EN ? "Save" : "Guardar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── PDF mode modal ─────────────────────────────────────────────────── */}
       {showPdfModal && (
