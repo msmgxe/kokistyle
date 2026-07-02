@@ -322,3 +322,6 @@ CREATE TABLE IF NOT EXISTS bookings (
 );
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON bookings FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- ── Payment installment index (for N-installment deposit schedule) ────────────
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_idx INTEGER;

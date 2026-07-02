@@ -77,6 +77,7 @@ export interface Payment {
   method: "Efectivo" | "Transferencia" | "Zelle" | "Cheque" | "Tarjeta";
   type: "abono" | "anticipo" | "final";
   concept?: string;
+  installment_idx?: number | null;
   created_at?: string;
 }
 
@@ -114,8 +115,10 @@ export interface DepositEntry {
   pct: number;
   label_en: string;
   label_es: string;
-  received?: boolean;    // checkbox: payment confirmed received
-  payment_id?: string;   // id of the payments row created on confirmation
+  received?: boolean;
+  payment_id?: string;
+  mode?: "pct" | "amount";   // "pct" = enter % → $ computed; "amount" = enter $ → % computed
+  fixed_amount?: number;     // used when mode === "amount"
 }
 
 export interface EstimateSectionCatalog {
