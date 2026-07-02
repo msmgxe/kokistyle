@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Send,
+  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Send, Save,
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
@@ -1238,6 +1238,21 @@ export default function EstimateTab({
           </div>
         </div>
       )}
+
+      {/* ── Floating Save FAB ─────────────────────────────────────────────── */}
+      <button
+        onClick={saveHeader}
+        disabled={saving}
+        title={EN ? "Save estimate" : "Guardar estimado"}
+        className="fixed bottom-[5.5rem] right-6 z-[200] flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full bg-[#7B1838] text-white shadow-[0_4px_20px_rgba(123,24,56,0.45)] transition hover:bg-[#6a1530] hover:shadow-[0_6px_24px_rgba(123,24,56,0.55)] disabled:opacity-60 active:scale-95"
+      >
+        {saving
+          ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          : <Save size={19} strokeWidth={2.2} />}
+        <span className="text-[9px] font-bold tracking-wide">
+          {saving ? "…" : (EN ? "SAVE" : "GUARDAR")}
+        </span>
+      </button>
 
       {/* ── Confirm delete section ────────────────────────────────────────── */}
       {confirmDeleteSection && (
