@@ -941,20 +941,35 @@ export default function EstimateTab({
     if (editDepositIdx === null || !estimate) return;
     const pct   = Math.max(0, parseFloat(editDepositPct) || 0);
     const label = editDepositLabel.trim() || (EN ? "PAYMENT" : "PAGO");
-    setEstimate(prev => prev ? {
-      ...prev,
-      deposit_schedule: prev.deposit_schedule.map((d, j) => j === editDepositIdx ? {
-        ...d, label_en: label, label_es: label, mode: "pct", pct, fixed_amount: undefined,
-      } : d),
-    } : prev);
+
+    const updated = estimate.deposit_schedule.map((d, j) =>
+      j === editDepositIdx ? { ...d, label_en: label, label_es: label, mode: "pct" as const, pct, fixed_amount: undefined } : d
+    );
+
+    // Auto-balance: if edited deposit is not the last, adjust last so total = 100%
+    const lastIdx = updated.length - 1;
+    if (editDepositIdx !== lastIdx && lastIdx > 0) {
+      const sumWithoutLast = updated.slice(0, lastIdx).reduce((s, d) => s + d.pct, 0);
+      updated[lastIdx] = { ...updated[lastIdx], pct: Math.max(0, Math.round((100 - sumWithoutLast) * 100) / 100) };
+    }
+
+    setEstimate(prev => prev ? { ...prev, deposit_schedule: updated } : prev);
     setEditDepositIdx(null);
   }, [editDepositIdx, editDepositLabel, editDepositPct, estimate, EN]);
 
   const addInstallment = useCallback(() => {
-    setEstimate(prev => prev ? {
-      ...prev,
-      deposit_schedule: [...prev.deposit_schedule, { pct: 0, label_en: EN ? "NEW PAYMENT" : "NUEVO PAGO", label_es: EN ? "NEW PAYMENT" : "NUEVO PAGO", mode: "pct" as const }],
-    } : prev);
+    setEstimate(prev => {
+      if (!prev) return prev;
+      const currentSum = prev.deposit_schedule.reduce((s, d) => s + d.pct, 0);
+      const suggested  = Math.max(0, Math.round((100 - currentSum) * 100) / 100);
+      return {
+        ...prev,
+        deposit_schedule: [...prev.deposit_schedule, {
+          pct: suggested, label_en: EN ? "NEW PAYMENT" : "NUEVO PAGO",
+          label_es: EN ? "NEW PAYMENT" : "NUEVO PAGO", mode: "pct" as const,
+        }],
+      };
+    });
   }, [EN]);
 
   const removeInstallment = useCallback((idx: number) => {
@@ -1378,18 +1393,26 @@ export default function EstimateTab({
 
           {/* Right: payment schedule */}
           <div>
-            {/* Header: label + total received */}
+            {/* Header: label + total received + % sum indicator */}
             {(() => {
-              const deps = estimate.deposit_schedule ?? defaultDeposits();
+              const deps    = estimate.deposit_schedule ?? defaultDeposits();
               const totalRec = deps.reduce((sum, _, i) => sum + depositsForIdx(i).reduce((s, p) => s + p.amount, 0), 0);
+              const pctSum  = deps.reduce((s, d) => s + d.pct, 0);
+              const pctOk   = Math.abs(pctSum - 100) < 0.1;
               return (
-                <div className="mb-2.5 flex items-center justify-between">
+                <div className="mb-2.5 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
                     {EN ? "Payment Schedule" : "Calendario de Pagos"}
                   </span>
-                  <span className="text-[9.5px] font-bold uppercase tracking-wide text-[#9E9484]">
-                    {money(totalRec)} / {money(grandTotal)} {EN ? "received" : "recibido"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* % sum badge */}
+                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${pctOk ? "bg-[#DCEBDD] text-[#4F8A63]" : "bg-[#FDE8E3] text-[#B0492F]"}`}>
+                      {Math.round(pctSum * 10) / 10}% {pctOk ? "✓" : `— ${EN ? "must be 100%" : "debe ser 100%"}`}
+                    </span>
+                    <span className="text-[9.5px] font-bold uppercase tracking-wide text-[#9E9484]">
+                      {money(totalRec)} / {money(grandTotal)} {EN ? "received" : "recibido"}
+                    </span>
+                  </div>
                 </div>
               );
             })()}
@@ -1397,12 +1420,23 @@ export default function EstimateTab({
             {/* Deposit items — timeline layout */}
             <div className="flex flex-col">
               {(estimate.deposit_schedule ?? defaultDeposits()).map((dep, i, arr) => {
-                const color       = DEPOSIT_PALETTE[i % DEPOSIT_PALETTE.length];
-                const target      = depositTarget(dep, grandTotal);
+                const color    = DEPOSIT_PALETTE[i % DEPOSIT_PALETTE.length];
+                const isLast   = i === arr.length - 1;
+                // Last deposit gets exact amount = grandTotal - sum(others) to avoid rounding drift
+                const target = (() => {
+                  if (dep.mode === "amount" && dep.fixed_amount) return dep.fixed_amount;
+                  if (isLast && arr.length > 1) {
+                    const sumOthers = arr.slice(0, -1).reduce((s, d) => {
+                      if (d.mode === "amount" && d.fixed_amount) return s + d.fixed_amount;
+                      return s + Math.round(grandTotal * d.pct / 100 * 100) / 100;
+                    }, 0);
+                    return Math.max(0, Math.round((grandTotal - sumOthers) * 100) / 100);
+                  }
+                  return Math.round(grandTotal * dep.pct / 100 * 100) / 100;
+                })();
                 const received    = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
                 const receivedPct = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
                 const paid        = target > 0 && received >= target;
-                const isLast      = i === arr.length - 1;
                 const isConfirmDelete = confirmDeleteDepositIdx === i;
                 const depNum      = String(i + 1).padStart(2, "0");
 
@@ -1904,8 +1938,13 @@ export default function EstimateTab({
 
       {/* ── Edit installment modal ────────────────────────────────────────── */}
       {editDepositIdx !== null && estimate && (() => {
-        const dep   = estimate.deposit_schedule[editDepositIdx];
-        const color = DEPOSIT_PALETTE[editDepositIdx % DEPOSIT_PALETTE.length];
+        const dep         = estimate.deposit_schedule[editDepositIdx];
+        const color       = DEPOSIT_PALETTE[editDepositIdx % DEPOSIT_PALETTE.length];
+        const sumOthers   = estimate.deposit_schedule.filter((_, j) => j !== editDepositIdx).reduce((s, d) => s + d.pct, 0);
+        const remainPct   = Math.max(0, Math.round((100 - sumOthers) * 10) / 10);
+        const remainAmt   = Math.round(totals.grandTotal * remainPct / 100 * 100) / 100;
+        const currentPct  = parseFloat(editDepositPct) || 0;
+        const isLast      = editDepositIdx === estimate.deposit_schedule.length - 1;
         return (
           <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={() => setEditDepositIdx(null)}>
@@ -1954,6 +1993,17 @@ export default function EstimateTab({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Remaining hint */}
+              <div className={`flex items-center justify-between px-5 py-2.5 text-[10px] font-bold ${Math.abs(currentPct - remainPct) < 0.1 ? "bg-[#DCEBDD]" : currentPct > remainPct ? "bg-[#FDE8E3]" : "bg-[#F7F3EA]"}`}>
+                <span className="text-[#5C6A6E]">
+                  {EN ? "Available for this deposit:" : "Disponible para esta cuota:"}
+                </span>
+                <span className={currentPct > remainPct ? "text-[#B0492F]" : "text-[#4F8A63]"}>
+                  {remainPct}% · {money(remainAmt)}
+                  {isLast && <span className="ml-1.5 opacity-60">{EN ? "(auto-balanced)" : "(auto-balanceado)"}</span>}
+                </span>
               </div>
 
               {/* Concept */}
