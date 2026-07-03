@@ -1098,44 +1098,33 @@ export default function EstimateTab({
     try {
       const { grandTotal, laborTotal, discountAmt } = totals;
       const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title, mode);
-      const safeName = (estimate.project_title || "project").replace(/\s+/g, "_");
+      const safeName = (estimate.project_title || project.title).replace(/\s+/g, "_");
       const filename = `Estimate_${safeName}.pdf`;
       const cleanPhone = cleanWaPhone(waPhone);
 
-      // Try native file share (mobile iOS/Android) — canShare can itself throw on desktop
-      let shared = false;
-      try {
-        const file = new File([blob], filename, { type: "application/pdf" });
-        if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: filename });
-          shared = true;
-        }
-      } catch {
-        // canShare or share not supported — fall through to desktop flow
-      }
+      // 1. Download the PDF
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
 
-      if (!shared) {
-        // Desktop: open WhatsApp Web first, then trigger PDF download
-        window.open(`https://wa.me/${cleanPhone}`, "_blank");
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        toast(EN
-          ? "PDF downloaded — attach it in WhatsApp Web"
-          : "PDF descargado — adjúntalo en WhatsApp Web");
-      }
+      // 2. Open WhatsApp with the number (app on mobile, Web on desktop)
+      setTimeout(() => window.open(`https://wa.me/${cleanPhone}`, "_blank"), 400);
+
+      toast(EN
+        ? "PDF saved — attach it in the WhatsApp chat that just opened"
+        : "PDF guardado — adjúntalo en el chat de WhatsApp que se acaba de abrir");
     } catch (err) {
       console.error("[EstimateTab] WhatsApp error:", err);
-      toast(EN ? "Error generating PDF — check console" : "Error al generar PDF — revisa la consola");
+      toast(EN ? "Error generating PDF" : "Error al generar PDF");
     } finally {
       setWaLoading(false);
     }
-  }, [estimate, totals, language, waPhone, EN, toast]);
+  }, [estimate, totals, language, waPhone, EN, toast, project.title]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return (
