@@ -1384,7 +1384,7 @@ export default function EstimateTab({
             <button
               onClick={() => setShowPdfModal(true)}
               title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-bold text-white/80 transition hover:bg-white/18 hover:text-white"
+              className="inline-flex items-center gap-1 rounded-lg bg-[#7B1838] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#6a1530]"
             >
               <FileText size={12} />
               <span className="hidden sm:inline">PDF</span>
@@ -2323,6 +2323,29 @@ export default function EstimateTab({
           </div>
         </div>
       )}
+
+      {/* ── Save FAB — context-aware per sub-tab ──────────────────────────── */}
+      <button
+        onClick={saveHeader}
+        disabled={saving}
+        title={EN ? "Save estimate" : "Guardar estimado"}
+        className={`fixed bottom-[5.5rem] right-6 z-[200] flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.30)] transition hover:shadow-[0_6px_24px_rgba(0,0,0,0.40)] disabled:opacity-60 active:scale-95 ${
+          estimateSubTab === "sections"
+            ? "bg-[#7B1838] text-white hover:bg-[#6a1530]"
+            : "bg-[#F0A090] text-[#7B1838] hover:bg-[#FFB8A8]"
+        }`}
+      >
+        {saving
+          ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          : <Save size={19} strokeWidth={2.2} />}
+        <span className="text-[8px] font-black tracking-wide">
+          {saving
+            ? "…"
+            : estimateSubTab === "sections"
+              ? (EN ? "SAVE" : "GUARDAR")
+              : (EN ? "SCHED" : "PAGAR")}
+        </span>
+      </button>
     </>
   );
 }
