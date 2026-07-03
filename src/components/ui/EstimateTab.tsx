@@ -1320,9 +1320,18 @@ export default function EstimateTab({
 
       {/* ── Totals card ───────────────────────────────────────────────────── */}
       <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
-        <div className="border-b border-[#E6DDCB] bg-[#F7F3EA] px-4 py-3">
-          <div className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
-            {EN ? "Totals" : "Totales"}
+        {/* Dark header bar */}
+        <div className="flex items-center justify-between bg-[#16323D] px-5 py-3">
+          <span className="text-[13px] font-black uppercase tracking-wider text-white">
+            {estimate.project_title || project.title}
+          </span>
+          <div className="text-right">
+            <div className="text-[9px] font-bold uppercase tracking-[.14em] text-white/50">
+              {EN ? "Grand Total" : "Total Final"}
+            </div>
+            <div className="font-mono text-[18px] font-black text-white">
+              {money(grandTotal)}
+            </div>
           </div>
         </div>
         <div className="grid gap-4 p-4 sm:grid-cols-2">
@@ -1345,10 +1354,15 @@ export default function EstimateTab({
                 />
                 <span className="text-[11px] text-[#5C6A6E]">(−</span>
                 <input
-                  type="number"
-                  value={estimate.discount_pct}
-                  onChange={e => setEstimate(p => p ? ({ ...p, discount_pct: parseFloat(e.target.value) || 0 }) : p)}
-                  className="w-12 rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-[11px] text-[#5C6A6E] hover:border-[#E6DDCB] focus:border-[#395886] focus:outline-none"
+                  type="text"
+                  inputMode="decimal"
+                  value={estimate.discount_pct === 0 ? "" : String(estimate.discount_pct)}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9.]/g, "");
+                    setEstimate(p => p ? ({ ...p, discount_pct: parseFloat(raw) || 0 }) : p);
+                  }}
+                  placeholder="0"
+                  className="w-12 rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-[11px] text-[#5C6A6E] placeholder:text-[#C4B89A] hover:border-[#E6DDCB] focus:border-[#395886] focus:outline-none"
                 />
                 <span className="text-[11px] text-[#5C6A6E]">%)</span>
               </div>
