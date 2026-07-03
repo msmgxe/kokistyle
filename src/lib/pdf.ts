@@ -400,7 +400,7 @@ function buildEstimatePdf(
     const secTotal = itemsSum > 0 ? itemsSum : section.section_total;
     const name     = (EN ? section.name_en : section.name_es) || section.name_en || section.name_es || "";
     const isMat    = section.is_material_type;
-    const secHdrH  = section.note ? 7.5 : 6;
+    const secHdrH  = section.note ? 9 : 7;
 
     checkPage(secHdrH + 4);
 
@@ -419,37 +419,37 @@ function buildEstimatePdf(
     }
     doc.rect(ML, y, 3, secHdrH, "F");
 
-    // Section name
+    // Section name — 12pt
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
+    doc.setFontSize(12);
     if (isMat) {
       doc.setTextColor(176, 73, 47);
     } else {
       doc.setTextColor(22, 50, 61);
     }
-    const nameY = y + (section.note ? 4 : 4.2);
+    const nameY = y + (section.note ? 5 : 5);
     doc.text(name.toUpperCase(), ML + 5, nameY);
 
     // Note
     if (section.note) {
       doc.setFont("helvetica", "italic");
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setTextColor(92, 106, 110);
-      doc.text(section.note, ML + 5, y + 6.5);
+      doc.text(section.note, ML + 5, y + 7.5);
     }
 
-    // Section total (full mode only)
+    // Section total (full mode only) — 12pt
     if (mode === "full") {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
+      doc.setFontSize(12);
       doc.setTextColor(isMat ? 176 : 22, isMat ? 73 : 50, isMat ? 47 : 61);
       doc.text(money(secTotal), MR - 2, nameY, { align: "right" });
     }
     y += secHdrH;
 
-    // Items in 2-column grid
+    // Items in 2-column grid — 10pt
     if (items.length > 0) {
-      const itemRowH = 4;
+      const itemRowH = 5.5;
       const halfCW   = (CW - 3) / 2;
       const c1x      = ML + 3;
       const c2x      = ML + 3 + halfCW;
@@ -472,38 +472,38 @@ function buildEstimatePdf(
         doc.line(c1x, y + itemRowH, MR, y + itemRowH);
         doc.line(c2x, y, c2x, y + itemRowH);
 
-        // Left item
+        // Left item — 10pt
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.5);
+        doc.setFontSize(10);
         doc.setTextColor(58, 58, 58);
         const leftMaxW = mode === "summary" ? halfCW - 6 : halfCW - 22;
-        doc.text(`• ${left.description}`, c1x + 2, y + 2.8, { maxWidth: leftMaxW });
+        doc.text(`• ${left.description}`, c1x + 2, y + 3.6, { maxWidth: leftMaxW });
         if (mode === "full") {
           doc.setFont("helvetica", "bold");
           if (left.amount > 0) {
             doc.setTextColor(22, 50, 61);
-            doc.text(money(left.amount), c2x - 2, y + 2.8, { align: "right" });
+            doc.text(money(left.amount), c2x - 2, y + 3.6, { align: "right" });
           } else {
             doc.setTextColor(200, 200, 200);
-            doc.text("—", c2x - 2, y + 2.8, { align: "right" });
+            doc.text("—", c2x - 2, y + 3.6, { align: "right" });
           }
         }
 
-        // Right item
+        // Right item — 10pt
         if (right) {
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(7.5);
+          doc.setFontSize(10);
           doc.setTextColor(58, 58, 58);
           const rightMaxW = mode === "summary" ? halfCW - 6 : halfCW - 22;
-          doc.text(`• ${right.description}`, c2x + 2, y + 2.8, { maxWidth: rightMaxW });
+          doc.text(`• ${right.description}`, c2x + 2, y + 3.6, { maxWidth: rightMaxW });
           if (mode === "full") {
             doc.setFont("helvetica", "bold");
             if (right.amount > 0) {
               doc.setTextColor(22, 50, 61);
-              doc.text(money(right.amount), MR - 2, y + 2.8, { align: "right" });
+              doc.text(money(right.amount), MR - 2, y + 3.6, { align: "right" });
             } else {
               doc.setTextColor(200, 200, 200);
-              doc.text("—", MR - 2, y + 2.8, { align: "right" });
+              doc.text("—", MR - 2, y + 3.6, { align: "right" });
             }
           }
         }
