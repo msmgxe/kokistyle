@@ -151,6 +151,25 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
   );
 }
 
+// ─── Section emoji lookup ──────────────────────────────────────────────────────
+function sectionEmoji(nameEn: string): string {
+  const n = nameEn.toUpperCase();
+  if (n.includes("DEMOLIT"))                    return "🔨";
+  if (n.includes("PLUMB"))                      return "💧";
+  if (n.includes("STRUCT"))                     return "🏗️";
+  if (n.includes("ELECTR"))                     return "⚡";
+  if (n.includes("TILE") || n.includes("FLOOR")) return "🧱";
+  if (n.includes("HANDY") || n.includes("HAND")) return "🔧";
+  if (n.includes("PAINT"))                      return "🎨";
+  if (n.includes("PERMIT") || n.includes("ADMIN")) return "📋";
+  if (n.includes("MATERIAL"))                   return "📦";
+  if (n.includes("BATHROOM") || n.includes("BATH")) return "🚿";
+  if (n.includes("KITCHEN"))                    return "🍳";
+  if (n.includes("ROOF"))                       return "🏠";
+  if (n.includes("WINDOW") || n.includes("DOOR")) return "🚪";
+  return "🏗️";
+}
+
 // ─── SortableSection ──────────────────────────────────────────────────────────
 
 interface SortableSectionProps {
@@ -244,7 +263,7 @@ function SortableSection({
             <GripVertical size={14} />
           </button>
           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm ${section.is_material_type ? "bg-[#FDF0ED]" : "bg-[#EDF3FB]"}`}>
-            {section.is_material_type ? "📦" : "🔨"}
+            {sectionEmoji(section.name_en)}
           </div>
           <div className="min-w-0 flex-1">
             {isEditingName ? (
