@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estimate Section Icons — Style Options · Luxaris Design</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .font-bookman { font-family: "Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif; }
+    .option-card { display: flex; flex-direction: column; }
+    .section-row { border-radius: 0 6px 6px 0; }
+  </style>
+</head>
+<body class="bg-[#EDE7DA] min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-[#16323D] px-6 py-4 shadow-md">
+    <div style="max-width:1100px;margin:0 auto">
+      <div class="flex items-center gap-3">
+        <span class="font-bookman text-white text-lg tracking-wide">Luxaris Design</span>
+        <span class="text-white/30 text-base">·</span>
+        <span class="text-white/55 text-sm">Estimate Tab — Section Icon Styles</span>
+      </div>
+      <p class="text-white/45 text-[11px] mt-0.5">Three options for section header icons. Each previewed at real size with realistic content.</p>
+    </div>
+  </header>
+
+  <!-- Options grid -->
+  <main id="app" style="max-width:1100px;margin:0 auto;padding:28px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;"></main>
+
+  <script>
+    const sections = [
+      { name:"DEMOLITION",        note:"Dumping incl.",  material:false, color:"#B0492F", emoji:"🔨", init:"DM", amount:"$3,200" },
+      { name:"PLUMBING",          note:"Mat. incl.",     material:false, color:"#395886", emoji:"💧", init:"PL", amount:"$4,800" },
+      { name:"STRUCTURE",         note:"Mat. incl.",     material:false, color:"#5C6A6E", emoji:"🏗️", init:"ST", amount:"$6,500" },
+      { name:"ELECTRICAL",        note:"Mat. incl.",     material:false, color:"#C8870A", emoji:"⚡", init:"EL", amount:"$2,900" },
+      { name:"TILE INSTALLATION", note:"",               material:false, color:"#4F8A63", emoji:"⬜", init:"TI", amount:"$5,100" },
+      { name:"HANDY WORK",        note:"",               material:false, color:"#7B5EA7", emoji:"🔧", init:"HW", amount:"$1,800" },
+      { name:"PAINTING",          note:"",               material:false, color:"#C2607A", emoji:"🎨", init:"PA", amount:"$2,400" },
+      { name:"PERMIT & ADMIN",    note:"",               material:false, color:"#2D7D9A", emoji:"📋", init:"PE", amount:"$1,200" },
+      { name:"MATERIALS",         note:"Pure materials", material:true,  color:"#8B6914", emoji:"📦", init:"MA", amount:"$8,000" },
+    ];
+
+    // Lucide-style SVG paths (24×24 viewBox, stroke-based)
+    const svgPaths = {
+      "DEMOLITION":
+        `<path d="M15 12l-8.5 8.5a2.12 2.12 0 0 1-3-3L12 9"/>
+         <path d="M17.64 6.36L16 8l-4-4 1.64-1.64a2 2 0 0 1 2.83 0l1.17 1.17a2 2 0 0 1 0 2.83z"/>`,
+
+      "PLUMBING":
+        `<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>`,
+
+      "STRUCTURE":
+        `<path d="M3 21V9a9 9 0 0 1 18 0v12"/>
+         <line x1="3" y1="21" x2="21" y2="21"/>`,
+
+      "ELECTRICAL":
+        `<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>`,
+
+      "TILE INSTALLATION":
+        `<rect x="3"  y="3"  width="8" height="8" rx="1"/>
+         <rect x="13" y="3"  width="8" height="8" rx="1"/>
+         <rect x="3"  y="13" width="8" height="8" rx="1"/>
+         <rect x="13" y="13" width="8" height="8" rx="1"/>`,
+
+      "HANDY WORK":
+        `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>`,
+
+      "PAINTING":
+        `<path d="M18.37 2.63L14 7l-1.59-1.59-4.83 4.83 1.58 1.58L7.75 13H3.5l-1.5 3.5L6 21l3.5-1.5V15.3l1.61-1.61 4.83-4.83"/>
+         <line x1="3" y1="20.5" x2="6" y2="21"/>`,
+
+      "PERMIT & ADMIN":
+        `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+         <polyline points="14 2 14 8 20 8"/>
+         <line x1="8" y1="13" x2="16" y2="13"/>
+         <line x1="8" y1="17" x2="16" y2="17"/>`,
+
+      "MATERIALS":
+        `<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+         <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+         <line x1="12" y1="22.08" x2="12" y2="12"/>`,
+    };
+
+    function sectionRow(sec, iconHTML) {
+      const leftColor = sec.material ? "#B0492F" : "#16323D";
+      return `
+        <div class="section-row" style="
+          border-left: 3px solid ${leftColor};
+          background: white;
+          padding: 9px 10px 9px 10px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 5px;
+        ">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0;flex:1">
+            ${iconHTML}
+            <div style="min-width:0">
+              <div style="font-size:10.5px;font-weight:700;color:#16323D;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sec.name}</div>
+              ${sec.note ? `<div style="font-size:8.5px;color:#5C6A6E;margin-top:1px">${sec.note}</div>` : `<div style="height:1px"></div>`}
+              <div style="font-size:8px;color:#9CA3AF;margin-top:1px">3 items</div>
+            </div>
+          </div>
+          <div style="font-family:monospace;font-size:11px;font-weight:700;color:#16323D;flex-shrink:0">${sec.amount}</div>
+        </div>
+      `;
+    }
+
+    function optionCard(letter, title, desc, rows, pros, con) {
+      const letterColors = { A: "#4F8A63", B: "#395886", C: "#7B5EA7" };
+      const accentColor = letterColors[letter];
+      return `
+        <div style="background:white;border-radius:12px;border:1px solid #E6DDCB;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(22,50,61,.07)">
+
+          <!-- Option header -->
+          <div style="background:#16323D;padding:14px 16px 12px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="width:26px;height:26px;border-radius:50%;background:${accentColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+                <span style="color:white;font-size:11px;font-weight:800">${letter}</span>
+              </div>
+              <div>
+                <div style="color:white;font-size:13px;font-weight:700;line-height:1.2">${title}</div>
+                <div style="color:rgba(255,255,255,.5);font-size:9.5px;margin-top:3px;line-height:1.45">${desc}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div style="background:#F7F3EA;padding:10px;flex:1">
+            ${rows}
+          </div>
+
+          <!-- Pros / con -->
+          <div style="padding:10px 14px 12px;border-top:1px solid #E6DDCB">
+            <div style="font-size:8px;font-weight:700;letter-spacing:.12em;color:#9CA3AF;text-transform:uppercase;margin-bottom:6px">Why choose this</div>
+            ${pros.map(p => `
+              <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
+                <span style="color:${accentColor};font-size:10px;font-weight:700;flex-shrink:0;margin-top:-.5px">✓</span>
+                <span style="font-size:10px;color:#16323D;line-height:1.4">${p}</span>
+              </div>`).join('')}
+            <div style="display:flex;align-items:flex-start;gap:6px;margin-top:6px">
+              <span style="color:#B0492F;font-size:11px;font-weight:700;flex-shrink:0;line-height:1">·</span>
+              <span style="font-size:9.5px;color:#5C6A6E;line-height:1.4">${con}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Option A: Emoji ──────────────────────────────────────────────────────
+    const rowsA = sections.map(s => {
+      const icon = `<span style="font-size:19px;line-height:1;flex-shrink:0;width:22px;text-align:center">${s.emoji}</span>`;
+      return sectionRow(s, icon);
+    }).join('');
+
+    const cardA = optionCard('A',
+      'Emoji Icons',
+      'Native system emoji — works everywhere without extra code or assets',
+      rowsA,
+      [
+        'Zero setup — works on all devices and browsers',
+        'Meaning is instantly clear to any user',
+        'No SVG or image files to maintain',
+      ],
+      'Appearance varies by OS and device; tile emoji is weak'
+    );
+
+    // ── Option B: SVG Line Icons ─────────────────────────────────────────────
+    const rowsB = sections.map(s => {
+      const path = svgPaths[s.name] || '';
+      const icon = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="${s.color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+          style="flex-shrink:0">
+          ${path}
+        </svg>`;
+      return sectionRow(s, icon);
+    }).join('');
+
+    const cardB = optionCard('B',
+      'SVG Line Icons',
+      'Inline Lucide-style icon, colored to match each section type',
+      rowsB,
+      [
+        'Each section has a visually distinct shape',
+        'Color reinforces the category at a glance',
+        'Crisp at any pixel density, no blur',
+      ],
+      'Requires maintaining one SVG path per section type'
+    );
+
+    // ── Option C: Color Initial Badge ────────────────────────────────────────
+    const rowsC = sections.map(s => {
+      const icon = `
+        <div style="
+          width:26px;height:26px;border-radius:5px;
+          background:${s.color};
+          flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;
+        ">
+          <span style="color:white;font-size:8.5px;font-weight:800;letter-spacing:.04em">${s.init}</span>
+        </div>`;
+      return sectionRow(s, icon);
+    }).join('');
+
+    const cardC = optionCard('C',
+      'Color Initial Badge',
+      'Two-letter code on a colored square — Notion / Linear style',
+      rowsC,
+      [
+        'Perfectly uniform size across all sections',
+        'Color encodes category at a glance',
+        'Easy to extend: new section just needs a color',
+      ],
+      'Relies on the user learning the abbreviation; less expressive than a shape icon'
+    );
+
+    document.getElementById('app').innerHTML = cardA + cardB + cardC;
+  </script>
+</body>
+</html>

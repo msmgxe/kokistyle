@@ -18,17 +18,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Send, Save, Pencil,
+  ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Save, Pencil,
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
-import { openEstimatePdfInBrowser, getEstimatePdfBlob } from "@/src/lib/pdf";
+import { openEstimatePdfInBrowser } from "@/src/lib/pdf";
 
-// Strip a phone string down to digits only for wa.me links
-function cleanWaPhone(v: string): string {
-  // Remove everything except digits and leading +
-  return v.replace(/[^\d+]/g, "").replace(/^\+/, "");
-}
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { branding } from "@/src/config/branding";
@@ -280,6 +275,9 @@ function SortableSection({
               </div>
             )}
             {section.note && <div className="text-[10px] text-[#5C6A6E]">{section.note}</div>}
+            {section.items.length > 0 && (
+              <div className="text-[10px] text-[#5C6A6E]">{section.items.length} items</div>
+            )}
           </div>
         </div>
         <div className="ml-3 flex shrink-0 items-center gap-3">
@@ -315,11 +313,6 @@ function SortableSection({
               {EN ? "Labor %" : "M. obra %"}
             </span>
           </label>
-          {section.items.length > 0 && (
-            <span className="text-[10px] text-[#5C6A6E]">
-              {section.items.length} {EN ? "items" : "items"}
-            </span>
-          )}
           <div className={`font-mono text-[13px] font-bold ${section.is_material_type ? "text-[#B0492F]" : "text-[#16323D]"}`}>
             {money(effectiveTotal)}
           </div>
@@ -484,8 +477,6 @@ export default function EstimateTab({
   const [newItemAmt,     setNewItemAmt]     = useState("");
   const [editingNameId,  setEditingNameId]  = useState<string | null>(null);
   const [showPdfModal,   setShowPdfModal]   = useState(false);
-  const [waPhone,        setWaPhone]        = useState("");
-  const [waLoading,      setWaLoading]      = useState(false);
   const [confirmDeleteSection, setConfirmDeleteSection] = useState<{ id: string; name: string } | null>(null);
 
   // ── Deposit payment detail modal ──────────────────────────────────────────
@@ -518,8 +509,6 @@ export default function EstimateTab({
 
   // ── Estimate sub-tabs ─────────────────────────────────────────────────────
   const [estimateSubTab,   setEstimateSubTab]   = useState<"sections" | "schedule">("sections");
-  const [showWaForm,       setShowWaForm]       = useState(false);
-  const [showWaPdfPicker,  setShowWaPdfPicker]  = useState(false);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -1090,42 +1079,6 @@ export default function EstimateTab({
     toast(EN ? "Estimate copied successfully!" : "¡Estimado copiado correctamente!");
   }, [estimate, copyTargetId, copyProjects, EN, toast]);
 
-  // ── WhatsApp send ─────────────────────────────────────────────────────────
-  const handleWhatsApp = useCallback(async (mode: "full" | "summary" = "full") => {
-    if (!estimate || !waPhone.trim()) return;
-    setWaLoading(true);
-    setShowWaPdfPicker(false);
-    try {
-      const { grandTotal, laborTotal, discountAmt } = totals;
-      const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title, mode);
-      const safeName = (estimate.project_title || project.title).replace(/\s+/g, "_");
-      const filename = `Estimate_${safeName}.pdf`;
-      const cleanPhone = cleanWaPhone(waPhone);
-
-      // 1. Download the PDF
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-
-      // 2. Open WhatsApp with the number (app on mobile, Web on desktop)
-      setTimeout(() => window.open(`https://wa.me/${cleanPhone}`, "_blank"), 400);
-
-      toast(EN
-        ? "PDF saved — attach it in the WhatsApp chat that just opened"
-        : "PDF guardado — adjúntalo en el chat de WhatsApp que se acaba de abrir");
-    } catch (err) {
-      console.error("[EstimateTab] WhatsApp error:", err);
-      toast(EN ? "Error generating PDF" : "Error al generar PDF");
-    } finally {
-      setWaLoading(false);
-    }
-  }, [estimate, totals, language, waPhone, EN, toast, project.title]);
-
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="flex items-center justify-center py-20">
@@ -1312,25 +1265,6 @@ export default function EstimateTab({
 
           {/* Right: action buttons */}
           <div className="flex shrink-0 items-center gap-2">
-            {/* WhatsApp compact — always opens form to allow editing number */}
-            <button
-              onClick={() => setShowWaForm(v => !v)}
-              disabled={waLoading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#1BAD4E] px-3 py-2 text-white transition hover:bg-[#169B43] disabled:opacity-60"
-            >
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6FFFAB]" />
-              <span className="text-[10px] font-bold">WA</span>
-              {waPhone
-                ? <>
-                    <span className="hidden text-[9px] text-white/75 sm:inline">{waPhone}</span>
-                    <span className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-bold">
-                      {waLoading ? "…" : (showWaForm ? "▲" : "›")}
-                    </span>
-                  </>
-                : <span className="text-[9px] text-white/75">{showWaForm ? "▲" : (EN ? "Setup ›" : "Config ›")}</span>
-              }
-            </button>
-
             {/* Copy */}
             <button
               onClick={openCopyModal}
@@ -1374,30 +1308,6 @@ export default function EstimateTab({
             </button>
           </div>
         </div>
-
-        {/* WA form — paste any format, e.g. +1 728 214-4005 */}
-        {showWaForm && (
-          <div className="flex items-center gap-2 border-t border-white/10 py-2.5">
-            <input
-              type="tel"
-              value={waPhone}
-              onChange={e => setWaPhone(e.target.value)}
-              placeholder="+1 728 214-4005"
-              autoFocus
-              className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-[#25D366] focus:outline-none"
-            />
-            <button
-              onClick={() => { setShowWaForm(false); setShowWaPdfPicker(true); }}
-              disabled={!waPhone.trim()}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-4 py-2 text-[11px] font-bold text-white disabled:opacity-40 hover:bg-[#1ebe5a]"
-            >
-              <Send size={11} /> {EN ? "Send" : "Enviar"}
-            </button>
-            <button onClick={() => setShowWaForm(false)} className="shrink-0 p-1 text-white/40 transition hover:text-white">
-              <X size={14} />
-            </button>
-          </div>
-        )}
 
         {/* Tab row */}
         <div className="flex items-end gap-1">
@@ -2268,51 +2178,6 @@ export default function EstimateTab({
                 className="flex-1 rounded-xl bg-[#395886] py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4a75] disabled:opacity-50"
               >
                 {copying ? "…" : (EN ? "Copy estimate" : "Copiar estimado")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── WA PDF format picker ──────────────────────────────────────────── */}
-      {showWaPdfPicker && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 px-4"
-          onClick={() => setShowWaPdfPicker(false)}>
-          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between rounded-t-2xl bg-[#1BAD4E] px-5 py-4">
-              <div className="flex items-center gap-2">
-                <Send size={14} className="text-white" />
-                <p className="text-sm font-bold text-white">
-                  {EN ? "Choose PDF to send via WhatsApp" : "Elige el PDF a enviar por WhatsApp"}
-                </p>
-              </div>
-              <button onClick={() => setShowWaPdfPicker(false)} className="text-white/60 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3 p-5">
-              <button
-                onClick={() => handleWhatsApp("full")}
-                disabled={waLoading}
-                className="flex items-start gap-4 rounded-xl border-2 border-[#16323D] bg-[#F7F3EA] p-4 text-left transition hover:bg-[#EDE8E0] disabled:opacity-50"
-              >
-                <FileText size={28} className="mt-0.5 flex-none text-[#16323D]" />
-                <div>
-                  <p className="font-bold text-[#16323D]">{EN ? "Estimate with detail" : "Estimado con detalle"}</p>
-                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Shows all section totals and item amounts" : "Muestra totales de secciones y montos de items"}</p>
-                </div>
-              </button>
-              <button
-                onClick={() => handleWhatsApp("summary")}
-                disabled={waLoading}
-                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] bg-white p-4 text-left transition hover:border-[#1BAD4E] hover:bg-[#F0FBF3] disabled:opacity-50"
-              >
-                <FileText size={28} className="mt-0.5 flex-none text-[#1BAD4E]" />
-                <div>
-                  <p className="font-bold text-[#16323D]">{EN ? "Estimate without detail" : "Estimado sin detalle"}</p>
-                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Scope of work only — no amounts shown, payment schedule included" : "Solo alcance de trabajo — sin montos, incluye plan de pagos"}</p>
-                </div>
               </button>
             </div>
           </div>
