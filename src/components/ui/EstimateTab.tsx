@@ -315,13 +315,13 @@ function SortableSection({
               {EN ? "Labor %" : "M. obra %"}
             </span>
           </label>
-          <div className="text-right">
-            <div className={`font-mono text-[13px] font-bold ${section.is_material_type ? "text-[#B0492F]" : "text-[#16323D]"}`}>
-              {money(effectiveTotal)}
-            </div>
-            {section.items.length > 0 && (
-              <div className="text-[10px] text-[#5C6A6E]">{section.items.length} items</div>
-            )}
+          {section.items.length > 0 && (
+            <span className="text-[10px] text-[#5C6A6E]">
+              {section.items.length} {EN ? "items" : "items"}
+            </span>
+          )}
+          <div className={`font-mono text-[13px] font-bold ${section.is_material_type ? "text-[#B0492F]" : "text-[#16323D]"}`}>
+            {money(effectiveTotal)}
           </div>
           {isOpen ? <ChevronUp size={14} className="text-[#5C6A6E]" /> : <ChevronDown size={14} className="text-[#5C6A6E]" />}
         </div>
