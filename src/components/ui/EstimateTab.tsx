@@ -547,8 +547,9 @@ export default function EstimateTab({
   const [copying,         setCopying]         = useState(false);
 
   // ── Estimate sub-tabs ─────────────────────────────────────────────────────
-  const [estimateSubTab,  setEstimateSubTab]  = useState<"sections" | "schedule">("sections");
-  const [showWaForm,      setShowWaForm]      = useState(false);
+  const [estimateSubTab,   setEstimateSubTab]   = useState<"sections" | "schedule">("sections");
+  const [showWaForm,       setShowWaForm]       = useState(false);
+  const [showWaPdfPicker,  setShowWaPdfPicker]  = useState(false);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -1120,12 +1121,13 @@ export default function EstimateTab({
   }, [estimate, copyTargetId, copyProjects, EN, toast]);
 
   // ── WhatsApp send ─────────────────────────────────────────────────────────
-  const handleWhatsApp = useCallback(async () => {
+  const handleWhatsApp = useCallback(async (mode: "full" | "summary" = "full") => {
     if (!estimate || !waPhone.trim()) return;
     setWaLoading(true);
+    setShowWaPdfPicker(false);
     try {
       const { grandTotal, laborTotal, discountAmt } = totals;
-      const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title);
+      const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title, mode);
       const safeName = (estimate.project_title || "project").replace(/\s+/g, "_");
       const filename = `Estimate_${safeName}.pdf`;
       const cleanPhone = (waCode + waPhone).replace(/\D/g, "");
@@ -1351,9 +1353,9 @@ export default function EstimateTab({
 
           {/* Right: action buttons */}
           <div className="flex shrink-0 items-center gap-2">
-            {/* WhatsApp compact — click sends if phone is set, else opens form */}
+            {/* WhatsApp compact — always opens form to allow editing number */}
             <button
-              onClick={() => waPhone.trim() ? handleWhatsApp() : setShowWaForm(v => !v)}
+              onClick={() => setShowWaForm(v => !v)}
               disabled={waLoading}
               className="inline-flex items-center gap-1.5 rounded-lg bg-[#1BAD4E] px-3 py-2 text-white transition hover:bg-[#169B43] disabled:opacity-60"
             >
@@ -1363,7 +1365,7 @@ export default function EstimateTab({
                 ? <>
                     <span className="hidden text-[9px] text-white/75 sm:inline">{waPhone}</span>
                     <span className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-bold">
-                      {waLoading ? "…" : (EN ? "Send ›" : "Enviar ›")}
+                      {waLoading ? "…" : (showWaForm ? "▲" : "›")}
                     </span>
                   </>
                 : <span className="text-[9px] text-white/75">{showWaForm ? "▲" : (EN ? "Setup ›" : "Config ›")}</span>
@@ -1434,7 +1436,7 @@ export default function EstimateTab({
               className="min-w-[140px] flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] text-white placeholder:text-white/40 focus:border-[#25D366] focus:outline-none"
             />
             <button
-              onClick={() => { handleWhatsApp(); setShowWaForm(false); }}
+              onClick={() => { setShowWaForm(false); setShowWaPdfPicker(true); }}
               disabled={waLoading || !waPhone.trim()}
               className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-40"
             >
@@ -2318,6 +2320,51 @@ export default function EstimateTab({
                 className="flex-1 rounded-xl bg-[#395886] py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4a75] disabled:opacity-50"
               >
                 {copying ? "…" : (EN ? "Copy estimate" : "Copiar estimado")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── WA PDF format picker ──────────────────────────────────────────── */}
+      {showWaPdfPicker && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setShowWaPdfPicker(false)}>
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between rounded-t-2xl bg-[#1BAD4E] px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Send size={14} className="text-white" />
+                <p className="text-sm font-bold text-white">
+                  {EN ? "Choose PDF to send via WhatsApp" : "Elige el PDF a enviar por WhatsApp"}
+                </p>
+              </div>
+              <button onClick={() => setShowWaPdfPicker(false)} className="text-white/60 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 p-5">
+              <button
+                onClick={() => handleWhatsApp("full")}
+                disabled={waLoading}
+                className="flex items-start gap-4 rounded-xl border-2 border-[#16323D] bg-[#F7F3EA] p-4 text-left transition hover:bg-[#EDE8E0] disabled:opacity-50"
+              >
+                <FileText size={28} className="mt-0.5 flex-none text-[#16323D]" />
+                <div>
+                  <p className="font-bold text-[#16323D]">{EN ? "Estimate with detail" : "Estimado con detalle"}</p>
+                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Shows all section totals and item amounts" : "Muestra totales de secciones y montos de items"}</p>
+                </div>
+              </button>
+              <button
+                onClick={() => handleWhatsApp("summary")}
+                disabled={waLoading}
+                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] bg-white p-4 text-left transition hover:border-[#1BAD4E] hover:bg-[#F0FBF3] disabled:opacity-50"
+              >
+                <FileText size={28} className="mt-0.5 flex-none text-[#1BAD4E]" />
+                <div>
+                  <p className="font-bold text-[#16323D]">{EN ? "Estimate without detail" : "Estimado sin detalle"}</p>
+                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Scope of work only — no amounts shown, payment schedule included" : "Solo alcance de trabajo — sin montos, incluye plan de pagos"}</p>
+                </div>
               </button>
             </div>
           </div>
