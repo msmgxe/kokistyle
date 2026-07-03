@@ -24,39 +24,10 @@ import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
 import { openEstimatePdfInBrowser, getEstimatePdfBlob } from "@/src/lib/pdf";
 
-const WA_CODES = [
-  { code: "+1",   flag: "🇺🇸", label: "US/CA" },
-  { code: "+52",  flag: "🇲🇽", label: "MX" },
-  { code: "+57",  flag: "🇨🇴", label: "CO" },
-  { code: "+58",  flag: "🇻🇪", label: "VE" },
-  { code: "+54",  flag: "🇦🇷", label: "AR" },
-  { code: "+34",  flag: "🇪🇸", label: "ES" },
-  { code: "+51",  flag: "🇵🇪", label: "PE" },
-];
-
-function fmtPhone(v: string, code: string): string {
-  const raw = v.replace(/\D/g, "");
-  if (code === "+1") {
-    const d = raw.slice(0, 10);
-    if (d.length <= 3) return d;
-    if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
-    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
-  }
-  if (code === "+51") {
-    // Peru: 9 digits — XXX XXX-XXX
-    const d = raw.slice(0, 9);
-    if (d.length <= 3) return d;
-    if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
-    return `${d.slice(0, 3)} ${d.slice(3, 6)}-${d.slice(6)}`;
-  }
-  // Other countries: digits only, max 12
-  return raw.slice(0, 12);
-}
-
-function phonePlaceholder(code: string): string {
-  if (code === "+1")  return "(786) 563-2531";
-  if (code === "+51") return "984 368-710";
-  return "123 456 7890";
+// Strip a phone string down to digits only for wa.me links
+function cleanWaPhone(v: string): string {
+  // Remove everything except digits and leading +
+  return v.replace(/[^\d+]/g, "").replace(/^\+/, "");
 }
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -513,7 +484,6 @@ export default function EstimateTab({
   const [newItemAmt,     setNewItemAmt]     = useState("");
   const [editingNameId,  setEditingNameId]  = useState<string | null>(null);
   const [showPdfModal,   setShowPdfModal]   = useState(false);
-  const [waCode,         setWaCode]         = useState("+1");
   const [waPhone,        setWaPhone]        = useState("");
   const [waLoading,      setWaLoading]      = useState(false);
   const [confirmDeleteSection, setConfirmDeleteSection] = useState<{ id: string; name: string } | null>(null);
@@ -1130,7 +1100,7 @@ export default function EstimateTab({
       const blob = getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title, mode);
       const safeName = (estimate.project_title || "project").replace(/\s+/g, "_");
       const filename = `Estimate_${safeName}.pdf`;
-      const cleanPhone = (waCode + waPhone).replace(/\D/g, "");
+      const cleanPhone = cleanWaPhone(waPhone);
 
       // Try native file share (mobile iOS/Android) — canShare can itself throw on desktop
       let shared = false;
@@ -1165,7 +1135,7 @@ export default function EstimateTab({
     } finally {
       setWaLoading(false);
     }
-  }, [estimate, totals, language, waCode, waPhone, EN, toast]);
+  }, [estimate, totals, language, waPhone, EN, toast]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return (
@@ -1416,38 +1386,27 @@ export default function EstimateTab({
           </div>
         </div>
 
-        {/* WA form — slides in when no phone configured or user opens it */}
+        {/* WA form — paste any format, e.g. +1 728 214-4005 */}
         {showWaForm && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-white/10 py-2.5">
-            <select
-              value={waCode}
-              onChange={e => { setWaCode(e.target.value); setWaPhone(""); }}
-              className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-[11px] text-white focus:outline-none"
-            >
-              {WA_CODES.map(c => (
-                <option key={c.code} value={c.code}>{c.flag} {c.code} {c.label}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 border-t border-white/10 py-2.5">
             <input
               type="tel"
               value={waPhone}
-              onChange={e => setWaPhone(fmtPhone(e.target.value, waCode))}
-              placeholder={phonePlaceholder(waCode)}
-              className="min-w-[140px] flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] text-white placeholder:text-white/40 focus:border-[#25D366] focus:outline-none"
+              onChange={e => setWaPhone(e.target.value)}
+              placeholder="+1 728 214-4005"
+              autoFocus
+              className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-[#25D366] focus:outline-none"
             />
             <button
               onClick={() => { setShowWaForm(false); setShowWaPdfPicker(true); }}
-              disabled={waLoading || !waPhone.trim()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-40"
+              disabled={!waPhone.trim()}
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-4 py-2 text-[11px] font-bold text-white disabled:opacity-40 hover:bg-[#1ebe5a]"
             >
-              <Send size={11} /> {waLoading ? "…" : (EN ? "Send PDF" : "Enviar PDF")}
+              <Send size={11} /> {EN ? "Send" : "Enviar"}
             </button>
-            <button onClick={() => setShowWaForm(false)} className="p-1 text-white/40 transition hover:text-white">
+            <button onClick={() => setShowWaForm(false)} className="shrink-0 p-1 text-white/40 transition hover:text-white">
               <X size={14} />
             </button>
-            <span className="w-full text-[9.5px] text-white/40">
-              {EN ? "Mobile: shares PDF · Desktop: opens WhatsApp Web" : "Móvil: adjunta PDF · Desktop: abre WhatsApp Web"}
-            </span>
           </div>
         )}
 
