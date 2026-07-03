@@ -101,7 +101,7 @@ src/
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
 │       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop Estimate→Workflow (@dnd-kit)
-│       ├── EstimateTab.tsx           # Tab de estimado: secciones drag&drop, PDF download, WhatsApp send, Day Planner
+│       ├── EstimateTab.tsx           # Tab de estimado — layout de sub-tabs: 📐 Sections + 💰 Payment Schedule; cabecera dark con WA/Copy/PDF/Save; FAB flotante eliminado
 │       ├── Button.tsx                # Botón reutilizable
 │       └── Container.tsx             # Contenedor de ancho máximo
 │
@@ -249,7 +249,9 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
 
 ### WhatsApp PDF send (`EstimateTab.tsx`)
 
-- Fila WhatsApp debajo de los botones Save / Download PDF
+- Botón compacto **WA** (verde, `bg-[#1BAD4E]`) en la cabecera oscura del Estimate
+  - Si no hay número configurado → al clic se despliega el formulario (`showWaForm` state) con selector de país + input + botón Enviar PDF
+  - Si ya hay número guardado → al clic envía directamente sin abrir el formulario
 - Campos: selector de código de país (🇺🇸 +1, 🇲🇽 +52, 🇨🇴 +57, 🇻🇪 +58, 🇦🇷 +54, 🇪🇸 +34) + input de número (formato US auto) + botón verde Send
 - En **móvil** (iOS/Android): usa `navigator.share({ files: [pdfFile] })` — WhatsApp aparece en el menú nativo con el PDF adjunto
 - En **desktop**: descarga el PDF + abre `https://wa.me/<number>` en nueva pestaña + toast explicativo
@@ -492,6 +494,61 @@ CREATE POLICY anon_all ON activity_log FOR ALL TO anon USING (true) WITH CHECK (
 
 ---
 
+## Layout del Estimate tab (EstimateTab.tsx) — "Opción A"
+
+El tab Estimate usa un layout de sub-tabs con cabecera oscura. Implementado en julio 2026.
+
+### Estructura visual
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CABECERA  bg-[#16323D]                                     │
+│  [empresa] [status badge] [TÍTULO DEL PROYECTO]             │
+│                              [WA] [Copy] [PDF] [Save/color] │
+│  (formulario WA expandible — showWaForm)                    │
+│  ┌──────────────┐  ┌───────────────────────────┐            │
+│  │ 📐 Sections  │  │ 💰 Payment Schedule        │            │
+│  └──────────────┘  └───────────────────────────┘            │
+├─────────────────────────────────────────────────────────────┤
+│  (contenido del sub-tab activo)                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Sub-tab 📐 Sections
+
+- Sub-banda `bg-[#F7F3EA]`: Labor subtotal + Grand Total + **badge rojo de descuento** (inline %, monto rojo)
+- Customer info collapsible (nombre, ciudad, teléfono, email, fechas)
+- Secciones con drag & drop (@dnd-kit)
+- Footer de totales: Labor subtotal → Descuento (rojo `#B0492F`) → Grand Total
+- Botón "Generate Workflow Tasks"
+
+### Sub-tab 💰 Payment Schedule
+
+- Sub-banda `bg-[#F7F3EA]`: cuotas | recibido (verde) | pendiente (rojo) | badge % ok
+- **Tarjeta de totales** con 3 filas:
+  - Fila 1 `bg-white`: Labor subtotal
+  - Fila 2 `bg-[#FDF5F3]`: Descuento en rojo `#B0492F` (flecha ▼, badge %)
+  - Fila 3 `bg-[#16323D]`: Grand Total en blanco
+  - Footer: barra de progreso recibido vs pendiente (verde `#4F8A63`)
+- Filas de cuotas en timeline: nodo de color + card con badge %, monto, concepto, track bar
+
+### Botón Save — contexto-dependiente
+
+| Sub-tab activo | Color | Label EN | Label ES |
+|---|---|---|---|
+| `"sections"` | `bg-white text-[#16323D]` | Save | Guardar |
+| `"schedule"` | `bg-[#F0A090] text-[#7B1838]` | Save schedule | Guardar calendario |
+
+Ambos llaman a `saveHeader()` — guarda el estimado completo (header + deposit_schedule).
+
+### Estado relevante
+
+- `estimateSubTab: "sections" | "schedule"` — sub-tab activo (useState)
+- `showWaForm: boolean` — formulario WA expandido (useState)
+- **FAB flotante eliminado** — el Save está en la cabecera, no hay botón fixed bottom-right
+
+---
+
 ## Deposit Payment Modal (EstimateTab)
 
 El modal de instalamentos del Estimate (`deposit_schedule`) tiene un detalle expandible por fila que muestra/crea los pagos reales del cliente.
@@ -512,6 +569,7 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | Archivo | Descripción |
 |---|---|
 | `activity-log-prototype.html` | Prototipo visual del Activity Log con Tailwind CDN y datos de ejemplo |
+| `payment-schedule-sidebar.html` | Prototipo "Opción A" del layout de Estimate — cabecera dark + sub-tabs (referencia del diseño implementado) |
 
 ---
 

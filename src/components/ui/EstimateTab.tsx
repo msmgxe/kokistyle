@@ -546,6 +546,10 @@ export default function EstimateTab({
   const [copyHasEstimate, setCopyHasEstimate] = useState(false);
   const [copying,         setCopying]         = useState(false);
 
+  // ── Estimate sub-tabs ─────────────────────────────────────────────────────
+  const [estimateSubTab,  setEstimateSubTab]  = useState<"sections" | "schedule">("sections");
+  const [showWaForm,      setShowWaForm]      = useState(false);
+
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true);
@@ -1193,444 +1197,562 @@ export default function EstimateTab({
   );
 
   const { laborTotal, discountAmt, grandTotal } = totals;
-  // DEPOSIT_PALETTE defined inside component for closures (also available above)
 
-  return (
-    <div className="space-y-3">
+  // ── Deposit schedule helpers (used in both tabs) ──────────────────────────
+  const deps      = estimate.deposit_schedule ?? defaultDeposits();
+  const totalRec  = deps.reduce((sum, _, i) => sum + depositsForIdx(i).reduce((s, p) => s + p.amount, 0), 0);
+  const pctSum    = deps.reduce((s, d) => s + d.pct, 0);
+  const amtSum    = deps.reduce((s, d) => s + depositTarget(d, grandTotal), 0);
+  const pctOk     = Math.abs(amtSum - grandTotal) < 0.02 || Math.abs(pctSum - 100) < 0.11;
+  const pending   = Math.max(0, grandTotal - totalRec);
+  const recvPct   = grandTotal > 0 ? Math.min(100, Math.round(totalRec / grandTotal * 100)) : 0;
 
-      {/* ── Status bar ────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <select
-            value={estimate.status}
-            onChange={e => setEstimate(p => p ? ({ ...p, status: e.target.value as EstimateRow["status"] }) : p)}
-            className={`cursor-pointer appearance-none rounded-full border-0 px-3 py-1 text-[11px] font-bold ${STATUS_STYLE[estimate.status]}`}
-          >
-            <option value="draft">{EN ? "Draft" : "Borrador"}</option>
-            <option value="sent">{EN ? "Sent" : "Enviado"}</option>
-            <option value="approved">{EN ? "Approved" : "Aprobado"}</option>
-            <option value="rejected">{EN ? "Rejected" : "Rechazado"}</option>
-          </select>
-          <span className="text-[11px] text-[#5C6A6E]">{branding.companyName}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={saveHeader}
-            disabled={saving}
-            title={EN ? "Save changes to database" : "Guardar cambios en la base de datos"}
-            className="rounded-xl border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#16323D] transition hover:shadow-sm disabled:opacity-50"
-          >
-            {saving ? "…" : (EN ? "Save" : "Guardar")}
-          </button>
-          <button
-            onClick={openCopyModal}
-            title={EN ? "Copy estimate to another project" : "Copiar estimado a otro proyecto"}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#395886] transition hover:bg-[#EDF3FB]"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            {EN ? "Copy to…" : "Copiar a…"}
-          </button>
-          <button
-            onClick={() => setShowPdfModal(true)}
-            title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#16323D] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#0F2830]"
-          >
-            <FileText size={12} /> {EN ? "Download PDF" : "Descargar PDF"}
-          </button>
-        </div>
-      </div>
+  // Shared deposit timeline rows (used in Payment Schedule tab)
+  const depositRows = (estimate.deposit_schedule ?? defaultDeposits()).map((dep, i, arr) => {
+    const color    = DEPOSIT_PALETTE[i % DEPOSIT_PALETTE.length];
+    const isLast   = i === arr.length - 1;
+    const target = (() => {
+      if (dep.mode === "amount" && dep.fixed_amount) return dep.fixed_amount;
+      if (isLast && arr.length > 1) {
+        const sumOthers = arr.slice(0, -1).reduce((s, d) => {
+          if (d.mode === "amount" && d.fixed_amount) return s + d.fixed_amount;
+          return s + Math.round(grandTotal * d.pct / 100 * 100) / 100;
+        }, 0);
+        return Math.max(0, Math.round((grandTotal - sumOthers) * 100) / 100);
+      }
+      return Math.round(grandTotal * dep.pct / 100 * 100) / 100;
+    })();
+    const received    = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
+    const receivedPct = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
+    const paid        = target > 0 && received >= target;
+    const isConfirmDelete = confirmDeleteDepositIdx === i;
+    const depNum = String(i + 1).padStart(2, "0");
 
-      {/* ── WhatsApp send ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2">
-        <span className="text-[11px] font-bold text-[#25D366]">WhatsApp</span>
-        <select
-          value={waCode}
-          onChange={e => { setWaCode(e.target.value); setWaPhone(""); }}
-          className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-2 py-1 text-[11px] text-[#16323D] focus:outline-none"
-        >
-          {WA_CODES.map(c => (
-            <option key={c.code} value={c.code}>{c.flag} {c.code} {c.label}</option>
-          ))}
-        </select>
-        <input
-          type="tel"
-          value={waPhone}
-          onChange={e => setWaPhone(fmtPhone(e.target.value, waCode))}
-          placeholder={phonePlaceholder(waCode)}
-          className="flex-1 min-w-[140px] rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1 text-[12px] text-[#16323D] focus:border-[#25D366] focus:outline-none"
-        />
-        <button
-          onClick={handleWhatsApp}
-          disabled={waLoading || !waPhone.trim()}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#1ebe5a] disabled:opacity-40"
-        >
-          <Send size={12} />
-          {waLoading ? "…" : (EN ? "Send" : "Enviar")}
-        </button>
-        <span className="text-[10px] text-[#5C6A6E]">
-          {EN ? "Mobile: shares PDF · Desktop: opens WhatsApp Web" : "Móvil: adjunta PDF · Desktop: abre WhatsApp Web"}
-        </span>
-      </div>
-
-      {/* ── Customer info (collapsible) ────────────────────────────────────── */}
-      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
-        <button
-          className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-[#FDFAF6]"
-          onClick={() => setShowHeader(h => !h)}
-        >
-          <div className="flex items-center gap-3">
-            <Info size={14} className="shrink-0 text-[#5C6A6E]" />
-            <span className="text-[12px] font-bold text-[#16323D]">
-              {estimate.customer_name || (EN ? "Customer info" : "Info del cliente")}
-            </span>
-            {estimate.city && <span className="text-[11px] text-[#5C6A6E]">· {estimate.city}</span>}
+    return (
+      <div key={i}>
+        <div className="flex gap-2.5">
+          {/* Node column */}
+          <div className="flex w-5 flex-shrink-0 flex-col items-center">
+            <div className="w-0.5 bg-[#DDD6CC]" style={{ height: 46 }} />
+            <div className="relative z-10 h-3 w-3 flex-shrink-0 rounded-full border-2 bg-white" style={{ borderColor: color }} />
+            {!isLast && <div className="w-0.5 flex-1 bg-[#DDD6CC]" />}
           </div>
-          <div className="flex items-center gap-3">
-            {totals.grandTotal > 0 && (
-              <span className="font-mono text-[13px] font-bold text-[#16323D]">
-                {money(totals.grandTotal)}
+          {/* Card */}
+          <div className="mb-0 flex-1 overflow-hidden rounded-xl border border-[#E6DDCB]">
+            <div className="flex h-[26px] items-center bg-[#EEE9E0] px-3">
+              <span className="text-[9px] font-black uppercase tracking-[.14em] text-[#7A8278]">
+                {EN ? `Deposit ${depNum}` : `Cuota ${depNum}`}
               </span>
-            )}
-            {showHeader ? <ChevronUp size={14} className="shrink-0 text-[#5C6A6E]" /> : <ChevronDown size={14} className="shrink-0 text-[#5C6A6E]" />}
+            </div>
+            <div className="flex min-h-[52px] items-center">
+              <button onClick={() => openDepositEdit(i)} title={EN ? "Edit installment" : "Editar cuota"}
+                className="flex w-[62px] flex-shrink-0 items-center justify-center self-stretch text-[17px] font-black text-white transition hover:opacity-80"
+                style={{ background: color }}>
+                {Math.round(dep.pct)}%
+              </button>
+              <span className="flex-shrink-0 px-3.5 font-mono text-[15px] font-black text-[#16323D]">
+                {money(target)}
+              </span>
+              <div className="w-px flex-shrink-0 self-stretch bg-[#EDE8DF]" />
+              <button onClick={() => openDepositEdit(i)} title={EN ? "Click to edit" : "Clic para editar"}
+                className="group flex flex-1 items-center gap-1 overflow-hidden px-3 text-left">
+                <span className="truncate text-[11px] font-semibold text-[#5C6A6E] group-hover:text-[#395886]">
+                  {EN ? dep.label_en : dep.label_es}
+                </span>
+                <Pencil size={8} className="flex-shrink-0 text-[#C4B89A] group-hover:text-[#395886]" />
+              </button>
+              <div className="flex flex-shrink-0 items-center gap-1.5 self-stretch border-l border-[#EDE8DF] px-2.5">
+                {isConfirmDelete ? (
+                  <div className="flex items-center gap-1">
+                    <span className="whitespace-nowrap text-[9px] font-semibold text-[#B0492F]">
+                      {EN ? "Delete?" : "¿Eliminar?"}
+                    </span>
+                    <button onClick={() => removeInstallment(i)}
+                      className="rounded bg-[#B0492F] px-1.5 py-0.5 text-[9px] font-bold text-white hover:bg-[#9a3d27]">
+                      {EN ? "Yes" : "Sí"}
+                    </button>
+                    <button onClick={() => setConfirmDeleteDepositIdx(null)}
+                      className="rounded border border-[#E6DDCB] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] hover:bg-[#F7F3EA]">
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDeleteDepositIdx(i)}
+                    className="rounded p-1 text-[#C4B89A] transition hover:bg-[#FDE8E3] hover:text-[#B0492F]"
+                    title={EN ? "Remove installment" : "Eliminar cuota"}>
+                    <Trash2 size={11} />
+                  </button>
+                )}
+                <button
+                  onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
+                  className="flex-shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#395886] transition hover:bg-[#EDF3FB]">
+                  {EN ? "Detail" : "Detalle"}
+                </button>
+              </div>
+            </div>
+            <div className="border-t border-[#EDE8DF] bg-[#FDFAF6] px-3 pb-2 pt-1.5">
+              <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-[#EDE8DF]">
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${receivedPct}%`, background: paid ? "#4F8A63" : color }} />
+              </div>
+              <div className="flex justify-end gap-2.5">
+                <span className={`text-[9px] font-bold ${paid ? "text-[#4F8A63]" : received > 0 ? "text-[#D4893A]" : "text-[#C5BDB2]"}`}>
+                  {money(received)} {EN ? "received" : "recibido"}{paid ? " ✓" : ""}
+                </span>
+                <span className="text-[9px] font-semibold text-[#BBADA0]">of {money(target)}</span>
+              </div>
+            </div>
           </div>
-        </button>
-        {showHeader && (
-          <div className="grid grid-cols-2 gap-3 border-t border-[#F0EBE0] px-4 pb-4 pt-3 sm:grid-cols-3">
-            {([
-              { key: "customer_name", label: EN ? "Customer" : "Cliente",  type: "text"  },
-              { key: "city",          label: EN ? "City" : "Ciudad",        type: "text"  },
-              { key: "phone",         label: EN ? "Phone" : "Teléfono",     type: "tel"   },
-              { key: "email",         label: "Email",                        type: "email" },
-              { key: "start_date",    label: EN ? "Start" : "Inicio",       type: "date"  },
-              { key: "end_date",      label: EN ? "End" : "Fin",            type: "date"  },
-            ] as const).map(({ key, label, type }) => (
-              <label key={key} className="grid gap-1">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{label}</span>
-                <input
-                  type={type}
-                  value={(estimate as unknown as Record<string, string>)[key] ?? ""}
-                  onChange={e => setEstimate(p => p ? ({ ...p, [key]: e.target.value }) : p)}
-                  className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1.5 text-[12px] text-[#16323D] focus:border-[#395886] focus:outline-none"
-                />
-              </label>
-            ))}
+        </div>
+        {!isLast && (
+          <div className="flex h-1.5 gap-2.5">
+            <div className="flex w-5 flex-shrink-0 justify-center">
+              <div className="w-0.5 h-full bg-[#DDD6CC]" />
+            </div>
+            <div className="flex-1" />
           </div>
         )}
       </div>
+    );
+  });
 
-      {/* ── Section cards — drag & drop ─────────────────────────────────────── */}
-      <DndContext sensors={sectionSensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
-        <SortableContext items={estimate.sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
-            {estimate.sections.map(section => {
-              const hasItemAmounts = section.items.some(i => i.amount > 0);
-              const effectiveTotal = sectionEffectiveTotal(section);
-              return (
-                <SortableSection
-                  key={section.id}
-                  section={section}
-                  isOpen={expanded.has(section.id)}
-                  EN={EN}
-                  effectiveTotal={effectiveTotal}
-                  hasItemAmounts={hasItemAmounts}
-                  onToggle={() => setExpanded(prev => {
-                    const n = new Set(prev);
-                    n.has(section.id) ? n.delete(section.id) : n.add(section.id);
-                    return n;
-                  })}
-                  onUpdateField={updateSectionField}
-                  onDelete={(id) => {
-                    const sec = estimate.sections.find(s => s.id === id);
-                    setConfirmDeleteSection({ id, name: EN ? (sec?.name_en ?? "") : (sec?.name_es ?? "") });
-                  }}
-                  onUpdateItem={updateItemLocal}
-                  onSaveItem={saveItemField}
-                  onDeleteItem={deleteItem}
-                  onItemsReorder={handleItemsReorder}
-                  onAddItem={addItem}
-                  addingItemTo={addingItemTo}
-                  setAddingItemTo={setAddingItemTo}
-                  newItemDesc={newItemDesc}
-                  setNewItemDesc={setNewItemDesc}
-                  newItemAmt={newItemAmt}
-                  setNewItemAmt={setNewItemAmt}
-                  editingNameId={editingNameId}
-                  setEditingNameId={setEditingNameId}
-                  onSaveName={saveSectionName}
-                />
-              );
-            })}
-          </div>
-        </SortableContext>
-      </DndContext>
+  return (
+    <>
+    {/* ════════════════════════════════════════════════════════════════════════
+        MAIN ESTIMATE CARD
+    ════════════════════════════════════════════════════════════════════════ */}
+    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-md">
 
-      {/* ── Add section ───────────────────────────────────────────────────── */}
-      <button
-        onClick={() => setShowAddSection(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D7CBB3] py-3 text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[#395886] hover:text-[#395886]"
-      >
-        <Plus size={14} /> {EN ? "Add section" : "Agregar sección"}
-      </button>
-
-      {/* ── Totals card ───────────────────────────────────────────────────── */}
-      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
-        {/* Dark header bar */}
-        <div className="flex items-center justify-between bg-[#16323D] px-5 py-3">
-          <span className="text-[13px] font-black uppercase tracking-wider text-white">
-            {estimate.project_title || project.title}
-          </span>
-          <div className="text-right">
-            <div className="text-[9px] font-bold uppercase tracking-[.14em] text-white/50">
-              {EN ? "Grand Total" : "Total Final"}
+      {/* ── HEADER BAND ─────────────────────────────────────────────────────── */}
+      <div className="bg-[#16323D] px-5 pb-0 pt-4">
+        {/* Top row: identity + actions */}
+        <div className="flex items-center gap-3 pb-3">
+          {/* Left: company · status · project title */}
+          <div className="flex-1 min-w-0">
+            <div className="mb-1.5 text-[8.5px] font-bold uppercase tracking-[.15em] text-white/35">
+              {branding.companyName}
             </div>
-            <div className="font-mono text-[18px] font-black text-white">
-              {money(grandTotal)}
-            </div>
-          </div>
-        </div>
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
-
-          {/* Left: amounts */}
-          <div className="space-y-2.5">
-            {discountAmt > 0 && (
-              <div className="flex justify-between text-[12px]">
-                <span className="text-[#5C6A6E]">{EN ? "Labor subtotal" : "Subtotal mano de obra"}</span>
-                <span className="font-mono text-[#16323D]">{money(laborTotal)}</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={estimate.discount_label}
-                  onChange={e => setEstimate(p => p ? ({ ...p, discount_label: e.target.value }) : p)}
-                  className="w-28 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-[11px] text-[#5C6A6E] hover:border-[#E6DDCB] focus:border-[#395886] focus:outline-none"
-                />
-                <span className="text-[11px] text-[#5C6A6E]">(−</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={estimate.discount_pct === 0 ? "" : String(estimate.discount_pct)}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/[^0-9.]/g, "");
-                    setEstimate(p => p ? ({ ...p, discount_pct: parseFloat(raw) || 0 }) : p);
-                  }}
-                  placeholder="0"
-                  className="w-12 rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-[11px] text-[#5C6A6E] placeholder:text-[#C4B89A] hover:border-[#E6DDCB] focus:border-[#395886] focus:outline-none"
-                />
-                <span className="text-[11px] text-[#5C6A6E]">%)</span>
-              </div>
-              <span className={`font-mono text-[12px] ${discountAmt > 0 ? "text-[#4F8A63]" : "text-[#5C6A6E]"}`}>
-                {discountAmt > 0 ? `−${money(discountAmt)}` : "—"}
+            <div className="flex items-center gap-2 min-w-0">
+              <select
+                value={estimate.status}
+                onChange={e => setEstimate(p => p ? ({ ...p, status: e.target.value as EstimateRow["status"] }) : p)}
+                className={`shrink-0 cursor-pointer appearance-none rounded-md border-0 px-2.5 py-1 text-[10px] font-bold ${STATUS_STYLE[estimate.status]}`}
+              >
+                <option value="draft">{EN ? "Draft" : "Borrador"}</option>
+                <option value="sent">{EN ? "Sent" : "Enviado"}</option>
+                <option value="approved">{EN ? "Approved" : "Aprobado"}</option>
+                <option value="rejected">{EN ? "Rejected" : "Rechazado"}</option>
+              </select>
+              <span className="font-bookman truncate text-[17px] font-bold leading-tight text-white">
+                {project.title}
               </span>
             </div>
-            <div className="flex justify-between border-t border-[#E6DDCB] pt-2 text-[14px] font-bold text-[#16323D]">
-              <span>{EN ? "Grand Total" : "Total Final"}</span>
-              <span className="font-mono">{money(grandTotal)}</span>
-            </div>
           </div>
 
-          {/* Right: payment schedule */}
-          <div>
-            {/* Header: label + total received + % sum indicator */}
-            {(() => {
-              const deps    = estimate.deposit_schedule ?? defaultDeposits();
-              const totalRec = deps.reduce((sum, _, i) => sum + depositsForIdx(i).reduce((s, p) => s + p.amount, 0), 0);
-              const pctSum  = deps.reduce((s, d) => s + d.pct, 0);
-              const amtSum  = deps.reduce((s, d) => s + depositTarget(d, grandTotal), 0);
-              const pctOk   = Math.abs(amtSum - grandTotal) < 0.02 || Math.abs(pctSum - 100) < 0.11;
-              return (
-                <div className="mb-2.5 flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
-                    {EN ? "Payment Schedule" : "Calendario de Pagos"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {/* % sum badge */}
-                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${pctOk ? "bg-[#DCEBDD] text-[#4F8A63]" : "bg-[#FDE8E3] text-[#B0492F]"}`}>
-                      {Math.round(pctSum * 10) / 10}% {pctOk ? "✓" : `— ${EN ? "must be 100%" : "debe ser 100%"}`}
+          {/* Right: action buttons */}
+          <div className="flex shrink-0 items-center gap-2">
+            {/* WhatsApp compact — click sends if phone is set, else opens form */}
+            <button
+              onClick={() => waPhone.trim() ? handleWhatsApp() : setShowWaForm(v => !v)}
+              disabled={waLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#1BAD4E] px-3 py-2 text-white transition hover:bg-[#169B43] disabled:opacity-60"
+            >
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6FFFAB]" />
+              <span className="text-[10px] font-bold">WA</span>
+              {waPhone
+                ? <>
+                    <span className="hidden text-[9px] text-white/75 sm:inline">{waPhone}</span>
+                    <span className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-bold">
+                      {waLoading ? "…" : (EN ? "Send ›" : "Enviar ›")}
                     </span>
-                    <span className="text-[9.5px] font-bold uppercase tracking-wide text-[#9E9484]">
-                      {money(totalRec)} / {money(grandTotal)} {EN ? "received" : "recibido"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
+                  </>
+                : <span className="text-[9px] text-white/75">{showWaForm ? "▲" : (EN ? "Setup ›" : "Config ›")}</span>
+              }
+            </button>
 
-            {/* Deposit items — timeline layout */}
-            <div className="flex flex-col">
-              {(estimate.deposit_schedule ?? defaultDeposits()).map((dep, i, arr) => {
-                const color    = DEPOSIT_PALETTE[i % DEPOSIT_PALETTE.length];
-                const isLast   = i === arr.length - 1;
-                // Last deposit gets exact amount = grandTotal - sum(others) to avoid rounding drift
-                const target = (() => {
-                  if (dep.mode === "amount" && dep.fixed_amount) return dep.fixed_amount;
-                  if (isLast && arr.length > 1) {
-                    const sumOthers = arr.slice(0, -1).reduce((s, d) => {
-                      if (d.mode === "amount" && d.fixed_amount) return s + d.fixed_amount;
-                      return s + Math.round(grandTotal * d.pct / 100 * 100) / 100;
-                    }, 0);
-                    return Math.max(0, Math.round((grandTotal - sumOthers) * 100) / 100);
-                  }
-                  return Math.round(grandTotal * dep.pct / 100 * 100) / 100;
-                })();
-                const received    = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
-                const receivedPct = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
-                const paid        = target > 0 && received >= target;
-                const isConfirmDelete = confirmDeleteDepositIdx === i;
-                const depNum      = String(i + 1).padStart(2, "0");
+            {/* Copy */}
+            <button
+              onClick={openCopyModal}
+              title={EN ? "Copy estimate to another project" : "Copiar estimado a otro proyecto"}
+              className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-bold text-white/80 transition hover:bg-white/18 hover:text-white"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span className="hidden sm:inline">{EN ? "Copy" : "Copiar"}</span>
+            </button>
 
-                return (
-                  <div key={i}>
-                    {/* Item row: node column + card */}
-                    <div className="flex gap-2.5">
-                      {/* Node column */}
-                      <div className="flex w-5 flex-shrink-0 flex-col items-center">
-                        {/* Spacer = label row height (26px) + half data row (26px) − half node (6px) */}
-                        <div className="w-0.5 bg-[#DDD6CC]" style={{ height: 46 }} />
-                        <div className="relative z-10 h-3 w-3 flex-shrink-0 rounded-full border-2 bg-white" style={{ borderColor: color }} />
-                        {!isLast && <div className="w-0.5 flex-1 bg-[#DDD6CC]" />}
-                      </div>
+            {/* PDF */}
+            <button
+              onClick={() => setShowPdfModal(true)}
+              title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
+              className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-bold text-white/80 transition hover:bg-white/18 hover:text-white"
+            >
+              <FileText size={12} />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
 
-                      {/* Card */}
-                      <div className="mb-0 flex-1 overflow-hidden rounded-xl border border-[#E6DDCB]">
-                        {/* Label row */}
-                        <div className="flex h-[26px] items-center bg-[#EEE9E0] px-3">
-                          <span className="text-[9px] font-black uppercase tracking-[.14em] text-[#7A8278]">
-                            {EN ? `Deposit ${depNum}` : `Cuota ${depNum}`}
-                          </span>
-                        </div>
-
-                        {/* Data row: % | $amount | separator | concept | actions */}
-                        <div className="flex min-h-[52px] items-center">
-                          {/* % badge */}
-                          <button
-                            onClick={() => openDepositEdit(i)}
-                            title={EN ? "Edit installment" : "Editar cuota"}
-                            className="flex w-[62px] flex-shrink-0 items-center justify-center self-stretch text-[17px] font-black text-white transition hover:opacity-80"
-                            style={{ background: color }}
-                          >
-                            {Math.round(dep.pct)}%
-                          </button>
-
-                          {/* Amount */}
-                          <span className="flex-shrink-0 px-3.5 font-mono text-[15px] font-black text-[#16323D]">
-                            {money(target)}
-                          </span>
-
-                          {/* Vertical separator */}
-                          <div className="w-px flex-shrink-0 self-stretch bg-[#EDE8DF]" />
-
-                          {/* Concept — click to edit */}
-                          <button
-                            onClick={() => openDepositEdit(i)}
-                            title={EN ? "Click to edit" : "Clic para editar"}
-                            className="group flex flex-1 items-center gap-1 overflow-hidden px-3 text-left"
-                          >
-                            <span className="truncate text-[11px] font-semibold text-[#5C6A6E] group-hover:text-[#395886]">
-                              {EN ? dep.label_en : dep.label_es}
-                            </span>
-                            <Pencil size={8} className="flex-shrink-0 text-[#C4B89A] group-hover:text-[#395886]" />
-                          </button>
-
-                          {/* Actions */}
-                          <div className="flex flex-shrink-0 items-center gap-1.5 self-stretch border-l border-[#EDE8DF] px-2.5">
-                            {isConfirmDelete ? (
-                              <div className="flex items-center gap-1">
-                                <span className="whitespace-nowrap text-[9px] font-semibold text-[#B0492F]">
-                                  {EN ? "Delete?" : "¿Eliminar?"}
-                                </span>
-                                <button onClick={() => removeInstallment(i)}
-                                  className="rounded bg-[#B0492F] px-1.5 py-0.5 text-[9px] font-bold text-white hover:bg-[#9a3d27]">
-                                  {EN ? "Yes" : "Sí"}
-                                </button>
-                                <button onClick={() => setConfirmDeleteDepositIdx(null)}
-                                  className="rounded border border-[#E6DDCB] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] hover:bg-[#F7F3EA]">
-                                  No
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setConfirmDeleteDepositIdx(i)}
-                                className="rounded p-1 text-[#C4B89A] transition hover:bg-[#FDE8E3] hover:text-[#B0492F]"
-                                title={EN ? "Remove installment" : "Eliminar cuota"}
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
-                              className="flex-shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#395886] transition hover:bg-[#EDF3FB]"
-                            >
-                              {EN ? "Detail" : "Detalle"}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Track footer */}
-                        <div className="border-t border-[#EDE8DF] bg-[#FDFAF6] px-3 pb-2 pt-1.5">
-                          <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-[#EDE8DF]">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{ width: `${receivedPct}%`, background: paid ? "#4F8A63" : color }}
-                            />
-                          </div>
-                          <div className="flex justify-end gap-2.5">
-                            <span className={`text-[9px] font-bold ${paid ? "text-[#4F8A63]" : received > 0 ? "text-[#D4893A]" : "text-[#C5BDB2]"}`}>
-                              {money(received)} {EN ? "received" : "recibido"}{paid ? " ✓" : ""}
-                            </span>
-                            <span className="text-[9px] font-semibold text-[#BBADA0]">of {money(target)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Gap connector between items */}
-                    {!isLast && (
-                      <div className="flex h-1.5 gap-2.5">
-                        <div className="flex w-5 flex-shrink-0 justify-center">
-                          <div className="w-0.5 h-full bg-[#DDD6CC]" />
-                        </div>
-                        <div className="flex-1" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Add installment */}
-            <div className="mt-2 flex gap-2.5">
-              <div className="w-5 flex-shrink-0" />
-              <button
-                onClick={addInstallment}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] transition hover:border-[#395886] hover:text-[#395886]"
-              >
-                <Plus size={11} /> {EN ? "Add payment" : "Agregar cuota"}
-              </button>
-            </div>
+            {/* Save — context-aware color + label */}
+            <button
+              onClick={saveHeader}
+              disabled={saving}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold transition disabled:opacity-50 ${
+                estimateSubTab === "sections"
+                  ? "bg-white text-[#16323D] hover:bg-[#F5E9DA]"
+                  : "bg-[#F0A090] text-[#7B1838] hover:bg-[#FFB8A8]"
+              }`}
+            >
+              {saving
+                ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                : <Save size={12} strokeWidth={2.5} />
+              }
+              {saving
+                ? "…"
+                : estimateSubTab === "sections"
+                  ? (EN ? "Save" : "Guardar")
+                  : (EN ? "Save schedule" : "Guardar calendario")
+              }
+            </button>
           </div>
+        </div>
+
+        {/* WA form — slides in when no phone configured or user opens it */}
+        {showWaForm && (
+          <div className="flex flex-wrap items-center gap-2 border-t border-white/10 py-2.5">
+            <select
+              value={waCode}
+              onChange={e => { setWaCode(e.target.value); setWaPhone(""); }}
+              className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-[11px] text-white focus:outline-none"
+            >
+              {WA_CODES.map(c => (
+                <option key={c.code} value={c.code}>{c.flag} {c.code} {c.label}</option>
+              ))}
+            </select>
+            <input
+              type="tel"
+              value={waPhone}
+              onChange={e => setWaPhone(fmtPhone(e.target.value, waCode))}
+              placeholder={phonePlaceholder(waCode)}
+              className="min-w-[140px] flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] text-white placeholder:text-white/40 focus:border-[#25D366] focus:outline-none"
+            />
+            <button
+              onClick={() => { handleWhatsApp(); setShowWaForm(false); }}
+              disabled={waLoading || !waPhone.trim()}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-40"
+            >
+              <Send size={11} /> {waLoading ? "…" : (EN ? "Send PDF" : "Enviar PDF")}
+            </button>
+            <button onClick={() => setShowWaForm(false)} className="p-1 text-white/40 transition hover:text-white">
+              <X size={14} />
+            </button>
+            <span className="w-full text-[9.5px] text-white/40">
+              {EN ? "Mobile: shares PDF · Desktop: opens WhatsApp Web" : "Móvil: adjunta PDF · Desktop: abre WhatsApp Web"}
+            </span>
+          </div>
+        )}
+
+        {/* Tab row */}
+        <div className="flex items-end gap-1">
+          <button
+            onClick={() => setEstimateSubTab("sections")}
+            className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
+              estimateSubTab === "sections"
+                ? "bg-white text-[#16323D]"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            📐 {EN ? "Sections" : "Secciones"}
+          </button>
+          <button
+            onClick={() => setEstimateSubTab("schedule")}
+            className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
+              estimateSubTab === "schedule"
+                ? "bg-white text-[#16323D]"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            💰 {EN ? "Payment Schedule" : "Calendario de Pagos"}
+          </button>
         </div>
       </div>
 
-      {/* ── Action bar ────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-3">
-        <button
-          onClick={() => setShowGenTasks(true)}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#395886] bg-[#EDF3FB] px-4 py-2.5 text-sm font-bold text-[#395886] transition hover:bg-[#D5DEEF]"
-        >
-          <Zap size={14} />
-          {EN ? "Generate Workflow Tasks" : "Generar Tareas en Workflow"}
-        </button>
-        <button
-          onClick={() => setShowPdfModal(true)}
-          title={EN ? "Download PDF proposal" : "Descargar propuesta en PDF"}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0F2830]"
-        >
-          <FileText size={14} />
-          {EN ? "Download PDF" : "Descargar PDF"}
-        </button>
-      </div>
+      {/* ════════════════════════════════════════════════
+          SECTIONS TAB
+      ════════════════════════════════════════════════ */}
+      {estimateSubTab === "sections" && (
+        <>
+          {/* Sub-band: totals summary */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[#E6DDCB] bg-[#F7F3EA] px-5 py-2.5">
+            <div>
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                {EN ? "Labor subtotal" : "Subtotal mano de obra"}
+              </div>
+              <div className="text-[13px] font-black text-[#16323D]">{money(laborTotal)}</div>
+            </div>
+            {discountAmt > 0 && (
+              <>
+                <div className="text-[#C4B89A]">·</div>
+                <div>
+                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                    {EN ? "Grand Total" : "Total Final"}
+                  </div>
+                  <div className="text-[13px] font-black text-[#16323D]">{money(grandTotal)}</div>
+                </div>
+              </>
+            )}
+            {/* Discount badge — right */}
+            <div className="ml-auto flex items-center gap-2 rounded-lg border border-[#F0C8BC] bg-[#FDF5F3] px-3 py-1.5">
+              <span className="text-[9px] font-bold uppercase tracking-wide text-[#B0492F]">
+                {EN ? "Discount" : "Descuento"}
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={estimate.discount_pct === 0 ? "" : String(estimate.discount_pct)}
+                onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9.]/g, "");
+                  setEstimate(p => p ? ({ ...p, discount_pct: parseFloat(raw) || 0 }) : p);
+                }}
+                placeholder="0"
+                className="w-10 border-none bg-transparent text-center text-[12px] font-black text-[#B0492F] focus:outline-none"
+              />
+              <span className="text-[9px] font-bold text-[#B0492F]">%</span>
+              {discountAmt > 0 && (
+                <span className="font-mono text-[11px] font-black text-[#B0492F]">–{money(discountAmt)}</span>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3 p-4">
+            {/* Customer info (collapsible) */}
+            <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+              <button
+                className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-[#FDFAF6]"
+                onClick={() => setShowHeader(h => !h)}
+              >
+                <div className="flex items-center gap-3">
+                  <Info size={14} className="shrink-0 text-[#5C6A6E]" />
+                  <span className="text-[12px] font-bold text-[#16323D]">
+                    {estimate.customer_name || (EN ? "Customer info" : "Info del cliente")}
+                  </span>
+                  {estimate.city && <span className="text-[11px] text-[#5C6A6E]">· {estimate.city}</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  {showHeader
+                    ? <ChevronUp size={14} className="shrink-0 text-[#5C6A6E]" />
+                    : <ChevronDown size={14} className="shrink-0 text-[#5C6A6E]" />}
+                </div>
+              </button>
+              {showHeader && (
+                <div className="grid grid-cols-2 gap-3 border-t border-[#F0EBE0] px-4 pb-4 pt-3 sm:grid-cols-3">
+                  {([
+                    { key: "customer_name", label: EN ? "Customer" : "Cliente",  type: "text"  },
+                    { key: "city",          label: EN ? "City" : "Ciudad",        type: "text"  },
+                    { key: "phone",         label: EN ? "Phone" : "Teléfono",     type: "tel"   },
+                    { key: "email",         label: "Email",                        type: "email" },
+                    { key: "start_date",    label: EN ? "Start" : "Inicio",       type: "date"  },
+                    { key: "end_date",      label: EN ? "End" : "Fin",            type: "date"  },
+                  ] as const).map(({ key, label, type }) => (
+                    <label key={key} className="grid gap-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{label}</span>
+                      <input
+                        type={type}
+                        value={(estimate as unknown as Record<string, string>)[key] ?? ""}
+                        onChange={e => setEstimate(p => p ? ({ ...p, [key]: e.target.value }) : p)}
+                        className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1.5 text-[12px] text-[#16323D] focus:border-[#395886] focus:outline-none"
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section cards — drag & drop */}
+            <DndContext sensors={sectionSensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+              <SortableContext items={estimate.sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                  {estimate.sections.map(section => {
+                    const hasItemAmounts = section.items.some(i => i.amount > 0);
+                    const effectiveTotal = sectionEffectiveTotal(section);
+                    return (
+                      <SortableSection
+                        key={section.id}
+                        section={section}
+                        isOpen={expanded.has(section.id)}
+                        EN={EN}
+                        effectiveTotal={effectiveTotal}
+                        hasItemAmounts={hasItemAmounts}
+                        onToggle={() => setExpanded(prev => {
+                          const n = new Set(prev);
+                          n.has(section.id) ? n.delete(section.id) : n.add(section.id);
+                          return n;
+                        })}
+                        onUpdateField={updateSectionField}
+                        onDelete={(id) => {
+                          const sec = estimate.sections.find(s => s.id === id);
+                          setConfirmDeleteSection({ id, name: EN ? (sec?.name_en ?? "") : (sec?.name_es ?? "") });
+                        }}
+                        onUpdateItem={updateItemLocal}
+                        onSaveItem={saveItemField}
+                        onDeleteItem={deleteItem}
+                        onItemsReorder={handleItemsReorder}
+                        onAddItem={addItem}
+                        addingItemTo={addingItemTo}
+                        setAddingItemTo={setAddingItemTo}
+                        newItemDesc={newItemDesc}
+                        setNewItemDesc={setNewItemDesc}
+                        newItemAmt={newItemAmt}
+                        setNewItemAmt={setNewItemAmt}
+                        editingNameId={editingNameId}
+                        setEditingNameId={setEditingNameId}
+                        onSaveName={saveSectionName}
+                      />
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
+
+            {/* Add section */}
+            <button
+              onClick={() => setShowAddSection(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D7CBB3] py-3 text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[#395886] hover:text-[#395886]"
+            >
+              <Plus size={14} /> {EN ? "Add section" : "Agregar sección"}
+            </button>
+
+            {/* Totals footer row */}
+            {estimate.sections.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-4 py-3">
+                <div className="flex items-center gap-6">
+                  {discountAmt > 0 && (
+                    <div>
+                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                        {EN ? "Labor subtotal" : "Subtotal M.O."}
+                      </div>
+                      <div className="font-mono text-[12px] font-bold text-[#16323D]">{money(laborTotal)}</div>
+                    </div>
+                  )}
+                  {discountAmt > 0 && (
+                    <div>
+                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                        {EN ? "Discount" : "Descuento"} {estimate.discount_pct}%
+                      </div>
+                      <div className="font-mono text-[12px] font-bold text-[#B0492F]">–{money(discountAmt)}</div>
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                    {EN ? "Grand Total" : "Total Final"}
+                  </div>
+                  <div className="font-mono text-[17px] font-black text-[#16323D]">{money(grandTotal)}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Generate Workflow Tasks */}
+            <button
+              onClick={() => setShowGenTasks(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#395886] bg-[#EDF3FB] py-2.5 text-[12px] font-bold text-[#395886] transition hover:bg-[#D5DEEF]"
+            >
+              <Zap size={13} />
+              {EN ? "Generate Workflow Tasks" : "Generar Tareas en Workflow"}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ════════════════════════════════════════════════
+          PAYMENT SCHEDULE TAB
+      ════════════════════════════════════════════════ */}
+      {estimateSubTab === "schedule" && (
+        <>
+          {/* Sub-band: quick stats */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-[#E6DDCB] bg-[#F7F3EA] px-5 py-2.5">
+            <div>
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                {EN ? "Installments" : "Cuotas"}
+              </div>
+              <div className="text-[13px] font-black text-[#16323D]">{deps.length}</div>
+            </div>
+            <div>
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                {EN ? "Received" : "Recibido"}
+              </div>
+              <div className="font-mono text-[13px] font-black text-[#4F8A63]">{money(totalRec)}</div>
+            </div>
+            <div>
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                {EN ? "Pending" : "Pendiente"}
+              </div>
+              <div className="font-mono text-[13px] font-black text-[#B0492F]">{money(pending)}</div>
+            </div>
+            <span className={`ml-auto rounded-full px-2.5 py-1 text-[9px] font-black ${pctOk ? "bg-[#DCEBDD] text-[#4F8A63]" : "bg-[#FDE8E3] text-[#B0492F]"}`}>
+              {Math.round(pctSum * 10) / 10}% {pctOk ? "✓" : `— ${EN ? "must be 100%" : "debe ser 100%"}`}
+            </span>
+          </div>
+
+          <div className="space-y-4 p-4">
+            {/* Totals card: Labor → Discount (red) → Grand Total → Progress */}
+            <div className="overflow-hidden rounded-xl border border-[#E6DDCB] shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#F0EAE0] bg-white px-4 py-2.5">
+                <span className="flex items-center gap-2 text-[11px] text-[#5C6A6E]">
+                  {EN ? "Labor subtotal" : "Subtotal mano de obra"}
+                  <span className="rounded bg-[#F0EAE0] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-[#97A1A0]">
+                    {estimate.sections.length} {EN ? "sections" : "secciones"}
+                  </span>
+                </span>
+                <span className="font-mono text-[13px] font-bold text-[#16323D]">{money(laborTotal)}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-[#F0EAE0] bg-[#FDF5F3] px-4 py-2.5">
+                <span className="flex items-center gap-2 text-[11px] font-bold text-[#B0492F]">
+                  <span className="text-[10px]">▼</span>
+                  {EN ? "Discount" : "Descuento"}
+                  <span className="rounded bg-[#F5D5CC] px-1.5 py-0.5 text-[8px] font-black uppercase text-[#B0492F]">
+                    {estimate.discount_pct}%
+                  </span>
+                </span>
+                <span className="font-mono text-[13px] font-bold text-[#B0492F]">–{money(discountAmt)}</span>
+              </div>
+              <div className="flex items-center justify-between bg-[#16323D] px-4 py-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white/65">
+                  {EN ? "Grand Total" : "Total Final"}
+                </span>
+                <span className="font-mono text-[18px] font-black text-white">{money(grandTotal)}</span>
+              </div>
+              {/* Received vs pending progress */}
+              <div className="border-t border-[#E6DDCB] bg-[#F7F3EA] px-4 py-2.5">
+                <div className="mb-1.5 flex justify-between text-[9px] font-bold">
+                  <span className="text-[#4F8A63]">{EN ? "Received" : "Recibido"} · {money(totalRec)} ({recvPct}%)</span>
+                  <span className="text-[#B0492F]">{EN ? "Pending" : "Pendiente"} · {money(pending)}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#E6DDCB]">
+                  <div className="h-full rounded-full bg-[#4F8A63] transition-all duration-500" style={{ width: `${recvPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Deposit rows */}
+            <div>
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+                {EN ? "Payment Schedule" : "Cuotas de Pago"}
+              </div>
+              <div className="flex flex-col">{depositRows}</div>
+              {/* Add installment */}
+              <div className="mt-2 flex gap-2.5">
+                <div className="w-5 flex-shrink-0" />
+                <button
+                  onClick={addInstallment}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] transition hover:border-[#395886] hover:text-[#395886]"
+                >
+                  <Plus size={11} /> {EN ? "Add payment" : "Agregar cuota"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+    </div>{/* /main card */}
 
       {/* ── Add Section modal ──────────────────────────────────────────────── */}
       {showAddSection && (
@@ -1914,21 +2036,6 @@ export default function EstimateTab({
           </div>
         );
       })()}
-
-      {/* ── Floating Save FAB ─────────────────────────────────────────────── */}
-      <button
-        onClick={saveHeader}
-        disabled={saving}
-        title={EN ? "Save estimate" : "Guardar estimado"}
-        className="fixed bottom-[5.5rem] right-6 z-[200] flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full bg-[#7B1838] text-white shadow-[0_4px_20px_rgba(123,24,56,0.45)] transition hover:bg-[#6a1530] hover:shadow-[0_6px_24px_rgba(123,24,56,0.55)] disabled:opacity-60 active:scale-95"
-      >
-        {saving
-          ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          : <Save size={19} strokeWidth={2.2} />}
-        <span className="text-[9px] font-bold tracking-wide">
-          {saving ? "…" : (EN ? "SAVE" : "GUARDAR")}
-        </span>
-      </button>
 
       {/* ── Confirm delete section ────────────────────────────────────────── */}
       {confirmDeleteSection && (
@@ -2216,6 +2323,6 @@ export default function EstimateTab({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
