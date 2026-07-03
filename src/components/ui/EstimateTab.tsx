@@ -136,7 +136,7 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
         value={item.description}
         onChange={e => onUpdateLocal(sectionId, item.id, "description", e.target.value)}
         onBlur={e  => onSaveField(item.id, "description", e.target.value)}
-        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[12px] text-[#16323D] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none"
+        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[#16323D] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none"
       />
       <input
         type="number"
@@ -144,7 +144,7 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
         onChange={e => onUpdateLocal(sectionId, item.id, "amount", e.target.value)}
         onBlur={e  => onSaveField(item.id, "amount", e.target.value)}
         placeholder="0"
-        className="w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[12px] text-[#16323D] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none"
+        className="w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] text-[#16323D] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none"
       />
       <button
         onClick={() => onDelete(sectionId, item.id)}
