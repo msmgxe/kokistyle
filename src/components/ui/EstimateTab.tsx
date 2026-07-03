@@ -1364,101 +1364,163 @@ export default function EstimateTab({
 
           {/* Right: payment schedule */}
           <div>
-            <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
-              {EN ? "Payment Schedule" : "Calendario de Pagos"}
-            </div>
-            <div className="space-y-2">
-              {(estimate.deposit_schedule ?? defaultDeposits()).map((dep, i) => {
-                const color    = DEPOSIT_PALETTE[i % DEPOSIT_PALETTE.length];
-                const target   = depositTarget(dep, grandTotal);
-                const received = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
+            {/* Header: label + total received */}
+            {(() => {
+              const deps = estimate.deposit_schedule ?? defaultDeposits();
+              const totalRec = deps.reduce((sum, _, i) => sum + depositsForIdx(i).reduce((s, p) => s + p.amount, 0), 0);
+              return (
+                <div className="mb-2.5 flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+                    {EN ? "Payment Schedule" : "Calendario de Pagos"}
+                  </span>
+                  <span className="text-[9.5px] font-bold uppercase tracking-wide text-[#9E9484]">
+                    {money(totalRec)} / {money(grandTotal)} {EN ? "received" : "recibido"}
+                  </span>
+                </div>
+              );
+            })()}
+
+            {/* Deposit items — timeline layout */}
+            <div className="flex flex-col">
+              {(estimate.deposit_schedule ?? defaultDeposits()).map((dep, i, arr) => {
+                const color       = DEPOSIT_PALETTE[i % DEPOSIT_PALETTE.length];
+                const target      = depositTarget(dep, grandTotal);
+                const received    = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
                 const receivedPct = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
-                const paid     = target > 0 && received >= target;
+                const paid        = target > 0 && received >= target;
+                const isLast      = i === arr.length - 1;
                 const isConfirmDelete = confirmDeleteDepositIdx === i;
+                const depNum      = String(i + 1).padStart(2, "0");
 
                 return (
-                  <div key={i} className="rounded-xl border border-[#E6DDCB] overflow-hidden">
-                    <div className="flex items-center gap-3 px-3 py-2">
-                      {/* Value badge — click to open edit modal */}
-                      <button
-                        onClick={() => openDepositEdit(i)}
-                        title={EN ? "Edit installment" : "Editar cuota"}
-                        className="flex shrink-0 flex-col items-center rounded-xl px-4 py-2.5 transition hover:opacity-80 active:scale-95"
-                        style={{ background: color }}
-                      >
-                        <span className="text-[15px] font-extrabold leading-tight text-white">
-                          {Math.round(dep.pct)}%
-                        </span>
-                        <span className="text-[10px] font-semibold text-white/75 leading-snug">
-                          {money(target)}
-                        </span>
-                      </button>
-
-                      {/* Label + received / target */}
-                      <div className="flex-1 min-w-0">
-                        <button
-                          className="group mb-0.5 flex items-center gap-1 text-left"
-                          onClick={() => openDepositEdit(i)}
-                          title={EN ? "Click to edit" : "Clic para editar"}
-                        >
-                          <span className="text-[10px] font-semibold uppercase text-[#5C6A6E] group-hover:text-[#395886] truncate max-w-[150px]">
-                            {EN ? dep.label_en : dep.label_es}
-                          </span>
-                          <Pencil size={8} className="shrink-0 text-[#C4B89A] group-hover:text-[#395886]" />
-                        </button>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`font-mono text-[11px] font-semibold ${paid ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
-                            {money(received)}
-                          </span>
-                          <span className="text-[10px] text-[#5C6A6E]">/ {money(target)}</span>
-                          {paid && <span className="text-[9px] font-bold text-[#4F8A63]">✓ {EN ? "PAID" : "COBRADO"}</span>}
-                        </div>
+                  <div key={i}>
+                    {/* Item row: node column + card */}
+                    <div className="flex gap-2.5">
+                      {/* Node column */}
+                      <div className="flex w-5 flex-shrink-0 flex-col items-center">
+                        {/* Spacer = label row height (26px) + half data row (26px) − half node (6px) */}
+                        <div className="w-0.5 bg-[#DDD6CC]" style={{ height: 46 }} />
+                        <div className="relative z-10 h-3 w-3 flex-shrink-0 rounded-full border-2 bg-white" style={{ borderColor: color }} />
+                        {!isLast && <div className="w-0.5 flex-1 bg-[#DDD6CC]" />}
                       </div>
 
-                      {/* Actions: delete confirm + detail */}
-                      <div className="flex shrink-0 items-center gap-1">
-                        {isConfirmDelete ? (
-                          <div className="flex items-center gap-1">
-                            <span className="text-[9px] font-semibold text-[#B0492F] whitespace-nowrap">{EN ? "Delete?" : "¿Eliminar?"}</span>
-                            <button onClick={() => removeInstallment(i)}
-                              className="rounded bg-[#B0492F] px-1.5 py-0.5 text-[9px] font-bold text-white hover:bg-[#9a3d27]">
-                              {EN ? "Yes" : "Sí"}
-                            </button>
-                            <button onClick={() => setConfirmDeleteDepositIdx(null)}
-                              className="rounded border border-[#E6DDCB] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] hover:bg-[#F7F3EA]">
-                              {EN ? "No" : "No"}
+                      {/* Card */}
+                      <div className="mb-0 flex-1 overflow-hidden rounded-xl border border-[#E6DDCB]">
+                        {/* Label row */}
+                        <div className="flex h-[26px] items-center bg-[#EEE9E0] px-3">
+                          <span className="text-[9px] font-black uppercase tracking-[.14em] text-[#7A8278]">
+                            {EN ? `Deposit ${depNum}` : `Cuota ${depNum}`}
+                          </span>
+                        </div>
+
+                        {/* Data row: % | $amount | separator | concept | actions */}
+                        <div className="flex min-h-[52px] items-center">
+                          {/* % badge */}
+                          <button
+                            onClick={() => openDepositEdit(i)}
+                            title={EN ? "Edit installment" : "Editar cuota"}
+                            className="flex w-[62px] flex-shrink-0 items-center justify-center self-stretch text-[17px] font-black text-white transition hover:opacity-80"
+                            style={{ background: color }}
+                          >
+                            {Math.round(dep.pct)}%
+                          </button>
+
+                          {/* Amount */}
+                          <span className="flex-shrink-0 px-3.5 font-mono text-[15px] font-black text-[#16323D]">
+                            {money(target)}
+                          </span>
+
+                          {/* Vertical separator */}
+                          <div className="w-px flex-shrink-0 self-stretch bg-[#EDE8DF]" />
+
+                          {/* Concept — click to edit */}
+                          <button
+                            onClick={() => openDepositEdit(i)}
+                            title={EN ? "Click to edit" : "Clic para editar"}
+                            className="group flex flex-1 items-center gap-1 overflow-hidden px-3 text-left"
+                          >
+                            <span className="truncate text-[11px] font-semibold text-[#5C6A6E] group-hover:text-[#395886]">
+                              {EN ? dep.label_en : dep.label_es}
+                            </span>
+                            <Pencil size={8} className="flex-shrink-0 text-[#C4B89A] group-hover:text-[#395886]" />
+                          </button>
+
+                          {/* Actions */}
+                          <div className="flex flex-shrink-0 items-center gap-1.5 self-stretch border-l border-[#EDE8DF] px-2.5">
+                            {isConfirmDelete ? (
+                              <div className="flex items-center gap-1">
+                                <span className="whitespace-nowrap text-[9px] font-semibold text-[#B0492F]">
+                                  {EN ? "Delete?" : "¿Eliminar?"}
+                                </span>
+                                <button onClick={() => removeInstallment(i)}
+                                  className="rounded bg-[#B0492F] px-1.5 py-0.5 text-[9px] font-bold text-white hover:bg-[#9a3d27]">
+                                  {EN ? "Yes" : "Sí"}
+                                </button>
+                                <button onClick={() => setConfirmDeleteDepositIdx(null)}
+                                  className="rounded border border-[#E6DDCB] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] hover:bg-[#F7F3EA]">
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDeleteDepositIdx(i)}
+                                className="rounded p-1 text-[#C4B89A] transition hover:bg-[#FDE8E3] hover:text-[#B0492F]"
+                                title={EN ? "Remove installment" : "Eliminar cuota"}
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
+                              className="flex-shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#395886] transition hover:bg-[#EDF3FB]"
+                            >
+                              {EN ? "Detail" : "Detalle"}
                             </button>
                           </div>
-                        ) : (
-                          <button onClick={() => setConfirmDeleteDepositIdx(i)}
-                            className="rounded p-1 text-[#C4B89A] hover:bg-[#FDE8E3] hover:text-[#B0492F] transition"
-                            title={EN ? "Remove installment" : "Eliminar cuota"}>
-                            <Trash2 size={11} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
-                          className="shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#395886] hover:bg-[#EDF3FB] transition"
-                        >
-                          {EN ? "Detail" : "Detalle"}
-                        </button>
+                        </div>
+
+                        {/* Track footer */}
+                        <div className="border-t border-[#EDE8DF] bg-[#FDFAF6] px-3 pb-2 pt-1.5">
+                          <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-[#EDE8DF]">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${receivedPct}%`, background: paid ? "#4F8A63" : color }}
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2.5">
+                            <span className={`text-[9px] font-bold ${paid ? "text-[#4F8A63]" : received > 0 ? "text-[#D4893A]" : "text-[#C5BDB2]"}`}>
+                              {money(received)} {EN ? "received" : "recibido"}{paid ? " ✓" : ""}
+                            </span>
+                            <span className="text-[9px] font-semibold text-[#BBADA0]">of {money(target)}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    {/* Progress bar */}
-                    <div className="h-[4px] bg-[#F0EBE0]">
-                      <div className="h-full transition-all duration-500" style={{ width: `${receivedPct}%`, background: paid ? "#4F8A63" : color }} />
-                    </div>
+
+                    {/* Gap connector between items */}
+                    {!isLast && (
+                      <div className="flex h-1.5 gap-2.5">
+                        <div className="flex w-5 flex-shrink-0 justify-center">
+                          <div className="w-0.5 h-full bg-[#DDD6CC]" />
+                        </div>
+                        <div className="flex-1" />
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
+
             {/* Add installment */}
-            <button
-              onClick={addInstallment}
-              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] transition hover:border-[#395886] hover:text-[#395886]"
-            >
-              <Plus size={11} /> {EN ? "Add payment" : "Agregar cuota"}
-            </button>
+            <div className="mt-2 flex gap-2.5">
+              <div className="w-5 flex-shrink-0" />
+              <button
+                onClick={addInstallment}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] transition hover:border-[#395886] hover:text-[#395886]"
+              >
+                <Plus size={11} /> {EN ? "Add payment" : "Agregar cuota"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
