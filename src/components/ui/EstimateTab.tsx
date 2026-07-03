@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -525,10 +525,13 @@ export default function EstimateTab({
   const [depDate,                 setDepDate]                 = useState(new Date().toISOString().split("T")[0]);
   const [confirmDeleteDepositIdx, setConfirmDeleteDepositIdx] = useState<number | null>(null);
   // Edit-installment modal
-  const [editDepositIdx,   setEditDepositIdx]   = useState<number | null>(null);
-  const [editDepositLabel, setEditDepositLabel] = useState("");
-  const [editDepositPct,   setEditDepositPct]   = useState("");
-  const [editDepositAmt,   setEditDepositAmt]   = useState("");
+  const [editDepositIdx,          setEditDepositIdx]          = useState<number | null>(null);
+  const [editDepositLabel,        setEditDepositLabel]        = useState("");
+  const [editDepositPct,          setEditDepositPct]          = useState("");
+  const [editDepositAmt,          setEditDepositAmt]          = useState("");
+  const [editDepositLastChanged,  setEditDepositLastChanged]  = useState<"pct" | "amount">("pct");
+  // Ref mirrors editDepositLastChanged synchronously — avoids stale closure on rapid Save
+  const editDepositLastChangedRef = useRef<"pct" | "amount">("pct");
   const [depMethod,        setDepMethod]        = useState<Payment["method"]>("Transferencia");
   const [depConcept,       setDepConcept]       = useState("");
   const [depSaving,        setDepSaving]        = useState(false);
@@ -920,9 +923,14 @@ export default function EstimateTab({
     setEditDepositLabel(EN ? dep.label_en : dep.label_es);
     setEditDepositPct(String(Math.round(pct * 10) / 10));
     setEditDepositAmt(String(amt));
+    const initMode = dep.mode === "amount" ? "amount" : "pct";
+    editDepositLastChangedRef.current = initMode;
+    setEditDepositLastChanged(initMode);
   }, [estimate, EN, totals.grandTotal]);
 
   const onEditDepositPctChange = useCallback((raw: string) => {
+    editDepositLastChangedRef.current = "pct";
+    setEditDepositLastChanged("pct");
     setEditDepositPct(raw);
     const pct = parseFloat(raw) || 0;
     const gt  = totals.grandTotal;
@@ -930,6 +938,8 @@ export default function EstimateTab({
   }, [totals.grandTotal]);
 
   const onEditDepositAmtChange = useCallback((raw: string) => {
+    editDepositLastChangedRef.current = "amount";
+    setEditDepositLastChanged("amount");
     setEditDepositAmt(raw);
     const amt = parseFloat(raw) || 0;
     const gt  = totals.grandTotal;
@@ -939,23 +949,52 @@ export default function EstimateTab({
 
   const saveDepositEdit = useCallback(() => {
     if (editDepositIdx === null || !estimate) return;
-    const pct   = Math.max(0, parseFloat(editDepositPct) || 0);
-    const label = editDepositLabel.trim() || (EN ? "PAYMENT" : "PAGO");
+    const label  = editDepositLabel.trim() || (EN ? "PAYMENT" : "PAGO");
+    const gt     = totals.grandTotal;
+    const pctVal = Math.max(0, parseFloat(editDepositPct) || 0);
+    const amtVal = Math.max(0, parseFloat(editDepositAmt) || 0);
+
+    // If the entered $ amount diverges from what % would compute by more than $0.50,
+    // or the user explicitly switched to amount mode → save as fixed amount.
+    const computedFromPct    = Math.round(gt * pctVal / 100 * 100) / 100;
+    const amtDiffersFromPct  = Math.abs(amtVal - computedFromPct) > 0.5;
+    const useAmountMode      = amtDiffersFromPct || editDepositLastChangedRef.current === "amount";
+
+    let newMode:        "pct" | "amount";
+    let newPct:         number;
+    let newFixedAmount: number | undefined;
+
+    if (useAmountMode) {
+      newMode        = "amount";
+      newFixedAmount = amtVal;
+      newPct         = gt > 0 ? Math.round(amtVal / gt * 1000) / 10 : 0;
+    } else {
+      newMode        = "pct";
+      newPct         = pctVal;
+      newFixedAmount = undefined;
+    }
 
     const updated = estimate.deposit_schedule.map((d, j) =>
-      j === editDepositIdx ? { ...d, label_en: label, label_es: label, mode: "pct" as const, pct, fixed_amount: undefined } : d
+      j === editDepositIdx
+        ? { ...d, label_en: label, label_es: label, mode: newMode, pct: newPct, fixed_amount: newFixedAmount }
+        : d
     );
 
-    // Auto-balance: if edited deposit is not the last, adjust last so total = 100%
+    // Auto-balance: when editing a non-last deposit, set last deposit to the exact remainder
     const lastIdx = updated.length - 1;
     if (editDepositIdx !== lastIdx && lastIdx > 0) {
-      const sumWithoutLast = updated.slice(0, lastIdx).reduce((s, d) => s + d.pct, 0);
-      updated[lastIdx] = { ...updated[lastIdx], pct: Math.max(0, Math.round((100 - sumWithoutLast) * 100) / 100) };
+      const sumOthers = updated.slice(0, lastIdx).reduce((s, d) => {
+        const tgt = d.mode === "amount" && d.fixed_amount != null ? d.fixed_amount : Math.round(gt * d.pct / 100 * 100) / 100;
+        return s + tgt;
+      }, 0);
+      const lastAmt = Math.max(0, Math.round((gt - sumOthers) * 100) / 100);
+      const lastPct = gt > 0 ? Math.round(lastAmt / gt * 1000) / 10 : 0;
+      updated[lastIdx] = { ...updated[lastIdx], mode: "amount", fixed_amount: lastAmt, pct: lastPct };
     }
 
     setEstimate(prev => prev ? { ...prev, deposit_schedule: updated } : prev);
     setEditDepositIdx(null);
-  }, [editDepositIdx, editDepositLabel, editDepositPct, estimate, EN]);
+  }, [editDepositIdx, editDepositLabel, editDepositPct, editDepositAmt, estimate, EN, totals.grandTotal]);
 
   const addInstallment = useCallback(() => {
     setEstimate(prev => {
@@ -1398,7 +1437,8 @@ export default function EstimateTab({
               const deps    = estimate.deposit_schedule ?? defaultDeposits();
               const totalRec = deps.reduce((sum, _, i) => sum + depositsForIdx(i).reduce((s, p) => s + p.amount, 0), 0);
               const pctSum  = deps.reduce((s, d) => s + d.pct, 0);
-              const pctOk   = Math.abs(pctSum - 100) < 0.1;
+              const amtSum  = deps.reduce((s, d) => s + depositTarget(d, grandTotal), 0);
+              const pctOk   = Math.abs(amtSum - grandTotal) < 0.02 || Math.abs(pctSum - 100) < 0.11;
               return (
                 <div className="mb-2.5 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
@@ -1940,10 +1980,12 @@ export default function EstimateTab({
       {editDepositIdx !== null && estimate && (() => {
         const dep         = estimate.deposit_schedule[editDepositIdx];
         const color       = DEPOSIT_PALETTE[editDepositIdx % DEPOSIT_PALETTE.length];
-        const sumOthers   = estimate.deposit_schedule.filter((_, j) => j !== editDepositIdx).reduce((s, d) => s + d.pct, 0);
-        const remainPct   = Math.max(0, Math.round((100 - sumOthers) * 10) / 10);
-        const remainAmt   = Math.round(totals.grandTotal * remainPct / 100 * 100) / 100;
-        const currentPct  = parseFloat(editDepositPct) || 0;
+        const gt          = totals.grandTotal;
+        const sumOthersAmt = estimate.deposit_schedule.filter((_, j) => j !== editDepositIdx).reduce((s, d) => s + depositTarget(d, gt), 0);
+        const remainAmt   = Math.max(0, Math.round((gt - sumOthersAmt) * 100) / 100);
+        const remainPct   = gt > 0 ? Math.round(remainAmt / gt * 1000) / 10 : 0;
+        const currentAmt  = editDepositLastChanged === "amount" ? (parseFloat(editDepositAmt) || 0) : Math.round(gt * (parseFloat(editDepositPct) || 0) / 100 * 100) / 100;
+        const currentPct  = gt > 0 ? Math.round(currentAmt / gt * 1000) / 10 : 0;
         const isLast      = editDepositIdx === estimate.deposit_schedule.length - 1;
         return (
           <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -1959,11 +2001,12 @@ export default function EstimateTab({
                 <button onClick={() => setEditDepositIdx(null)} className="text-white/60 hover:text-white"><X size={16} /></button>
               </div>
 
-              {/* Two-box value editor */}
+              {/* Two-box value editor — active box gets color, secondary gets cream */}
               <div className="grid grid-cols-2 divide-x divide-[#E6DDCB] border-b border-[#E6DDCB]">
                 {/* % box */}
-                <div className="flex flex-col items-center px-5 py-5" style={{ background: color }}>
-                  <label className="mb-1 text-[10px] font-bold uppercase tracking-widest text-white/60">
+                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "pct" ? "" : "bg-[#F7F3EA]"}`}
+                  style={editDepositLastChanged === "pct" ? { background: color } : {}}>
+                  <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "pct" ? "text-white/60" : "text-[#97A1A0]"}`}>
                     {EN ? "Percentage" : "Porcentaje"}
                   </label>
                   <div className="flex items-center gap-1">
@@ -1972,35 +2015,42 @@ export default function EstimateTab({
                       value={editDepositPct}
                       onChange={e => onEditDepositPctChange(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
-                      className="w-16 appearance-none bg-transparent text-center text-[28px] font-extrabold text-white focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className={`w-16 appearance-none bg-transparent text-center font-extrabold focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${editDepositLastChanged === "pct" ? "text-[28px] text-white" : "text-[22px] text-[#16323D]"}`}
                     />
-                    <span className="text-[20px] font-bold text-white/70">%</span>
+                    <span className={`font-bold ${editDepositLastChanged === "pct" ? "text-[20px] text-white/70" : "text-[16px] text-[#97A1A0]"}`}>%</span>
                   </div>
+                  {editDepositLastChanged === "pct" && (
+                    <span className="mt-1 text-[9px] font-black uppercase tracking-widest text-white/40">{EN ? "primary" : "principal"}</span>
+                  )}
                 </div>
                 {/* $ box */}
-                <div className="flex flex-col items-center px-5 py-5 bg-[#F7F3EA]">
-                  <label className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#97A1A0]">
+                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "amount" ? "" : "bg-[#F7F3EA]"}`}
+                  style={editDepositLastChanged === "amount" ? { background: color } : {}}>
+                  <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "amount" ? "text-white/60" : "text-[#97A1A0]"}`}>
                     {EN ? "Amount" : "Monto"}
                   </label>
                   <div className="flex items-center gap-1">
-                    <span className="text-[20px] font-bold text-[#97A1A0]">$</span>
+                    <span className={`font-bold ${editDepositLastChanged === "amount" ? "text-[20px] text-white/70" : "text-[16px] text-[#97A1A0]"}`}>$</span>
                     <input
                       type="number" min={0}
                       value={editDepositAmt}
                       onChange={e => onEditDepositAmtChange(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); }}
-                      className="w-24 appearance-none bg-transparent text-center text-[22px] font-extrabold text-[#16323D] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className={`w-24 appearance-none bg-transparent text-center font-extrabold focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${editDepositLastChanged === "amount" ? "text-[28px] text-white" : "text-[22px] text-[#16323D]"}`}
                     />
                   </div>
+                  {editDepositLastChanged === "amount" && (
+                    <span className="mt-1 text-[9px] font-black uppercase tracking-widest text-white/40">{EN ? "fixed · primary" : "fijo · principal"}</span>
+                  )}
                 </div>
               </div>
 
               {/* Remaining hint */}
-              <div className={`flex items-center justify-between px-5 py-2.5 text-[10px] font-bold ${Math.abs(currentPct - remainPct) < 0.1 ? "bg-[#DCEBDD]" : currentPct > remainPct ? "bg-[#FDE8E3]" : "bg-[#F7F3EA]"}`}>
+              <div className={`flex items-center justify-between px-5 py-2.5 text-[10px] font-bold ${Math.abs(currentAmt - remainAmt) < 0.02 ? "bg-[#DCEBDD]" : currentAmt > remainAmt ? "bg-[#FDE8E3]" : "bg-[#F7F3EA]"}`}>
                 <span className="text-[#5C6A6E]">
                   {EN ? "Available for this deposit:" : "Disponible para esta cuota:"}
                 </span>
-                <span className={currentPct > remainPct ? "text-[#B0492F]" : "text-[#4F8A63]"}>
+                <span className={currentAmt > remainAmt ? "text-[#B0492F]" : "text-[#4F8A63]"}>
                   {remainPct}% · {money(remainAmt)}
                   {isLast && <span className="ml-1.5 opacity-60">{EN ? "(auto-balanced)" : "(auto-balanceado)"}</span>}
                 </span>
