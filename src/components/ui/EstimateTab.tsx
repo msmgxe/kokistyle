@@ -536,6 +536,13 @@ export default function EstimateTab({
   const [editForm,         setEditForm]         = useState<{ amount: string; date: string; method: Payment["method"]; concept: string }>({ amount: "", date: "", method: "Transferencia", concept: "" });
   const [confirmDeletePayId, setConfirmDeletePayId] = useState<string | null>(null);
 
+  // ── Copy-to-project modal ─────────────────────────────────────────────────
+  const [showCopyModal,   setShowCopyModal]   = useState(false);
+  const [copyProjects,    setCopyProjects]    = useState<{ id: string; title: string; client: string }[]>([]);
+  const [copyTargetId,    setCopyTargetId]    = useState("");
+  const [copyHasEstimate, setCopyHasEstimate] = useState(false);
+  const [copying,         setCopying]         = useState(false);
+
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true);
@@ -972,6 +979,88 @@ export default function EstimateTab({
     setShowPdfModal(false);
   }, [estimate, totals, language, EN, toast]);
 
+  // ── Copy estimate to another project ─────────────────────────────────────
+  const openCopyModal = useCallback(async () => {
+    const { data } = await supabase
+      .from("projects")
+      .select("id, title, client")
+      .neq("id", project.id)
+      .order("title");
+    const list = (data ?? []) as { id: string; title: string; client: string }[];
+    setCopyProjects(list);
+    const firstId = list[0]?.id ?? "";
+    setCopyTargetId(firstId);
+    if (firstId) {
+      const { data: ex } = await supabase.from("project_estimates").select("id").eq("project_id", firstId).maybeSingle();
+      setCopyHasEstimate(!!ex);
+    } else {
+      setCopyHasEstimate(false);
+    }
+    setShowCopyModal(true);
+  }, [project.id]);
+
+  const onCopyTargetChange = useCallback(async (targetId: string) => {
+    setCopyTargetId(targetId);
+    if (!targetId) { setCopyHasEstimate(false); return; }
+    const { data } = await supabase.from("project_estimates").select("id").eq("project_id", targetId).maybeSingle();
+    setCopyHasEstimate(!!data);
+  }, []);
+
+  const doCopyEstimate = useCallback(async () => {
+    if (!estimate || !copyTargetId) return;
+    setCopying(true);
+    // Delete existing estimate in target (CASCADE removes sections + items)
+    await supabase.from("project_estimates").delete().eq("project_id", copyTargetId);
+    const targetProject = copyProjects.find(p => p.id === copyTargetId);
+    const { data: newEst, error } = await supabase.from("project_estimates").insert({
+      project_id:       copyTargetId,
+      customer_name:    targetProject?.client ?? estimate.customer_name,
+      city:             estimate.city,
+      project_title:    targetProject?.title ?? estimate.project_title,
+      email:            estimate.email,
+      phone:            estimate.phone,
+      status:           "draft",
+      start_date:       estimate.start_date || null,
+      end_date:         estimate.end_date   || null,
+      discount_label:   estimate.discount_label,
+      discount_pct:     estimate.discount_pct,
+      deposit_schedule: estimate.deposit_schedule,
+      notes:            estimate.notes,
+    }).select().single();
+    if (error || !newEst) {
+      toast(EN ? "Error copying estimate" : "Error al copiar el estimado");
+      setCopying(false);
+      return;
+    }
+    for (const sec of estimate.sections) {
+      const { data: newSec } = await supabase.from("estimate_sections").insert({
+        estimate_id:       newEst.id,
+        section_catalog_id: null,
+        name_en:            sec.name_en,
+        name_es:            sec.name_es,
+        note:               sec.note,
+        is_material_type:   sec.is_material_type,
+        material_included:  sec.material_included,
+        section_total:      sec.section_total,
+        sort_order:         sec.sort_order,
+      }).select().single();
+      if (newSec && sec.items.length > 0) {
+        await supabase.from("estimate_items").insert(
+          sec.items.map(item => ({
+            section_id:      newSec.id,
+            item_catalog_id: null,
+            description:     item.description,
+            amount:          item.amount,
+            sort_order:      item.sort_order,
+          }))
+        );
+      }
+    }
+    setCopying(false);
+    setShowCopyModal(false);
+    toast(EN ? "Estimate copied successfully!" : "¡Estimado copiado correctamente!");
+  }, [estimate, copyTargetId, copyProjects, EN, toast]);
+
   // ── WhatsApp send ─────────────────────────────────────────────────────────
   const handleWhatsApp = useCallback(async () => {
     if (!estimate || !waPhone.trim()) return;
@@ -1078,6 +1167,14 @@ export default function EstimateTab({
             className="rounded-xl border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#16323D] transition hover:shadow-sm disabled:opacity-50"
           >
             {saving ? "…" : (EN ? "Save" : "Guardar")}
+          </button>
+          <button
+            onClick={openCopyModal}
+            title={EN ? "Copy estimate to another project" : "Copiar estimado a otro proyecto"}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#395886] transition hover:bg-[#EDF3FB]"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            {EN ? "Copy to…" : "Copiar a…"}
           </button>
           <button
             onClick={() => setShowPdfModal(true)}
@@ -1857,6 +1954,91 @@ export default function EstimateTab({
           onGenerated={() => { setShowGenTasks(false); onRefresh(); }}
           toast={toast}
         />
+      )}
+
+      {/* ── Copy-to-project modal ─────────────────────────────────────────── */}
+      {showCopyModal && (
+        <div
+          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => setShowCopyModal(false)}
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between bg-[#395886] px-5 py-4">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <p className="text-sm font-bold text-white">
+                  {EN ? "Copy estimate to project" : "Copiar estimado a proyecto"}
+                </p>
+              </div>
+              <button onClick={() => setShowCopyModal(false)} className="text-white/60 hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-5">
+              <p className="mb-3 text-[12px] text-[#5C6A6E]">
+                {EN
+                  ? "All sections and items will be copied. Customer name and project title will be updated to match the target project."
+                  : "Se copiarán todas las secciones e ítems. El nombre del cliente y el título del proyecto se actualizarán al proyecto destino."}
+              </p>
+              {copyProjects.length === 0 ? (
+                <p className="rounded-xl bg-[#F7F3EA] px-4 py-3 text-sm text-[#5C6A6E]">
+                  {EN ? "No other projects found." : "No hay otros proyectos disponibles."}
+                </p>
+              ) : (
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                    {EN ? "Destination project" : "Proyecto destino"}
+                  </label>
+                  <select
+                    value={copyTargetId}
+                    onChange={e => onCopyTargetChange(e.target.value)}
+                    className="w-full rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-2.5 text-sm font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
+                  >
+                    {copyProjects.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.title}{p.client ? ` — ${p.client}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {copyHasEstimate && (
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#F0DBD2] bg-[#FDF0ED] px-3 py-2.5">
+                  <span className="mt-0.5 shrink-0 text-[#B0492F]">⚠</span>
+                  <p className="text-[11px] font-semibold text-[#B0492F]">
+                    {EN
+                      ? "This project already has an estimate. It will be replaced."
+                      : "Este proyecto ya tiene un estimado. Será reemplazado."}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-2 border-t border-[#E6DDCB] px-5 py-4">
+              <button
+                onClick={() => setShowCopyModal(false)}
+                className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-semibold text-[#5C6A6E] transition hover:bg-[#F7F3EA]"
+              >
+                {EN ? "Cancel" : "Cancelar"}
+              </button>
+              <button
+                onClick={doCopyEstimate}
+                disabled={copying || !copyTargetId}
+                className="flex-1 rounded-xl bg-[#395886] py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4a75] disabled:opacity-50"
+              >
+                {copying ? "…" : (EN ? "Copy estimate" : "Copiar estimado")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
