@@ -21,6 +21,7 @@ import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
 import UsersPanel from "@/src/components/ui/UsersPanel";
 import AdminSettings from "@/src/components/ui/AdminSettings";
 import { useVoice } from "@/src/context/VoiceContext";
+import { branding } from "@/src/config/branding";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 
@@ -805,15 +806,26 @@ export default function DashboardPage() {
         </>}
       </div>
 
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-bold text-[#16323D]">{tp.dashboard.projectsTitle}</h2>
+      <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-[#16323D] px-5 py-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block shrink-0">
+            {branding.companyName}
+          </span>
+          <span className="hidden text-white/20 sm:block">·</span>
+          <h2 className="font-bookman text-[17px] font-semibold text-white truncate">
+            {tp.dashboard.projectsTitle}
+          </h2>
+          <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70 shrink-0">
+            {projects.length}
+          </span>
+        </div>
         {canCreateProj && (
           <button
             id="add-project-btn"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-white/18"
             onClick={() => { setVoicePrefill(null); setShowModal(true); }}
           >
-            <Plus size={14} />
+            <Plus size={13} />
             {tp.dashboard.newProject}
           </button>
         )}
