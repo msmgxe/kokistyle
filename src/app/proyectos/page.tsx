@@ -678,10 +678,12 @@ export default function DashboardPage() {
   const [voicePrefill, setVoicePrefill] = useState<Partial<Project> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [kpiModal, setKpiModal] = useState<KpiType | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("en_obra");
   const [allContacts, setAllContacts] = useState<{ id: string; name: string; specialty: string }[]>([]);
   const { setMeta } = useVoice();
   const { currentUser, isSuperAdmin, hasPermission } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const EN = language === "en";
   const tp = t.panel;
 
   const showToast = useCallback((msg: string) => {
@@ -803,7 +805,7 @@ export default function DashboardPage() {
         </>}
       </div>
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <h2 className="text-base font-bold text-[#16323D]">{tp.dashboard.projectsTitle}</h2>
         {canCreateProj && (
           <button
@@ -817,24 +819,84 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {projects.length === 0 ? (
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-12 text-center text-sm text-[#5C6A6E]">
-          {isSuperAdmin ? tp.dashboard.noProjectsAdmin : tp.dashboard.noProjectsUser}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
-            <ProjectCard
-              key={p.id}
-              project={p}
-              budget={p.budget}
-              canDelete={isSuperAdmin}
-              onDelete={handleDelete}
-              onEdit={setEditingProject}
-            />
-          ))}
-        </div>
-      )}
+      {/* Status filter pills */}
+      {projects.length > 0 && (() => {
+        const STATUSES = ["en_obra", "aprobado", "presupuesto", "terminado"] as const;
+        const CHIP: Record<string, { active: string; dot: string; inactive: string }> = {
+          presupuesto: { active: "bg-[#DCE6E6] text-[#0E2630] border-2 border-[#0E2630]/25",  dot: "bg-[#0E2630]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#DCE6E6]/60 hover:text-[#0E2630]" },
+          aprobado:    { active: "bg-[#DCE8E9] text-[#4E7A82] border-2 border-[#4E7A82]/40",  dot: "bg-[#4E7A82]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#DCE8E9]/60 hover:text-[#4E7A82]" },
+          en_obra:     { active: "bg-[#EDE3CF] text-[#7A6230] border-2 border-[#7A6230]/40",  dot: "bg-[#7A6230]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#EDE3CF]/60 hover:text-[#7A6230]" },
+          terminado:   { active: "bg-[#DCEBDD] text-[#4F8A63] border-2 border-[#4F8A63]/40",  dot: "bg-[#4F8A63]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#DCEBDD]/60 hover:text-[#4F8A63]" },
+        };
+        return (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+                statusFilter === "all"
+                  ? "bg-[#16323D] text-white border-2 border-[#16323D]"
+                  : "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:border-[#16323D]/30 hover:text-[#16323D]"
+              }`}
+            >
+              {EN ? "All" : "Todos"}
+              <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${statusFilter === "all" ? "bg-white/20" : "bg-[#F0EBE1]"}`}>
+                {projects.length}
+              </span>
+            </button>
+            {STATUSES.map(s => {
+              const count = projects.filter(p => p.status === s).length;
+              if (count === 0) return null;
+              const c = CHIP[s];
+              const label = tp.status[s as keyof typeof tp.status] ?? s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+                    statusFilter === s ? c.active : c.inactive
+                  }`}
+                >
+                  <span className={`size-1.5 rounded-full ${statusFilter === s ? c.dot : "bg-current"}`} />
+                  {label}
+                  <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${statusFilter === s ? "bg-black/10" : "bg-[#F0EBE1]"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {(() => {
+        const visibleProjects = statusFilter === "all" ? projects : projects.filter(p => p.status === statusFilter);
+        if (projects.length === 0) return (
+          <div className="rounded-2xl border border-[#E6DDCB] bg-white p-12 text-center text-sm text-[#5C6A6E]">
+            {isSuperAdmin ? tp.dashboard.noProjectsAdmin : tp.dashboard.noProjectsUser}
+          </div>
+        );
+        if (visibleProjects.length === 0) return (
+          <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
+            {EN
+              ? `No projects with status "${tp.status[statusFilter as keyof typeof tp.status] ?? statusFilter}"`
+              : `Sin proyectos con estado "${tp.status[statusFilter as keyof typeof tp.status] ?? statusFilter}"`}
+          </div>
+        );
+        return (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleProjects.map((p) => (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                budget={p.budget}
+                canDelete={isSuperAdmin}
+                onDelete={handleDelete}
+                onEdit={setEditingProject}
+              />
+            ))}
+          </div>
+        );
+      })()}
 
       {isSuperAdmin && (
         <>
