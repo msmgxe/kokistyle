@@ -806,34 +806,27 @@ export default function DashboardPage() {
         </>}
       </div>
 
-      <div className="mb-4 rounded-2xl bg-[#16323D] px-5 pt-3 pb-3.5">
-        {/* Row 1: title + new project button */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block shrink-0">
-              {branding.companyName}
-            </span>
-            <span className="hidden text-white/20 sm:block">·</span>
-            <h2 className="font-bookman text-[17px] font-semibold text-white truncate">
-              {tp.dashboard.projectsTitle}
-            </h2>
-            <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70 shrink-0">
-              {projects.length}
-            </span>
-          </div>
-          {canCreateProj && (
-            <button
-              id="add-project-btn"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-white/18"
-              onClick={() => { setVoicePrefill(null); setShowModal(true); }}
-            >
-              <Plus size={13} />
-              {tp.dashboard.newProject}
-            </button>
-          )}
+      {/* Projects bar — single row: title | filter pills | new project */}
+      <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#16323D] px-5 py-3">
+
+        {/* Title */}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block">
+            {branding.companyName}
+          </span>
+          <span className="hidden text-white/20 sm:block">·</span>
+          <h2 className="font-bookman text-[17px] font-semibold text-white">
+            {tp.dashboard.projectsTitle}
+          </h2>
+          <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70">
+            {projects.length}
+          </span>
         </div>
 
-        {/* Row 2: status filter pills */}
+        {/* Divider */}
+        {projects.length > 0 && <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />}
+
+        {/* Filter pills — scrollable on narrow screens */}
         {projects.length > 0 && (() => {
           const STATUSES = ["en_obra", "aprobado", "presupuesto", "terminado"] as const;
           const ACTIVE: Record<string, string> = {
@@ -843,33 +836,31 @@ export default function DashboardPage() {
             terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
           };
           return (
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
               <button
                 onClick={() => setStatusFilter("all")}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
                   statusFilter === "all"
                     ? "bg-white text-[#16323D]"
-                    : "border border-white/20 text-white/65 hover:bg-white/10 hover:text-white"
+                    : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {EN ? "All" : "Todos"}
-                <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${statusFilter === "all" ? "bg-[#16323D]/10" : "bg-white/10"}`}>
+                <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${statusFilter === "all" ? "bg-black/10" : "bg-white/10"}`}>
                   {projects.length}
                 </span>
               </button>
               {STATUSES.map(s => {
                 const count = projects.filter(p => p.status === s).length;
                 if (count === 0) return null;
-                const label = tp.status[s as keyof typeof tp.status] ?? s;
                 const isActive = statusFilter === s;
+                const label = tp.status[s as keyof typeof tp.status] ?? s;
                 return (
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
-                      isActive
-                        ? ACTIVE[s]
-                        : "border border-white/20 text-white/65 hover:bg-white/10 hover:text-white"
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
+                      isActive ? ACTIVE[s] : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
                     }`}
                   >
                     <span className="size-1.5 rounded-full bg-current" />
@@ -883,6 +874,22 @@ export default function DashboardPage() {
             </div>
           );
         })()}
+
+        {/* Divider */}
+        {canCreateProj && <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />}
+
+        {/* New project */}
+        {canCreateProj && (
+          <button
+            id="add-project-btn"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-white/18"
+            onClick={() => { setVoicePrefill(null); setShowModal(true); }}
+          >
+            <Plus size={13} />
+            <span className="hidden sm:inline">{tp.dashboard.newProject}</span>
+            <span className="sm:hidden">+</span>
+          </button>
+        )}
       </div>
 
       {(() => {
