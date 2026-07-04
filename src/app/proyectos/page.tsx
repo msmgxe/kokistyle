@@ -806,79 +806,84 @@ export default function DashboardPage() {
         </>}
       </div>
 
-      <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-[#16323D] px-5 py-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block shrink-0">
-            {branding.companyName}
-          </span>
-          <span className="hidden text-white/20 sm:block">·</span>
-          <h2 className="font-bookman text-[17px] font-semibold text-white truncate">
-            {tp.dashboard.projectsTitle}
-          </h2>
-          <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70 shrink-0">
-            {projects.length}
-          </span>
-        </div>
-        {canCreateProj && (
-          <button
-            id="add-project-btn"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-white/18"
-            onClick={() => { setVoicePrefill(null); setShowModal(true); }}
-          >
-            <Plus size={13} />
-            {tp.dashboard.newProject}
-          </button>
-        )}
-      </div>
-
-      {/* Status filter pills */}
-      {projects.length > 0 && (() => {
-        const STATUSES = ["en_obra", "aprobado", "presupuesto", "terminado"] as const;
-        const CHIP: Record<string, { active: string; dot: string; inactive: string }> = {
-          presupuesto: { active: "bg-[#DCE6E6] text-[#0E2630] border-2 border-[#0E2630]/25",  dot: "bg-[#0E2630]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#DCE6E6]/60 hover:text-[#0E2630]" },
-          aprobado:    { active: "bg-[#DCE8E9] text-[#4E7A82] border-2 border-[#4E7A82]/40",  dot: "bg-[#4E7A82]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#DCE8E9]/60 hover:text-[#4E7A82]" },
-          en_obra:     { active: "bg-[#EDE3CF] text-[#7A6230] border-2 border-[#7A6230]/40",  dot: "bg-[#7A6230]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#EDE3CF]/60 hover:text-[#7A6230]" },
-          terminado:   { active: "bg-[#DCEBDD] text-[#4F8A63] border-2 border-[#4F8A63]/40",  dot: "bg-[#4F8A63]",  inactive: "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:bg-[#DCEBDD]/60 hover:text-[#4F8A63]" },
-        };
-        return (
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setStatusFilter("all")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
-                statusFilter === "all"
-                  ? "bg-[#16323D] text-white border-2 border-[#16323D]"
-                  : "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:border-[#16323D]/30 hover:text-[#16323D]"
-              }`}
-            >
-              {EN ? "All" : "Todos"}
-              <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${statusFilter === "all" ? "bg-white/20" : "bg-[#F0EBE1]"}`}>
-                {projects.length}
-              </span>
-            </button>
-            {STATUSES.map(s => {
-              const count = projects.filter(p => p.status === s).length;
-              if (count === 0) return null;
-              const c = CHIP[s];
-              const label = tp.status[s as keyof typeof tp.status] ?? s;
-              return (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
-                    statusFilter === s ? c.active : c.inactive
-                  }`}
-                >
-                  <span className={`size-1.5 rounded-full ${statusFilter === s ? c.dot : "bg-current"}`} />
-                  {label}
-                  <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${statusFilter === s ? "bg-black/10" : "bg-[#F0EBE1]"}`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+      <div className="mb-4 rounded-2xl bg-[#16323D] px-5 pt-3 pb-3.5">
+        {/* Row 1: title + new project button */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block shrink-0">
+              {branding.companyName}
+            </span>
+            <span className="hidden text-white/20 sm:block">·</span>
+            <h2 className="font-bookman text-[17px] font-semibold text-white truncate">
+              {tp.dashboard.projectsTitle}
+            </h2>
+            <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70 shrink-0">
+              {projects.length}
+            </span>
           </div>
-        );
-      })()}
+          {canCreateProj && (
+            <button
+              id="add-project-btn"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-white/18"
+              onClick={() => { setVoicePrefill(null); setShowModal(true); }}
+            >
+              <Plus size={13} />
+              {tp.dashboard.newProject}
+            </button>
+          )}
+        </div>
+
+        {/* Row 2: status filter pills */}
+        {projects.length > 0 && (() => {
+          const STATUSES = ["en_obra", "aprobado", "presupuesto", "terminado"] as const;
+          const ACTIVE: Record<string, string> = {
+            presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
+            aprobado:    "bg-[#DCE8E9] text-[#4E7A82]",
+            en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
+            terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
+          };
+          return (
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setStatusFilter("all")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
+                  statusFilter === "all"
+                    ? "bg-white text-[#16323D]"
+                    : "border border-white/20 text-white/65 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {EN ? "All" : "Todos"}
+                <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${statusFilter === "all" ? "bg-[#16323D]/10" : "bg-white/10"}`}>
+                  {projects.length}
+                </span>
+              </button>
+              {STATUSES.map(s => {
+                const count = projects.filter(p => p.status === s).length;
+                if (count === 0) return null;
+                const label = tp.status[s as keyof typeof tp.status] ?? s;
+                const isActive = statusFilter === s;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
+                      isActive
+                        ? ACTIVE[s]
+                        : "border border-white/20 text-white/65 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <span className="size-1.5 rounded-full bg-current" />
+                    {label}
+                    <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${isActive ? "bg-black/10" : "bg-white/10"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
 
       {(() => {
         const visibleProjects = statusFilter === "all" ? projects : projects.filter(p => p.status === statusFilter);
