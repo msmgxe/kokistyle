@@ -1,0 +1,776 @@
+<title>Agenda Personal — Prototipo Luxaris</title>
+<style>
+  :root{
+    --teal:#16323D; --teal-2:#1E4152; --cream:#F5E9DA; --card:#FFFFFF; --card-2:#F7F3EA;
+    --border:#E6DDCB; --ink:#16323D; --soft:#5C6A6E; --green:#4F8A63; --red:#B0492F;
+    --navy:#395886; --burgundy:#7B1838; --gold:#C9A227; --band:#F7F3EA;
+    --shadow:0 2px 10px rgba(22,50,61,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --cream:#0E1F26; --card:#152E38; --card-2:#112731; --border:#274753;
+      --ink:#EDE6D8; --soft:#9FB2B8; --band:#112731; --shadow:0 2px 10px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --cream:#F5E9DA; --card:#FFFFFF; --card-2:#F7F3EA; --border:#E6DDCB;
+    --ink:#16323D; --soft:#5C6A6E; --band:#F7F3EA; --shadow:0 2px 10px rgba(22,50,61,.08);
+  }
+  :root[data-theme="dark"]{
+    --cream:#0E1F26; --card:#152E38; --card-2:#112731; --border:#274753;
+    --ink:#EDE6D8; --soft:#9FB2B8; --band:#112731; --shadow:0 2px 10px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+  .bookman{font-family:"Bookman Old Style","Book Antiqua",Palatino,Georgia,serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+
+  /* ---------- header ---------- */
+  header.hero{background:var(--teal);color:#fff;padding:26px 20px 0}
+  .hero-inner{max-width:1180px;margin:0 auto}
+  .hero-top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{width:44px;height:44px;border-radius:12px;background:#F5E9DA;color:#16323D;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;letter-spacing:.5px}
+  .brand h1{font-size:22px;margin:0;font-weight:400;letter-spacing:.3px}
+  .brand small{display:block;font-size:12px;opacity:.75;font-family:Manrope,sans-serif;letter-spacing:1.5px;text-transform:uppercase}
+  .proto-badge{font-size:11px;letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(245,233,218,.4);
+    border-radius:999px;padding:5px 14px;color:#F5E9DA}
+  .opt-tabs{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}
+  .opt-tab{border:1px solid rgba(245,233,218,.25);background:transparent;color:#F5E9DA;border-radius:12px 12px 0 0;
+    padding:12px 18px 14px;cursor:pointer;font:inherit;font-size:13.5px;text-align:left;min-width:200px;flex:1}
+  .opt-tab b{display:block;font-size:14.5px;margin-bottom:2px}
+  .opt-tab span{opacity:.7;font-size:12px}
+  .opt-tab.active{background:var(--cream);color:var(--ink);border-color:var(--cream)}
+  .opt-tab.active span{opacity:.85;color:var(--soft)}
+
+  /* ---------- option banner ---------- */
+  .opt-banner{background:var(--band);border:1px solid var(--border);border-top:none;border-radius:0 0 14px 14px;
+    padding:14px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:28px}
+  .opt-banner .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .opt-banner p{margin:0;font-size:13.5px;color:var(--soft);max-width:72ch}
+  .opt-banner .tags{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-size:11px;letter-spacing:.5px;border-radius:999px;padding:3px 10px;border:1px solid var(--border);
+    background:var(--card);color:var(--soft);white-space:nowrap}
+
+  /* ---------- layout ---------- */
+  .cols{display:grid;grid-template-columns:1fr 360px;gap:26px;align-items:start}
+  @media(max-width:920px){.cols{grid-template-columns:1fr}}
+
+  /* ---------- agenda panel ---------- */
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{background:var(--teal);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .panel-head h2{margin:0;font-size:16px;font-weight:400;letter-spacing:.5px}
+  .panel-head .spacer{flex:1}
+  .btn{border:none;border-radius:10px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-cream{background:#F5E9DA;color:#16323D}
+  .btn-ghost{background:transparent;color:var(--soft);border:1px dashed var(--border)}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);background:var(--band)}
+  .kpi{padding:14px 18px;border-right:1px solid var(--border)}
+  .kpi:last-child{border-right:none}
+  .kpi b{font-size:22px;font-variant-numeric:tabular-nums}
+  .kpi span{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--soft)}
+
+  /* form */
+  .form{padding:18px;border-bottom:1px solid var(--border);display:none;background:var(--card-2)}
+  .form.open{display:block}
+  .type-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .type-opt{border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;background:var(--card);text-align:center}
+  .type-opt .em{font-size:20px;display:block}
+  .type-opt b{font-size:12.5px;display:block;margin-top:2px}
+  .type-opt small{font-size:10.5px;color:var(--soft)}
+  .type-opt.sel-cita{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+  .type-opt.sel-task{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
+  .type-opt.sel-reunion{border-color:var(--burgundy);box-shadow:inset 0 0 0 1px var(--burgundy)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--soft);margin-bottom:5px}
+  .field input,.field select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;
+    font:inherit;font-size:13.5px;background:var(--card);color:var(--ink)}
+  .channels{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+  .chan{font-size:12px;border-radius:999px;padding:5px 12px;border:1px solid var(--border);background:var(--card);color:var(--soft)}
+  .chan.on{background:var(--teal);color:#F5E9DA;border-color:var(--teal)}
+  .form-actions{display:flex;gap:10px;justify-content:flex-end}
+  .btn-teal{background:var(--teal);color:#F5E9DA}
+  .btn-plain{background:transparent;color:var(--soft);border:1px solid var(--border)}
+
+  /* events */
+  .group-label{padding:14px 18px 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--soft)}
+  .events{padding:0 18px 18px;display:flex;flex-direction:column;gap:10px}
+  .ev{border:1px solid var(--border);border-left-width:4px;border-radius:12px;padding:12px 14px;background:var(--card);
+    display:flex;gap:12px;align-items:flex-start}
+  .ev .em{font-size:20px;line-height:1;margin-top:2px}
+  .ev-body{flex:1;min-width:0}
+  .ev-title{font-weight:700;font-size:14px;margin:0 0 2px}
+  .ev-meta{font-size:12px;color:var(--soft);display:flex;gap:10px;flex-wrap:wrap}
+  .ev-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{font-size:11px;border-radius:999px;padding:3px 9px;background:var(--card-2);border:1px solid var(--border);color:var(--soft)}
+  .chip.proj{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .ev-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .mini-btn{border:1px solid var(--border);background:var(--card-2);color:var(--ink);border-radius:8px;
+    padding:5px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .mini-btn.notify{border-color:var(--teal)}
+  .mini-btn.del{color:var(--red);border-color:transparent;background:transparent;font-weight:400}
+  .empty{padding:10px 18px 20px;color:var(--soft);font-size:13px;font-style:italic}
+
+  /* ---------- phone ---------- */
+  .phone-col{position:sticky;top:20px}
+  @media(max-width:920px){.phone-col{position:static}}
+  .phone{width:300px;margin:0 auto;background:#0b1116;border-radius:42px;padding:12px;box-shadow:0 18px 44px rgba(0,0,0,.35)}
+  .screen{border-radius:32px;overflow:hidden;background:linear-gradient(165deg,#1E4152 0%,#16323D 55%,#0E2129 100%);
+    min-height:520px;position:relative;color:#fff;display:flex;flex-direction:column}
+  .notch{width:110px;height:22px;background:#0b1116;border-radius:0 0 14px 14px;margin:0 auto}
+  .ph-clock{text-align:center;margin-top:34px}
+  .ph-clock .t{font-size:52px;font-weight:200;letter-spacing:1px;font-variant-numeric:tabular-nums}
+  .ph-clock .d{font-size:13px;opacity:.75}
+  .ph-notifs{padding:22px 12px;display:flex;flex-direction:column;gap:9px;flex:1}
+  .pnote{background:rgba(255,255,255,.14);backdrop-filter:blur(8px);border-radius:16px;padding:11px 13px;font-size:12px}
+  .pnote .app{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.5px;opacity:.85;text-transform:uppercase;margin-bottom:4px}
+  .pnote .app .ic{width:16px;height:16px;border-radius:4px;background:#F5E9DA;color:#16323D;font-size:9px;font-weight:800;
+    display:flex;align-items:center;justify-content:center}
+  .pnote b{display:block;font-size:12.5px;margin-bottom:1px}
+  .pnote p{margin:0;opacity:.85;font-size:11.5px}
+  .pnote .when{float:right;opacity:.6;font-size:10px}
+  .ph-caption{text-align:center;font-size:12px;color:var(--soft);margin-top:12px}
+
+  /* home shortcut demo */
+  .home-demo{margin-top:22px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+  .home-demo h3{margin:0 0 10px;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--soft);font-weight:700}
+  .icons-row{display:flex;gap:18px;align-items:flex-start}
+  .app-ic{text-align:center;width:60px}
+  .app-ic .sq{width:52px;height:52px;border-radius:13px;margin:0 auto 5px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--card-2);border:1px solid var(--border)}
+  .app-ic .sq.lux{background:#16323D;color:#F5E9DA;font-size:13px;font-weight:800;letter-spacing:1px;border:none;position:relative}
+  .app-ic .sq.lux::after{content:"✓";position:absolute;right:-4px;top:-4px;width:18px;height:18px;border-radius:50%;
+    background:var(--green);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+  .app-ic small{font-size:10px;color:var(--soft);display:block;line-height:1.25}
+  .home-demo p{font-size:12px;color:var(--soft);margin:12px 0 0}
+
+  /* ---------- sections ---------- */
+  section.block{margin-top:44px}
+  section.block>h2{font-size:22px;font-weight:400;margin:0 0 4px}
+  section.block>p.lead{color:var(--soft);font-size:14px;margin:0 0 20px;max-width:78ch}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:820px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+  .step .n{width:30px;height:30px;border-radius:50%;background:var(--teal);color:#F5E9DA;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:14px;margin-bottom:10px}
+  .step b{display:block;font-size:14px;margin-bottom:4px}
+  .step p{margin:0;font-size:12.5px;color:var(--soft)}
+  .sec-note{margin-top:14px;background:var(--band);border:1px solid var(--border);border-left:4px solid var(--gold);
+    border-radius:12px;padding:14px 16px;font-size:13px;color:var(--soft)}
+  .sec-note b{color:var(--ink)}
+
+  table.cmp{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;
+    box-shadow:var(--shadow);font-size:13px}
+  .cmp-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border)}
+  table.cmp th{background:var(--teal);color:#F5E9DA;text-align:left;padding:11px 14px;font-weight:700;font-size:12.5px}
+  table.cmp td{padding:10px 14px;border-top:1px solid var(--border);vertical-align:top}
+  table.cmp td:first-child{color:var(--soft);font-size:12px;white-space:nowrap}
+  .yes{color:var(--green);font-weight:700}.no{color:var(--red);font-weight:700}.mid{color:var(--gold);font-weight:700}
+  .rec{display:inline-block;font-size:10px;letter-spacing:1px;background:var(--green);color:#fff;border-radius:999px;
+    padding:2px 8px;margin-left:6px;vertical-align:middle}
+
+  /* ---------- captura voz/texto ---------- */
+  .capture{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--card)}
+  .cap-row{display:flex;gap:10px;align-items:center}
+  .mic-btn{width:46px;height:46px;border-radius:50%;border:none;background:var(--burgundy);color:#fff;
+    font-size:20px;cursor:pointer;flex:none}
+  .mic-btn.rec{background:var(--red);animation:pulse 1.1s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(176,73,47,.45)}70%{box-shadow:0 0 0 14px rgba(176,73,47,0)}100%{box-shadow:0 0 0 0 rgba(176,73,47,0)}}
+  @media (prefers-reduced-motion: reduce){.mic-btn.rec{animation:none}}
+  .cap-row input{flex:1;padding:11px 13px;border:1px solid var(--border);border-radius:12px;font:inherit;
+    font-size:13.5px;background:var(--card-2);color:var(--ink);min-width:0}
+  .cap-hint{font-size:11.5px;color:var(--soft);margin:8px 0 0;font-style:italic}
+  .confirm{margin-top:12px;border:1.5px solid var(--gold);border-radius:14px;background:var(--card-2);padding:14px;display:none}
+  .confirm.open{display:block}
+  .confirm h4{margin:0 0 10px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--soft)}
+  .confirm .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media(max-width:560px){.confirm .grid3{grid-template-columns:1fr}}
+
+  /* phone toggle + voice screen */
+  .ph-toggle{display:flex;gap:6px;justify-content:center;margin:0 0 12px}
+  .ph-chip{border:1px solid var(--border);background:var(--card);color:var(--soft);border-radius:999px;
+    padding:6px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .ph-chip.on{background:var(--teal);color:#F5E9DA;border-color:var(--teal)}
+  #phLock{display:flex;flex-direction:column;flex:1}
+  .v-wrap{flex:1;display:flex;flex-direction:column;padding:18px 14px 22px}
+  .v-head{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.85}
+  .v-head .ic{width:22px;height:22px;border-radius:6px;background:#F5E9DA;color:#16323D;font-size:10px;font-weight:800;
+    display:flex;align-items:center;justify-content:center}
+  .v-bubble{background:rgba(255,255,255,.16);border-radius:16px 16px 4px 16px;padding:11px 13px;font-size:12.5px;
+    margin:18px 0 10px;align-self:flex-end;max-width:92%}
+  .v-card{background:#F5E9DA;color:#16323D;border-radius:14px;padding:12px 14px;font-size:12px;max-width:92%}
+  .v-card .v-actions{display:flex;gap:8px;margin-top:10px}
+  .v-card .v-ok{background:#16323D;color:#F5E9DA;border-radius:8px;padding:5px 14px;font-weight:700;font-size:11.5px}
+  .v-card .v-no{border:1px solid #16323D;border-radius:8px;padding:5px 14px;font-size:11.5px}
+  .v-mic{width:66px;height:66px;border-radius:50%;background:#7B1838;display:flex;align-items:center;justify-content:center;
+    font-size:26px;margin:auto auto 8px;box-shadow:0 0 0 10px rgba(123,24,56,.25)}
+  .v-tip{text-align:center;font-size:11px;opacity:.7}
+
+  /* toast */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--teal);
+    color:#F5E9DA;padding:11px 20px;border-radius:12px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.3);
+    transition:transform .25s;z-index:99;max-width:90vw}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  @media (prefers-reduced-motion: reduce){#toast{transition:none}}
+</style>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-top">
+      <div class="brand">
+        <div class="logo">LD</div>
+        <div>
+          <small>Luxaris Design · Panel Admin</small>
+          <h1 class="bookman">Agenda Personal</h1>
+        </div>
+      </div>
+      <span class="proto-badge">Prototipo v2 · Voz + 3 opciones</span>
+    </div>
+    <div class="opt-tabs" role="tablist">
+      <button class="opt-tab active" id="tabA" onclick="setOption('A')" role="tab">
+        <b>Opción A · PWA + Push nativo</b><span>Notificaciones del sistema en el teléfono</span>
+      </button>
+      <button class="opt-tab" id="tabB" onclick="setOption('B')" role="tab">
+        <b>Opción B · Sync con Calendario</b><span>.ics / Google Calendar — cero infraestructura</span>
+      </button>
+      <button class="opt-tab" id="tabC" onclick="setOption('C')" role="tab">
+        <b>Opción C · WhatsApp + Email</b><span>Avisos por canales que ya usas</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="opt-banner" id="optBanner"></div>
+
+  <div class="cols">
+    <!-- ============ WEB APP VIEW ============ -->
+    <div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="bookman">🗓️ Mi Agenda</h2>
+          <div class="spacer"></div>
+          <button class="btn btn-cream" onclick="toggleForm()">+ Nueva entrada</button>
+        </div>
+
+        <div class="capture">
+          <div class="cap-row">
+            <button class="mic-btn" id="micBtn" onclick="micTap()" title="Dictar entrada" aria-label="Dictar entrada">🎙️</button>
+            <input id="capText" placeholder="Dicta o escribe: “Reunión con la Sra. Herrera el martes a las 10, avísame desde un día antes cada 2 horas”" onkeydown="if(event.key==='Enter')runParse()">
+            <button class="btn btn-teal" onclick="runParse()">Crear</button>
+          </div>
+          <p class="cap-hint" id="capHint">Toca el micrófono y habla — Katy entiende tipo, fecha, hora, aviso y repetición. Nada se guarda sin tu confirmación.</p>
+
+          <div class="confirm" id="confirm">
+            <h4>🎙️ Katy entendió esto — revisa y confirma</h4>
+            <div class="field"><label>Título</label><input id="cTitle"></div>
+            <div class="grid3">
+              <div class="field"><label>Tipo</label>
+                <select id="cType">
+                  <option value="cita">📅 Cita</option>
+                  <option value="task">✅ Task de proyecto</option>
+                  <option value="reunion">🤝 Reunión</option>
+                </select></div>
+              <div class="field"><label>Fecha</label><input type="date" id="cDate"></div>
+              <div class="field"><label>Hora</label><input type="time" id="cTime"></div>
+            </div>
+            <div class="grid3">
+              <div class="field" id="cProjField"><label>Proyecto</label>
+                <select id="cProject">
+                  <option>Brickell Kitchen Remodel</option>
+                  <option>Boca Raton Master Bath</option>
+                  <option>Coral Gables Patio</option>
+                </select></div>
+              <div class="field"><label>Avisarme desde</label>
+                <select id="cFrom">
+                  <option value="2h">2 horas antes</option><option value="1d">1 día antes</option>
+                  <option value="2d">2 días antes</option><option value="1w">1 semana antes</option>
+                </select></div>
+              <div class="field"><label>Repetir aviso</label>
+                <select id="cRepeat">
+                  <option value="once">Solo una vez</option><option value="1h">Cada 1 h</option>
+                  <option value="2h">Cada 2 h</option><option value="4h">Cada 4 h</option>
+                </select></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-plain" onclick="closeConfirm()">Cancelar</button>
+              <button class="btn btn-teal" onclick="confirmAdd()">✓ Confirmar y agendar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><b id="kpiToday">0</b><span>Hoy</span></div>
+          <div class="kpi"><b id="kpiWeek">0</b><span>Esta semana</span></div>
+          <div class="kpi"><b id="kpiAlerts">0</b><span>Avisos activos</span></div>
+        </div>
+
+        <!-- form -->
+        <div class="form" id="form">
+          <div class="type-row" id="typeRow">
+            <div class="type-opt sel-cita" data-t="cita" onclick="pickType('cita')">
+              <span class="em">📅</span><b>Cita</b><small>Personal / cliente</small>
+            </div>
+            <div class="type-opt" data-t="task" onclick="pickType('task')">
+              <span class="em">✅</span><b>Task de proyecto</b><small>Ligada a un proyecto</small>
+            </div>
+            <div class="type-opt" data-t="reunion" onclick="pickType('reunion')">
+              <span class="em">🤝</span><b>Reunión</b><small>Nuevo proyecto / lead</small>
+            </div>
+          </div>
+
+          <div class="field"><label>Título</label>
+            <input id="fTitle" placeholder="Ej: Reunión con Sra. Herrera — remodelación baño">
+          </div>
+
+          <div class="field" id="projField" style="display:none"><label>Proyecto</label>
+            <select id="fProject">
+              <option>Brickell Kitchen Remodel</option>
+              <option>Boca Raton Master Bath</option>
+              <option>Coral Gables Patio</option>
+            </select>
+          </div>
+
+          <div class="grid2">
+            <div class="field"><label>Fecha</label><input type="date" id="fDate"></div>
+            <div class="field"><label>Hora</label><input type="time" id="fTime" value="10:00"></div>
+          </div>
+
+          <div class="grid2">
+            <div class="field"><label>Avisarme desde</label>
+              <select id="fFrom">
+                <option value="2h">2 horas antes</option>
+                <option value="1d" selected>1 día antes</option>
+                <option value="2d">2 días antes</option>
+                <option value="1w">1 semana antes</option>
+              </select>
+            </div>
+            <div class="field"><label>Repetir aviso</label>
+              <select id="fRepeat">
+                <option value="once">Solo una vez</option>
+                <option value="1h">Cada 1 h hasta el evento</option>
+                <option value="2h" selected>Cada 2 h hasta el evento</option>
+                <option value="4h">Cada 4 h hasta el evento</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field"><label>Canal de aviso (según opción elegida)</label>
+            <div class="channels" id="chanRow"></div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-plain" onclick="toggleForm()">Cancelar</button>
+            <button class="btn btn-teal" onclick="addEvent()">Guardar en agenda</button>
+          </div>
+        </div>
+
+        <div class="group-label">Hoy</div>
+        <div class="events" id="listToday"></div>
+        <div class="empty" id="emptyToday" style="display:none">Nada agendado para hoy.</div>
+
+        <div class="group-label">Próximos</div>
+        <div class="events" id="listNext"></div>
+        <div class="empty" id="emptyNext" style="display:none">Sin entradas próximas.</div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE VIEW ============ -->
+    <div class="phone-col">
+      <div class="ph-toggle" role="tablist">
+        <button class="ph-chip on" id="pvNotifs" onclick="setPhoneView('notifs')" role="tab">🔔 Avisos</button>
+        <button class="ph-chip" id="pvVoice" onclick="setPhoneView('voice')" role="tab">🎙️ Captura por voz</button>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div id="phLock">
+            <div class="ph-clock"><div class="t" id="phTime">9:41</div><div class="d" id="phDate">lunes, 6 de julio</div></div>
+            <div class="ph-notifs" id="phNotifs"></div>
+          </div>
+          <div class="v-wrap" id="phVoice" style="display:none">
+            <div class="v-head"><span class="ic">LD</span> Agenda · Captura por voz</div>
+            <div class="v-bubble">“Reunión con la Sra. Herrera el martes a las 10, avísame desde un día antes cada 2 horas”</div>
+            <div class="v-card">🤝 <b>Reunión — Sra. Herrera</b><br>martes · 10:00 · ⏰ desde 1 día antes · 🔁 cada 2 h
+              <div class="v-actions"><span class="v-ok">✓ Confirmar</span><span class="v-no">Cancelar</span></div>
+            </div>
+            <div class="v-mic">🎙️</div>
+            <div class="v-tip">Toca para dictar — o escribe con el teclado</div>
+          </div>
+        </div>
+      </div>
+      <p class="ph-caption" id="phCaption"></p>
+
+      <div class="home-demo">
+        <h3>Acceso directo sin login</h3>
+        <div class="icons-row">
+          <div class="app-ic"><div class="sq">📞</div><small>Teléfono</small></div>
+          <div class="app-ic"><div class="sq">💬</div><small>WhatsApp</small></div>
+          <div class="app-ic"><div class="sq lux">LD</div><small><b>Luxaris</b><br>abre autenticado</small></div>
+          <div class="app-ic"><div class="sq">📷</div><small>Cámara</small></div>
+        </div>
+        <p>El ícono se instala con <b>“Añadir a pantalla de inicio”</b> desde un enlace con token de dispositivo.
+        Al tocarlo, la app abre directo en el Dashboard — sin pedir PIN.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SHORTCUT SIN LOGIN ============ -->
+  <section class="block">
+    <h2 class="bookman">Shortcut sin login — ¿se puede para una persona y para el equipo?</h2>
+    <p class="lead">Sí. Se hace con <b>tokens de dispositivo</b>: un enlace único y revocable por persona/aparato.
+    Funciona igual para el admin solo o para todo el equipo, y cada quien conserva sus permisos (tab_access, my_tasks_only).</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><b>Generar enlace de dispositivo</b>
+        <p>En Ajustes → Seguridad, el admin crea un token por persona/aparato:
+        <code>kokistyle.vercel.app/acceso/tk_9f2…</code>. Se guarda en la tabla <code>device_tokens</code> con expiración opcional.</p></div>
+      <div class="step"><div class="n">2</div><b>Instalar en el teléfono</b>
+        <p>La persona abre el enlace en su celular o tableta y usa “Añadir a pantalla de inicio”.
+        El PWA guarda la sesión — el ícono queda como una app normal.</p></div>
+      <div class="step"><div class="n">3</div><b>Abrir directo, revocar cuando quieras</b>
+        <p>Cada apertura valida el token contra Supabase (server-side) y crea la sesión con los permisos de ese usuario.
+        Si se pierde el aparato, el admin revoca ese token sin afectar a los demás.</p></div>
+    </div>
+    <div class="sec-note"><b>Seguridad:</b> el token nunca expone el PIN, es individual (no compartido), revocable uno por uno,
+    y queda registrado en el Activity Log cada vez que se usa. Recomendado: expiración de 90 días renovable y máximo 2 dispositivos por persona.</div>
+  </section>
+
+  <!-- ============ CAPTURA POR VOZ ============ -->
+  <section class="block">
+    <h2 class="bookman">Captura por voz o texto desde el celular</h2>
+    <p class="lead">Reutiliza la infraestructura de Katy que ya existe en el proyecto (VoiceFAB + <code>/api/voice</code> + Claude).
+    Se agrega la acción <code>create_agenda_event</code>: dictas o escribes la frase, Katy extrae tipo, fecha, hora,
+    aviso y repetición, y muestra la tarjeta de confirmación editable — nada se guarda sin confirmar. Funciona igual con las 3 opciones de notificación.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><b>Dicta o escribe</b>
+        <p>Desde el ícono de la pantalla de inicio (ya autenticado por el token de dispositivo), tocas el micrófono:
+        “Reunión con la Sra. Herrera el martes a las 10, avísame cada 2 horas desde un día antes”.
+        Web Speech API — el mismo motor del VoiceFAB actual, con modo teclado como respaldo.</p></div>
+      <div class="step"><div class="n">2</div><b>Katy interpreta</b>
+        <p>El texto va a <code>/api/voice</code> (Claude) que devuelve la acción con los campos ya separados:
+        tipo reunión · fecha martes · 10:00 · aviso desde 1 día antes · repetir cada 2 h.
+        Con fallback local (<code>localDetect</code>) si no hay conexión al modelo.</p></div>
+      <div class="step"><div class="n">3</div><b>Confirmas y se programa</b>
+        <p>La tarjeta de confirmación muestra todo editable. Al confirmar se inserta en <code>agenda_events</code>,
+        los avisos quedan programados por el canal de la opción elegida, y la acción se audita en <code>voice_actions</code>.</p></div>
+    </div>
+    <div class="sec-note"><b>Pruébalo arriba:</b> la barra con el micrófono 🎙️ del panel es funcional — dicta (Chrome/Safari)
+    o escribe la frase y toca <b>Crear</b> para ver cómo se llena la tarjeta de confirmación.
+    En este prototipo el intérprete es local; en producción lo hace Claude vía <code>/api/voice</code>.</div>
+  </section>
+
+  <!-- ============ COMPARISON ============ -->
+  <section class="block">
+    <h2 class="bookman">Comparación de las 3 opciones</h2>
+    <p class="lead">Las tres comparten la misma agenda en la web app — cambia solo el canal por el que llega el aviso al teléfono.</p>
+    <div class="cmp-wrap">
+      <table class="cmp">
+        <thead><tr>
+          <th></th>
+          <th>A · PWA + Push<span class="rec">Recomendada</span></th>
+          <th>B · Calendario (.ics)</th>
+          <th>C · WhatsApp + Email</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Notificación nativa en el celular</td>
+            <td class="yes">Sí — lockscreen</td><td class="yes">Sí — vía app Calendario</td><td class="mid">Llega como mensaje</td></tr>
+          <tr><td>Captura por voz/texto desde el celular</td>
+            <td class="yes">Sí — mic dentro de la PWA</td><td class="yes">Sí — vía web app</td><td class="yes">Sí — vía web app</td></tr>
+          <tr><td>Repetición cada N horas hasta el evento</td>
+            <td class="yes">Total (cron cada 15 min)</td><td class="mid">Limitada (alarmas VALARM fijas)</td><td class="yes">Total (cron + Resend)</td></tr>
+          <tr><td>iPhone / iPad</td>
+            <td class="mid">iOS 16.4+ instalada como PWA</td><td class="yes">Sí</td><td class="yes">Sí</td></tr>
+          <tr><td>Requiere instalar algo</td>
+            <td class="mid">Añadir a inicio (1 vez)</td><td class="no">No</td><td class="no">No</td></tr>
+          <tr><td>Infraestructura nueva</td>
+            <td>Service worker + VAPID + cron</td><td>Solo un endpoint .ics</td><td>Cron + Resend (ya existe) / WA</td></tr>
+          <tr><td>Esfuerzo estimado</td>
+            <td class="mid">3–4 días</td><td class="yes">1 día</td><td class="mid">2 días</td></tr>
+          <tr><td>Costo mensual</td>
+            <td class="yes">$0</td><td class="yes">$0</td><td class="yes">$0 (email) · WA API de pago</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sec-note"><b>Ruta sugerida:</b> empezar con <b>B</b> (1 día, valor inmediato) y construir <b>A</b> como meta final.
+    Las dos conviven — el evento de calendario es el respaldo si el push falla.</div>
+  </section>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+const PH = { A:[], B:[], C:[] };
+const OPT = {
+  A:{dot:"#4F8A63",text:"La app se instala como PWA en el teléfono. Un cron de Vercel revisa la agenda cada 15 min y dispara Web Push — el aviso aparece en la pantalla de bloqueo como cualquier app nativa (Android y iOS 16.4+).",
+     tags:["Web Push + VAPID","Vercel Cron 15 min","🎙️ Voz (Katy)","$0/mes"],
+     chans:["🔔 Push al teléfono","🖥️ Aviso en la web app"],
+     caption:"Así se ve el aviso push en la pantalla de bloqueo",
+     btn:"🔔 Probar aviso"},
+  B:{dot:"#395886",text:"Cada entrada de agenda genera un evento de calendario (.ics o Google Calendar) con alarmas incluidas. El teléfono se encarga de notificar — no hay que construir ni mantener nada en el servidor.",
+     tags:["Archivo .ics","Google Calendar","🎙️ Voz (Katy)","Cero backend"],
+     chans:["📆 Calendario del teléfono"],
+     caption:"El aviso llega desde la app Calendario del teléfono",
+     btn:"📆 Añadir al calendario"},
+  C:{dot:"#7B1838",text:"Un cron de Vercel revisa la agenda y envía el recordatorio por WhatsApp y/o correo (Resend ya está integrado en el proyecto). Funciona en cualquier teléfono sin instalar nada.",
+     tags:["Vercel Cron","Resend (ya integrado)","🎙️ Voz (Katy)","wa.me / WhatsApp API"],
+     chans:["💬 WhatsApp","✉️ Email (Resend)"],
+     caption:"El recordatorio llega como mensaje de WhatsApp",
+     btn:"💬 Recordar por WA"}
+};
+
+let option="A", curType="cita", nextId=4;
+const TYPES={cita:{em:"📅",color:"#395886",label:"Cita"},task:{em:"✅",color:"#4F8A63",label:"Task"},reunion:{em:"🤝",color:"#7B1838",label:"Reunión"}};
+const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
+const plus=n=>{const d=new Date(today);d.setDate(d.getDate()+n);return iso(d)};
+const FROM={"2h":"2 h antes","1d":"1 día antes","2d":"2 días antes","1w":"1 semana antes"};
+const REP={once:"aviso único","1h":"cada 1 h hasta el evento","2h":"cada 2 h hasta el evento","4h":"cada 4 h hasta el evento"};
+
+let events=[
+ {id:1,type:"task",title:"Comprar tile porcelanato — Home Depot",project:"Brickell Kitchen Remodel",date:iso(today),time:"14:00",from:"2h",repeat:"1h"},
+ {id:2,type:"reunion",title:"Reunión nuevo proyecto — Sra. Herrera (Boca Raton)",project:null,date:plus(2),time:"10:00",from:"2d",repeat:"2h"},
+ {id:3,type:"cita",title:"Inspección de la ciudad — permiso eléctrico",project:null,date:plus(3),time:"09:30",from:"1d",repeat:"once"}
+];
+
+function fmtDate(s){const d=new Date(s+"T12:00:00");
+ return d.toLocaleDateString("es-US",{weekday:"short",day:"numeric",month:"short"})}
+
+function render(){
+ const t=document.getElementById("listToday"),n=document.getElementById("listNext");
+ t.innerHTML="";n.innerHTML="";
+ let cToday=0,cWeek=0,cAlerts=0;
+ const week=plus(7);
+ events.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+ for(const ev of events){
+  const m=TYPES[ev.type];
+  if(ev.date===iso(today))cToday++;
+  if(ev.date<=week)cWeek++;
+  if(ev.repeat!=="once")cAlerts++; else cAlerts++;
+  const card=document.createElement("div");card.className="ev";card.style.borderLeftColor=m.color;
+  card.innerHTML=`<span class="em">${m.em}</span>
+   <div class="ev-body">
+     <p class="ev-title">${ev.title}</p>
+     <div class="ev-meta"><span>${fmtDate(ev.date)} · ${ev.time}</span><span style="color:${m.color};font-weight:700">${m.label}</span></div>
+     <div class="ev-chips">
+       ${ev.project?`<span class="chip proj">${ev.project}</span>`:""}
+       <span class="chip">⏰ desde ${FROM[ev.from]}</span>
+       <span class="chip">🔁 ${REP[ev.repeat]}</span>
+     </div>
+   </div>
+   <div class="ev-actions">
+     <button class="mini-btn notify" onclick="actionFor(${ev.id})">${OPT[option].btn}</button>
+     <button class="mini-btn del" onclick="delEvent(${ev.id})">✕ quitar</button>
+   </div>`;
+  (ev.date===iso(today)?t:n).appendChild(card);
+ }
+ document.getElementById("emptyToday").style.display=t.children.length?"none":"block";
+ document.getElementById("emptyNext").style.display=n.children.length?"none":"block";
+ document.getElementById("kpiToday").textContent=cToday;
+ document.getElementById("kpiWeek").textContent=cWeek;
+ document.getElementById("kpiAlerts").textContent=events.filter(e=>e.repeat!=="once").length;
+ renderPhone();
+}
+
+function renderPhone(){
+ const box=document.getElementById("phNotifs");box.innerHTML="";
+ const soon=events.slice(0,2);
+ for(const ev of soon){
+  const m=TYPES[ev.type];const d=document.createElement("div");d.className="pnote";
+  if(option==="A"){
+   d.innerHTML=`<div class="app"><span class="ic">LD</span> Luxaris Design <span class="when">ahora</span></div>
+    <b>${m.em} ${m.label}: ${ev.time}</b><p>${ev.title} — ${fmtDate(ev.date)}. Próximo aviso ${ev.repeat==="once"?"—":REP[ev.repeat].replace("cada","en")}.</p>`;
+  }else if(option==="B"){
+   d.innerHTML=`<div class="app"><span class="ic" style="background:#fff">📆</span> Calendario <span class="when">alerta</span></div>
+    <b>${ev.title}</b><p>${fmtDate(ev.date)}, ${ev.time} · alerta ${FROM[ev.from]}</p>`;
+  }else{
+   d.innerHTML=`<div class="app"><span class="ic" style="background:#25D366;color:#fff">WA</span> WhatsApp <span class="when">ahora</span></div>
+    <b>Luxaris Agenda</b><p>${m.em} Recordatorio: ${ev.title} — ${fmtDate(ev.date)} ${ev.time}</p>`;
+  }
+  box.appendChild(d);
+ }
+ document.getElementById("phCaption").textContent=(typeof phoneView!=="undefined"&&phoneView==="voice")
+  ?"Captura por voz dentro de la PWA — misma Katy, nueva acción de agenda":OPT[option].caption;
+ const now=new Date();
+ document.getElementById("phTime").textContent=now.toLocaleTimeString("es-US",{hour:"numeric",minute:"2-digit",hour12:false});
+ document.getElementById("phDate").textContent=now.toLocaleDateString("es-US",{weekday:"long",day:"numeric",month:"long"});
+}
+
+function setOption(o){
+ option=o;
+ for(const k of ["A","B","C"])document.getElementById("tab"+k).classList.toggle("active",k===o);
+ const c=OPT[o];
+ document.getElementById("optBanner").innerHTML=
+  `<span class="dot" style="background:${c.dot}"></span><p>${c.text}</p>
+   <span class="tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</span>`;
+ document.getElementById("chanRow").innerHTML=c.chans.map(ch=>`<span class="chan on">${ch}</span>`).join("");
+ render();
+}
+
+function toggleForm(){document.getElementById("form").classList.toggle("open");
+ if(!document.getElementById("fDate").value)document.getElementById("fDate").value=plus(1);}
+function pickType(t){curType=t;
+ document.querySelectorAll(".type-opt").forEach(el=>{
+  el.classList.remove("sel-cita","sel-task","sel-reunion");
+  if(el.dataset.t===t)el.classList.add("sel-"+t);});
+ document.getElementById("projField").style.display=t==="task"?"block":"none";}
+
+function addEvent(){
+ const title=document.getElementById("fTitle").value.trim();
+ if(!title){toast("Escribe un título para la entrada");return}
+ events.push({id:nextId++,type:curType,title,
+  project:curType==="task"?document.getElementById("fProject").value:null,
+  date:document.getElementById("fDate").value||plus(1),
+  time:document.getElementById("fTime").value||"10:00",
+  from:document.getElementById("fFrom").value,repeat:document.getElementById("fRepeat").value});
+ document.getElementById("fTitle").value="";toggleForm();render();
+ toast("Guardado — el aviso se programó según tu configuración ✓");
+}
+function delEvent(id){events=events.filter(e=>e.id!==id);render()}
+
+function actionFor(id){
+ const ev=events.find(e=>e.id===id);if(!ev)return;
+ if(option==="A")demoPush(ev);
+ else if(option==="B")downloadIcs(ev);
+ else openWa(ev);
+}
+
+function demoPush(ev){
+ const body=`${TYPES[ev.type].em} ${ev.title} — ${fmtDate(ev.date)} ${ev.time}`;
+ const show=()=>{try{new Notification("Luxaris Design · Agenda",{body});toast("Notificación enviada — mira la esquina de tu pantalla")}
+  catch(e){toast("🔔 "+body)}};
+ if(!("Notification" in window)){toast("🔔 "+body);return}
+ if(Notification.permission==="granted")show();
+ else if(Notification.permission!=="denied")Notification.requestPermission().then(p=>p==="granted"?show():toast("🔔 "+body));
+ else toast("🔔 "+body);
+}
+
+function downloadIcs(ev){
+ const dt=ev.date.replace(/-/g,"")+"T"+ev.time.replace(":","")+"00";
+ const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Luxaris Design//Agenda//ES","BEGIN:VEVENT",
+  "UID:luxaris-"+ev.id+"@kokistyle.vercel.app","DTSTART:"+dt,
+  "SUMMARY:"+TYPES[ev.type].em+" "+ev.title,
+  ev.project?"DESCRIPTION:Proyecto: "+ev.project:"DESCRIPTION:Agenda Luxaris",
+  "BEGIN:VALARM","TRIGGER:-PT2H","ACTION:DISPLAY","DESCRIPTION:Recordatorio","END:VALARM",
+  "BEGIN:VALARM","TRIGGER:-P1D","ACTION:DISPLAY","DESCRIPTION:Recordatorio","END:VALARM",
+  "END:VEVENT","END:VCALENDAR"].join("\r\n");
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([ics],{type:"text/calendar"}));
+ a.download="luxaris-agenda-"+ev.id+".ics";a.click();URL.revokeObjectURL(a.href);
+ toast("Archivo .ics descargado — ábrelo para añadirlo al calendario del teléfono");
+}
+
+function openWa(ev){
+ const msg=encodeURIComponent(`🗓️ Recordatorio Luxaris: ${ev.title} — ${fmtDate(ev.date)} a las ${ev.time}`+(ev.project?` (Proyecto: ${ev.project})`:""));
+ window.open("https://wa.me/?text="+msg,"_blank");
+ toast("Abriendo WhatsApp con el recordatorio pre-escrito…");
+}
+
+let toastTimer;
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");
+ clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),3200);}
+
+/* ---------- captura por voz / texto ---------- */
+const HINT_DEFAULT="Toca el micrófono y habla — Katy entiende tipo, fecha, hora, aviso y repetición. Nada se guarda sin tu confirmación.";
+let recog=null,recOn=false,phoneView="notifs";
+
+function micTap(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){toast("Dictado no disponible en este navegador — escribe la frase y toca Crear");document.getElementById("capText").focus();return}
+ if(recOn){try{recog.stop()}catch(e){}return}
+ recog=new SR();recog.lang="es-US";recog.interimResults=false;recog.maxAlternatives=1;
+ recog.onstart=()=>{recOn=true;document.getElementById("micBtn").classList.add("rec");
+  document.getElementById("capHint").textContent="Escuchando… habla ahora"};
+ const off=()=>{recOn=false;document.getElementById("micBtn").classList.remove("rec");
+  document.getElementById("capHint").textContent=HINT_DEFAULT};
+ recog.onend=off;
+ recog.onerror=e=>{off();toast("No pude escuchar ("+e.error+") — escribe la frase y toca Crear")};
+ recog.onresult=e=>{const tr=e.results[0][0].transcript;document.getElementById("capText").value=tr;runParse()};
+ try{recog.start()}catch(err){toast("Micrófono bloqueado aquí — escribe la frase y toca Crear")}
+}
+
+const MONTHS={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
+function parseQuick(text){
+ const plain=text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+ const type=/reuni/.test(plain)?"reunion":(/tarea|task|comprar|llamar|recoger|pagar|pedir/.test(plain)?"task":"cita");
+ let date=plus(1);
+ const wd=["domingo","lunes","martes","miercoles","jueves","viernes","sabado"];
+ if(/\bhoy\b/.test(plain))date=iso(today);
+ else if(/pasado manana/.test(plain))date=plus(2);
+ else if(/manana/.test(plain))date=plus(1);
+ else{
+  let hit=false;
+  for(let i=0;i<7;i++)if(plain.includes(wd[i])){let diff=(i-today.getDay()+7)%7;if(diff===0)diff=7;date=plus(diff);hit=true;break}
+  if(!hit){const dm=plain.match(/el\s+(\d{1,2})(?:\s+de\s+(\w+))?/);
+   if(dm){const d=new Date(today);d.setDate(+dm[1]);
+    if(dm[2]&&MONTHS[dm[2]]!==undefined)d.setMonth(MONTHS[dm[2]]);
+    if(d<=today)d.setMonth(d.getMonth()+(dm[2]?12:1));date=iso(d)}}
+ }
+ let time="10:00";
+ const tm=plain.match(/a las?\s+(\d{1,2})(?::(\d{2}))?/);
+ if(tm){let h=+tm[1];if(/tarde|noche|pm/.test(plain)&&h<12)h+=12;time=String(h).padStart(2,"0")+":"+(tm[2]||"00")}
+ let from="1d";
+ if(/desde\s+(una|1)\s+semana/.test(plain))from="1w";
+ else if(/desde\s+(dos|2)\s+dias?/.test(plain))from="2d";
+ else if(/desde\s+(dos|2)\s+horas/.test(plain))from="2h";
+ let repeat="once";
+ const rp=plain.match(/cada\s+(una|1|dos|2|cuatro|4)\s*h/);
+ if(rp)repeat={una:"1h","1":"1h",dos:"2h","2":"2h",cuatro:"4h","4":"4h"}[rp[1]];
+ let project=null;
+ if(type==="task"){
+  if(plain.includes("brickell"))project="Brickell Kitchen Remodel";
+  else if(plain.includes("boca"))project="Boca Raton Master Bath";
+  else if(plain.includes("coral"))project="Coral Gables Patio";
+  else project="Brickell Kitchen Remodel";}
+ let title=text;
+ const cut=plain.search(/\b(hoy|manana|pasado|el\s+\d|lunes|martes|miercoles|jueves|viernes|sabado|domingo|a las?\s+\d|desde|cada|avisame)/);
+ if(cut>3)title=text.slice(0,cut);
+ title=title.replace(/^(agrega(r)?|crea(r)?|anota(r)?|agenda(r)?|recuerdame|recuérdame|nueva?|nuevo)\s+(una?\s+)?(cita|reunion|reunión|tarea|task)?\s*(de|con|para)?\s*/i,"")
+  .replace(/[,.]\s*$/,"").trim();
+ if(!title)title=text.trim();
+ title=title.charAt(0).toUpperCase()+title.slice(1);
+ return{type,title,date,time,from,repeat,project};
+}
+
+function runParse(){
+ const text=document.getElementById("capText").value.trim();
+ if(!text){toast("Dicta o escribe la frase primero");return}
+ const p=parseQuick(text);
+ document.getElementById("cTitle").value=p.title;
+ document.getElementById("cType").value=p.type;
+ document.getElementById("cDate").value=p.date;
+ document.getElementById("cTime").value=p.time;
+ document.getElementById("cFrom").value=p.from;
+ document.getElementById("cRepeat").value=p.repeat;
+ document.getElementById("cProjField").style.display=p.type==="task"?"block":"none";
+ if(p.project)document.getElementById("cProject").value=p.project;
+ document.getElementById("confirm").classList.add("open");
+}
+function closeConfirm(){document.getElementById("confirm").classList.remove("open")}
+function confirmAdd(){
+ const type=document.getElementById("cType").value;
+ events.push({id:nextId++,type,
+  title:document.getElementById("cTitle").value.trim()||"Sin título",
+  project:type==="task"?document.getElementById("cProject").value:null,
+  date:document.getElementById("cDate").value||plus(1),
+  time:document.getElementById("cTime").value||"10:00",
+  from:document.getElementById("cFrom").value,
+  repeat:document.getElementById("cRepeat").value});
+ closeConfirm();document.getElementById("capText").value="";render();
+ toast("✓ Agendado por voz — avisos programados según tu configuración");
+}
+document.getElementById("cType").addEventListener("change",e=>{
+ document.getElementById("cProjField").style.display=e.target.value==="task"?"block":"none"});
+
+function setPhoneView(v){
+ phoneView=v;
+ document.getElementById("pvNotifs").classList.toggle("on",v==="notifs");
+ document.getElementById("pvVoice").classList.toggle("on",v==="voice");
+ document.getElementById("phLock").style.display=v==="notifs"?"flex":"none";
+ document.getElementById("phVoice").style.display=v==="voice"?"flex":"none";
+ renderPhone();
+}
+
+setOption("A");
+</script>

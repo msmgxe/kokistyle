@@ -27,6 +27,7 @@ interface AuthContextType {
   isAdmin:       boolean;
   isSuperAdmin:  boolean;
   login:         (pin: string) => Promise<boolean>;
+  loginWithToken: (token: string) => Promise<boolean>;
   logout:        () => void;
   verifyPin:     (pin: string) => Promise<boolean>;
   changePin:     (currentPin: string, newPin: string) => Promise<{ ok: boolean; error?: string }>;
@@ -83,6 +84,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     logActivity({ user_id: user.id, user_name: user.name, user_role: "collaborator", action: "login" });
     return true;
+  }, []);
+
+  // ── Login con token de dispositivo (shortcut sin PIN) ──────────────────────
+  const loginWithToken = useCallback(async (token: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/auth/device-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+      if (!data.ok) return false;
+
+      const user: AppUser = data.role === "superadmin"
+        ? { ...SUPERADMIN_TEMPLATE, pin: "", name: data.name ?? "Admin" }
+        : (data.user as AppUser);
+      setCurrentUser(user);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      logActivity({
+        user_id: user.id, user_name: user.name,
+        user_role: data.role === "superadmin" ? "superadmin" : "collaborator",
+        action: "login", details: { method: "device_token" },
+      });
+      return true;
+    } catch { return false; }
   }, []);
 
   // ── Logout ─────────────────────────────────────────────────────────────────
@@ -176,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentUser,
       isAdmin:      !!currentUser,
       isSuperAdmin: currentUser?.role === "superadmin",
-      login, logout, verifyPin, changePin, setRecoveryEmail, setDisplayName, hasPermission,
+      login, loginWithToken, logout, verifyPin, changePin, setRecoveryEmail, setDisplayName, hasPermission,
     }}>
       {!isLoading && children}
     </AuthContext.Provider>

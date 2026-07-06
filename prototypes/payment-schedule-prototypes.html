@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payment Schedule — 3 Propuestas</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', sans-serif; background: #F0ECE4; padding: 40px 24px; color: #16323D; }
+
+  .page-title { font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #5C6A6E; margin-bottom: 32px; }
+
+  /* ── Section wrapper ── */
+  .proto-section { margin-bottom: 56px; }
+  .proto-label {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .proto-label .badge {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: #16323D; color: white; font-size: 11px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .proto-label .name { font-size: 16px; font-weight: 900; color: #16323D; }
+  .proto-label .desc { font-size: 11px; color: #5C6A6E; }
+
+  /* ── Shared totals row above ── */
+  .totals-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: white; border-radius: 14px 14px 0 0; border: 1px solid #E6DDCB;
+    border-bottom: none; padding: 14px 20px;
+  }
+  .totals-row .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #5C6A6E; }
+  .totals-row .grand { font-size: 18px; font-weight: 900; color: #16323D; }
+  .totals-row .gt-label { font-size: 10px; font-weight: 700; color: #5C6A6E; text-transform: uppercase; letter-spacing: .1em; }
+  .sched-wrap {
+    background: white; border: 1px solid #E6DDCB; border-radius: 0 0 14px 14px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .add-btn {
+    width: 100%; border: 1.5px dashed #D7CBB3; border-radius: 10px;
+    background: transparent; padding: 9px; text-align: center;
+    font-size: 11px; font-weight: 700; color: #9E9484; cursor: pointer;
+    transition: all .15s;
+  }
+  .add-btn:hover { background: #F7F3EA; color: #5C6A6E; }
+
+  /* ═══════════════════════════════════════════════
+     OPCIÓN A — Barra compacta lineal
+  ══════════════════════════════════════════════ */
+  .a-row {
+    display: flex; align-items: center; gap: 0;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid #EDE8DF;
+    background: white;
+  }
+  .a-pct-badge {
+    width: 48px; height: 56px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 900; color: white;
+    letter-spacing: -.3px;
+  }
+  .a-body {
+    flex: 1; padding: 7px 10px; min-width: 0;
+  }
+  .a-concept {
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .08em; color: #5C6A6E; margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .a-amount {
+    font-size: 14px; font-weight: 900; color: #16323D;
+  }
+  .a-right {
+    flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end;
+    padding: 7px 10px; gap: 3px;
+  }
+  .a-received-label { font-size: 9px; font-weight: 700; color: #9E9484; text-transform: uppercase; letter-spacing: .08em; }
+  .a-received-val {
+    font-size: 12px; font-weight: 800;
+  }
+  .a-received-val.zero { color: #BBADA0; }
+  .a-received-val.partial { color: #E6922B; }
+  .a-received-val.full    { color: #4F8A63; }
+  .a-actions {
+    flex-shrink: 0; display: flex; align-items: center; gap: 4px;
+    padding: 0 10px 0 4px;
+    border-left: 1px solid #F0EBE0;
+  }
+  .a-actions .btn-icon {
+    width: 26px; height: 26px; border-radius: 7px; border: none; background: transparent;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: #BBADA0; transition: all .15s;
+  }
+  .a-actions .btn-icon:hover { background: #FDF0ED; color: #B0492F; }
+  .a-actions .btn-detail {
+    padding: 5px 10px; border-radius: 8px; border: 1px solid #E6DDCB;
+    background: white; font-size: 10px; font-weight: 700; color: #395886;
+    cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .a-actions .btn-detail:hover { background: #EDF3FB; }
+
+  /* mini track */
+  .a-track { height: 3px; background: #F0EBE0; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .a-fill  { height: 100%; border-radius: 2px; }
+
+  /* ═══════════════════════════════════════════════
+     OPCIÓN B — Card horizontal con separador vertical
+  ══════════════════════════════════════════════ */
+  .b-row {
+    display: grid;
+    grid-template-columns: 50px 1fr auto;
+    align-items: center;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid #EDE8DF;
+    background: #FDFAF6;
+    gap: 0;
+  }
+  .b-pct-col {
+    height: 60px; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900; color: white;
+    border-right: 1px solid rgba(255,255,255,.2);
+  }
+  .b-mid {
+    padding: 9px 14px; min-width: 0;
+  }
+  .b-concept {
+    font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+    color: #8A9EA0; margin-bottom: 4px;
+  }
+  .b-amount { font-size: 16px; font-weight: 900; color: #16323D; }
+  .b-right {
+    padding: 9px 14px;
+    border-left: 1px solid #EDE8DF;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 130px;
+  }
+  .b-received-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #9E9484; }
+  .b-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 100px;
+    font-size: 11px; font-weight: 800;
+  }
+  .b-pill.zero    { background: #F2EDE5; color: #B3A899; }
+  .b-pill.partial { background: #FEF3E5; color: #C07B2A; }
+  .b-pill.full    { background: #DCEBDD; color: #4F8A63; }
+  .b-of { font-size: 9.5px; color: #BBADA0; font-weight: 600; }
+  .b-actions {
+    display: flex; align-items: center; gap: 6px; margin-top: 4px;
+  }
+  .b-actions .bi {
+    width: 22px; height: 22px; border-radius: 6px; border: none; background: transparent;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: #C5BDB2; transition: all .15s;
+  }
+  .b-actions .bi:hover { background: #FDF0ED; color: #B0492F; }
+  .b-actions .bd {
+    padding: 4px 9px; border-radius: 7px; border: 1px solid #E0D8CE;
+    background: white; font-size: 9.5px; font-weight: 700; color: #395886;
+    cursor: pointer;
+  }
+  .b-actions .bd:hover { background: #EDF3FB; }
+
+  /* ═══════════════════════════════════════════════
+     OPCIÓN C — Pill flotante, dos columnas
+  ══════════════════════════════════════════════ */
+  .c-row {
+    display: flex; gap: 12px; align-items: stretch;
+  }
+  .c-left {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    flex-shrink: 0; width: 50px;
+  }
+  .c-pct-badge {
+    width: 50px; height: 50px; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 900; color: white;
+  }
+  .c-step-line {
+    width: 2px; flex: 1; background: #E6DDCB; border-radius: 1px; min-height: 8px;
+  }
+  .c-body {
+    flex: 1; background: white; border: 1px solid #E6DDCB; border-radius: 10px;
+    padding: 10px 13px;
+    display: flex; align-items: center; gap: 0;
+  }
+  .c-content { flex: 1; min-width: 0; }
+  .c-concept {
+    font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+    color: #8A9EA0; margin-bottom: 4px;
+  }
+  .c-amount-row { display: flex; align-items: baseline; gap: 6px; }
+  .c-amount { font-size: 15px; font-weight: 900; color: #16323D; }
+  .c-target-lbl { font-size: 10px; color: #BBADA0; font-weight: 600; }
+  .c-divider { width: 1px; height: 36px; background: #EDE8DF; margin: 0 12px; flex-shrink: 0; }
+  .c-received-col { flex-shrink: 0; text-align: right; }
+  .c-rec-lbl { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #9E9484; margin-bottom: 3px; }
+  .c-rec-val { font-size: 14px; font-weight: 900; }
+  .c-rec-val.zero    { color: #C5BDB2; }
+  .c-rec-val.partial { color: #D4893A; }
+  .c-rec-val.full    { color: #4F8A63; }
+  .c-actions-col { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; justify-content: center; padding-left: 10px; border-left: 1px solid #EDE8DF; margin-left: 10px; }
+  .c-btn-detail { padding: 5px 10px; border-radius: 8px; border: 1px solid #E0D8CE; background: white; font-size: 10px; font-weight: 700; color: #395886; cursor: pointer; white-space: nowrap; }
+  .c-btn-detail:hover { background: #EDF3FB; }
+  .c-btn-del { width: 22px; height: 22px; border-radius: 6px; border: none; background: transparent; color: #C5BDB2; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .c-btn-del:hover { background: #FDF0ED; color: #B0492F; }
+
+  .last-c .c-step-line { display: none; }
+
+  svg { flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<p class="page-title">Payment Schedule — 3 propuestas de rediseño</p>
+
+<!-- ══════════════════════════════════════
+     OPCIÓN A — Barra compacta con mini track
+══════════════════════════════════════════ -->
+<div class="proto-section">
+  <div class="proto-label">
+    <div class="badge">A</div>
+    <div>
+      <div class="name">Barra compacta + mini track</div>
+      <div class="desc">% en bloque de color · monto grande al lado · recibido pegado a la derecha · track de progreso finito bajo el monto</div>
+    </div>
+  </div>
+
+  <div class="totals-row">
+    <div>
+      <div class="label">DISCOUNT</div>
+      <div style="font-size:12px;color:#5C6A6E;margin-top:2px;">(– 0 %)</div>
+    </div>
+    <div style="text-align:right">
+      <div class="gt-label">Grand Total</div>
+      <div class="grand">$10,450</div>
+    </div>
+  </div>
+  <div class="sched-wrap">
+    <!-- header -->
+    <div style="display:flex;justify-content:space-between;padding:4px 4px 6px;border-bottom:1px solid #F0EBE0;margin-bottom:4px;">
+      <span style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9E9484">Payment Schedule</span>
+      <span style="font-size:9.5px;font-weight:700;color:#9E9484">— $0 / $10,450 received</span>
+    </div>
+
+    <!-- Row 1 — zero -->
+    <div class="a-row">
+      <div class="a-pct-badge" style="background:#395886">30%</div>
+      <div class="a-body">
+        <div class="a-concept">At Sign Contract</div>
+        <div class="a-amount">$3,104</div>
+        <div class="a-track"><div class="a-fill" style="width:0%;background:#395886"></div></div>
+      </div>
+      <div class="a-right">
+        <div class="a-received-label">Received</div>
+        <div class="a-received-val zero">$0</div>
+      </div>
+      <div class="a-actions">
+        <button class="btn-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+        <button class="btn-detail">Detail</button>
+      </div>
+    </div>
+
+    <!-- Row 2 — partial paid -->
+    <div class="a-row">
+      <div class="a-pct-badge" style="background:#4F7A63">47%</div>
+      <div class="a-body">
+        <div class="a-concept">2nd — Deposit</div>
+        <div class="a-amount">$4,932</div>
+        <div class="a-track"><div class="a-fill" style="width:60%;background:#4F7A63;opacity:.6"></div></div>
+      </div>
+      <div class="a-right">
+        <div class="a-received-label">Received</div>
+        <div class="a-received-val partial">$2,959</div>
+      </div>
+      <div class="a-actions">
+        <button class="btn-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+        <button class="btn-detail">Detail</button>
+      </div>
+    </div>
+
+    <!-- Row 3 — full paid -->
+    <div class="a-row">
+      <div class="a-pct-badge" style="background:#6A4E3C">24%</div>
+      <div class="a-body">
+        <div class="a-concept">When Customer Satisfied</div>
+        <div class="a-amount">$2,508</div>
+        <div class="a-track"><div class="a-fill" style="width:100%;background:#6A4E3C;opacity:.55"></div></div>
+      </div>
+      <div class="a-right">
+        <div class="a-received-label">Received</div>
+        <div class="a-received-val full">$2,508 ✓</div>
+      </div>
+      <div class="a-actions">
+        <button class="btn-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+        <button class="btn-detail">Detail</button>
+      </div>
+    </div>
+
+    <button class="add-btn">+ Add payment</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     OPCIÓN B — Grid con separador vertical y pill de estado
+══════════════════════════════════════════ -->
+<div class="proto-section">
+  <div class="proto-label">
+    <div class="badge">B</div>
+    <div>
+      <div class="name">Grid con separador + pill de estado</div>
+      <div class="desc">% en columna de color · monto en el centro · recibido como pill (gris/naranja/verde) separado a la derecha</div>
+    </div>
+  </div>
+
+  <div class="totals-row">
+    <div>
+      <div class="label">DISCOUNT</div>
+      <div style="font-size:12px;color:#5C6A6E;margin-top:2px;">(– 0 %)</div>
+    </div>
+    <div style="text-align:right">
+      <div class="gt-label">Grand Total</div>
+      <div class="grand">$10,450</div>
+    </div>
+  </div>
+  <div class="sched-wrap">
+    <div style="display:flex;justify-content:space-between;padding:4px 4px 6px;border-bottom:1px solid #F0EBE0;margin-bottom:4px;">
+      <span style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9E9484">Payment Schedule</span>
+      <span style="font-size:9.5px;font-weight:700;color:#9E9484">— $0 / $10,450 received</span>
+    </div>
+
+    <!-- Row 1 -->
+    <div class="b-row">
+      <div class="b-pct-col" style="background:#395886">30%</div>
+      <div class="b-mid">
+        <div class="b-concept">At Sign Contract</div>
+        <div class="b-amount">$3,104</div>
+      </div>
+      <div class="b-right">
+        <div class="b-received-lbl">Received</div>
+        <div class="b-pill zero">$0</div>
+        <div class="b-of">of $3,104</div>
+        <div class="b-actions">
+          <button class="bi">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+          <button class="bd">Detail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2 — partial -->
+    <div class="b-row">
+      <div class="b-pct-col" style="background:#4F7A63">47%</div>
+      <div class="b-mid">
+        <div class="b-concept">2nd — Deposit</div>
+        <div class="b-amount">$4,932</div>
+      </div>
+      <div class="b-right">
+        <div class="b-received-lbl">Received</div>
+        <div class="b-pill partial">$2,959</div>
+        <div class="b-of">of $4,932</div>
+        <div class="b-actions">
+          <button class="bi">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+          <button class="bd">Detail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3 — full -->
+    <div class="b-row">
+      <div class="b-pct-col" style="background:#6A4E3C">24%</div>
+      <div class="b-mid">
+        <div class="b-concept">When Customer Satisfied</div>
+        <div class="b-amount">$2,508</div>
+      </div>
+      <div class="b-right">
+        <div class="b-received-lbl">Received</div>
+        <div class="b-pill full">$2,508 ✓</div>
+        <div class="b-of">of $2,508</div>
+        <div class="b-actions">
+          <button class="bi">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+          <button class="bd">Detail</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="add-btn" style="margin-top:4px">+ Add payment</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     OPCIÓN C — Timeline vertical con cards flotantes
+══════════════════════════════════════════ -->
+<div class="proto-section">
+  <div class="proto-label">
+    <div class="badge">C</div>
+    <div>
+      <div class="name">Timeline + cards flotantes</div>
+      <div class="desc">Badge cuadrado con solo % en el lado izquierdo conectado por línea · card blanca con concepto arriba · monto grande · divider · recibido a la derecha</div>
+    </div>
+  </div>
+
+  <div class="totals-row">
+    <div>
+      <div class="label">DISCOUNT</div>
+      <div style="font-size:12px;color:#5C6A6E;margin-top:2px;">(– 0 %)</div>
+    </div>
+    <div style="text-align:right">
+      <div class="gt-label">Grand Total</div>
+      <div class="grand">$10,450</div>
+    </div>
+  </div>
+  <div class="sched-wrap" style="padding:14px 14px;">
+    <div style="display:flex;justify-content:space-between;padding:0 0 10px;border-bottom:1px solid #F0EBE0;margin-bottom:12px;">
+      <span style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9E9484">Payment Schedule</span>
+      <span style="font-size:9.5px;font-weight:700;color:#9E9484">— $0 / $10,450 received</span>
+    </div>
+
+    <!-- Row 1 -->
+    <div class="c-row" style="margin-bottom:0">
+      <div class="c-left">
+        <div class="c-pct-badge" style="background:#395886">30%</div>
+        <div class="c-step-line"></div>
+      </div>
+      <div class="c-body" style="margin-bottom:8px">
+        <div class="c-content">
+          <div class="c-concept">At Sign Contract</div>
+          <div class="c-amount-row">
+            <div class="c-amount">$3,104</div>
+          </div>
+        </div>
+        <div class="c-divider"></div>
+        <div class="c-received-col">
+          <div class="c-rec-lbl">Received</div>
+          <div class="c-rec-val zero">$0</div>
+        </div>
+        <div class="c-actions-col">
+          <button class="c-btn-detail">Detail</button>
+          <button class="c-btn-del">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2 — partial -->
+    <div class="c-row" style="margin-bottom:0">
+      <div class="c-left">
+        <div class="c-pct-badge" style="background:#4F7A63">47%</div>
+        <div class="c-step-line"></div>
+      </div>
+      <div class="c-body" style="margin-bottom:8px">
+        <div class="c-content">
+          <div class="c-concept">2nd — Deposit</div>
+          <div class="c-amount-row">
+            <div class="c-amount">$4,932</div>
+          </div>
+        </div>
+        <div class="c-divider"></div>
+        <div class="c-received-col">
+          <div class="c-rec-lbl">Received</div>
+          <div class="c-rec-val partial">$2,959</div>
+        </div>
+        <div class="c-actions-col">
+          <button class="c-btn-detail">Detail</button>
+          <button class="c-btn-del">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3 — full — last (no line) -->
+    <div class="c-row last-c">
+      <div class="c-left">
+        <div class="c-pct-badge" style="background:#6A4E3C">24%</div>
+        <div class="c-step-line" style="display:none"></div>
+      </div>
+      <div class="c-body">
+        <div class="c-content">
+          <div class="c-concept">When Customer Satisfied</div>
+          <div class="c-amount-row">
+            <div class="c-amount">$2,508</div>
+          </div>
+        </div>
+        <div class="c-divider"></div>
+        <div class="c-received-col">
+          <div class="c-rec-lbl">Received</div>
+          <div class="c-rec-val full">$2,508 ✓</div>
+        </div>
+        <div class="c-actions-col">
+          <button class="c-btn-detail">Detail</button>
+          <button class="c-btn-del">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="add-btn" style="margin-top:12px">+ Add payment</button>
+  </div>
+</div>
+
+</body>
+</html>

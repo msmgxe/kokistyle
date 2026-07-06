@@ -965,6 +965,72 @@ function useFeatures(EN: boolean) {
         "👤 Usa la tarjeta <b>Nombre de display</b> en Configuración para establecer un nombre personalizado — útil cuando varias personas comparten el PIN de superadmin.",
       ],
     },
+    {
+      id: "agenda", icon: "🗓",
+      title: EN ? "My Agenda" : "Mi Agenda",
+      desc:  EN ? "Personal admin agenda: appointments, project tasks and meetings for new projects — with reminders you can repeat until the event and export to your phone's calendar."
+                : "Agenda personal del admin: citas, tasks de proyecto y reuniones de nuevos proyectos — con avisos repetibles hasta el evento y export al calendario del teléfono.",
+      mockup: null,
+      steps: EN ? [
+        { t:"Open the Agenda", d:"Click <b>Agenda</b> in the top navigation (visible only to the superadmin). You'll see three groups: <b>Today · Upcoming · Past</b>, plus KPI counters." },
+        { t:"Create by voice or text", d:"Use the capture bar at the top: tap the <b>🎙 mic</b> and speak, or type a phrase like <i>\"Meeting with Mrs. Herrera on Tuesday at 10, remind me every 2 hours from a day before\"</i> and tap <b>Create</b>. Katy extracts type, date, time and reminders." },
+        { t:"Review the confirmation card", d:"Katy shows what she understood with <b>all fields editable</b> — type (📅 Appointment / ✅ Project task / 🤝 Meeting), title, project, date, time, reminder start and repetition. Nothing saves until you tap <b>Confirm & schedule</b>." },
+        { t:"Or use the manual form", d:"Click <b>+ New entry</b> to open the classic form with the same fields. Project tasks can be linked to any active project from the dropdown." },
+        { t:"Configure reminders", d:"<b>Remind me from</b> sets when alerts start (2 hours to 1 week before). <b>Repeat reminder</b> repeats the alert every 1, 2 or 4 hours until the event time." },
+        { t:"Send it to your phone", d:"On each entry, tap <b>Add to calendar (.ics)</b> to download a calendar file — open it on your phone and the event is added with alarms. Or use the <b>Google Calendar</b> link to add it directly to your Google account." },
+        { t:"Mark as done", d:"Tap <b>Done</b> when the appointment or task is finished — it stays visible with a strikethrough. Use <b>Remove</b> to delete it permanently." },
+      ] : [
+        { t:"Abrir la Agenda", d:"Clic en <b>Agenda</b> en la navegación superior (visible solo para el superadmin). Verás tres grupos: <b>Hoy · Próximos · Pasados</b>, más contadores KPI." },
+        { t:"Crear por voz o texto", d:"Usa la barra de captura arriba: toca el <b>🎙 micrófono</b> y habla, o escribe una frase como <i>\"Reunión con la Sra. Herrera el martes a las 10, avísame cada 2 horas desde un día antes\"</i> y toca <b>Crear</b>. Katy extrae tipo, fecha, hora y avisos." },
+        { t:"Revisar la tarjeta de confirmación", d:"Katy muestra lo que entendió con <b>todos los campos editables</b> — tipo (📅 Cita / ✅ Task de proyecto / 🤝 Reunión), título, proyecto, fecha, hora, inicio del aviso y repetición. Nada se guarda hasta que toques <b>Confirmar y agendar</b>." },
+        { t:"O usar el formulario manual", d:"Clic en <b>+ Nueva entrada</b> para abrir el formulario clásico con los mismos campos. Las tasks de proyecto se pueden vincular a cualquier proyecto activo desde el selector." },
+        { t:"Configurar los avisos", d:"<b>Avisarme desde</b> define cuándo empiezan las alertas (de 2 horas a 1 semana antes). <b>Repetir aviso</b> repite la alerta cada 1, 2 o 4 horas hasta la hora del evento." },
+        { t:"Enviarlo a tu teléfono", d:"En cada entrada, toca <b>Añadir al calendario (.ics)</b> para descargar un archivo de calendario — ábrelo en tu teléfono y el evento se agrega con alarmas. O usa el link de <b>Google Calendar</b> para agregarlo directo a tu cuenta de Google." },
+        { t:"Marcar como listo", d:"Toca <b>Listo</b> cuando la cita o task termine — queda visible tachada. Usa <b>Quitar</b> para eliminarla permanentemente." },
+      ],
+      tips: EN ? [
+        "🎙 The capture bar understands relative dates: <b>today, tomorrow, Tuesday, on the 15th</b> — and times like <b>at 3 pm</b>.",
+        "📲 The <b>.ics file</b> works with iPhone Calendar, Google Calendar and Outlook — the phone itself fires the notifications, no app install needed.",
+        "🤖 You can also tell Katy (the floating mic) things like <b>\"Remind me of the city inspection tomorrow at 9\"</b> from anywhere in the panel.",
+        "🔐 The Agenda is <b>private to the superadmin</b> — collaborators and clients never see it.",
+      ] : [
+        "🎙 La barra de captura entiende fechas relativas: <b>hoy, mañana, el martes, el 15</b> — y horas como <b>a las 3 de la tarde</b>.",
+        "📲 El <b>archivo .ics</b> funciona con el Calendario del iPhone, Google Calendar y Outlook — el propio teléfono dispara las notificaciones, sin instalar nada.",
+        "🤖 También puedes decirle a Katy (el micrófono flotante) cosas como <b>\"Recuérdame la inspección de la ciudad mañana a las 9\"</b> desde cualquier parte del panel.",
+        "🔐 La Agenda es <b>privada del superadmin</b> — colaboradores y clientes nunca la ven.",
+      ],
+    },
+    {
+      id: "devices", icon: "📲",
+      title: EN ? "Direct Access (no PIN)" : "Acceso Directo (sin PIN)",
+      desc:  EN ? "Create per-device links that open the panel already signed in — perfect as a home-screen shortcut on your phone or tablet. Works for you and for each team member, and each link can be revoked individually."
+                : "Crea enlaces por dispositivo que abren el panel ya autenticado — perfecto como shortcut en la pantalla de inicio del teléfono o tableta. Funciona para ti y para cada miembro del equipo, y cada enlace se revoca individualmente.",
+      mockup: null,
+      steps: EN ? [
+        { t:"Open Settings → Devices", d:"On the Dashboard, go to the <b>Security</b> section and open the <b>Devices</b> tab (superadmin only)." },
+        { t:"Generate an access link", d:"Enter a device name (e.g. <i>Marco's iPhone</i>), confirm with your <b>PIN</b>, and tap <b>Generate access link</b>. A unique, secret URL is created." },
+        { t:"Copy and open it on the phone", d:"Tap <b>Copy link</b> and send it to the device (WhatsApp to yourself works great). Open it once in the phone's browser — you'll land on the Dashboard already signed in." },
+        { t:"Add to Home Screen", d:"In the phone browser menu, choose <b>\"Add to Home Screen\"</b>. The Luxaris icon now opens the panel directly — no PIN, no login screen." },
+        { t:"Revoke when needed", d:"If a phone is lost or a person leaves the team, open <b>Devices</b>, and tap <b>Revoke</b> on that link. It stops working immediately — other devices are unaffected." },
+      ] : [
+        { t:"Abrir Configuración → Dispositivos", d:"En el Dashboard, ve a la sección <b>Seguridad</b> y abre el tab <b>Dispositivos</b> (solo superadmin)." },
+        { t:"Generar un enlace de acceso", d:"Escribe el nombre del dispositivo (ej: <i>iPhone de Marco</i>), confirma con tu <b>PIN</b> y toca <b>Generar enlace de acceso</b>. Se crea una URL única y secreta." },
+        { t:"Copiarlo y abrirlo en el teléfono", d:"Toca <b>Copiar enlace</b> y envíalo al dispositivo (un WhatsApp a ti mismo funciona perfecto). Ábrelo una vez en el navegador del teléfono — entrarás al Dashboard ya autenticado." },
+        { t:"Añadir a pantalla de inicio", d:"En el menú del navegador del teléfono, elige <b>\"Añadir a pantalla de inicio\"</b>. El ícono de Luxaris ahora abre el panel directo — sin PIN, sin pantalla de login." },
+        { t:"Revocar cuando haga falta", d:"Si un teléfono se pierde o alguien deja el equipo, abre <b>Dispositivos</b> y toca <b>Revocar</b> en ese enlace. Deja de funcionar de inmediato — los demás dispositivos no se afectan." },
+      ],
+      tips: EN ? [
+        "🔐 The link <b>never contains your PIN</b> — it's a random token validated server-side on every use, and each use is recorded in the Activity Log.",
+        "📵 Treat each link like a key: <b>one link per device</b>, never shared in groups. If in doubt, revoke it and generate a new one.",
+        "👥 Works for the whole team too — each person keeps <b>their own permissions</b> (visible tabs, my-tasks-only) when entering via their link.",
+        "⏱ Revoked links show their <b>last used</b> date, so you can audit when a device last entered.",
+      ] : [
+        "🔐 El enlace <b>nunca contiene tu PIN</b> — es un token aleatorio validado en el servidor en cada uso, y cada uso queda registrado en el Activity Log.",
+        "📵 Trata cada enlace como una llave: <b>un enlace por dispositivo</b>, nunca compartido en grupos. Ante la duda, revócalo y genera uno nuevo.",
+        "👥 También funciona para todo el equipo — cada persona conserva <b>sus propios permisos</b> (tabs visibles, solo-sus-tareas) al entrar por su enlace.",
+        "⏱ Los enlaces revocados muestran su fecha de <b>último uso</b>, para auditar cuándo entró ese dispositivo por última vez.",
+      ],
+    },
   ];
 }
 

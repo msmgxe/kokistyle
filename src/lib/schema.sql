@@ -325,3 +325,35 @@ CREATE POLICY anon_all ON bookings FOR ALL TO anon USING (true) WITH CHECK (true
 
 -- ── Payment installment index (for N-installment deposit schedule) ────────────
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_idx INTEGER;
+
+-- ── Agenda personal del admin ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS agenda_events (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type       TEXT NOT NULL DEFAULT 'cita',   -- 'cita' | 'task' | 'reunion'
+  title            TEXT NOT NULL,
+  project_id       UUID REFERENCES projects(id) ON DELETE SET NULL,
+  event_date       DATE NOT NULL,
+  event_time       TEXT NOT NULL DEFAULT '10:00',
+  remind_from      TEXT NOT NULL DEFAULT '1d',     -- '2h' | '1d' | '2d' | '1w'
+  repeat_every     TEXT NOT NULL DEFAULT 'once',   -- 'once' | '1h' | '2h' | '4h'
+  notes            TEXT,
+  done             BOOLEAN NOT NULL DEFAULT false,
+  last_notified_at TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE agenda_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON agenda_events FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- ── Device tokens (acceso directo sin login desde smartphone/tableta) ─────────
+-- Sin política anon: solo accesible vía service_role en API routes (como superadmin_config)
+CREATE TABLE IF NOT EXISTS device_tokens (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token        TEXT NOT NULL UNIQUE,
+  user_id      TEXT NOT NULL,                      -- 'superadmin' o id de app_users
+  label        TEXT,
+  expires_at   TIMESTAMPTZ,
+  revoked      BOOLEAN NOT NULL DEFAULT false,
+  last_used_at TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;

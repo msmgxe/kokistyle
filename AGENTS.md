@@ -69,11 +69,13 @@ src/
 │   │   ├── layout.tsx                # Layout del panel: nav top, logout, VoiceFAB, LangSwitch
 │   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs + eliminar proyecto)
 │   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Workflow · Gantt · Materials · Contacts · Notes · Design
-│   │   ├── cliente-01/page.tsx       # Tour 360° showcase (demo pública)
+│   │   ├── agenda/page.tsx           # Agenda personal del admin — citas/tasks/reuniones + captura por voz + .ics (solo superadmin)
 │   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
 │   │   ├── plan/page.tsx             # Gantt G global (todas las tareas, orden por start_date asc)
 │   │   ├── activity/page.tsx         # Registro de actividad — solo superadmin (login, create, update, delete)
+│   │   ├── reservas/page.tsx         # Admin de reservas online (tabla bookings) — solo superadmin
 │   │   └── help/page.tsx             # Página de ayuda — guía paso a paso bilingüe (EN/ES)
+│   ├── acceso/[token]/page.tsx       # Login automático por token de dispositivo → redirige a /proyectos
 │   └── api/
 │       ├── voice/route.ts            # Asistente de voz Katy (Claude API → intención → acción)
 │       └── auth/
@@ -82,7 +84,9 @@ src/
 │           ├── recover/route.ts      # Enviar código 6 dígitos al correo (Resend)
 │           ├── reset-pin/route.ts    # Verificar código y actualizar PIN
 │           ├── set-email/route.ts    # Guardar correo de recuperación del superadmin
-│           └── set-name/route.ts     # Actualizar nombre de display del superadmin (verifica PIN, server-side)
+│           ├── set-name/route.ts     # Actualizar nombre de display del superadmin (verifica PIN, server-side)
+│           ├── device-tokens/route.ts # Crear/listar/revocar tokens de dispositivo (op: create|list|revoke, verifica PIN)
+│           └── device-login/route.ts # Validar token de dispositivo y retornar la sesión (server-side)
 │
 ├── components/
 │   ├── layout/
@@ -107,8 +111,7 @@ src/
 │
 ├── config/
 │   ├── branding.ts                   # Datos de la empresa (nombre, teléfono, iniciales, etc.)
-│   ├── translations.ts               # Traducciones EN + ES — usado por useLanguage()
-│   └── cliente01.ts                  # Config del tour 360° demo
+│   └── translations.ts               # Traducciones EN + ES — usado por useLanguage()
 │
 ├── context/
 │   ├── AuthContext.tsx               # Autenticación, roles, permisos — persiste en localStorage
@@ -125,8 +128,12 @@ src/
 │
 └── types/
     ├── project.ts                    # Project, Task, Material, Payment, Expense, Contact, Estimate*
-    └── auth.ts                       # AppUser, Permission, AuthState
+    ├── auth.ts                       # AppUser, Permission, AuthState
+    ├── agenda.ts                     # AgendaEvent, DeviceToken
+    └── booking.ts                    # Booking, BookingStatus (reservas online)
 ```
+
+> **Eliminado (jul 2026):** El tour demo `cliente-01` (página, `Cliente01Showcase`, `Bathroom360Viewer`, `config/cliente01.ts`) y su link "Bathroom 360°" del Navbar fueron removidos por estar fuera de uso.
 
 ---
 
@@ -150,6 +157,9 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `user_project_access` | Proyectos asignados por colaborador |
 | `superadmin_config` | PIN + email del superadmin (singleton) |
 | `voice_actions` | Auditoría de todos los comandos del asistente Katy |
+| `bookings` | Reservas online del formulario público (admin en `/proyectos/reservas`) |
+| `agenda_events` | Agenda personal del admin (citas, tasks, reuniones con recordatorios) |
+| `device_tokens` | Tokens de acceso directo sin PIN — **sin política anon**, solo service_role |
 
 ### Tablas del módulo Estimate
 
@@ -351,15 +361,86 @@ Tab activo por defecto al abrir un proyecto: `"presupuesto"` (Estimate).
 
 ### Navegación del panel (top nav)
 
-Orden: Dashboard → Gantt G → Contacts → Activity (solo superadmin) → Help
+Orden: Dashboard → Gantt G → Contacts → Agenda (superadmin) → Activity (superadmin) → Bookings (superadmin) → Help
 
 | Link | Ruta | Notas |
 |---|---|---|
 | Dashboard | `/proyectos` | — |
 | Gantt G | `/proyectos/plan` | Vista Gantt global, proyectos ordenados por start_date ASC |
 | Contacts | `/proyectos/contactos` | Lista global de contactos |
+| Agenda | `/proyectos/agenda` | Agenda personal — solo visible para superadmin |
 | Activity | `/proyectos/activity` | Solo visible para superadmin |
+| Bookings | `/proyectos/reservas` | Reservas online — solo visible para superadmin |
 | Help | `/proyectos/help` | — |
+
+---
+
+## Agenda personal del admin (`/proyectos/agenda`)
+
+Sección privada del superadmin para registrar **citas**, **tasks de proyecto** (con FK opcional a `projects`) y **reuniones de nuevos proyectos**, con configuración de avisos.
+
+### Modelo (`agenda_events`)
+
+| Campo | Valores | Descripción |
+|---|---|---|
+| `event_type` | `cita` \| `task` \| `reunion` | Tipo de entrada (📅 / ✅ / 🤝) |
+| `event_date` / `event_time` | DATE / `"HH:MM"` | Fecha y hora del evento |
+| `remind_from` | `2h` \| `1d` \| `2d` \| `1w` | Desde cuándo avisar antes del evento |
+| `repeat_every` | `once` \| `1h` \| `2h` \| `4h` | Repetición del aviso hasta la hora del evento |
+| `project_id` | UUID nullable | FK → projects (para tasks ligadas a un proyecto) |
+| `done` | boolean | Marcada como completada (tachada en UI) |
+| `last_notified_at` | timestamptz | Reservado para el motor de push (Fase pendiente) |
+
+### Funcionalidad
+
+- **Captura por voz/texto**: barra superior con micrófono (Web Speech API, mismo patrón que Katy). La frase va a `/api/voice` (acción `create_agenda_event`); si el modelo no responde se usa `localParse()` (fallback local que entiende "hoy/mañana/el martes/a las 3 de la tarde/cada 2 horas/desde un día antes", ES + EN). Siempre se muestra **tarjeta de confirmación editable** antes de insertar.
+- **Formulario manual**: botón "+ Nueva entrada" con los mismos campos.
+- **Export a calendario del teléfono**: cada tarjeta tiene botón **.ics** (Blob client-side con 2 `VALARM`: -2h y -1 día) y link directo a **Google Calendar** (`calendar.google.com/calendar/render?action=TEMPLATE`). El teléfono dispara las notificaciones nativas — sin backend.
+- Grupos **Hoy / Próximos / Pasados** + 3 KPIs (hoy, semana, avisos activos).
+- Acciones registradas en `activity_log` (`entity_type: "agenda_event"`).
+- Katy (VoiceFAB) también soporta `create_agenda_event` desde cualquier página del panel.
+
+Migración SQL (ya incluida en `schema.sql`):
+```sql
+CREATE TABLE IF NOT EXISTS agenda_events (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type       TEXT NOT NULL DEFAULT 'cita',
+  title            TEXT NOT NULL,
+  project_id       UUID REFERENCES projects(id) ON DELETE SET NULL,
+  event_date       DATE NOT NULL,
+  event_time       TEXT NOT NULL DEFAULT '10:00',
+  remind_from      TEXT NOT NULL DEFAULT '1d',
+  repeat_every     TEXT NOT NULL DEFAULT 'once',
+  notes            TEXT,
+  done             BOOLEAN NOT NULL DEFAULT false,
+  last_notified_at TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE agenda_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON agenda_events FOR ALL TO anon USING (true) WITH CHECK (true);
+```
+
+> **Pendiente (Fase 5 del plan)**: motor de push Web (PWA + service worker + VAPID + Vercel Cron cada 15 min leyendo `remind_from`/`repeat_every`/`last_notified_at`). Requiere instalar `web-push` — preguntar antes de agregar la dependencia.
+
+---
+
+## Acceso directo sin login (device tokens)
+
+Shortcut para smartphone/tableta que abre el panel **ya autenticado**, sin PIN. Sirve para el superadmin y para cada miembro del equipo (cada quien conserva sus permisos).
+
+### Flujo
+
+1. Dashboard → **Seguridad → Dispositivos** (`AdminSettings`, solo superadmin): nombre del dispositivo + PIN → `POST /api/auth/device-tokens` (`op: "create"`) genera un token aleatorio (`crypto.randomBytes(24)`, base64url) y lo guarda en `device_tokens`.
+2. El admin copia el enlace `https://<host>/acceso/<token>` y lo abre en el teléfono → "Añadir a pantalla de inicio".
+3. `/acceso/[token]` llama a `POST /api/auth/device-login` (server-side, `supabase-admin`): valida token no revocado/no expirado, actualiza `last_used_at` y retorna la sesión (`role: superadmin` + name, o el registro de `app_users`).
+4. `AuthContext.loginWithToken()` crea la sesión en `localStorage` (superadmin con `pin: ""` — el PIN **nunca** viaja en el enlace) y registra el login en `activity_log` con `details: { method: "device_token" }`.
+5. Revocación individual desde el mismo panel (`op: "revoke"`).
+
+### Seguridad
+
+- `device_tokens` **no tiene política RLS anon** → solo accesible vía `service_role` en API routes (mismo patrón que `superadmin_config`).
+- Crear/listar/revocar siempre exige el PIN del superadmin verificado server-side.
+- `expires_at` opcional (soportado en el schema y validado en device-login).
 
 ---
 
@@ -570,6 +651,7 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 |---|---|
 | `activity-log-prototype.html` | Prototipo visual del Activity Log con Tailwind CDN y datos de ejemplo |
 | `payment-schedule-sidebar.html` | Prototipo "Opción A" del layout de Estimate — cabecera dark + sub-tabs (referencia del diseño implementado) |
+| `agenda-admin-prototype.html` | Prototipo de la Agenda personal — captura por voz + 3 opciones de notificación (referencia del diseño implementado) |
 
 ---
 
@@ -609,6 +691,7 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 | `create_payment` | "Add payment $4000" | "Agregar pago $4000" |
 | `create_expense` | "Add expense $500 Jorge" | "Agregar egreso $500 Jorge" |
 | `create_contact` | "Add contact Jorge plumber" | "Agregar contacto Jorge plomero" |
+| `create_agenda_event` | "Remind me of the inspection tomorrow at 9" | "Recuérdame la inspección mañana a las 9" |
 
 ### Flujo conversacional `create_contact`
 

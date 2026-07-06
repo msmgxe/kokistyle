@@ -42,6 +42,7 @@ const ACTION_LABELS: Record<string, string> = {
   create_expense: "egreso",         create_task:    "tarea",
   create_material: "material",      create_budget_item: "línea de presupuesto",
   create_contact: "contacto",       update_task_status: "cambio de estado",
+  create_agenda_event: "entrada de agenda",
 };
 
 const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "text" | "number" | "date" }>> = {
@@ -53,6 +54,7 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
   create_budget_item: [{ key:"description", label:"Descripción", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"amount", label:"Monto", type:"number" }],
   create_contact:     [{ key:"type", label:"Tipo", type:"text" }, { key:"name", label:"Nombre", type:"text" }, { key:"phone", label:"Teléfono", type:"text" }, { key:"specialty", label:"Especialidad", type:"text" }, { key:"rate", label:"Tarifa", type:"text" }, { key:"rate_type", label:"Por (hour/day)", type:"text" }],
   update_task_status: [{ key:"task_name", label:"Actividad", type:"text" }, { key:"status", label:"Estado", type:"text" }],
+  create_agenda_event: [{ key:"title", label:"Título", type:"text" }, { key:"event_type", label:"Tipo (cita/task/reunion)", type:"text" }, { key:"event_date", label:"Fecha", type:"date" }, { key:"event_time", label:"Hora", type:"text" }, { key:"remind_from", label:"Avisar desde (2h/1d/2d/1w)", type:"text" }, { key:"repeat_every", label:"Repetir (once/1h/2h/4h)", type:"text" }],
 };
 
 async function saveAction(action: string, data: Record<string, unknown>, meta: VoiceMeta): Promise<string> {
@@ -135,6 +137,21 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
       });
       if (error) throw error;
       return `Contacto "${data.name}" (${contactType}) creado`;
+    }
+    case "create_agenda_event": {
+      const validType = ["cita", "task", "reunion"].includes(String(data.event_type))
+        ? String(data.event_type) : "cita";
+      const { error } = await supabase.from("agenda_events").insert({
+        event_type:   validType,
+        title:        String(data.title ?? "Sin título"),
+        project_id:   data.project_id ? String(data.project_id) : null,
+        event_date:   /^\d{4}-\d{2}-\d{2}$/.test(String(data.event_date ?? "")) ? String(data.event_date) : TODAY(),
+        event_time:   /^\d{2}:\d{2}$/.test(String(data.event_time ?? "")) ? String(data.event_time) : "10:00",
+        remind_from:  ["2h", "1d", "2d", "1w"].includes(String(data.remind_from)) ? String(data.remind_from) : "1d",
+        repeat_every: ["once", "1h", "2h", "4h"].includes(String(data.repeat_every)) ? String(data.repeat_every) : "once",
+      });
+      if (error) throw error;
+      return `Agendado "${data.title}" para ${data.event_date ?? TODAY()} ${data.event_time ?? "10:00"}`;
     }
     case "update_task_status": {
       if (!pid) throw new Error("Abre un proyecto primero");
@@ -289,6 +306,7 @@ function buildSummary(action: string, data: Record<string, unknown>): string {
     case "create_budget_item": return `${data.description ?? ""}, ${fmt(Number(data.amount ?? 0))}`;
     case "create_contact":     return `${data.name ?? ""} · ${data.type ?? "coworker"} · ${data.phone ?? ""}${data.specialty ? " · " + data.specialty : ""}`;
     case "update_task_status": { const sl: Record<string,string> = { pend:"Por hacer", prog:"En proceso", done:"Hecho" }; return `"${data.task_name ?? ""}" → ${sl[String(data.status ?? "")] ?? data.status}`; }
+    case "create_agenda_event": { const te: Record<string,string> = { cita:"📅 Cita", task:"✅ Task", reunion:"🤝 Reunión" }; return `${te[String(data.event_type ?? "cita")] ?? "📅"} "${data.title ?? ""}" · ${data.event_date ?? ""} ${data.event_time ?? ""}`; }
     default:                   return JSON.stringify(data);
   }
 }
