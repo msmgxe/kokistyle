@@ -15,7 +15,6 @@ const navItems = [
   { labelKey: "beforeAfter", href: "/#before-after" },
   { labelKey: "tours", href: "/#tours" },
   { labelKey: "estimate", href: "/#estimate" },
-  { labelKey: "bath360", href: "/proyectos/cliente-01" },
 ] as const;
 
 const languages: Language[] = ["en", "es"];
@@ -65,7 +64,6 @@ export default function Navbar() {
     beforeAfter: t.nav.beforeAfter,
     tours: t.nav.tours,
     estimate: t.nav.estimate,
-    bath360: t.nav.bath360,
   };
 
   return (
