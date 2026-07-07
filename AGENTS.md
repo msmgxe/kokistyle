@@ -391,7 +391,7 @@ Sección privada del superadmin para registrar **citas**, **tasks de proyecto** 
 | `event_type` | `cita` \| `task` \| `reunion` | Tipo de entrada (📅 / ✅ / 🤝) |
 | `event_date` / `event_time` | DATE / `"HH:MM"` | Fecha y hora del evento |
 | `remind_from` | `2h` \| `1d` \| `2d` \| `1w` | Desde cuándo avisar antes del evento |
-| `repeat_every` | `once` \| `1h` \| `2h` \| `4h` | Repetición del aviso hasta la hora del evento |
+| `repeat_every` | `once` \| `daily` | `once` = un solo aviso; `daily` = en cada corrida programada del cron hasta el evento |
 | `project_id` | UUID nullable | FK → projects (para tasks ligadas a un proyecto) |
 | `done` | boolean | Marcada como completada (tachada en UI) |
 | `last_notified_at` | timestamptz | Reservado para el motor de push (Fase pendiente) |
@@ -431,8 +431,8 @@ Implementado (jul 2026) — la Agenda envía notificaciones nativas al teléfono
 
 - **PWA**: `public/manifest.json` (branding Luxaris, `start_url: /proyectos`) + íconos `icon-192.png`/`icon-512.png` + `public/sw.js` (service worker: `push` → `showNotification`, `notificationclick` → abre `/proyectos/agenda`). El SW se registra en `proyectos/layout.tsx`.
 - **Suscripción**: botón 🔔 "Activar avisos en este dispositivo" en la Agenda → `Notification.requestPermission()` → `pushManager.subscribe()` con `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → upsert en `push_subscriptions` (onConflict endpoint).
-- **Motor**: `GET /api/agenda/remind` (protegido con `Bearer CRON_SECRET`, Vercel Cron lo envía automáticamente). Calcula en hora de Florida (`America/New_York`) qué eventos están dentro de su ventana `remind_from`, respeta `repeat_every` vs `last_notified_at` (tolerancia -5 min), envía con `web-push` a todas las suscripciones y elimina las muertas (404/410).
-- **Cron**: `vercel.json` → `*/15 * * * *`. ⚠️ En plan **Hobby** los crons corren máx. 1 vez/día — usar plan Pro o un pinger externo (ej. cron-job.org) llamando el endpoint con el header `Authorization: Bearer <CRON_SECRET>`.
+- **Motor**: `GET /api/agenda/remind` (protegido con `Bearer CRON_SECRET`, Vercel Cron lo envía automáticamente). Calcula en hora de Florida (`America/New_York`) qué eventos están dentro de su ventana `remind_from`; `repeat_every = "once"` avisa una sola vez, `"daily"` avisa en cada corrida (dedupe de 60 min vía `last_notified_at`). Envía con `web-push` a todas las suscripciones y elimina las muertas (404/410).
+- **Cron programable**: `vercel.json` → **2 corridas diarias**: `0 12 * * *` y `0 21 * * *` UTC (~8:00 am y ~5:00 pm Florida en horario de verano). Compatible con plan **Hobby** (límite: 2 crons, 1 vez/día cada uno). Para cambiar los horarios de aviso, editar esos dos schedules (en UTC) y redesplegar.
 - **iOS**: requiere iOS 16.4+ y la PWA instalada en pantalla de inicio (Add to Home Screen) antes de poder suscribirse.
 - Dependencia: `web-push` (+ `@types/web-push` dev). Claves: `npx web-push generate-vapid-keys`.
 

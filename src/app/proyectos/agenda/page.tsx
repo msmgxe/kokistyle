@@ -78,12 +78,8 @@ function localParse(text: string, projects: { id: string; title: string }[]): Pa
   else if (/desde\s+(dos|2)\s+dias?|from\s+(two|2)\s+days/.test(plain)) remind_from = "2d";
   else if (/desde\s+(dos|2)\s+horas|from\s+(two|2)\s+hours/.test(plain)) remind_from = "2h";
 
-  let repeat_every: AgendaRepeat = "once";
-  const rp = plain.match(/cada\s+(una|1|dos|2|cuatro|4)\s*h|every\s+(1|2|4)\s*h/);
-  if (rp) {
-    const v = rp[1] ?? rp[2] ?? "";
-    repeat_every = ({ una: "1h", "1": "1h", dos: "2h", "2": "2h", cuatro: "4h", "4": "4h" } as const)[v] ?? "once";
-  }
+  const repeat_every: AgendaRepeat =
+    /cada|repite|repetir|every|repeat/.test(plain) ? "daily" : "once";
 
   let project_id: string | null = null;
   for (const p of projects) {
@@ -269,7 +265,7 @@ export default function AgendaPage() {
           event_date: /^\d{4}-\d{2}-\d{2}$/.test(d.event_date ?? "") ? d.event_date : plusDays(1),
           event_time: /^\d{2}:\d{2}$/.test(d.event_time ?? "") ? d.event_time : "10:00",
           remind_from: (["2h", "1d", "2d", "1w"].includes(d.remind_from) ? d.remind_from : "1d") as AgendaRemindFrom,
-          repeat_every: (["once", "1h", "2h", "4h"].includes(d.repeat_every) ? d.repeat_every : "once") as AgendaRepeat,
+          repeat_every: d.repeat_every === "once" ? "once" : d.repeat_every ? "daily" : "once",
           project_id: projects.some(p => p.id === d.project_id) ? d.project_id : null,
         };
       }
@@ -364,8 +360,9 @@ export default function AgendaPage() {
     "2h": ta.from2h, "1d": ta.from1d, "2d": ta.from2d, "1w": ta.from1w,
   };
   const REP_LABELS: Record<AgendaRepeat, string> = {
-    once: ta.repOnce, "1h": ta.rep1h, "2h": ta.rep2h, "4h": ta.rep4h,
+    once: ta.repOnce, daily: ta.repDaily,
   };
+  const repLabel = (v: string) => REP_LABELS[v as AgendaRepeat] ?? ta.repDaily;
   const TYPE_LABELS: Record<AgendaEventType, string> = {
     cita: ta.typeCita, task: ta.typeTask, reunion: ta.typeReunion,
   };
@@ -464,7 +461,7 @@ export default function AgendaPage() {
               ⏰ {ta.chipFrom} {FROM_LABELS[ev.remind_from]}
             </span>
             <span className="rounded-full border border-[#E6DDCB] bg-[#F7F3EA] px-2.5 py-0.5 text-[10px] font-semibold text-[#5C6A6E]">
-              🔁 {REP_LABELS[ev.repeat_every]}
+              🔁 {repLabel(ev.repeat_every)}
             </span>
           </div>
           <div className="mt-2.5 flex flex-wrap gap-2">
@@ -503,6 +500,7 @@ export default function AgendaPage() {
         <div>
           <h1 className="font-bookman text-2xl text-[#16323D]">🗓️ {ta.title}</h1>
           <p className="text-sm text-[#5C6A6E]">{ta.subtitle}</p>
+          <p className="mt-0.5 text-[11px] text-[#97A1A0]">⏰ {ta.pushSchedule}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={enablePush} disabled={pushBusy || pushOn}

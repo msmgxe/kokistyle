@@ -54,7 +54,7 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
   create_budget_item: [{ key:"description", label:"Descripción", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"amount", label:"Monto", type:"number" }],
   create_contact:     [{ key:"type", label:"Tipo", type:"text" }, { key:"name", label:"Nombre", type:"text" }, { key:"phone", label:"Teléfono", type:"text" }, { key:"specialty", label:"Especialidad", type:"text" }, { key:"rate", label:"Tarifa", type:"text" }, { key:"rate_type", label:"Por (hour/day)", type:"text" }],
   update_task_status: [{ key:"task_name", label:"Actividad", type:"text" }, { key:"status", label:"Estado", type:"text" }],
-  create_agenda_event: [{ key:"title", label:"Título", type:"text" }, { key:"event_type", label:"Tipo (cita/task/reunion)", type:"text" }, { key:"event_date", label:"Fecha", type:"date" }, { key:"event_time", label:"Hora", type:"text" }, { key:"remind_from", label:"Avisar desde (2h/1d/2d/1w)", type:"text" }, { key:"repeat_every", label:"Repetir (once/1h/2h/4h)", type:"text" }],
+  create_agenda_event: [{ key:"title", label:"Título", type:"text" }, { key:"event_type", label:"Tipo (cita/task/reunion)", type:"text" }, { key:"event_date", label:"Fecha", type:"date" }, { key:"event_time", label:"Hora", type:"text" }, { key:"remind_from", label:"Avisar desde (2h/1d/2d/1w)", type:"text" }, { key:"repeat_every", label:"Repetir (once/daily)", type:"text" }],
 };
 
 async function saveAction(action: string, data: Record<string, unknown>, meta: VoiceMeta): Promise<string> {
@@ -148,7 +148,7 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
         event_date:   /^\d{4}-\d{2}-\d{2}$/.test(String(data.event_date ?? "")) ? String(data.event_date) : TODAY(),
         event_time:   /^\d{2}:\d{2}$/.test(String(data.event_time ?? "")) ? String(data.event_time) : "10:00",
         remind_from:  ["2h", "1d", "2d", "1w"].includes(String(data.remind_from)) ? String(data.remind_from) : "1d",
-        repeat_every: ["once", "1h", "2h", "4h"].includes(String(data.repeat_every)) ? String(data.repeat_every) : "once",
+        repeat_every: data.repeat_every && data.repeat_every !== "once" ? "daily" : "once",
       });
       if (error) throw error;
       return `Agendado "${data.title}" para ${data.event_date ?? TODAY()} ${data.event_time ?? "10:00"}`;

@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS agenda_events (
   event_date       DATE NOT NULL,
   event_time       TEXT NOT NULL DEFAULT '10:00',
   remind_from      TEXT NOT NULL DEFAULT '1d',     -- '2h' | '1d' | '2d' | '1w'
-  repeat_every     TEXT NOT NULL DEFAULT 'once',   -- 'once' | '1h' | '2h' | '4h'
+  repeat_every     TEXT NOT NULL DEFAULT 'once',   -- 'once' | 'daily' (en cada aviso programado del día)
   notes            TEXT,
   done             BOOLEAN NOT NULL DEFAULT false,
   last_notified_at TIMESTAMPTZ,

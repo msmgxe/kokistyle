@@ -1,6 +1,6 @@
 export type AgendaEventType = "cita" | "task" | "reunion";
 export type AgendaRemindFrom = "2h" | "1d" | "2d" | "1w";
-export type AgendaRepeat = "once" | "1h" | "2h" | "4h";
+export type AgendaRepeat = "once" | "daily";
 
 export interface AgendaEvent {
   id: string;

@@ -37,7 +37,7 @@ create_budget_item → description, type("mano"|"material"), amount(number)
 create_contact     → type("coworker"|"customer"|"friend"), name, phone
                      + if coworker: specialty(one of: ${SPECIALTIES_EN}), rate(number, optional), rate_type("hour"|"day", optional)
 create_project     → title, client, budget(number), address
-create_agenda_event → event_type("cita"|"task"|"reunion"), title, event_date("YYYY-MM-DD" — resolve "tomorrow"/"Tuesday" from today), event_time("HH:MM" 24h, default "10:00"), remind_from("2h"|"1d"|"2d"|"1w", default "1d"), repeat_every("once"|"1h"|"2h"|"4h", default "once"), project_id(optional — id from projects list if one is mentioned)
+create_agenda_event → event_type("cita"|"task"|"reunion"), title, event_date("YYYY-MM-DD" — resolve "tomorrow"/"Tuesday" from today), event_time("HH:MM" 24h, default "10:00"), remind_from("2h"|"1d"|"2d"|"1w", default "1d"), repeat_every("once"|"daily" — "daily" if they say to repeat/insist, default "once"), project_id(optional — id from projects list if one is mentioned)
 
 CONTACT CONVERSATION FLOW (create_contact):
 Step 1 → ask: "What type of contact? Co-worker, client, or friend?"
@@ -89,7 +89,7 @@ create_budget_item → description, type("mano"|"material"), amount(número)
 create_contact     → type("coworker"|"customer"|"friend"), name, phone
                      + si coworker: specialty(una de: ${SPECIALTIES_EN}), rate(número, opcional), rate_type("hour"|"day", opcional)
 create_project     → title, client, budget(número), address
-create_agenda_event → event_type("cita"|"task"|"reunion"), title, event_date("YYYY-MM-DD" — resuelve "mañana"/"el martes" desde hoy), event_time("HH:MM" 24h, default "10:00"), remind_from("2h"|"1d"|"2d"|"1w", default "1d"), repeat_every("once"|"1h"|"2h"|"4h", default "once"), project_id(opcional — id de la lista de proyectos si menciona uno)
+create_agenda_event → event_type("cita"|"task"|"reunion"), title, event_date("YYYY-MM-DD" — resuelve "mañana"/"el martes" desde hoy), event_time("HH:MM" 24h, default "10:00"), remind_from("2h"|"1d"|"2d"|"1w", default "1d"), repeat_every("once"|"daily" — "daily" si pide que se repita/insista, default "once"), project_id(opcional — id de la lista de proyectos si menciona uno)
 
 FLUJO CONVERSACIONAL PARA CONTACTO (create_contact):
 Paso 1 → pregunta: "¿Qué tipo de contacto? ¿Co-worker, cliente o amistad?"

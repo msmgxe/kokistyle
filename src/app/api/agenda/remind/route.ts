@@ -5,7 +5,6 @@ import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 export const maxDuration = 60;
 
 const FROM_MINUTES: Record<string, number> = { "2h": 120, "1d": 1440, "2d": 2880, "1w": 10080 };
-const REPEAT_MINUTES: Record<string, number> = { "1h": 60, "2h": 120, "4h": 240 };
 const TYPE_EMOJI: Record<string, string> = { cita: "📅", task: "✅", reunion: "🤝" };
 
 /** Minutos "epoch" del reloj de Florida — mismo marco de referencia que event_date+event_time */
@@ -63,10 +62,11 @@ export async function GET(req: NextRequest) {
     if (minutesUntil > (FROM_MINUTES[ev.remind_from] ?? 1440)) continue;
 
     if (ev.last_notified_at) {
-      const sinceLast = (nowReal - new Date(ev.last_notified_at).getTime()) / 60000;
       if (ev.repeat_every === "once") continue;
-      const interval = REPEAT_MINUTES[ev.repeat_every] ?? 120;
-      if (sinceLast < interval - 5) continue;
+      // "daily" (y valores legacy): avisar en cada corrida programada del cron,
+      // con margen de 60 min para no duplicar si el cron reintenta
+      const sinceLast = (nowReal - new Date(ev.last_notified_at).getTime()) / 60000;
+      if (sinceLast < 60) continue;
     }
     due.push(ev);
   }
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
   for (const ev of due) {
     const payload = JSON.stringify({
       title: `⏰ ${TYPE_EMOJI[ev.event_type] ?? "📅"} ${ev.title}`,
-      body: `${ev.event_date} · ${ev.event_time}${ev.repeat_every !== "once" ? " · se repite hasta el evento" : ""}`,
+      body: `${ev.event_date} · ${ev.event_time}${ev.repeat_every !== "once" ? " · se repetirá hasta el día del evento" : ""}`,
       url: "/proyectos/agenda",
       tag: `agenda-${ev.id}`,
     });
