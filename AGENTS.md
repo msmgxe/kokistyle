@@ -55,6 +55,9 @@ SUPABASE_SERVICE_ROLE_KEY=      # Supabase → Settings → API → service_role
 RESEND_API_KEY=                 # resend.com → API Keys
 ANTHROPIC_API_KEY=              # console.anthropic.com → API Keys (asistente de voz)
 REPLICATE_API_TOKEN=            # replicate.com → Account → API Tokens (Design tab img2img)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=   # npx web-push generate-vapid-keys (avisos push de Agenda)
+VAPID_PRIVATE_KEY=              # par privado de la anterior (SOLO server)
+CRON_SECRET=                    # secreto del cron /api/agenda/remind (Vercel lo envía como Bearer)
 ```
 
 ---
@@ -78,6 +81,7 @@ src/
 │   ├── acceso/[token]/page.tsx       # Login automático por token de dispositivo → redirige a /proyectos
 │   └── api/
 │       ├── voice/route.ts            # Asistente de voz Katy (Claude API → intención → acción)
+│       ├── agenda/remind/route.ts    # Motor de avisos push (cron cada 15 min, Bearer CRON_SECRET)
 │       └── auth/
 │           ├── login/route.ts        # Verificar PIN superadmin (server-side, no expone PIN) — retorna name
 │           ├── change-pin/route.ts   # Cambiar PIN superadmin
@@ -160,6 +164,7 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `bookings` | Reservas online del formulario público (admin en `/proyectos/reservas`) |
 | `agenda_events` | Agenda personal del admin (citas, tasks, reuniones con recordatorios) |
 | `device_tokens` | Tokens de acceso directo sin PIN — **sin política anon**, solo service_role |
+| `push_subscriptions` | Suscripciones Web Push por dispositivo (avisos de la Agenda) |
 
 ### Tablas del módulo Estimate
 
@@ -420,7 +425,16 @@ ALTER TABLE agenda_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON agenda_events FOR ALL TO anon USING (true) WITH CHECK (true);
 ```
 
-> **Pendiente (Fase 5 del plan)**: motor de push Web (PWA + service worker + VAPID + Vercel Cron cada 15 min leyendo `remind_from`/`repeat_every`/`last_notified_at`). Requiere instalar `web-push` — preguntar antes de agregar la dependencia.
+### Avisos push nativos (PWA + Web Push)
+
+Implementado (jul 2026) — la Agenda envía notificaciones nativas al teléfono:
+
+- **PWA**: `public/manifest.json` (branding Luxaris, `start_url: /proyectos`) + íconos `icon-192.png`/`icon-512.png` + `public/sw.js` (service worker: `push` → `showNotification`, `notificationclick` → abre `/proyectos/agenda`). El SW se registra en `proyectos/layout.tsx`.
+- **Suscripción**: botón 🔔 "Activar avisos en este dispositivo" en la Agenda → `Notification.requestPermission()` → `pushManager.subscribe()` con `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → upsert en `push_subscriptions` (onConflict endpoint).
+- **Motor**: `GET /api/agenda/remind` (protegido con `Bearer CRON_SECRET`, Vercel Cron lo envía automáticamente). Calcula en hora de Florida (`America/New_York`) qué eventos están dentro de su ventana `remind_from`, respeta `repeat_every` vs `last_notified_at` (tolerancia -5 min), envía con `web-push` a todas las suscripciones y elimina las muertas (404/410).
+- **Cron**: `vercel.json` → `*/15 * * * *`. ⚠️ En plan **Hobby** los crons corren máx. 1 vez/día — usar plan Pro o un pinger externo (ej. cron-job.org) llamando el endpoint con el header `Authorization: Bearer <CRON_SECRET>`.
+- **iOS**: requiere iOS 16.4+ y la PWA instalada en pantalla de inicio (Add to Home Screen) antes de poder suscribirse.
+- Dependencia: `web-push` (+ `@types/web-push` dev). Claves: `npx web-push generate-vapid-keys`.
 
 ---
 
@@ -652,6 +666,9 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | `activity-log-prototype.html` | Prototipo visual del Activity Log con Tailwind CDN y datos de ejemplo |
 | `payment-schedule-sidebar.html` | Prototipo "Opción A" del layout de Estimate — cabecera dark + sub-tabs (referencia del diseño implementado) |
 | `agenda-admin-prototype.html` | Prototipo de la Agenda personal — captura por voz + 3 opciones de notificación (referencia del diseño implementado) |
+| `index02.html` | Prototipo 02 — referencia del patrón SpeechRecognition usado en Design tab (movido desde la raíz) |
+| `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
+| `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
 
 ---
 

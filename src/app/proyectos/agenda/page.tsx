@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  CalendarPlus, Check, ExternalLink, Mic, Plus, RotateCcw, Trash2, X,
+  Bell, BellRing, CalendarPlus, Check, ExternalLink, Mic, Plus, RotateCcw, Trash2, X,
 } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -147,6 +147,12 @@ function googleCalendarUrl(ev: AgendaEvent, projectTitle: string | null) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+function urlBase64ToUint8Array(base64: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+
 const inputCls =
   "h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none";
 const labelCls = "mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]";
@@ -179,6 +185,48 @@ export default function AgendaPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  /* ── Push nativo (PWA) ─────────────────────────────────────────────────── */
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    navigator.serviceWorker.ready
+      .then(reg => reg.pushManager.getSubscription())
+      .then(sub => setPushOn(!!sub))
+      .catch(() => {});
+  }, []);
+
+  const enablePush = useCallback(async () => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      showToast(ta.pushUnsupported);
+      return;
+    }
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey) { showToast(ta.pushError); return; }
+    setPushBusy(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") { showToast(ta.pushDenied); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
+      });
+      const { error } = await supabase.from("push_subscriptions").upsert(
+        { endpoint: sub.endpoint, subscription: sub.toJSON(), user_label: currentUser?.name ?? null },
+        { onConflict: "endpoint" },
+      );
+      if (error) { showToast(ta.pushError); return; }
+      setPushOn(true);
+      showToast(ta.pushSaved);
+    } catch {
+      showToast(ta.pushError);
+    } finally {
+      setPushBusy(false);
+    }
+  }, [currentUser, showToast, ta.pushDenied, ta.pushError, ta.pushSaved, ta.pushUnsupported]);
 
   /* ── Formulario manual ─────────────────────────────────────────────────── */
   const emptyForm: ParsedEntry = {
@@ -456,10 +504,22 @@ export default function AgendaPage() {
           <h1 className="font-bookman text-2xl text-[#16323D]">🗓️ {ta.title}</h1>
           <p className="text-sm text-[#5C6A6E]">{ta.subtitle}</p>
         </div>
-        <button onClick={() => setShowForm(s => !s)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0e2630]">
-          <Plus size={15} /> {ta.newEntry}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={enablePush} disabled={pushBusy || pushOn}
+            title={pushOn ? ta.pushEnabled : ta.pushEnable}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+              pushOn
+                ? "border border-[#4F8A63] bg-[#EDF7F0] text-[#4F8A63]"
+                : "border border-[#16323D] text-[#16323D] hover:bg-[#F7F3EA]"
+            } disabled:opacity-60`}>
+            {pushOn ? <BellRing size={15} /> : <Bell size={15} />}
+            <span className="hidden sm:inline">{pushOn ? ta.pushEnabled : ta.pushEnable}</span>
+          </button>
+          <button onClick={() => setShowForm(s => !s)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0e2630]">
+            <Plus size={15} /> {ta.newEntry}
+          </button>
+        </div>
       </div>
 
       {/* ── Captura por voz / texto ────────────────────────────────────────── */}

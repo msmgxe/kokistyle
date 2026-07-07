@@ -977,7 +977,8 @@ function useFeatures(EN: boolean) {
         { t:"Review the confirmation card", d:"Katy shows what she understood with <b>all fields editable</b> — type (📅 Appointment / ✅ Project task / 🤝 Meeting), title, project, date, time, reminder start and repetition. Nothing saves until you tap <b>Confirm & schedule</b>." },
         { t:"Or use the manual form", d:"Click <b>+ New entry</b> to open the classic form with the same fields. Project tasks can be linked to any active project from the dropdown." },
         { t:"Configure reminders", d:"<b>Remind me from</b> sets when alerts start (2 hours to 1 week before). <b>Repeat reminder</b> repeats the alert every 1, 2 or 4 hours until the event time." },
-        { t:"Send it to your phone", d:"On each entry, tap <b>Add to calendar (.ics)</b> to download a calendar file — open it on your phone and the event is added with alarms. Or use the <b>Google Calendar</b> link to add it directly to your Google account." },
+        { t:"Enable native phone alerts", d:"Tap <b>🔔 Enable alerts on this device</b> at the top. Accept the notification permission and this phone/computer will receive the reminders on the lock screen — repeated every 1/2/4 h as configured. On iPhone, first add the app to the Home Screen (iOS 16.4+)." },
+        { t:"Send it to your phone calendar", d:"On each entry, tap <b>Add to calendar (.ics)</b> to download a calendar file — open it on your phone and the event is added with alarms. Or use the <b>Google Calendar</b> link to add it directly to your Google account." },
         { t:"Mark as done", d:"Tap <b>Done</b> when the appointment or task is finished — it stays visible with a strikethrough. Use <b>Remove</b> to delete it permanently." },
       ] : [
         { t:"Abrir la Agenda", d:"Clic en <b>Agenda</b> en la navegación superior (visible solo para el superadmin). Verás tres grupos: <b>Hoy · Próximos · Pasados</b>, más contadores KPI." },
@@ -985,7 +986,8 @@ function useFeatures(EN: boolean) {
         { t:"Revisar la tarjeta de confirmación", d:"Katy muestra lo que entendió con <b>todos los campos editables</b> — tipo (📅 Cita / ✅ Task de proyecto / 🤝 Reunión), título, proyecto, fecha, hora, inicio del aviso y repetición. Nada se guarda hasta que toques <b>Confirmar y agendar</b>." },
         { t:"O usar el formulario manual", d:"Clic en <b>+ Nueva entrada</b> para abrir el formulario clásico con los mismos campos. Las tasks de proyecto se pueden vincular a cualquier proyecto activo desde el selector." },
         { t:"Configurar los avisos", d:"<b>Avisarme desde</b> define cuándo empiezan las alertas (de 2 horas a 1 semana antes). <b>Repetir aviso</b> repite la alerta cada 1, 2 o 4 horas hasta la hora del evento." },
-        { t:"Enviarlo a tu teléfono", d:"En cada entrada, toca <b>Añadir al calendario (.ics)</b> para descargar un archivo de calendario — ábrelo en tu teléfono y el evento se agrega con alarmas. O usa el link de <b>Google Calendar</b> para agregarlo directo a tu cuenta de Google." },
+        { t:"Activar avisos nativos del teléfono", d:"Toca <b>🔔 Activar avisos en este dispositivo</b> arriba. Acepta el permiso de notificaciones y este teléfono/computadora recibirá los avisos en la pantalla de bloqueo — repetidos cada 1/2/4 h según lo configurado. En iPhone, primero añade la app a la pantalla de inicio (iOS 16.4+)." },
+        { t:"Enviarlo al calendario del teléfono", d:"En cada entrada, toca <b>Añadir al calendario (.ics)</b> para descargar un archivo de calendario — ábrelo en tu teléfono y el evento se agrega con alarmas. O usa el link de <b>Google Calendar</b> para agregarlo directo a tu cuenta de Google." },
         { t:"Marcar como listo", d:"Toca <b>Listo</b> cuando la cita o task termine — queda visible tachada. Usa <b>Quitar</b> para eliminarla permanentemente." },
       ],
       tips: EN ? [

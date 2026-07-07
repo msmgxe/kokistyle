@@ -1,7 +1,7 @@
 {
-  "name": "KokiStyle Panel",
-  "short_name": "KokiStyle",
-  "description": "Panel de gestión de proyectos de remodelación — KokiStyle Florida",
+  "name": "Luxaris Design Panel",
+  "short_name": "Luxaris",
+  "description": "Panel de gestión de proyectos de remodelación — Luxaris Design, South Florida",
   "start_url": "/proyectos",
   "display": "standalone",
   "background_color": "#F7F3EA",

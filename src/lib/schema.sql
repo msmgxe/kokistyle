@@ -357,3 +357,14 @@ CREATE TABLE IF NOT EXISTS device_tokens (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;
+
+-- ── Push subscriptions (avisos nativos de la Agenda vía Web Push) ─────────────
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint     TEXT NOT NULL UNIQUE,
+  subscription JSONB NOT NULL,
+  user_label   TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON push_subscriptions FOR ALL TO anon USING (true) WITH CHECK (true);

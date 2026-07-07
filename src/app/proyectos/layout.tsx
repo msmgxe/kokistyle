@@ -33,6 +33,12 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
     if (!isAdmin) router.replace("/");
   }, [isAdmin, router]);
 
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
+
   if (!isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EB]">
