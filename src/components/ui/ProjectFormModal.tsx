@@ -30,7 +30,8 @@ async function uploadPhoto(projectId: string, file: File): Promise<string | null
     .upload(path, file, { upsert: true });
   if (error) return null;
   const { data } = supabase.storage.from("kokistyle-files").getPublicUrl(path);
-  return data.publicUrl;
+  // La ruta es fija (cover.ext): sin versión, el navegador/CDN sigue sirviendo la foto vieja
+  return `${data.publicUrl}?v=${Date.now()}`;
 }
 
 export default function ProjectFormModal({ project, initialValues, onClose, onSaved, toast }: Props) {
