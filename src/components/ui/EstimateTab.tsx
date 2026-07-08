@@ -42,6 +42,7 @@ interface ItemRow {
 interface SectionRow {
   id: string;
   estimate_id: string;
+  section_catalog_id?: string | null;
   name_en: string;
   name_es: string;
   note: string;
@@ -720,12 +721,36 @@ export default function EstimateTab({
 
   const saveSectionName = useCallback(async (sectionId: string, name: string) => {
     const clean = name.trim() || (EN ? "NEW SECTION" : "NUEVA SECCIÓN");
+    const section = estimate?.sections.find(s => s.id === sectionId);
     setEstimate(p => p ? ({
       ...p,
       sections: p.sections.map(s => s.id === sectionId ? { ...s, name_en: clean, name_es: clean } : s),
     }) : p);
     await supabase.from("estimate_sections").update({ name_en: clean, name_es: clean }).eq("id", sectionId);
-  }, [EN]);
+
+    // Sección personalizada → se graba en el catálogo para reutilizarla desde el combo
+    const upper = clean.toUpperCase();
+    const isPlaceholder = upper === "NEW SECTION" || upper === "NUEVA SECCIÓN";
+    const alreadyInCatalog = effectiveCatalog.some(c =>
+      c.name_en.trim().toUpperCase() === upper || c.name_es.trim().toUpperCase() === upper);
+    if (!section || section.section_catalog_id || isPlaceholder || alreadyInCatalog) return;
+
+    const { data: catRow } = await supabase.from("estimate_section_catalog").insert({
+      name_en: clean, name_es: clean, note_en: "", note_es: "",
+      is_material_type: section.is_material_type ?? false,
+      sort_order: 1000 + effectiveCatalog.length * 10,
+    }).select().single();
+    if (catRow) {
+      setCatalog(prev => prev.length
+        ? [...prev, catRow as EstimateSectionCatalog]
+        : [...FALLBACK_CATALOG, catRow as EstimateSectionCatalog]);
+      await supabase.from("estimate_sections").update({ section_catalog_id: catRow.id }).eq("id", sectionId);
+      setEstimate(p => p ? ({
+        ...p,
+        sections: p.sections.map(s => s.id === sectionId ? { ...s, section_catalog_id: catRow.id } : s),
+      }) : p);
+    }
+  }, [EN, estimate, effectiveCatalog]);
 
   const updateSectionField = useCallback(async (
     sectionId: string,
@@ -1662,7 +1687,7 @@ export default function EstimateTab({
                   className="w-full rounded-xl border border-[#E6DDCB] px-4 py-3 text-left transition hover:border-[#395886] hover:bg-[#EDF3FB]"
                 >
                   <div className="flex items-center gap-2">
-                    <span>{cat.is_material_type ? "📦" : "🔨"}</span>
+                    <span>{cat.is_material_type ? "📦" : sectionEmoji(cat.name_en)}</span>
                     <span className="text-[12px] font-semibold text-[#16323D]">{EN ? cat.name_en : cat.name_es}</span>
                   </div>
                   {(EN ? cat.note_en : cat.note_es) && (

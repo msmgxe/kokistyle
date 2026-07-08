@@ -649,6 +649,7 @@ El tab Estimate usa un layout de sub-tabs con cabecera oscura. Implementado en j
 - Sub-banda `bg-[#F7F3EA]`: Labor subtotal + Grand Total + **badge rojo de descuento** (inline %, monto rojo)
 - Customer info collapsible (nombre, ciudad, teléfono, email, fechas)
 - Secciones con drag & drop (@dnd-kit)
+- **Catálogo auto-alimentado**: al nombrar una "+ Sección personalizada", el nombre se graba en `estimate_section_catalog` (dedupe por nombre, se omite el placeholder) y aparece en el modal "Add Section" desde entonces — no hay que re-escribirla. El modal muestra el emoji por tipo (`sectionEmoji()`: 💧 plomería, ⚡ eléctrico, 🎨 pintura… 📦 si es material)
 - Footer de totales: Labor subtotal → Descuento (rojo `#B0492F`) → Grand Total
 - Botón "Generate Workflow Tasks"
 
