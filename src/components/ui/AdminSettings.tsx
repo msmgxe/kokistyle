@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { KeyRound, Mail, Eye, EyeOff, CheckCircle, User, Smartphone, Copy, Ban } from "lucide-react";
+import { KeyRound, Mail, Eye, EyeOff, CheckCircle, User, Smartphone, Copy, Ban, Fingerprint } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 
@@ -49,7 +49,8 @@ interface DeviceRow {
 }
 
 export default function AdminSettings() {
-  const { currentUser, changePin, setRecoveryEmail, setDisplayName } = useAuth();
+  const { currentUser, changePin, setRecoveryEmail, setDisplayName,
+    biometricEnabled, enableBiometric, disableBiometric } = useAuth();
   const { t } = useLanguage();
   const ts = t.panel.settings;
   const [secTab, setSecTab] = useState<SecurityTab>("name");
@@ -179,6 +180,16 @@ export default function AdminSettings() {
     } else {
       setDevMsg({ ok: false, text: res.error ?? ts.errorSaving });
     }
+  };
+
+  const [bioMsg,  setBioMsg]  = useState<string | null>(null);
+  const [bioLoad, setBioLoad] = useState(false);
+
+  const handleEnableBio = async () => {
+    setBioLoad(true); setBioMsg(null);
+    const res = await enableBiometric();
+    setBioLoad(false);
+    if (!res.ok) setBioMsg(ts.bioError);
   };
 
   const copyLink = async (d: DeviceRow) => {
@@ -343,6 +354,36 @@ export default function AdminSettings() {
           {secTab === "devices" && (
             <div className="space-y-4">
               <p className="text-[11px] text-[#97A1A0]">{ts.devicesDesc}</p>
+
+              {/* Bloqueo biométrico de este dispositivo */}
+              <div className="rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <Fingerprint size={18} className="mt-0.5 flex-none text-[#16323D]" />
+                    <div>
+                      <p className="text-xs font-bold text-[#16323D]">{ts.bioTitle}</p>
+                      <p className="mt-0.5 text-[10px] leading-relaxed text-[#5C6A6E]">{ts.bioDesc}</p>
+                      {biometricEnabled && (
+                        <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-[#4F8A63]">
+                          <CheckCircle size={10} /> {ts.bioActive}
+                        </p>
+                      )}
+                      {bioMsg && <p className="mt-1 text-[10px] font-semibold text-[#B0492F]">{bioMsg}</p>}
+                    </div>
+                  </div>
+                  {biometricEnabled ? (
+                    <button type="button" onClick={disableBiometric}
+                      className="flex-none rounded-lg border border-[#B0492F] px-3 py-1.5 text-[10px] font-bold text-[#B0492F] hover:bg-[#FFF0EE]">
+                      {ts.bioDisable}
+                    </button>
+                  ) : (
+                    <button type="button" onClick={handleEnableBio} disabled={bioLoad}
+                      className="flex-none rounded-lg bg-[#16323D] px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#0e2630] disabled:opacity-50">
+                      {bioLoad ? ts.saving : ts.bioEnable}
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <form onSubmit={createDevice} className="space-y-3">
                 <Field label={ts.deviceLabel}>

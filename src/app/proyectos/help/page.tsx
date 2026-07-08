@@ -1023,14 +1023,16 @@ function useFeatures(EN: boolean) {
       ],
       tips: EN ? [
         "🔐 The link <b>never contains your PIN</b> — it's a random token validated server-side on every use, and each use is recorded in the Activity Log.",
-        "📵 Treat each link like a key: <b>one link per device</b>, never shared in groups. If in doubt, revoke it and generate a new one.",
+        "🚪 <b>PIN sessions now end when you close the browser</b> — reopening always asks for the PIN again. Only the device-link shortcut keeps a session, and it re-validates against the server on every open.",
+        "🔒 <b>Revoke = remote sign-out</b>: when you revoke a device link, that device's saved session is cleared the next time it opens the app.",
+        "👆 Enable the <b>Fingerprint / Face ID lock</b> (same Devices tab) and the app will ask for your biometrics every time it opens with a saved session on that device.",
         "👥 Works for the whole team too — each person keeps <b>their own permissions</b> (visible tabs, my-tasks-only) when entering via their link.",
-        "⏱ Revoked links show their <b>last used</b> date, so you can audit when a device last entered.",
       ] : [
         "🔐 El enlace <b>nunca contiene tu PIN</b> — es un token aleatorio validado en el servidor en cada uso, y cada uso queda registrado en el Activity Log.",
-        "📵 Trata cada enlace como una llave: <b>un enlace por dispositivo</b>, nunca compartido en grupos. Ante la duda, revócalo y genera uno nuevo.",
+        "🚪 <b>Las sesiones por PIN ahora terminan al cerrar el navegador</b> — al reabrir siempre pide el PIN de nuevo. Solo el shortcut por enlace mantiene sesión, y se revalida contra el servidor en cada apertura.",
+        "🔒 <b>Revocar = cerrar sesión remota</b>: al revocar un enlace de dispositivo, la sesión guardada de ese aparato se limpia la próxima vez que abra la app.",
+        "👆 Activa el <b>Bloqueo con huella / Face ID</b> (mismo tab Dispositivos) y la app pedirá tu biometría cada vez que abra con sesión guardada en ese aparato.",
         "👥 También funciona para todo el equipo — cada persona conserva <b>sus propios permisos</b> (tabs visibles, solo-sus-tareas) al entrar por su enlace.",
-        "⏱ Los enlaces revocados muestran su fecha de <b>último uso</b>, para auditar cuándo entró ese dispositivo por última vez.",
       ],
     },
   ];

@@ -118,7 +118,7 @@ src/
 │   └── translations.ts               # Traducciones EN + ES — usado por useLanguage()
 │
 ├── context/
-│   ├── AuthContext.tsx               # Autenticación, roles, permisos — persiste en localStorage
+│   ├── AuthContext.tsx               # Autenticación, roles, permisos, bloqueo biométrico — PIN: sessionStorage · token: localStorage revalidado
 │   ├── LanguageContext.tsx           # Idioma activo (en | es) — persiste en localStorage
 │   └── VoiceContext.tsx              # Contexto activo de proyecto/tab para el asistente Katy
 │
@@ -447,8 +447,9 @@ Shortcut para smartphone/tableta que abre el panel **ya autenticado**, sin PIN. 
 1. Dashboard → **Seguridad → Dispositivos** (`AdminSettings`, solo superadmin): nombre del dispositivo + PIN → `POST /api/auth/device-tokens` (`op: "create"`) genera un token aleatorio (`crypto.randomBytes(24)`, base64url) y lo guarda en `device_tokens`.
 2. El admin copia el enlace `https://<host>/acceso/<token>` y lo abre en el teléfono → "Añadir a pantalla de inicio".
 3. `/acceso/[token]` llama a `POST /api/auth/device-login` (server-side, `supabase-admin`): valida token no revocado/no expirado, actualiza `last_used_at` y retorna la sesión (`role: superadmin` + name, o el registro de `app_users`).
-4. `AuthContext.loginWithToken()` crea la sesión en `localStorage` (superadmin con `pin: ""` — el PIN **nunca** viaja en el enlace) y registra el login en `activity_log` con `details: { method: "device_token" }`.
-5. Revocación individual desde el mismo panel (`op: "revoke"`).
+4. `AuthContext.loginWithToken()` crea la sesión en `localStorage` + guarda el token en `kokistyle-device-token` (superadmin con `pin: ""` — el PIN **nunca** viaja en el enlace) y registra el login en `activity_log` con `details: { method: "device_token" }`.
+5. En **cada apertura posterior** la sesión persistente se revalida llamando a `device-login` con el token guardado — si fue revocado o expiró, se cierra sola. Esto hace que el botón **Revocar** funcione como "cerrar sesión en ese dispositivo".
+6. Revocación individual desde el mismo panel (`op: "revoke"`).
 
 ### Seguridad
 
@@ -522,7 +523,18 @@ ALTER TABLE app_users ADD COLUMN IF NOT EXISTS my_tasks_only BOOLEAN NOT NULL DE
 1. PIN ingresado en `AdminModal`
 2. Si PIN = superadmin → verifica via `/api/auth/login` (server-side)
 3. Si no → busca en `app_users` (cliente, anon key)
-4. Sesión guardada en `localStorage` (usuario + permisos)
+4. Sesión guardada en `sessionStorage` (usuario + permisos) — **expira al cerrar el navegador**
+
+### Modelo de sesiones y bloqueo biométrico (jul 2026)
+
+| Origen de la sesión | Storage | Vida | Cierre remoto |
+|---|---|---|---|
+| Login por PIN | `sessionStorage` | Muere al cerrar el navegador/pestaña — al reabrir pide PIN | No aplica (muere sola) |
+| Shortcut por token (`/acceso/[token]`) | `localStorage` + `kokistyle-device-token` | Persistente (ese es su propósito) | **Sí** — se revalida contra `/api/auth/device-login` en **cada apertura**; si el token fue revocado/expiró, la sesión se limpia |
+
+- Las sesiones legacy en `localStorage` sin token se invalidan automáticamente al cargar (logout forzado una vez tras el deploy).
+- `logout` limpia ambos storages + el token guardado — cerrar sesión en el PWA también apaga el shortcut hasta reabrir el enlace `/acceso/...` o entrar con PIN.
+- **Bloqueo biométrico** (huella/Face ID): opcional **por dispositivo**, se activa en Seguridad → Dispositivos. Usa WebAuthn (`navigator.credentials`, authenticator de plataforma, `userVerification: required`) como **candado local del dispositivo**: al abrir la app con sesión persistente de token, el panel muestra pantalla de bloqueo hasta pasar la huella (o "Entrar con PIN" que hace logout). Claves en localStorage: `kokistyle-bio-enabled` + `kokistyle-bio-cred` (credential id). No sustituye la autenticación del servidor — es una capa extra en el aparato.
 
 ### Flujo de recuperación de PIN
 1. "¿Olvidaste tu PIN?" → ingresar correo en `AdminModal`

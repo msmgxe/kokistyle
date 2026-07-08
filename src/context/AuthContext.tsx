@@ -20,7 +20,20 @@ const SUPERADMIN_TEMPLATE: Omit<AppUser, "pin"> = {
   permissions:   FULL_PERMISSIONS,
   active:        true,
 };
-const SESSION_KEY = "kokistyle-session";
+const SESSION_KEY = "kokistyle-session";      // PIN → sessionStorage · token → localStorage
+const TOKEN_KEY   = "kokistyle-device-token"; // token del shortcut, se revalida en cada apertura
+const BIO_FLAG    = "kokistyle-bio-enabled";
+const BIO_CRED    = "kokistyle-bio-cred";
+
+function bufToB64(buf: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64ToBuf(b64: string): Uint8Array {
+  const padding = "=".repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
 
 interface AuthContextType {
   currentUser:   AppUser | null;
@@ -34,6 +47,11 @@ interface AuthContextType {
   setRecoveryEmail: (pin: string, email: string) => Promise<{ ok: boolean; error?: string }>;
   setDisplayName:   (pin: string, name: string) => Promise<{ ok: boolean; error?: string }>;
   hasPermission: (section: PermissionSection, action: PermissionAction) => boolean;
+  locked:            boolean;
+  biometricEnabled:  boolean;
+  enableBiometric:   () => Promise<{ ok: boolean; error?: string }>;
+  disableBiometric:  () => void;
+  unlockBiometric:   () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,15 +59,59 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [isLoading,   setIsLoading]   = useState(true);
+  const [locked,      setLocked]      = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window === "undefined") { setIsLoading(false); return; }
+    setBiometricEnabled(localStorage.getItem(BIO_FLAG) === "1");
+
+    // 1. Sesión por PIN — vive solo mientras el navegador está abierto
+    const tabSession = sessionStorage.getItem(SESSION_KEY);
+    if (tabSession) {
+      try { setCurrentUser(JSON.parse(tabSession)); } catch { sessionStorage.removeItem(SESSION_KEY); }
+      setIsLoading(false);
+      return;
+    }
+
+    // 2. Sesión persistente por token de dispositivo (shortcut) — se revalida server-side
     const stored = localStorage.getItem(SESSION_KEY);
-    if (stored) {
-      try { setCurrentUser(JSON.parse(stored)); } catch { localStorage.removeItem(SESSION_KEY); }
+    const token  = localStorage.getItem(TOKEN_KEY);
+    if (stored && token) {
+      try {
+        setCurrentUser(JSON.parse(stored));
+        if (localStorage.getItem(BIO_FLAG) === "1" && localStorage.getItem(BIO_CRED)) setLocked(true);
+      } catch { localStorage.removeItem(SESSION_KEY); }
+      fetch("/api/auth/device-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.ok) {
+            localStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(TOKEN_KEY);
+            setCurrentUser(null);
+            setLocked(false);
+          }
+        })
+        .catch(() => { /* sin red: mantener sesión local hasta la próxima apertura */ });
+    } else if (stored) {
+      // Sesión persistente legacy sin token — ya no es válida
+      localStorage.removeItem(SESSION_KEY);
     }
     setIsLoading(false);
+  }, []);
+
+  const persistSession = useCallback((user: AppUser) => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(TOKEN_KEY) && localStorage.getItem(SESSION_KEY)) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    } else {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    }
   }, []);
 
   // ── Login ──────────────────────────────────────────────────────────────────
@@ -65,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isSuperAdmin) {
         const user: AppUser = { ...SUPERADMIN_TEMPLATE, pin, name: name ?? "Admin" };
         setCurrentUser(user);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
         logActivity({ user_id: "superadmin", user_name: user.name, user_role: "superadmin", action: "login" });
         return true;
       }
@@ -81,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data) return false;
     const user = data as AppUser;
     setCurrentUser(user);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
     logActivity({ user_id: user.id, user_name: user.name, user_role: "collaborator", action: "login" });
     return true;
   }, []);
@@ -102,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : (data.user as AppUser);
       setCurrentUser(user);
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      localStorage.setItem(TOKEN_KEY, token);
       logActivity({
         user_id: user.id, user_name: user.name,
         user_role: data.role === "superadmin" ? "superadmin" : "collaborator",
@@ -111,12 +174,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { return false; }
   }, []);
 
-  // ── Logout ─────────────────────────────────────────────────────────────────
+  // ── Logout — cierra la sesión de PIN y también la persistente del shortcut ─
   const logout = useCallback(() => {
     setCurrentUser(null);
+    setLocked(false);
+    sessionStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     router.push("/");
   }, [router]);
+
+  // ── Bloqueo biométrico (huella / Face ID) — candado local por dispositivo ──
+  const enableBiometric = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    try {
+      if (typeof window === "undefined" || !window.PublicKeyCredential) {
+        return { ok: false, error: "unsupported" };
+      }
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: "Luxaris Design", id: window.location.hostname },
+          user: {
+            id: crypto.getRandomValues(new Uint8Array(16)),
+            name: currentUser?.name ?? "Luxaris",
+            displayName: currentUser?.name ?? "Luxaris",
+          },
+          pubKeyCredParams: [
+            { type: "public-key", alg: -7 },
+            { type: "public-key", alg: -257 },
+          ],
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+            userVerification: "required",
+            residentKey: "discouraged",
+          },
+          timeout: 60000,
+        },
+      }) as PublicKeyCredential | null;
+      if (!cred) return { ok: false, error: "cancelled" };
+      localStorage.setItem(BIO_CRED, bufToB64(cred.rawId));
+      localStorage.setItem(BIO_FLAG, "1");
+      setBiometricEnabled(true);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "failed" };
+    }
+  }, [currentUser]);
+
+  const disableBiometric = useCallback(() => {
+    localStorage.removeItem(BIO_FLAG);
+    localStorage.removeItem(BIO_CRED);
+    setBiometricEnabled(false);
+    setLocked(false);
+  }, []);
+
+  const unlockBiometric = useCallback(async (): Promise<boolean> => {
+    try {
+      const credId = localStorage.getItem(BIO_CRED);
+      if (!credId) { setLocked(false); return true; }
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{ type: "public-key", id: b64ToBuf(credId) as BufferSource }],
+          userVerification: "required",
+          timeout: 60000,
+        },
+      });
+      if (assertion) { setLocked(false); return true; }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
 
   // ── Verify PIN (async — superadmin checks against DB via API) ──────────────
   const verifyPin = useCallback(async (pin: string): Promise<boolean> => {
@@ -150,10 +279,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update pin in session so verifyPin still works for non-API checks
       const updated = { ...currentUser, pin: newPin };
       setCurrentUser(updated);
-      localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+      persistSession(updated);
     }
     return data;
-  }, [currentUser]);
+  }, [currentUser, persistSession]);
 
   // ── Set recovery email ─────────────────────────────────────────────────────
   const setRecoveryEmail = useCallback(async (
@@ -182,10 +311,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.ok && currentUser?.role === "superadmin") {
       const updated = { ...currentUser, name };
       setCurrentUser(updated);
-      localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+      persistSession(updated);
     }
     return data;
-  }, [currentUser]);
+  }, [currentUser, persistSession]);
 
   // ── Permission check ───────────────────────────────────────────────────────
   const hasPermission = useCallback(
@@ -203,6 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin:      !!currentUser,
       isSuperAdmin: currentUser?.role === "superadmin",
       login, loginWithToken, logout, verifyPin, changePin, setRecoveryEmail, setDisplayName, hasPermission,
+      locked, biometricEnabled, enableBiometric, disableBiometric, unlockBiometric,
     }}>
       {!isLoading && children}
     </AuthContext.Provider>

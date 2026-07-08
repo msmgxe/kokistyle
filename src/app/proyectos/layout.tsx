@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
@@ -25,9 +25,10 @@ function LangSwitch() {
 }
 
 export default function ProyectosLayout({ children }: { children: React.ReactNode }) {
-  const { isAdmin, isSuperAdmin, logout } = useAuth();
+  const { isAdmin, isSuperAdmin, logout, locked, unlockBiometric } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
+  const [unlockError, setUnlockError] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) router.replace("/");
@@ -43,6 +44,41 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EB]">
         <p className="text-sm font-semibold text-[#5C6A6E]">Verificando acceso…</p>
+      </div>
+    );
+  }
+
+  if (locked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#16323D] px-6">
+        <div className="w-full max-w-sm text-center">
+          <span className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-[#F5E9DA] text-xl font-bold text-[#16323D]">
+            {branding.initials}
+          </span>
+          <h1 className="text-lg font-bold text-white">{t.panel.lock.title}</h1>
+          <p className="mt-1 text-sm text-[#F5E9DA]/70">{t.panel.lock.subtitle}</p>
+          {unlockError && (
+            <p className="mt-3 rounded-xl bg-[#B0492F]/20 px-3 py-2 text-xs font-semibold text-[#F0A090]">
+              {t.panel.lock.failed}
+            </p>
+          )}
+          <button
+            onClick={async () => {
+              setUnlockError(false);
+              const ok = await unlockBiometric();
+              if (!ok) setUnlockError(true);
+            }}
+            className="mt-6 w-full rounded-xl bg-[#F5E9DA] py-3 text-sm font-bold text-[#16323D] hover:bg-white"
+          >
+            {t.panel.lock.unlock}
+          </button>
+          <button
+            onClick={logout}
+            className="mt-3 w-full rounded-xl border border-[#F5E9DA]/30 py-3 text-sm font-semibold text-[#F5E9DA]/80 hover:bg-white/5"
+          >
+            {t.panel.lock.usePin}
+          </button>
+        </div>
       </div>
     );
   }
