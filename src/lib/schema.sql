@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS projects (
   title TEXT NOT NULL,
   client TEXT NOT NULL,
   address TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'presupuesto' CHECK (status IN ('presupuesto', 'aprobado', 'en_obra', 'terminado')),
+  status TEXT NOT NULL DEFAULT 'prospecto' CHECK (status IN ('prospecto', 'presupuesto', 'aprobado', 'en_obra', 'terminado')),
   budget NUMERIC(12,2) NOT NULL DEFAULT 0,
   start_date DATE NOT NULL DEFAULT CURRENT_DATE,
   end_date DATE,

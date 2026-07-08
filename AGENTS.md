@@ -364,6 +364,29 @@ Orden de tabs (TabId array): `presupuesto · pagos · planner · workflow · pla
 
 Tab activo por defecto al abrir un proyecto: `"presupuesto"` (Estimate).
 
+### Estados de proyecto (`projects.status`)
+
+Pipeline de 5 etapas (jul 2026):
+
+| Valor DB | Label EN | Label ES |
+|---|---|---|
+| `prospecto` | Prospect | Prospecto |
+| `presupuesto` | Estimate | Estimado |
+| `aprobado` | Approved | Aprobado |
+| `en_obra` | In Progress | En obra |
+| `terminado` | Completed | Terminado |
+
+- Default de proyecto nuevo: `prospecto` (formulario, Katy y schema).
+- Labels en `translations.ts → panel.status`; colores en dashboard (`page.tsx`) y Gantt global (`plan/page.tsx`).
+- Migración SQL requerida si la tabla ya existe (el CHECK viejo no admite `prospecto`):
+
+```sql
+ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_status_check;
+ALTER TABLE projects ADD CONSTRAINT projects_status_check
+  CHECK (status IN ('prospecto', 'presupuesto', 'aprobado', 'en_obra', 'terminado'));
+ALTER TABLE projects ALTER COLUMN status SET DEFAULT 'prospecto';
+```
+
 ### Navegación del panel (top nav)
 
 Orden: Dashboard → Gantt G → Contacts → Agenda (superadmin) → Activity (superadmin) → Bookings (superadmin) → Help

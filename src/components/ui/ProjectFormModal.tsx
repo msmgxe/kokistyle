@@ -15,7 +15,8 @@ interface Props {
 }
 
 const STATUS_OPTIONS = [
-  { value: "presupuesto", label: "Presupuesto" },
+  { value: "prospecto",   label: "Prospecto" },
+  { value: "presupuesto", label: "Estimado" },
   { value: "aprobado",    label: "Aprobado" },
   { value: "en_obra",     label: "En obra" },
   { value: "terminado",   label: "Terminado" },
@@ -46,7 +47,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
     address:    project?.address    ?? iv?.address    ?? "",
     budget:     project?.budget     ?? iv?.budget     ?? 0,
     start_date: project?.start_date ?? iv?.start_date ?? new Date().toISOString().split("T")[0],
-    status:     project?.status     ?? "presupuesto",
+    status:     project?.status     ?? "prospecto",
   });
   const [errors, setErrors]         = useState<Record<string, boolean>>({});
   const [saving, setSaving]         = useState(false);

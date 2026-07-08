@@ -66,7 +66,7 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
       const { data: row, error } = await supabase.from("projects").insert({
         title: String(data.title ?? "Nuevo proyecto"), client: String(data.client ?? ""),
         address: String(data.address ?? "Sin dirección"), budget: Number(data.budget ?? 0),
-        status: "presupuesto", start_date: String(data.start_date ?? TODAY()),
+        status: "prospecto", start_date: String(data.start_date ?? TODAY()),
       }).select("title").single();
       if (error) throw error;
       return `Proyecto "${row.title}" creado`;

@@ -2625,7 +2625,7 @@ export default function ProjectDetailPage() {
               { key: "client",     label: tp.project.client,      type: "text",   value: project.client },
               { key: "address",    label: tp.project.address,     type: "text",   value: project.address },
               { key: "budget",     label: tp.project.budget,      type: "number", value: project.budget },
-              { key: "status",     label: tp.project.status,      type: "select", options: ["presupuesto", "aprobado", "en_obra", "terminado"], value: project.status },
+              { key: "status",     label: tp.project.status,      type: "select", options: ["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"], value: project.status },
               { key: "start_date", label: tp.project.startDate,   type: "date",   value: project.start_date },
               { key: "end_date",   label: tp.project.endDate,     type: "date",   value: project.end_date ?? "" },
             ],

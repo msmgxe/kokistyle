@@ -110,6 +110,7 @@ function KpiCard({
 function StatusChip({ status }: { status: string }) {
   const { t } = useLanguage();
   const styles: Record<string, string> = {
+    prospecto: "bg-[#E3E8EE] text-[#44586B]",
     presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
     aprobado: "bg-[#DCE8E9] text-[#4E7A82]",
     en_obra: "bg-[#EDE3CF] text-[#7A6230]",
@@ -397,6 +398,7 @@ function KpiDetailModal({
               <tbody>
                 {projects.map(p => {
                   const STATUS_COLORS: Record<string, string> = {
+                    prospecto: "bg-[#E3E8EE] text-[#44586B]",
                     presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
                     aprobado: "bg-[#DCE8E9] text-[#4E7A82]",
                     en_obra: "bg-[#EDE3CF] text-[#7A6230]",
@@ -828,8 +830,9 @@ export default function DashboardPage() {
 
         {/* Filter pills — scrollable on narrow screens */}
         {projects.length > 0 && (() => {
-          const STATUSES = ["en_obra", "aprobado", "presupuesto", "terminado"] as const;
+          const STATUSES = ["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"] as const;
           const ACTIVE: Record<string, string> = {
+            prospecto:   "bg-[#E3E8EE] text-[#44586B]",
             presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
             aprobado:    "bg-[#DCE8E9] text-[#4E7A82]",
             en_obra:     "bg-[#EDE3CF] text-[#7A6230]",

@@ -65,7 +65,8 @@ export const dShort = (d: Date): string =>
 
 /** Status labels in Spanish */
 export const STATUS_LABELS: Record<string, string> = {
-  presupuesto: "Presupuesto",
+  prospecto: "Prospecto",
+  presupuesto: "Estimado",
   aprobado: "Aprobado",
   en_obra: "En obra",
   terminado: "Terminado",

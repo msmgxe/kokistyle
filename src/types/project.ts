@@ -3,7 +3,7 @@ export interface Project {
   title: string;
   client: string;
   address: string;
-  status: "presupuesto" | "aprobado" | "en_obra" | "terminado";
+  status: "prospecto" | "presupuesto" | "aprobado" | "en_obra" | "terminado";
   budget: number;
   start_date: string;
   end_date?: string | null;

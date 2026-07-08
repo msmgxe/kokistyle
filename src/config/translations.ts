@@ -287,7 +287,8 @@ export const translations = {
         design: "Design",
       },
       status: {
-        presupuesto: "Quote",
+        prospecto: "Prospect",
+        presupuesto: "Estimate",
         aprobado: "Approved",
         en_obra: "In Progress",
         terminado: "Completed",
@@ -975,7 +976,8 @@ export const translations = {
         design: "Diseño",
       },
       status: {
-        presupuesto: "Presupuesto",
+        prospecto: "Prospecto",
+        presupuesto: "Estimado",
         aprobado: "Aprobado",
         en_obra: "En obra",
         terminado: "Terminado",

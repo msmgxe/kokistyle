@@ -39,6 +39,7 @@ const totalWeeks = (tasks: Task[]) =>
   Math.max(1, tasks.reduce((s, t) => s + t.duration_weeks, 0));
 
 const BAR_COLORS: Record<string, string> = {
+  prospecto:   "bg-[#E3E8EE] text-[#44586B]",
   presupuesto: "bg-[#D7CBB3] text-[#5C6A6E]",
   aprobado:    "bg-[#16323D] text-white",
   en_obra:     "bg-gradient-to-r from-[#4E7A82] to-[#5e8c94] text-white",
@@ -125,7 +126,7 @@ export default function PlanPage() {
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [toast, setToast]         = useState("");
   const [toastVisible, setToastVisible] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<"all" | "presupuesto" | "aprobado" | "en_obra" | "terminado">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "prospecto" | "presupuesto" | "aprobado" | "en_obra" | "terminado">("all");
   const { t } = useLanguage();
   const tp = t.panel;
 
@@ -230,6 +231,7 @@ export default function PlanPage() {
   const visibleProjects = filterStatus === "all" ? projects : projects.filter((p) => p.status === filterStatus);
   const STATUS_FILTER_OPTS = [
     { key: "all",          label: tp.globalPlan.tabAll },
+    { key: "prospecto",    label: tp.status.prospecto },
     { key: "presupuesto",  label: tp.status.presupuesto },
     { key: "aprobado",     label: tp.status.aprobado },
     { key: "en_obra",      label: tp.status.en_obra },
