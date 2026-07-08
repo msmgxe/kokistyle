@@ -22,16 +22,45 @@ const STATUS_OPTIONS = [
   { value: "terminado",   label: "Terminado" },
 ];
 
-async function uploadPhoto(projectId: string, file: File): Promise<string | null> {
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+/** Convierte a JPEG redimensionado (máx 1600px) los archivos pesados o en formatos
+ *  que el navegador no puede mostrar (HEIC de iPhone, etc.) */
+async function normalizePhoto(file: File): Promise<Blob> {
+  const webSafe = ["image/jpeg", "image/png", "image/webp"];
+  if (webSafe.includes(file.type) && file.size <= 2_500_000) return file;
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = url;
+    });
+    const MAX = 1600;
+    const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width  = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, "image/jpeg", 0.85));
+    return blob ?? file;
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function uploadPhoto(projectId: string, file: File): Promise<{ url?: string; error?: string }> {
+  const blob = await normalizePhoto(file);
+  const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
   const path = `project-photos/${projectId}/cover.${ext}`;
   const { error } = await supabase.storage
     .from("kokistyle-files")
-    .upload(path, file, { upsert: true });
-  if (error) return null;
+    .upload(path, blob, { upsert: true, contentType: blob.type || "image/jpeg" });
+  if (error) return { error: error.message };
   const { data } = supabase.storage.from("kokistyle-files").getPublicUrl(path);
   // La ruta es fija (cover.ext): sin versión, el navegador/CDN sigue sirviendo la foto vieja
-  return `${data.publicUrl}?v=${Date.now()}`;
+  return { url: `${data.publicUrl}?v=${Date.now()}` };
 }
 
 export default function ProjectFormModal({ project, initialValues, onClose, onSaved, toast }: Props) {
@@ -109,8 +138,14 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
       let photoUrl = project!.photo_url ?? null;
       if (photoFile) {
         setPhotoUploading(true);
-        photoUrl = await uploadPhoto(project!.id, photoFile);
+        const up = await uploadPhoto(project!.id, photoFile);
         setPhotoUploading(false);
+        if (!up.url) {
+          toast((EN ? "Photo upload failed: " : "Error al subir la foto: ") + (up.error ?? ""));
+          setSaving(false);
+          return;
+        }
+        photoUrl = up.url;
       } else if (!photoPreview && project!.photo_url) {
         photoUrl = null;
       }
@@ -137,9 +172,10 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
       if (error || !created) { toast("Error al crear: " + (error?.message ?? "")); setSaving(false); return; }
       if (photoFile) {
         setPhotoUploading(true);
-        const photoUrl = await uploadPhoto(created.id, photoFile);
-        if (photoUrl) await supabase.from("projects").update({ photo_url: photoUrl }).eq("id", created.id);
+        const up = await uploadPhoto(created.id, photoFile);
         setPhotoUploading(false);
+        if (up.url) await supabase.from("projects").update({ photo_url: up.url }).eq("id", created.id);
+        else toast((EN ? "Project created, but the photo failed: " : "Proyecto creado, pero la foto falló: ") + (up.error ?? ""));
       }
       toast(EN ? "Project created." : "Proyecto creado.");
     }
