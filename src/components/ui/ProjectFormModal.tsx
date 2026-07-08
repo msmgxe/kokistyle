@@ -14,13 +14,7 @@ interface Props {
   toast: (msg: string) => void;
 }
 
-const STATUS_OPTIONS = [
-  { value: "prospecto",   label: "Prospecto" },
-  { value: "presupuesto", label: "Estimado" },
-  { value: "aprobado",    label: "Aprobado" },
-  { value: "en_obra",     label: "En obra" },
-  { value: "terminado",   label: "Terminado" },
-];
+const STATUS_VALUES = ["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"] as const;
 
 /** Convierte a JPEG redimensionado (máx 1600px) los archivos pesados o en formatos
  *  que el navegador no puede mostrar (HEIC de iPhone, etc.) */
@@ -158,7 +152,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
         status:     form.status,
         photo_url:  photoUrl,
       }).eq("id", project!.id);
-      if (error) { toast("Error al guardar: " + error.message); setSaving(false); return; }
+      if (error) { toast((EN ? "Error saving: " : "Error al guardar: ") + error.message); setSaving(false); return; }
       toast(EN ? "Project updated." : "Proyecto actualizado.");
     } else {
       const { data: created, error } = await supabase.from("projects").insert({
@@ -169,7 +163,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
         start_date: form.start_date,
         status:     form.status,
       }).select("id").single();
-      if (error || !created) { toast("Error al crear: " + (error?.message ?? "")); setSaving(false); return; }
+      if (error || !created) { toast((EN ? "Error creating: " : "Error al crear: ") + (error?.message ?? "")); setSaving(false); return; }
       if (photoFile) {
         setPhotoUploading(true);
         const up = await uploadPhoto(created.id, photoFile);
@@ -269,8 +263,8 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
                   onChange={e => set("status", e.target.value)}
                   className={field("status")}
                 >
-                  {STATUS_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                  {STATUS_VALUES.map(v => (
+                    <option key={v} value={v}>{tp.status[v]}</option>
                   ))}
                 </select>
                 {errors.status && (

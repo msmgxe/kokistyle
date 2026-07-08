@@ -112,7 +112,7 @@ function ConfirmModal({
 
 // ─── Editor modal genérico ───────────────────────────────────────────────────
 type FieldType = "text" | "number" | "date" | "select" | "textarea";
-interface Field { key: string; label: string; type: FieldType; value: string | number; options?: string[] }
+interface Field { key: string; label: string; type: FieldType; value: string | number; options?: string[]; optionLabels?: Record<string, string> }
 interface EditorOpts {
   title: string; sub?: string; fields: Field[];
   onSave: (vals: Record<string, string | number>) => void;
@@ -143,7 +143,7 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
                 {f.type === "select" ? (
                   <select value={vals[f.key] as string} onChange={(e) => set(f.key, e.target.value)}
                     className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
-                    {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                    {f.options?.map((o) => <option key={o} value={o}>{f.optionLabels?.[o] ?? o}</option>)}
                   </select>
                 ) : f.type === "number" ? (
                   <input
@@ -409,7 +409,7 @@ function WorkflowTab({
         { key: "hours",          label: tp.workflow.estHours,        type: "number", value: t.hours },
         { key: "duration_weeks", label: tp.workflow.durationWeeks,   type: "number", value: t.duration_weeks },
         { key: "scheduled_date", label: tp.workflow.scheduledDate,    type: "date",   value: t.scheduled_date ?? "" },
-        { key: "status",         label: tp.workflow.status,          type: "select", options: ["pend", "prog", "done"], value: t.status },
+        { key: "status",         label: tp.workflow.status,          type: "select", options: ["pend", "prog", "done"], optionLabels: { pend: tp.workflow.colPend, prog: tp.workflow.colProg, done: tp.workflow.colDone }, value: t.status },
         {
           key: "assignee_name", label: tp.workflow.responsible, type: "select", options: whoOptions,
           value: t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? ownTeamLabel : ownTeamLabel,
@@ -2625,7 +2625,7 @@ export default function ProjectDetailPage() {
               { key: "client",     label: tp.project.client,      type: "text",   value: project.client },
               { key: "address",    label: tp.project.address,     type: "text",   value: project.address },
               { key: "budget",     label: tp.project.budget,      type: "number", value: project.budget },
-              { key: "status",     label: tp.project.status,      type: "select", options: ["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"], value: project.status },
+              { key: "status",     label: tp.project.status,      type: "select", options: ["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"], optionLabels: tp.status, value: project.status },
               { key: "start_date", label: tp.project.startDate,   type: "date",   value: project.start_date },
               { key: "end_date",   label: tp.project.endDate,     type: "date",   value: project.end_date ?? "" },
             ],
