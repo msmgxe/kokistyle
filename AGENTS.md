@@ -530,10 +530,10 @@ ALTER TABLE app_users ADD COLUMN IF NOT EXISTS my_tasks_only BOOLEAN NOT NULL DE
 | Origen de la sesión | Storage | Vida | Cierre remoto |
 |---|---|---|---|
 | Login por PIN | `sessionStorage` | Muere al cerrar el navegador/pestaña — al reabrir pide PIN | No aplica (muere sola) |
-| Shortcut por token (`/acceso/[token]`) | `localStorage` + `kokistyle-device-token` | Persistente (ese es su propósito) | **Sí** — se revalida contra `/api/auth/device-login` en **cada apertura**; si el token fue revocado/expiró, la sesión se limpia |
+| Shortcut por token (`/acceso/[token]`) | `localStorage` + `kokistyle-device-token` | Persistente — **nunca pide PIN** en ese dispositivo: si hay token guardado, la app auto-inicia sesión con él en cada apertura (aunque la sesión local se haya perdido) | **Sí** — se revalida contra `/api/auth/device-login` en **cada apertura**; si el token fue revocado/expiró, la sesión y el token se limpian |
 
 - Las sesiones legacy en `localStorage` sin token se invalidan automáticamente al cargar (logout forzado una vez tras el deploy).
-- `logout` limpia ambos storages + el token guardado — cerrar sesión en el PWA también apaga el shortcut hasta reabrir el enlace `/acceso/...` o entrar con PIN.
+- `logout` limpia las sesiones pero **conserva el token del dispositivo** — el shortcut sigue entrando directo. La única forma de apagar un dispositivo es **Revocar** su enlace (o borrar datos del navegador).
 - **Bloqueo biométrico** (huella/Face ID): opcional **por dispositivo**, se activa en Seguridad → Dispositivos. Usa WebAuthn (`navigator.credentials`, authenticator de plataforma, `userVerification: required`) como **candado local del dispositivo**: al abrir la app con sesión persistente de token, el panel muestra pantalla de bloqueo hasta pasar la huella (o "Entrar con PIN" que hace logout). Claves en localStorage: `kokistyle-bio-enabled` + `kokistyle-bio-cred` (credential id). No sustituye la autenticación del servidor — es una capa extra en el aparato.
 
 ### Flujo de recuperación de PIN

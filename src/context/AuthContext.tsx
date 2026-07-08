@@ -75,34 +75,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // 2. Sesión persistente por token de dispositivo (shortcut) — se revalida server-side
+    // 2. Dispositivo con token (shortcut) — entra directo SIEMPRE, sin pedir PIN.
+    //    El token se revalida server-side en cada apertura; solo Revocar lo apaga.
     const stored = localStorage.getItem(SESSION_KEY);
     const token  = localStorage.getItem(TOKEN_KEY);
-    if (stored && token) {
+
+    if (!token) {
+      // Sesión persistente legacy sin token — ya no es válida
+      if (stored) localStorage.removeItem(SESSION_KEY);
+      setIsLoading(false);
+      return;
+    }
+
+    const bioLock = localStorage.getItem(BIO_FLAG) === "1" && !!localStorage.getItem(BIO_CRED);
+    if (stored) {
       try {
         setCurrentUser(JSON.parse(stored));
-        if (localStorage.getItem(BIO_FLAG) === "1" && localStorage.getItem(BIO_CRED)) setLocked(true);
+        if (bioLock) setLocked(true);
+        setIsLoading(false);
       } catch { localStorage.removeItem(SESSION_KEY); }
-      fetch("/api/auth/device-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (!data.ok) {
-            localStorage.removeItem(SESSION_KEY);
-            localStorage.removeItem(TOKEN_KEY);
-            setCurrentUser(null);
-            setLocked(false);
-          }
-        })
-        .catch(() => { /* sin red: mantener sesión local hasta la próxima apertura */ });
-    } else if (stored) {
-      // Sesión persistente legacy sin token — ya no es válida
-      localStorage.removeItem(SESSION_KEY);
     }
-    setIsLoading(false);
+
+    fetch("/api/auth/device-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          const user: AppUser = data.role === "superadmin"
+            ? { ...SUPERADMIN_TEMPLATE, pin: "", name: data.name ?? "Admin" }
+            : (data.user as AppUser);
+          setCurrentUser(user);
+          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+          if (!stored && bioLock) setLocked(true);
+        } else {
+          localStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem(TOKEN_KEY);
+          setCurrentUser(null);
+          setLocked(false);
+        }
+      })
+      .catch(() => { /* sin red: mantener lo que haya localmente hasta la próxima apertura */ })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const persistSession = useCallback((user: AppUser) => {
@@ -174,13 +190,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { return false; }
   }, []);
 
-  // ── Logout — cierra la sesión de PIN y también la persistente del shortcut ─
+  // ── Logout — cierra la sesión, pero conserva el token del dispositivo:
+  //    el shortcut nunca pide PIN; para apagarlo → Seguridad → Dispositivos → Revocar
   const logout = useCallback(() => {
     setCurrentUser(null);
     setLocked(false);
     sessionStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(TOKEN_KEY);
     router.push("/");
   }, [router]);
 
