@@ -25,7 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
-import { addDays, dShort } from "@/src/lib/utils";
+import { addDays, dShort, initials } from "@/src/lib/utils";
 import type { Project, Task } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 
@@ -254,15 +254,15 @@ export default function PlanPage() {
         </div>
       </div>
 
-      <div className="relative mb-2 flex h-8 items-center overflow-hidden rounded-xl bg-[#16323D]" style={{ paddingLeft: "192px" }}>
-        <div className="absolute left-0 flex h-full w-[192px] items-center px-4">
+      <div className="relative mb-2 flex h-8 items-center overflow-hidden rounded-xl bg-[#16323D]" style={{ paddingLeft: "236px" }}>
+        <div className="absolute left-0 flex h-full w-[236px] items-center px-4">
           <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">{tp.globalPlan.colProject}</span>
         </div>
         {monthLabels.map(({ label, left }) => (
           <span
             key={label + left}
             className="absolute text-[10px] font-bold text-white/70"
-            style={{ left: `calc(192px + ${left}% + 6px)` }}
+            style={{ left: `calc(236px + ${left}% + 6px)` }}
           >
             {label}
           </span>
@@ -289,21 +289,35 @@ export default function PlanPage() {
                   {({ listeners, attributes }, isDragging) => (
                     <div
                       className={`grid items-center gap-3 overflow-hidden rounded-xl border bg-white transition-shadow ${isDragging ? "border-[#16323D] shadow-lg" : "border-[#E6DDCB]"}`}
-                      style={{ gridTemplateColumns: "auto minmax(110px,180px) 1fr 36px" }}
+                      style={{ gridTemplateColumns: "auto minmax(150px,224px) 1fr 36px" }}
                     >
                       <DragHandle listeners={listeners} attributes={attributes} />
 
                       <Link
                         href={`/proyectos/${p.id}`}
-                        className="group py-2 hover:bg-[#F7F3EA] transition-colors"
+                        className="group flex items-center gap-2.5 py-2 hover:bg-[#F7F3EA] transition-colors"
                         onClick={e => e.stopPropagation()}
                       >
-                        <div className="truncate text-[13px] font-semibold text-[#16323D] group-hover:text-[#395886] transition-colors">
-                          {p.title.split(" — ")[0]}
-                        </div>
-                        <div className="font-mono text-[10.5px] text-[#5C6A6E]">
-                          {sp ? `${dShort(sp.start)}–${dShort(sp.end)}` : "—"}
-                          {" · "}{p.client}
+                        {p.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.photo_url}
+                            alt=""
+                            className="size-9 flex-none rounded-lg object-cover ring-1 ring-[#E6DDCB]"
+                          />
+                        ) : (
+                          <span className="grid size-9 flex-none place-items-center rounded-lg bg-[#16323D] text-[10px] font-bold tracking-wide text-[#F5E9DA]">
+                            {initials(p.title)}
+                          </span>
+                        )}
+                        <div className="min-w-0">
+                          <div className="truncate text-[13px] font-semibold text-[#16323D] group-hover:text-[#395886] transition-colors">
+                            {p.title.split(" — ")[0]}
+                          </div>
+                          <div className="truncate font-mono text-[10.5px] text-[#5C6A6E]">
+                            {sp ? `${dShort(sp.start)}–${dShort(sp.end)}` : "—"}
+                            {" · "}{p.client}
+                          </div>
                         </div>
                       </Link>
 
