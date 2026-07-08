@@ -8,6 +8,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
+import ProjectThumb from "@/src/components/ui/ProjectThumb";
 import type { AgendaEvent, AgendaEventType, AgendaRemindFrom, AgendaRepeat } from "@/src/types/agenda";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -159,7 +160,7 @@ export default function AgendaPage() {
   const ta = t.panel.agenda;
 
   const [events, setEvents]     = useState<AgendaEvent[]>([]);
-  const [projects, setProjects] = useState<{ id: string; title: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; title: string; photo_url?: string | null }[]>([]);
   const [loading, setLoading]   = useState(true);
   const [toast, setToast]       = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,10 +174,10 @@ export default function AgendaPage() {
   const load = useCallback(async () => {
     const [evRes, prRes] = await Promise.all([
       supabase.from("agenda_events").select("*").order("event_date").order("event_time"),
-      supabase.from("projects").select("id, title").order("title"),
+      supabase.from("projects").select("id, title, photo_url").order("title"),
     ]);
     setEvents((evRes.data as AgendaEvent[]) ?? []);
-    setProjects((prRes.data as { id: string; title: string }[]) ?? []);
+    setProjects((prRes.data as { id: string; title: string; photo_url?: string | null }[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -350,8 +351,6 @@ export default function AgendaPage() {
   const kpiReminders = events.filter(e => !e.done && e.repeat_every !== "once").length;
   const kpiWeek      = events.filter(e => e.event_date >= today && e.event_date <= week).length;
 
-  const projectTitle = (id: string | null) => projects.find(p => p.id === id)?.title ?? null;
-
   const fmtDate = (iso: string) =>
     new Date(iso + "T12:00:00").toLocaleDateString(language === "es" ? "es-US" : "en-US",
       { weekday: "short", day: "numeric", month: "short" });
@@ -441,7 +440,8 @@ export default function AgendaPage() {
 
   const eventCard = (ev: AgendaEvent) => {
     const meta = TYPE_META[ev.event_type];
-    const pt = projectTitle(ev.project_id);
+    const proj = projects.find(p => p.id === ev.project_id) ?? null;
+    const pt = proj?.title ?? null;
     return (
       <div key={ev.id}
         className={`flex items-start gap-3 rounded-2xl border border-[#E6DDCB] bg-white p-4 ${ev.done ? "opacity-55" : ""}`}
@@ -454,8 +454,11 @@ export default function AgendaPage() {
             <span className="font-bold" style={{ color: meta.color }}>{TYPE_LABELS[ev.event_type]}</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {pt && (
-              <span className="rounded-full bg-[#395886] px-2.5 py-0.5 text-[10px] font-bold text-white">{pt}</span>
+            {proj && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#395886] py-0.5 pl-1 pr-2.5 text-[10px] font-bold text-white">
+                <ProjectThumb photoUrl={proj.photo_url} title={proj.title} size={16} rounded="rounded-full" />
+                {proj.title}
+              </span>
             )}
             <span className="rounded-full border border-[#E6DDCB] bg-[#F7F3EA] px-2.5 py-0.5 text-[10px] font-semibold text-[#5C6A6E]">
               ⏰ {ta.chipFrom} {FROM_LABELS[ev.remind_from]}

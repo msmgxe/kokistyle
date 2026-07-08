@@ -18,6 +18,7 @@ import type { Project, Payment, Expense, Task } from "@/src/types/project";
 
 type KpiType = "projects" | "budgeted" | "income" | "expenses" | "outstanding" | "cashflow";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
+import ProjectThumb from "@/src/components/ui/ProjectThumb";
 import UsersPanel from "@/src/components/ui/UsersPanel";
 import AdminSettings from "@/src/components/ui/AdminSettings";
 import { useVoice } from "@/src/context/VoiceContext";
@@ -410,6 +411,7 @@ function KpiDetailModal({
                     <tr key={p.id} className={ROW}>
                       <td className="py-2">
                         <div className="flex items-center gap-2">
+                          <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[p.status] ?? "bg-gray-100 text-gray-600"}`}>
                             {label}
                           </span>

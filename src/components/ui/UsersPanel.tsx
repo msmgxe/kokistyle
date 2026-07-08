@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, X, Trash2, Pencil, Check, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, X, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import type { AppUser, Permissions, PermissionSection, PermissionAction, UserType } from "@/src/types/auth";
 import {
@@ -9,6 +9,7 @@ import {
   SECTION_LABELS, TAB_ACCESS_OPTIONS, DEFAULT_COWORKER_TAB_ACCESS, DEFAULT_CLIENT_TAB_ACCESS,
 } from "@/src/types/auth";
 import type { Project } from "@/src/types/project";
+import ProjectThumb from "@/src/components/ui/ProjectThumb";
 
 interface Contact { id: string; name: string; specialty: string; }
 
@@ -138,7 +139,7 @@ function ProjectAssign({
             className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition ${
               on ? "border-[#16323D] bg-[#16323D] text-white" : "border-[#E6DDCB] bg-white text-[#16323D] hover:border-[#B0A08A]"
             }`}>
-            <FolderOpen size={12} className="shrink-0" />
+            <ProjectThumb photoUrl={p.photo_url} title={p.title} size={24} rounded="rounded-md" />
             <span className="truncate font-semibold">{p.title}</span>
             <span className={`ml-auto text-[10px] ${on ? "text-[#A8C4CC]" : "text-[#97A1A0]"}`}>{p.client}</span>
           </button>

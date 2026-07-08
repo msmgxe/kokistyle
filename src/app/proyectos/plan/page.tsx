@@ -25,7 +25,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
-import { addDays, dShort, initials } from "@/src/lib/utils";
+import { addDays, dShort } from "@/src/lib/utils";
+import ProjectThumb from "@/src/components/ui/ProjectThumb";
 import type { Project, Task } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 
@@ -298,18 +299,7 @@ export default function PlanPage() {
                         className="group flex items-center gap-2.5 py-2 hover:bg-[#F7F3EA] transition-colors"
                         onClick={e => e.stopPropagation()}
                       >
-                        {p.photo_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={p.photo_url}
-                            alt=""
-                            className="size-9 flex-none rounded-lg object-cover ring-1 ring-[#E6DDCB]"
-                          />
-                        ) : (
-                          <span className="grid size-9 flex-none place-items-center rounded-lg bg-[#16323D] text-[10px] font-bold tracking-wide text-[#F5E9DA]">
-                            {initials(p.title)}
-                          </span>
-                        )}
+                        <ProjectThumb photoUrl={p.photo_url} title={p.title} size={36} />
                         <div className="min-w-0">
                           <div className="truncate text-[13px] font-semibold text-[#16323D] group-hover:text-[#395886] transition-colors">
                             {p.title.split(" — ")[0]}
