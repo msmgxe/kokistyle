@@ -27,6 +27,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
 import { addDays, dShort } from "@/src/lib/utils";
 import ProjectThumb from "@/src/components/ui/ProjectThumb";
+import { branding } from "@/src/config/branding";
 import type { Project, Task } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 
@@ -128,8 +129,10 @@ export default function PlanPage() {
   const [toast, setToast]         = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | "prospecto" | "presupuesto" | "aprobado" | "en_obra" | "terminado">("all");
-  const { t } = useLanguage();
+  const [ganttUnit, setGanttUnit] = useState<"week" | "day">("week");
+  const { t, language } = useLanguage();
   const tp = t.panel;
+  const EN = language === "en";
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -181,6 +184,21 @@ export default function PlanPage() {
     cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
   }
 
+  const totalDays = Math.max(1, Math.ceil(totalMs / 86400000));
+  const unitLabels: { label: string; left: number }[] = [];
+  if (ganttUnit === "week") {
+    const totalWeeks = Math.ceil(totalDays / 7);
+    for (let w = 0; w < totalWeeks; w++) {
+      unitLabels.push({ label: `W${w + 1}`, left: ((w * 7) / totalDays) * 100 });
+    }
+  } else {
+    const step = totalDays > 120 ? 7 : totalDays > 30 ? 3 : totalDays > 14 ? 2 : 1;
+    for (let d = 0; d < totalDays; d += step) {
+      const date = new Date(minDate.getTime() + d * 86400000);
+      unitLabels.push({ label: `${date.getDate()}`, left: (d / totalDays) * 100 });
+    }
+  }
+
   const activeProject = activeId ? projects.find((p) => p.id === activeId) : null;
 
   const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
@@ -209,19 +227,93 @@ export default function PlanPage() {
     );
   }
 
-  const BlueHeader = () => (
-    <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-      <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">{tp.globalPlan.title}</h1>
-      <p className="mt-1 text-sm text-[#B1C9EF]">
-        {tp.globalPlan.subtitle}
-      </p>
+  const STATUS_PILL_ACTIVE: Record<string, string> = {
+    prospecto:   "bg-[#E3E8EE] text-[#44586B]",
+    presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
+    aprobado:    "bg-[#DCE8E9] text-[#4E7A82]",
+    en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
+    terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
+  };
+
+  const DarkBar = ({ withControls }: { withControls: boolean }) => (
+    <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#16323D] px-5 py-3">
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block">
+          {branding.companyName}
+        </span>
+        <span className="hidden text-white/20 sm:block">·</span>
+        <h1 className="font-bookman text-[17px] font-semibold text-white">{tp.globalPlan.title}</h1>
+        <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70">
+          {projects.length}
+        </span>
+      </div>
+
+      {withControls && (
+        <>
+          <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
+
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            <button
+              onClick={() => setFilterStatus("all")}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
+                filterStatus === "all"
+                  ? "bg-white text-[#16323D]"
+                  : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              {tp.globalPlan.tabAll}
+              <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${filterStatus === "all" ? "bg-black/10" : "bg-white/10"}`}>
+                {projects.length}
+              </span>
+            </button>
+            {(["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"] as const).map(s => {
+              const count = projects.filter(p => p.status === s).length;
+              if (count === 0) return null;
+              const isActive = filterStatus === s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
+                    isActive ? STATUS_PILL_ACTIVE[s] : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <span className="size-1.5 rounded-full bg-current" />
+                  {tp.status[s]}
+                  <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${isActive ? "bg-black/10" : "bg-white/10"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
+
+          <div className="flex shrink-0 items-center gap-1">
+            {(["week", "day"] as const).map(u => (
+              <button
+                key={u}
+                onClick={() => setGanttUnit(u)}
+                className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
+                  ganttUnit === u
+                    ? "bg-white text-[#16323D]"
+                    : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {u === "week" ? (EN ? "Weeks" : "Semanas") : (EN ? "Days" : "Días")}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 
   if (projects.length === 0) {
     return (
       <div>
-        <BlueHeader />
+        <DarkBar withControls={false} />
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
           {tp.globalPlan.noProjects}
         </div>
@@ -230,32 +322,12 @@ export default function PlanPage() {
   }
 
   const visibleProjects = filterStatus === "all" ? projects : projects.filter((p) => p.status === filterStatus);
-  const STATUS_FILTER_OPTS = [
-    { key: "all",          label: tp.globalPlan.tabAll },
-    { key: "prospecto",    label: tp.status.prospecto },
-    { key: "presupuesto",  label: tp.status.presupuesto },
-    { key: "aprobado",     label: tp.status.aprobado },
-    { key: "en_obra",      label: tp.status.en_obra },
-    { key: "terminado",    label: tp.status.terminado },
-  ] as const;
 
   return (
     <div className="animate-in fade-in duration-300">
-      <BlueHeader />
+      <DarkBar withControls />
 
-      {/* Status filter */}
-      <div className="mb-3 flex justify-end">
-        <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
-          {STATUS_FILTER_OPTS.map(({ key, label }) => (
-            <button key={key} onClick={() => setFilterStatus(key)}
-              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="relative mb-2 flex h-8 items-center overflow-hidden rounded-xl bg-[#16323D]" style={{ paddingLeft: "236px" }}>
+      <div className="relative flex h-8 items-center overflow-hidden rounded-t-xl bg-[#16323D]" style={{ paddingLeft: "236px" }}>
         <div className="absolute left-0 flex h-full w-[236px] items-center px-4">
           <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">{tp.globalPlan.colProject}</span>
         </div>
@@ -263,6 +335,19 @@ export default function PlanPage() {
           <span
             key={label + left}
             className="absolute text-[10px] font-bold text-white/70"
+            style={{ left: `calc(236px + ${left}% + 6px)` }}
+          >
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {/* Sub-header semanas / días */}
+      <div className="relative mb-2 h-5 overflow-hidden rounded-b-xl border border-t-0 border-[#E6DDCB] bg-[#ECE3D1]" style={{ paddingLeft: "236px" }}>
+        {unitLabels.map(({ label, left }) => (
+          <span
+            key={label + left}
+            className="absolute top-0.5 text-[9px] font-semibold text-[#5C6A6E]"
             style={{ left: `calc(236px + ${left}% + 6px)` }}
           >
             {label}
