@@ -220,6 +220,29 @@ CREATE UNIQUE INDEX IF NOT EXISTS tasks_project_source_key_idx
   WHERE source_key IS NOT NULL;
 ```
 
+### Items del Estimate — 3 columnas: costo / ganancia / cliente (jul 2026)
+
+Cada item de `estimate_items` tiene tres montos:
+
+| Columna | Campo DB | Semántica |
+|---|---|---|
+| **Costo** | `cost` | Monto real interno — **nunca** aparece en el PDF ni en vistas de cliente |
+| **Ganancia** | `profit` | Default **30% del costo** (`DEFAULT_PROFIT_PCT` en EstimateTab); editable por item |
+| **Cliente** | `amount` | **Calculada y de solo lectura** = `cost + profit` — es la columna histórica: todos los totales, PDF, WhatsApp/Email, dashboard y Day Planner siguen leyendo `amount` sin cambios |
+
+Reglas de edición (en `updateItemLocal`):
+- Cambiar **costo** → recalcula ganancia al 30% y el monto cliente
+- Cambiar **ganancia** → recalcula solo el monto cliente (override manual del 30%)
+- El guardado (`saveItemField`, onBlur) persiste los tres campos juntos
+- El alta de item pide el **costo** y muestra preview del monto cliente (`→ $X`)
+
+Migración SQL requerida (el backfill mantiene el monto cliente idéntico — legacy queda con `cost = amount`, `profit = 0`):
+```sql
+ALTER TABLE estimate_items ADD COLUMN IF NOT EXISTS cost   NUMERIC(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE estimate_items ADD COLUMN IF NOT EXISTS profit NUMERIC(12,2) NOT NULL DEFAULT 0;
+UPDATE estimate_items SET cost = amount WHERE cost = 0 AND profit = 0 AND amount > 0;
+```
+
 ### Lógica de totales del Estimate
 
 - `section_total` = total plano editable de la sección

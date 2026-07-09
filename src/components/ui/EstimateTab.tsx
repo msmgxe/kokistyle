@@ -35,9 +35,14 @@ interface ItemRow {
   id: string;
   section_id: string;
   description: string;
-  amount: number;
+  cost: number;    // monto real (interno, nunca va al PDF)
+  profit: number;  // ganancia — default 30% del costo, editable
+  amount: number;  // monto cliente = cost + profit (columna que ve el cliente)
   sort_order: number;
 }
+
+const DEFAULT_PROFIT_PCT = 0.30;
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 interface SectionRow {
   id: string;
@@ -105,13 +110,14 @@ function defaultDeposits(): DepositEntry[] {
 interface SortableItemProps {
   item: ItemRow;
   sectionId: string;
-  onUpdateLocal: (sectionId: string, itemId: string, field: "description" | "amount", value: string) => void;
-  onSaveField:   (itemId: string, field: "description" | "amount", value: string) => void;
+  onUpdateLocal: (sectionId: string, itemId: string, field: "description" | "cost" | "profit", value: string) => void;
+  onSaveField:   (itemId: string) => void;
   onDelete:      (sectionId: string, itemId: string) => void;
 }
 
 function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const numCls = "w-16 sm:w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none";
   return (
     <div
       ref={setNodeRef}
@@ -131,17 +137,30 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
         type="text"
         value={item.description}
         onChange={e => onUpdateLocal(sectionId, item.id, "description", e.target.value)}
-        onBlur={e  => onSaveField(item.id, "description", e.target.value)}
+        onBlur={()  => onSaveField(item.id)}
         className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[#16323D] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none"
       />
       <input
         type="number"
-        value={item.amount || ""}
-        onChange={e => onUpdateLocal(sectionId, item.id, "amount", e.target.value)}
-        onBlur={e  => onSaveField(item.id, "amount", e.target.value)}
+        value={item.cost || ""}
+        onChange={e => onUpdateLocal(sectionId, item.id, "cost", e.target.value)}
+        onBlur={()  => onSaveField(item.id)}
         placeholder="0"
-        className="w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] text-[#16323D] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none"
+        title="Costo real (interno)"
+        className={`${numCls} text-[#16323D]`}
       />
+      <input
+        type="number"
+        value={item.profit || ""}
+        onChange={e => onUpdateLocal(sectionId, item.id, "profit", e.target.value)}
+        onBlur={()  => onSaveField(item.id)}
+        placeholder="0"
+        title="Ganancia — se recalcula al 30% cuando cambias el costo"
+        className={`${numCls} text-[#4F8A63]`}
+      />
+      <span className="w-16 sm:w-20 shrink-0 px-1 py-0.5 text-right font-mono text-[10px] font-bold text-[#395886]">
+        {item.amount ? item.amount.toLocaleString("en-US") : "0"}
+      </span>
       <button
         onClick={() => onDelete(sectionId, item.id)}
         className="shrink-0 rounded p-1 text-[#E6DDCB] opacity-0 transition hover:text-[#B0492F] group-hover:opacity-100"
@@ -182,8 +201,8 @@ interface SortableSectionProps {
   onToggle:          () => void;
   onUpdateField:     (id: string, field: "section_total"|"note"|"is_material_type"|"material_included", value: number|string|boolean) => void;
   onDelete:          (id: string) => void;
-  onUpdateItem:      (sectionId: string, itemId: string, field: "description"|"amount", value: string) => void;
-  onSaveItem:        (itemId: string, field: "description"|"amount", value: string) => void;
+  onUpdateItem:      (sectionId: string, itemId: string, field: "description"|"cost"|"profit", value: string) => void;
+  onSaveItem:        (itemId: string) => void;
   onDeleteItem:      (sectionId: string, itemId: string) => void;
   onItemsReorder:    (sectionId: string, reordered: ItemRow[]) => void;
   onAddItem:         (sectionId: string) => void;
@@ -361,6 +380,25 @@ function SortableSection({
             </button>
           </div>
 
+          {/* Column headers: costo | ganancia | cliente */}
+          {section.items.length > 0 && (
+            <div className="flex items-center gap-2 border-b border-[#E6DDCB] bg-[#FDFAF6] px-4 py-1">
+              <span className="w-[17px] shrink-0" />
+              <span className="h-1.5 w-1.5 shrink-0" />
+              <span className="min-w-0 flex-1" />
+              <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                {EN ? "Cost" : "Costo"}
+              </span>
+              <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#4F8A63]">
+                {EN ? "Profit 30%" : "Ganancia 30%"}
+              </span>
+              <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#395886]">
+                {EN ? "Client" : "Cliente"}
+              </span>
+              <span className="w-[22px] shrink-0" />
+            </div>
+          )}
+
           {/* Items — sortable */}
           <DndContext sensors={itemSensors} collisionDetection={closestCenter} onDragEnd={handleItemDragEnd}>
             <SortableContext items={section.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
@@ -425,9 +463,15 @@ function SortableSection({
                 value={newItemAmt}
                 onChange={e => setNewItemAmt(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") onAddItem(section.id); }}
-                placeholder="$0"
+                placeholder={EN ? "$0 cost" : "$0 costo"}
+                title={EN ? "Real cost — profit (30%) and client amount are computed" : "Costo real — la ganancia (30%) y el monto cliente se calculan"}
                 className="w-24 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-right font-mono text-[12px] focus:border-[#395886] focus:outline-none"
               />
+              {(parseFloat(newItemAmt) || 0) > 0 && (
+                <span className="shrink-0 whitespace-nowrap font-mono text-[10px] font-bold text-[#395886]">
+                  → ${round2((parseFloat(newItemAmt) || 0) * (1 + DEFAULT_PROFIT_PCT)).toLocaleString("en-US")}
+                </span>
+              )}
               <button
                 onClick={() => onAddItem(section.id)}
                 className="shrink-0 rounded-lg bg-[#16323D] px-3 py-1.5 text-[11px] font-bold text-white"
@@ -778,10 +822,14 @@ export default function EstimateTab({
     if (!newItemDesc.trim()) return;
     const section = estimate?.sections.find(s => s.id === sectionId);
     if (!section) return;
+    const cost   = parseFloat(newItemAmt) || 0;
+    const profit = round2(cost * DEFAULT_PROFIT_PCT);
     const { data } = await supabase.from("estimate_items").insert({
       section_id:  sectionId,
       description: newItemDesc.trim(),
-      amount:      parseFloat(newItemAmt) || 0,
+      cost,
+      profit,
+      amount:      round2(cost + profit),
       sort_order:  section.items.length * 10,
     }).select().single();
     if (data) {
@@ -796,25 +844,37 @@ export default function EstimateTab({
   }, [estimate, newItemDesc, newItemAmt]);
 
   const updateItemLocal = (
-    sectionId: string, itemId: string, field: "description" | "amount", value: string,
+    sectionId: string, itemId: string, field: "description" | "cost" | "profit", value: string,
   ) => {
     setEstimate(p => p ? ({
       ...p,
       sections: p.sections.map(s => s.id !== sectionId ? s : {
         ...s,
-        items: s.items.map(i => i.id !== itemId ? i : {
-          ...i, [field]: field === "amount" ? (parseFloat(value) || 0) : value,
+        items: s.items.map(i => {
+          if (i.id !== itemId) return i;
+          if (field === "description") return { ...i, description: value };
+          const v = parseFloat(value) || 0;
+          if (field === "cost") {
+            // Cambiar el costo recalcula la ganancia al 30% y el monto cliente
+            const profit = round2(v * DEFAULT_PROFIT_PCT);
+            return { ...i, cost: v, profit, amount: round2(v + profit) };
+          }
+          return { ...i, profit: v, amount: round2((i.cost ?? 0) + v) };
         }),
       }),
     }) : p);
   };
 
-  const saveItemField = useCallback(async (
-    itemId: string, field: "description" | "amount", value: string,
-  ) => {
-    const payload = field === "amount" ? { amount: parseFloat(value) || 0 } : { description: value };
-    await supabase.from("estimate_items").update(payload).eq("id", itemId);
-  }, []);
+  const saveItemField = useCallback(async (itemId: string) => {
+    const item = estimate?.sections.flatMap(s => s.items).find(i => i.id === itemId);
+    if (!item) return;
+    await supabase.from("estimate_items").update({
+      description: item.description,
+      cost:        item.cost ?? 0,
+      profit:      item.profit ?? 0,
+      amount:      item.amount ?? 0,
+    }).eq("id", itemId);
+  }, [estimate]);
 
   const deleteItem = useCallback(async (sectionId: string, itemId: string) => {
     await supabase.from("estimate_items").delete().eq("id", itemId);
@@ -1187,6 +1247,8 @@ export default function EstimateTab({
             section_id:      newSec.id,
             item_catalog_id: null,
             description:     item.description,
+            cost:            item.cost ?? 0,
+            profit:          item.profit ?? 0,
             amount:          item.amount,
             sort_order:      item.sort_order,
           }))

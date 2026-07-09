@@ -218,10 +218,16 @@ CREATE TABLE IF NOT EXISTS estimate_items (
   section_id       UUID REFERENCES estimate_sections(id) ON DELETE CASCADE NOT NULL,
   item_catalog_id  UUID REFERENCES estimate_item_catalog(id) ON DELETE SET NULL,
   description      TEXT NOT NULL,
-  amount           NUMERIC(12,2) NOT NULL DEFAULT 0,
+  cost             NUMERIC(12,2) NOT NULL DEFAULT 0,  -- monto real (interno)
+  profit           NUMERIC(12,2) NOT NULL DEFAULT 0,  -- ganancia (default 30% del costo, editable)
+  amount           NUMERIC(12,2) NOT NULL DEFAULT 0,  -- monto cliente = cost + profit (lo único que ve el cliente)
   sort_order       INTEGER NOT NULL DEFAULT 0,
   created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+-- Migration: run if upgrading from older schema (mantiene el monto cliente idéntico)
+-- ALTER TABLE estimate_items ADD COLUMN IF NOT EXISTS cost   NUMERIC(12,2) NOT NULL DEFAULT 0;
+-- ALTER TABLE estimate_items ADD COLUMN IF NOT EXISTS profit NUMERIC(12,2) NOT NULL DEFAULT 0;
+-- UPDATE estimate_items SET cost = amount WHERE cost = 0 AND profit = 0 AND amount > 0;
 
 -- Estimate → Workflow traceability. These ALTERs live after the Estimate tables
 -- so the schema can run cleanly on a fresh Supabase project.

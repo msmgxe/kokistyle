@@ -133,6 +133,8 @@ export interface EstimateSectionCatalog {
 
 export interface ProjectEstimateItem {
   id: string;
+  cost?: number;
+  profit?: number;
   section_id: string;
   item_catalog_id: string | null;
   description: string;
