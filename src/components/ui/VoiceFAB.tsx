@@ -13,7 +13,8 @@ type ApiMsg = { role: "user" | "assistant"; content: string };
 interface Msg { role: "user" | "assistant"; text: string; }
 
 const ASSISTANT  = "Katy";
-const TODAY      = () => new Date().toISOString().split("T")[0];
+// Hoy en hora local del dispositivo (toISOString() es UTC y desfasa la fecha por la tarde)
+const TODAY      = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const IS_ANDROID = () => typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 function fmt(n: number) { return "$" + n.toLocaleString("en-US"); }
 function norm(s: string) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }

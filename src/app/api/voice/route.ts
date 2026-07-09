@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 
-const TODAY = () => new Date().toISOString().split("T")[0];
+// Hoy en hora de Florida — el servidor corre en UTC y por la tarde ya sería "mañana"
+const TODAY = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 
 type ApiMsg = { role: "user" | "assistant"; content: string };
 

@@ -20,12 +20,17 @@ const TYPE_META: Record<AgendaEventType, { emoji: string; color: string }> = {
   reunion: { emoji: "🤝", color: "#7B1838" },
 };
 
-const todayIso = () => new Date().toISOString().split("T")[0];
+// Fecha en hora LOCAL del dispositivo — toISOString() es UTC y por la tarde
+// en Florida ya marca "mañana", clasificando lo de hoy como pasado
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const localIso = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+const todayIso = () => localIso(new Date());
 
 const plusDays = (n: number) => {
   const d = new Date();
   d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
+  return localIso(d);
 };
 
 interface ParsedEntry {
