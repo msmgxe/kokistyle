@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Bell, BellRing, CalendarPlus, Check, ExternalLink, Mic, Plus, RotateCcw, Trash2, X,
+  Bell, BellRing, CalendarPlus, Check, ExternalLink, Mic, Pencil, Plus, RotateCcw, Trash2, X,
 } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -342,6 +342,48 @@ export default function AgendaPage() {
     showToast(ta.deleted);
   }, [currentUser, showToast, ta.confirmDelete, ta.deleted]);
 
+  /* ── Edición de una entrada existente ──────────────────────────────────── */
+  const [editing, setEditing]   = useState<AgendaEvent | null>(null);
+  const [editForm, setEditForm] = useState<ParsedEntry>(emptyForm);
+
+  const startEdit = useCallback((ev: AgendaEvent) => {
+    setEditForm({
+      event_type: ev.event_type,
+      title: ev.title,
+      event_date: ev.event_date,
+      event_time: ev.event_time,
+      remind_from: (["2h", "1d", "2d", "1w"].includes(ev.remind_from) ? ev.remind_from : "1d") as AgendaRemindFrom,
+      repeat_every: ev.repeat_every === "once" ? "once" : "daily",
+      project_id: ev.project_id,
+    });
+    setEditing(ev);
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editing || !editForm.title.trim()) return;
+    setSaving(true);
+    const patch = {
+      event_type: editForm.event_type,
+      title: editForm.title.trim(),
+      project_id: editForm.project_id,
+      event_date: editForm.event_date,
+      event_time: editForm.event_time,
+      remind_from: editForm.remind_from,
+      repeat_every: editForm.repeat_every,
+    };
+    const { error } = await supabase.from("agenda_events").update(patch).eq("id", editing.id);
+    setSaving(false);
+    if (error) { showToast(ta.errorSaving); return; }
+    logActivity({
+      user_id: currentUser?.id, user_name: currentUser?.name, user_role: "superadmin",
+      action: "update", entity_type: "agenda_event", entity_id: editing.id, entity_name: patch.title,
+    });
+    setEvents(prev => prev.map(e => e.id === editing.id ? { ...e, ...patch } : e)
+      .sort((a, b) => (a.event_date + a.event_time).localeCompare(b.event_date + b.event_time)));
+    setEditing(null);
+    showToast(ta.updated);
+  }, [editing, editForm, currentUser, showToast, ta.errorSaving, ta.updated]);
+
   const toggleDone = useCallback(async (ev: AgendaEvent) => {
     await supabase.from("agenda_events").update({ done: !ev.done }).eq("id", ev.id);
     setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, done: !e.done } : e));
@@ -444,6 +486,26 @@ export default function AgendaPage() {
   );
 
   const eventCard = (ev: AgendaEvent) => {
+    if (editing?.id === ev.id) {
+      return (
+        <div key={ev.id} className="space-y-3 rounded-2xl border-2 border-[#395886] bg-white p-4">
+          <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+            ✏️ {ta.editTitle}
+          </h4>
+          {entryFields(editForm, setEditForm)}
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setEditing(null)}
+              className="inline-flex items-center gap-1 rounded-xl border border-[#E6DDCB] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+              <X size={13} /> {ta.cancel}
+            </button>
+            <button onClick={saveEdit} disabled={saving || !editForm.title.trim()}
+              className="inline-flex items-center gap-1 rounded-xl bg-[#16323D] px-4 py-2 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-50">
+              <Check size={13} /> {ta.save}
+            </button>
+          </div>
+        </div>
+      );
+    }
     const meta = TYPE_META[ev.event_type];
     const proj = projects.find(p => p.id === ev.project_id) ?? null;
     const pt = proj?.title ?? null;
@@ -484,6 +546,10 @@ export default function AgendaPage() {
           </div>
         </div>
         <div className="flex flex-none flex-col items-end gap-1.5">
+          <button onClick={() => startEdit(ev)}
+            className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] px-2.5 py-1 text-[11px] font-bold text-[#395886] hover:bg-[#EDF3FB]">
+            <Pencil size={11} /> {ta.edit}
+          </button>
           <button onClick={() => toggleDone(ev)}
             className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold ${
               ev.done
