@@ -58,6 +58,8 @@ REPLICATE_API_TOKEN=            # replicate.com → Account → API Tokens (Desi
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=   # npx web-push generate-vapid-keys (avisos push de Agenda)
 VAPID_PRIVATE_KEY=              # par privado de la anterior (SOLO server)
 CRON_SECRET=                    # secreto del cron /api/agenda/remind (Vercel lo envía como Bearer)
+YAHOO_EMAIL=                    # cuenta Yahoo remitente del Estimate por email (luxaris25@yahoo.com)
+YAHOO_APP_PASSWORD=             # App Password de Yahoo (Account Security → App passwords) — SOLO server
 ```
 
 ---
@@ -262,15 +264,15 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
 - **`exportEstimatePdf()`** — llama `buildEstimatePdf()` y hace `doc.save()` (descarga)
 - **`getEstimatePdfBlob()`** — llama `buildEstimatePdf()` y devuelve `Blob` (para WhatsApp)
 
-### WhatsApp PDF send (`EstimateTab.tsx`)
+### Email PDF send (`EstimateTab.tsx` + `/api/estimate/send-email`)
 
-- Botón compacto **WA** (verde, `bg-[#1BAD4E]`) en la cabecera oscura del Estimate
-  - Si no hay número configurado → al clic se despliega el formulario (`showWaForm` state) con selector de país + input + botón Enviar PDF
-  - Si ya hay número guardado → al clic envía directamente sin abrir el formulario
-- Campos: selector de código de país (🇺🇸 +1, 🇲🇽 +52, 🇨🇴 +57, 🇻🇪 +58, 🇦🇷 +54, 🇪🇸 +34) + input de número (formato US auto) + botón verde Send
-- En **móvil** (iOS/Android): usa `navigator.share({ files: [pdfFile] })` — WhatsApp aparece en el menú nativo con el PDF adjunto
-- En **desktop**: descarga el PDF + abre `https://wa.me/<number>` en nueva pestaña + toast explicativo
-- El número final se construye como `waCode + waPhone` limpiando caracteres no numéricos
+> Nota: el botón WA de WhatsApp fue removido de la cabecera; el envío del PDF ahora es por **correo** (jul 2026).
+
+- Botón **Email** (azul `bg-[#395886]`) en la cabecera oscura del Estimate, junto a Copy/PDF/Save
+- Abre un modal con: remitente fijo (`Luxaris Design <luxaris25@yahoo.com>`), **Para** (prellenado con el email del cliente del estimado), **Asunto** y **Mensaje** editables (plantilla bilingüe con firma del contratista), toggle **Con detalle / Resumen** y **preview del PDF** embebido (iframe con blob URL, se regenera al cambiar el modo)
+- Enviar → el PDF se convierte a base64 y va a `POST /api/estimate/send-email` → **nodemailer** vía SMTP de Yahoo (`smtp.mail.yahoo.com:465`, secure) con el PDF adjunto — el correo sale realmente desde la cuenta Yahoo
+- Env vars requeridas (en `.env.local` y Vercel): `YAHOO_EMAIL` + `YAHOO_APP_PASSWORD` (generar en Yahoo → Account Security → App passwords; la contraseña normal NO funciona)
+- Errores de credenciales devuelven mensaje claro ("Yahoo rechazó las credenciales…"); todo se reporta con toast
 
 ### Módulo Materials — Import desde Estimate
 

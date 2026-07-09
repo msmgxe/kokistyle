@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
-import { openEstimatePdfInBrowser } from "@/src/lib/pdf";
+import { openEstimatePdfInBrowser, getEstimatePdfBlob } from "@/src/lib/pdf";
 
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -519,6 +519,15 @@ export default function EstimateTab({
   const [editingPayId,     setEditingPayId]     = useState<string | null>(null);
   const [editForm,         setEditForm]         = useState<{ amount: string; date: string; method: Payment["method"]; concept: string }>({ amount: "", date: "", method: "Transferencia", concept: "" });
   const [confirmDeletePayId, setConfirmDeletePayId] = useState<string | null>(null);
+
+  // ── Email modal (envío del PDF por SMTP Yahoo) ───────────────────────────
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailTo,        setEmailTo]        = useState("");
+  const [emailSubject,   setEmailSubject]   = useState("");
+  const [emailMsg,       setEmailMsg]       = useState("");
+  const [emailMode,      setEmailMode]      = useState<"full" | "summary">("full");
+  const [emailPreview,   setEmailPreview]   = useState<string | null>(null);
+  const [sendingEmail,   setSendingEmail]   = useState(false);
 
   // ── Copy-to-project modal ─────────────────────────────────────────────────
   const [showCopyModal,   setShowCopyModal]   = useState(false);
@@ -1041,6 +1050,72 @@ export default function EstimateTab({
     setShowPdfModal(false);
   }, [estimate, totals, language, EN, toast]);
 
+  // ── Email PDF (SMTP Yahoo) ────────────────────────────────────────────────
+  const buildEmailPdfBlob = useCallback((mode: "full" | "summary"): Blob | null => {
+    if (!estimate) return null;
+    const { grandTotal, laborTotal, discountAmt } = totals;
+    return getEstimatePdfBlob(estimate as unknown as ProjectEstimate, grandTotal, laborTotal, discountAmt, language, project.title, mode);
+  }, [estimate, totals, language, project.title]);
+
+  const refreshEmailPreview = useCallback((mode: "full" | "summary") => {
+    const blob = buildEmailPdfBlob(mode);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    setEmailPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
+  }, [buildEmailPdfBlob]);
+
+  const openEmailModal = useCallback(() => {
+    if (!estimate) return;
+    setEmailTo(estimate.email?.trim() ?? "");
+    setEmailSubject(`${EN ? "Estimate" : "Estimado"} — ${project.title}`);
+    setEmailMsg(EN
+      ? `Hello${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nPlease find attached the estimate for "${project.title}".\nFeel free to reply to this email with any questions.\n\nBest regards,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`
+      : `Hola${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nAdjunto encontrará el estimado de "${project.title}".\nCualquier duda, puede responder directamente a este correo.\n\nSaludos cordiales,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`);
+    refreshEmailPreview(emailMode);
+    setShowEmailModal(true);
+  }, [estimate, EN, project.title, emailMode, refreshEmailPreview]);
+
+  const closeEmailModal = useCallback(() => {
+    setShowEmailModal(false);
+    setEmailPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
+  }, []);
+
+  const sendEmail = useCallback(async () => {
+    const blob = buildEmailPdfBlob(emailMode);
+    if (!blob || !emailTo.includes("@")) return;
+    setSendingEmail(true);
+    try {
+      const pdfBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(String(reader.result).split(",")[1] ?? "");
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const res = await fetch("/api/estimate/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: emailTo.trim(),
+          subject: emailSubject.trim(),
+          message: emailMsg,
+          fileName: `Estimate - ${project.title}.pdf`,
+          pdfBase64,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast(EN ? `Estimate sent to ${emailTo.trim()} ✓` : `Estimado enviado a ${emailTo.trim()} ✓`);
+        closeEmailModal();
+      } else {
+        toast((EN ? "Send failed: " : "Error al enviar: ") + (data.error ?? ""));
+      }
+    } catch {
+      toast(EN ? "Send failed — check your connection" : "Error al enviar — revisa tu conexión");
+    } finally {
+      setSendingEmail(false);
+    }
+  }, [buildEmailPdfBlob, emailMode, emailTo, emailSubject, emailMsg, project.title, EN, toast, closeEmailModal]);
+
   // ── Copy estimate to another project ─────────────────────────────────────
   const openCopyModal = useCallback(async () => {
     const { data } = await supabase
@@ -1317,6 +1392,16 @@ export default function EstimateTab({
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span className="hidden sm:inline">{EN ? "Copy" : "Copiar"}</span>
+            </button>
+
+            {/* Email */}
+            <button
+              onClick={openEmailModal}
+              title={EN ? "Send PDF by email" : "Enviar PDF por correo"}
+              className="inline-flex items-center gap-1 rounded-lg bg-[#395886] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#2e4a70]"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+              <span className="hidden sm:inline">Email</span>
             </button>
 
             {/* PDF */}
@@ -1657,6 +1742,96 @@ export default function EstimateTab({
       )}
 
     </div>{/* /main card */}
+
+      {/* ── Email modal ────────────────────────────────────────────────────── */}
+      {showEmailModal && (
+        <div
+          className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+          onClick={closeEmailModal}
+        >
+          <div
+            className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between bg-[#16323D] px-5 py-3.5">
+              <span className="text-sm font-bold text-white">
+                ✉️ {EN ? "Send estimate by email" : "Enviar estimado por correo"}
+              </span>
+              <button onClick={closeEmailModal} className="text-white/60 hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto p-5">
+              <p className="text-[11px] text-[#97A1A0]">
+                {EN ? "From" : "Desde"}: <span className="font-bold text-[#16323D]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span>
+              </p>
+
+              <div>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                  {EN ? "To" : "Para"} *
+                </label>
+                <input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)}
+                  placeholder="cliente@email.com"
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                  {EN ? "Subject" : "Asunto"}
+                </label>
+                <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                  {EN ? "Message" : "Mensaje"}
+                </label>
+                <textarea rows={5} value={emailMsg} onChange={e => setEmailMsg(e.target.value)}
+                  className="w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm leading-relaxed text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                  {EN ? "PDF preview" : "Vista previa del PDF"}
+                </label>
+                <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+                  {(["full", "summary"] as const).map(m => (
+                    <button key={m} type="button"
+                      onClick={() => { setEmailMode(m); refreshEmailPreview(m); }}
+                      className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition ${
+                        emailMode === m ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"
+                      }`}>
+                      {m === "full" ? (EN ? "With detail" : "Con detalle") : (EN ? "Summary" : "Resumen")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {emailPreview && (
+                <iframe
+                  src={emailPreview}
+                  title="PDF preview"
+                  className="h-64 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA]"
+                />
+              )}
+            </div>
+
+            <div className="flex gap-2 border-t border-[#E6DDCB] p-4">
+              <button onClick={closeEmailModal}
+                className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-bold text-[#5C6A6E] hover:bg-[#F7F3EA]">
+                {EN ? "Cancel" : "Cancelar"}
+              </button>
+              <button onClick={sendEmail} disabled={sendingEmail || !emailTo.includes("@")}
+                className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-40">
+                {sendingEmail
+                  ? (EN ? "Sending…" : "Enviando…")
+                  : (EN ? "Send estimate" : "Enviar estimado")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Add Section modal ──────────────────────────────────────────────── */}
       {showAddSection && (
