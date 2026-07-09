@@ -326,6 +326,21 @@ function ProjectCard({
   );
 }
 
+function ProjectBand({ p, right }: { p: ProjectWithData; right?: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2.5 bg-[#16323D] px-3 py-2">
+      <ProjectThumb photoUrl={p.photo_url} title={p.title} size={30} rounded="rounded-lg" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[12px] font-bold tracking-wide text-white">
+          {p.title.split(" — ")[0]}
+        </div>
+        <div className="truncate text-[10px] text-[#F5E9DA]/60">{p.client}</div>
+      </div>
+      {right}
+    </div>
+  );
+}
+
 function KpiDetailModal({
   type,
   projects,
@@ -360,9 +375,6 @@ function KpiDetailModal({
 
   const byBudget = [...projects].sort((a, b) => b.budget - a.budget);
 
-  const TH = "pb-2 text-[11px] font-semibold uppercase tracking-wide text-[#5C6A6E]";
-  const ROW = "border-b border-[#F7F3EA] hover:bg-[#FDFAF6]";
-
   return (
     <div
       className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-black/40 backdrop-blur-sm p-4"
@@ -387,77 +399,66 @@ function KpiDetailModal({
         <div className="flex-1 overflow-y-auto p-5">
 
           {type === "projects" && (
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className={`border-b border-[#E6DDCB]`}>
-                  <th className={`${TH} text-left`}>{col("Project", "Proyecto")}</th>
-                  <th className={`${TH} text-left`}>{col("Client", "Cliente")}</th>
-                  <th className={`${TH} text-right`}>{col("Budget", "Presupuesto")}</th>
-                  <th className={`${TH} text-right`}>{col("Progress", "Avance")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {projects.map(p => {
-                  const STATUS_COLORS: Record<string, string> = {
-                    prospecto: "bg-[#E3E8EE] text-[#44586B]",
-                    presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-                    aprobado: "bg-[#DCE8E9] text-[#4E7A82]",
-                    en_obra: "bg-[#EDE3CF] text-[#7A6230]",
-                    terminado: "bg-[#DCEBDD] text-[#4F8A63]",
-                  };
-                  const prog = advancePct(p.tasks);
-                  const label = tp.status[p.status as keyof typeof tp.status] ?? p.status;
-                  return (
-                    <tr key={p.id} className={ROW}>
-                      <td className="py-2">
-                        <div className="flex items-center gap-2">
-                          <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
-                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[p.status] ?? "bg-gray-100 text-gray-600"}`}>
-                            {label}
-                          </span>
-                          <span className="truncate max-w-[130px] font-semibold text-[#16323D]">
-                            {p.title.split(" — ")[0]}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-2 text-[#5C6A6E]">{p.client}</td>
-                      <td className="py-2 font-mono text-right text-[#16323D]">{money(p.budget)}</td>
-                      <td className={`py-2 font-mono text-right font-semibold ${prog >= 100 ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
-                        {prog}%
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="space-y-2.5">
+              {projects.map(p => {
+                const STATUS_COLORS: Record<string, string> = {
+                  prospecto: "bg-[#E3E8EE] text-[#44586B]",
+                  presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
+                  aprobado: "bg-[#DCE8E9] text-[#4E7A82]",
+                  en_obra: "bg-[#EDE3CF] text-[#7A6230]",
+                  terminado: "bg-[#DCEBDD] text-[#4F8A63]",
+                };
+                const prog = advancePct(p.tasks);
+                const label = tp.status[p.status as keyof typeof tp.status] ?? p.status;
+                return (
+                  <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                    <ProjectBand p={p} right={
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[p.status] ?? "bg-gray-100 text-gray-600"}`}>
+                        {label}
+                      </span>
+                    } />
+                    <div className="flex items-center justify-between bg-white px-3 py-2 text-[11px]">
+                      <span className="text-[#5C6A6E]">
+                        {col("Budget", "Presupuesto")}:{" "}
+                        <span className="font-mono font-semibold text-[#16323D]">{money(p.budget)}</span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="h-1.5 w-24 overflow-hidden rounded-full bg-[#F0EBE0]">
+                          <span className="block h-full rounded-full bg-[#4F8A63]" style={{ width: `${Math.min(100, prog)}%` }} />
+                        </span>
+                        <span className={`font-mono font-semibold ${prog >= 100 ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
+                          {prog}%
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {type === "budgeted" && (() => {
             const total = projects.reduce((s, p) => s + p.budget, 0);
             return (
               <>
-                <table className="w-full text-[12px]">
-                  <thead>
-                    <tr className="border-b border-[#E6DDCB]">
-                      <th className={`${TH} text-left`}>{col("Project", "Proyecto")}</th>
-                      <th className={`${TH} text-left`}>{col("Client", "Cliente")}</th>
-                      <th className={`${TH} text-right`}>{col("Budget", "Presupuesto")}</th>
-                      <th className={`${TH} text-right`}>%</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {byBudget.map(p => (
-                      <tr key={p.id} className={ROW}>
-                        <td className="max-w-[160px] truncate py-2 font-semibold text-[#16323D]">{p.title.split(" — ")[0]}</td>
-                        <td className="py-2 text-[#5C6A6E]">{p.client}</td>
-                        <td className="py-2 font-mono text-right text-[#16323D]">{money(p.budget)}</td>
-                        <td className="py-2 font-mono text-right text-[#5C6A6E]">
-                          {total ? Math.round((p.budget / total) * 100) : 0}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="space-y-2.5">
+                  {byBudget.map(p => {
+                    const pct = total ? Math.round((p.budget / total) * 100) : 0;
+                    return (
+                      <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                        <ProjectBand p={p} right={
+                          <div className="shrink-0 text-right">
+                            <div className="font-mono text-[13px] font-bold text-white">{money(p.budget)}</div>
+                            <div className="font-mono text-[10px] text-[#F5E9DA]/60">{pct}% {col("of total", "del total")}</div>
+                          </div>
+                        } />
+                        <div className="h-1.5 bg-[#F0EBE0]">
+                          <div className="h-full bg-[#395886]" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
                 <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[#16323D]">
                   <span>Total</span>
                   <span className="font-mono">{money(total)}</span>
@@ -478,29 +479,22 @@ function KpiDetailModal({
                   const sub = totalIncome(p.payments);
                   const rows = [...p.payments].sort((a, b) => a.date.localeCompare(b.date));
                   return (
-                    <div key={p.id}>
-                      <div className="mb-1.5 flex items-baseline justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-[#395886]">
-                          {p.title.split(" — ")[0]}
-                        </span>
-                        <span className="font-mono text-[11px] text-[#5C6A6E]">{p.client}</span>
-                      </div>
-                      <table className="w-full text-[12px]">
+                    <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                      <ProjectBand p={p} right={
+                        <span className="shrink-0 font-mono text-[13px] font-bold text-[#9FD8B4]">{money(sub)}</span>
+                      } />
+                      <table className="w-full bg-white text-[12px]">
                         <tbody>
                           {rows.map(py => (
-                            <tr key={py.id} className="border-b border-[#F7F3EA]">
-                              <td className="py-1.5 text-[#5C6A6E]">{dateFmt(py.date)}</td>
+                            <tr key={py.id} className="border-b border-[#F7F3EA] last:border-0">
+                              <td className="py-1.5 pl-3 text-[#5C6A6E]">{dateFmt(py.date)}</td>
                               <td className="py-1.5 text-[#5C6A6E]">{METHOD[py.method] ?? py.method}</td>
                               <td className="py-1.5 text-[#5C6A6E]">{PAY_TYPE[py.type] ?? py.type}</td>
-                              <td className="py-1.5 text-right font-mono font-semibold text-[#4F8A63]">{money(py.amount)}</td>
+                              <td className="py-1.5 pr-3 text-right font-mono font-semibold text-[#4F8A63]">{money(py.amount)}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
-                      <div className="mt-1 flex justify-between text-[11px] text-[#5C6A6E]">
-                        <span>Subtotal</span>
-                        <span className="font-mono font-semibold text-[#16323D]">{money(sub)}</span>
-                      </div>
                     </div>
                   );
                 })}
@@ -526,29 +520,22 @@ function KpiDetailModal({
                   const sub = totalExpense(p.expenses);
                   const rows = [...p.expenses].sort((a, b) => a.date.localeCompare(b.date));
                   return (
-                    <div key={p.id}>
-                      <div className="mb-1.5 flex items-baseline justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-[#395886]">
-                          {p.title.split(" — ")[0]}
-                        </span>
-                        <span className="font-mono text-[11px] text-[#5C6A6E]">{p.client}</span>
-                      </div>
-                      <table className="w-full text-[12px]">
+                    <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                      <ProjectBand p={p} right={
+                        <span className="shrink-0 font-mono text-[13px] font-bold text-[#F0A090]">{money(sub)}</span>
+                      } />
+                      <table className="w-full bg-white text-[12px]">
                         <tbody>
                           {rows.map(ex => (
-                            <tr key={ex.id} className="border-b border-[#F7F3EA]">
-                              <td className="py-1.5 text-[#5C6A6E]">{dateFmt(ex.date)}</td>
+                            <tr key={ex.id} className="border-b border-[#F7F3EA] last:border-0">
+                              <td className="py-1.5 pl-3 text-[#5C6A6E]">{dateFmt(ex.date)}</td>
                               <td className="max-w-[100px] truncate py-1.5 text-[#5C6A6E]">{ex.payee_name}</td>
                               <td className="max-w-[120px] truncate py-1.5 text-[#5C6A6E]">{ex.concept}</td>
-                              <td className="py-1.5 text-right font-mono font-semibold text-[#B0492F]">{money(ex.amount)}</td>
+                              <td className="py-1.5 pr-3 text-right font-mono font-semibold text-[#B0492F]">{money(ex.amount)}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
-                      <div className="mt-1 flex justify-between text-[11px] text-[#5C6A6E]">
-                        <span>Subtotal</span>
-                        <span className="font-mono font-semibold text-[#16323D]">{money(sub)}</span>
-                      </div>
                     </div>
                   );
                 })}
@@ -567,41 +554,41 @@ function KpiDetailModal({
             const grand = withBal.reduce((s, p) => s + Math.max(0, balanceDue(p.budget, p.payments)), 0);
             return (
               <>
-                <table className="w-full text-[12px]">
-                  <thead>
-                    <tr className="border-b border-[#E6DDCB]">
-                      <th className={`${TH} text-left`}>{col("Project", "Proyecto")}</th>
-                      <th className={`${TH} text-right`}>{col("Budget", "Presupuesto")}</th>
-                      <th className={`${TH} text-right`}>{col("Collected", "Cobrado")}</th>
-                      <th className={`${TH} text-right`}>{col("Balance", "Saldo")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {withBal.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-[#5C6A6E]">
-                          {col("All projects fully paid.", "Todos los proyectos están saldados.")}
-                        </td>
-                      </tr>
-                    )}
-                    {withBal.map(p => {
-                      const inc = totalIncome(p.payments);
-                      const bal = balanceDue(p.budget, p.payments);
-                      const pct = Math.round((inc / p.budget) * 100);
-                      return (
-                        <tr key={p.id} className={ROW}>
-                          <td className="py-2">
-                            <div className="max-w-[160px] truncate font-semibold text-[#16323D]">{p.title.split(" — ")[0]}</div>
-                            <div className="text-[10px] text-[#5C6A6E]">{p.client} · {pct}% {col("paid", "cobrado")}</div>
-                          </td>
-                          <td className="py-2 font-mono text-right text-[#16323D]">{money(p.budget)}</td>
-                          <td className="py-2 font-mono text-right text-[#4F8A63]">{money(inc)}</td>
-                          <td className="py-2 font-mono text-right font-bold text-[#B0492F]">{money(bal)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <div className="space-y-2.5">
+                  {withBal.length === 0 && (
+                    <p className="py-8 text-center text-[12px] text-[#5C6A6E]">
+                      {col("All projects fully paid.", "Todos los proyectos están saldados.")}
+                    </p>
+                  )}
+                  {withBal.map(p => {
+                    const inc = totalIncome(p.payments);
+                    const bal = balanceDue(p.budget, p.payments);
+                    const pct = Math.round((inc / p.budget) * 100);
+                    return (
+                      <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                        <ProjectBand p={p} right={
+                          <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] font-bold text-[#F5E9DA]">
+                            {pct}% {col("paid", "cobrado")}
+                          </span>
+                        } />
+                        <div className="grid grid-cols-3 bg-white px-3 py-2 text-right">
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-wide text-[#97A1A0]">{col("Budget", "Presupuesto")}</div>
+                            <div className="font-mono text-[12px] font-semibold text-[#16323D]">{money(p.budget)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-wide text-[#97A1A0]">{col("Collected", "Cobrado")}</div>
+                            <div className="font-mono text-[12px] font-semibold text-[#4F8A63]">{money(inc)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-wide text-[#97A1A0]">{col("Balance", "Saldo")}</div>
+                            <div className="font-mono text-[12px] font-bold text-[#B0492F]">{money(bal)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
                 {withBal.length > 0 && (
                   <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[#16323D]">
                     <span>{col("Total Outstanding", "Total Pendiente")}</span>
@@ -634,36 +621,32 @@ function KpiDetailModal({
                     </div>
                   </div>
                 </div>
-                <table className="w-full text-[12px]">
-                  <thead>
-                    <tr className="border-b border-[#E6DDCB]">
-                      <th className={`${TH} text-left`}>{col("Project", "Proyecto")}</th>
-                      <th className={`${TH} text-right text-[#4F8A63]`}>IN</th>
-                      <th className={`${TH} text-right text-[#B0492F]`}>OUT</th>
-                      <th className={`${TH} text-right`}>NET</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projects.map(p => {
-                      const inc = totalIncome(p.payments);
-                      const exp = totalExpense(p.expenses);
-                      const n = inc - exp;
-                      return (
-                        <tr key={p.id} className={ROW}>
-                          <td className="py-2">
-                            <div className="max-w-[160px] truncate font-semibold text-[#16323D]">{p.title.split(" — ")[0]}</div>
-                            <div className="text-[10px] text-[#5C6A6E]">{p.client}</div>
-                          </td>
-                          <td className="py-2 font-mono text-right text-[#4F8A63]">{money(inc)}</td>
-                          <td className="py-2 font-mono text-right text-[#B0492F]">{money(exp)}</td>
-                          <td className={`py-2 font-mono text-right font-bold ${n >= 0 ? "text-[#4F8A63]" : "text-[#B0492F]"}`}>
+                <div className="space-y-2.5">
+                  {projects.map(p => {
+                    const inc = totalIncome(p.payments);
+                    const exp = totalExpense(p.expenses);
+                    const n = inc - exp;
+                    return (
+                      <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                        <ProjectBand p={p} right={
+                          <span className={`shrink-0 font-mono text-[13px] font-bold ${n >= 0 ? "text-[#9FD8B4]" : "text-[#F0A090]"}`}>
                             {n >= 0 ? "+" : ""}{money(n)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </span>
+                        } />
+                        <div className="grid grid-cols-2 bg-white px-3 py-2 text-right">
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-wide text-[#97A1A0]">IN</div>
+                            <div className="font-mono text-[12px] font-semibold text-[#4F8A63]">{money(inc)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-wide text-[#97A1A0]">OUT</div>
+                            <div className="font-mono text-[12px] font-semibold text-[#B0492F]">{money(exp)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </>
             );
           })()}
