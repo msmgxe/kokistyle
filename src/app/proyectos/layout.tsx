@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
 import VoiceFAB from "@/src/components/ui/VoiceFAB";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -28,7 +28,11 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   const { isAdmin, isSuperAdmin, logout, locked, unlockBiometric } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
+  const pathname = usePathname();
   const [unlockError, setUnlockError] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (!isAdmin) router.replace("/");
@@ -101,7 +105,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               </span>
             </Link>
 
-            <nav className="flex flex-1 gap-1 overflow-x-auto [scrollbar-width:none]">
+            <nav className="hidden flex-1 gap-1 overflow-x-auto [scrollbar-width:none] md:flex">
               <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
               <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
               <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
@@ -111,25 +115,98 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               <PanelTab href="/proyectos/help" label={t.panel.nav.help} />
             </nav>
 
-            <LangSwitch />
+            <div className="hidden md:block">
+              <LangSwitch />
+            </div>
 
             <button
               id="panel-logout-btn"
               onClick={logout}
-              className="inline-flex flex-none items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1]"
+              className="hidden flex-none items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1] md:inline-flex"
               aria-label={t.panel.nav.signOut}
             >
               <LogOut size={14} />
               {t.panel.nav.signOut}
             </button>
+
+            {/* Hamburguesa — solo móvil */}
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="ml-auto grid size-10 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#16323D] transition hover:bg-[#ECE3D1] md:hidden"
+              aria-label="Menu"
+            >
+              <Menu size={18} />
+            </button>
           </div>
         </nav>
+
+        {/* ── Drawer móvil ─────────────────────────────────────────────────── */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-[400] md:hidden" onClick={() => setMenuOpen(false)}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div
+              className="absolute right-0 top-0 flex h-full w-72 flex-col bg-[#F7F3EB] shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between bg-[#16323D] px-4 py-4">
+                <span className="flex items-center gap-2.5">
+                  <span className="grid size-9 place-items-center rounded-lg bg-[#F5E9DA] text-xs font-bold text-[#16323D]">
+                    {branding.initials}
+                  </span>
+                  <span className="text-sm font-bold text-white">{branding.companyShort}</span>
+                </span>
+                <button onClick={() => setMenuOpen(false)} className="text-white/60 hover:text-white" aria-label="Close menu">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+                <MobileTab href="/proyectos" label={t.panel.nav.dashboard} />
+                <MobileTab href="/proyectos/plan" label={t.panel.nav.plan} />
+                <MobileTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
+                {isSuperAdmin && <MobileTab href="/proyectos/agenda" label={t.panel.nav.agenda} />}
+                {isSuperAdmin && <MobileTab href="/proyectos/activity" label={t.panel.nav.activity} />}
+                {isSuperAdmin && <MobileTab href="/proyectos/reservas" label={t.panel.nav.bookings} />}
+                <MobileTab href="/proyectos/help" label={t.panel.nav.help} />
+              </nav>
+
+              <div className="space-y-3 border-t border-[#E6DDCB] p-4">
+                <LangSwitch />
+                <button
+                  onClick={logout}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1]"
+                >
+                  <LogOut size={14} />
+                  {t.panel.nav.signOut}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <main className="mx-auto max-w-[1180px] px-6 pb-28 pt-7">{children}</main>
 
         <VoiceFAB />
       </div>
     </VoiceProvider>
+  );
+}
+
+function MobileTab({ href, label }: { href: string; label: string }) {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+
+  return (
+    <Link
+      href={href}
+      className={`block rounded-xl px-4 py-3 text-sm font-bold transition ${
+        isActive
+          ? "bg-[#395886] text-white shadow-sm"
+          : "text-[#16323D] hover:bg-[#F0F3FA] hover:text-[#395886]"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }
 
