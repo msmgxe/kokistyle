@@ -1,0 +1,374 @@
+<title>Co-workers — Prototipo 3 opciones</title>
+<style>
+  :root{
+    --teal:#16323D; --cream:#F5E9DA; --card:#FFFFFF; --card2:#F7F3EA; --band:#F2EFE7;
+    --border:#E6DDCB; --ink:#16323D; --soft:#5C6A6E; --green:#4F8A63; --red:#B0492F;
+    --navy:#395886; --burgundy:#7B1838; --gold:#C9A227;
+    --shadow:0 2px 10px rgba(22,50,61,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --cream:#0E1F26; --card:#152E38; --card2:#112731; --band:#112731; --border:#274753;
+      --ink:#EDE6D8; --soft:#9FB2B8; --shadow:0 2px 10px rgba(0,0,0,.35); }
+  }
+  :root[data-theme="light"]{ --cream:#F5E9DA; --card:#FFFFFF; --card2:#F7F3EA; --band:#F2EFE7;
+    --border:#E6DDCB; --ink:#16323D; --soft:#5C6A6E; --shadow:0 2px 10px rgba(22,50,61,.08); }
+  :root[data-theme="dark"]{ --cream:#0E1F26; --card:#152E38; --card2:#112731; --band:#112731;
+    --border:#274753; --ink:#EDE6D8; --soft:#9FB2B8; --shadow:0 2px 10px rgba(0,0,0,.35); }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+  .bookman{font-family:"Bookman Old Style","Book Antiqua",Palatino,Georgia,serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px 60px}
+  header.hero{background:var(--teal);color:#fff;padding:26px 20px 0}
+  .hero-inner{max-width:1200px;margin:0 auto}
+  .hero-top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{width:44px;height:44px;border-radius:12px;background:#F5E9DA;color:#16323D;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .brand h1{font-size:22px;margin:0;font-weight:400}
+  .brand small{display:block;font-size:11px;opacity:.7;letter-spacing:1.5px;text-transform:uppercase}
+  .proto-badge{font-size:11px;letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(245,233,218,.4);
+    border-radius:999px;padding:5px 14px;color:#F5E9DA}
+  .opt-tabs{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}
+  .opt-tab{border:1px solid rgba(245,233,218,.25);background:transparent;color:#F5E9DA;border-radius:12px 12px 0 0;
+    padding:12px 18px 14px;cursor:pointer;font:inherit;font-size:13.5px;text-align:left;min-width:220px;flex:1}
+  .opt-tab b{display:block;font-size:14.5px;margin-bottom:2px}
+  .opt-tab span{opacity:.7;font-size:12px}
+  .opt-tab.active{background:var(--cream);color:var(--ink);border-color:var(--cream)}
+  .opt-tab.active span{color:var(--soft);opacity:.9}
+  .opt-banner{background:var(--band);border:1px solid var(--border);border-top:none;border-radius:0 0 14px 14px;
+    padding:13px 20px;font-size:13px;color:var(--soft);margin-bottom:24px}
+  .opt-banner b{color:var(--ink)}
+
+  .avatar{border-radius:10px;background:var(--teal);color:#F5E9DA;font-weight:800;display:flex;
+    align-items:center;justify-content:center;flex:none}
+  .chipP{font-size:9.5px;font-weight:700;border:1px solid var(--border);border-radius:999px;
+    padding:2px 8px;background:var(--card2);color:var(--soft);text-transform:uppercase;letter-spacing:.3px}
+  .chipP.hl{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .money{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+  /* A — tablero */
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;align-items:start}
+  .colS{background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .colS-head{background:var(--teal);color:#F5E9DA;padding:9px 13px;display:flex;justify-content:space-between;
+    align-items:center;font-size:12px;font-weight:800;letter-spacing:.5px}
+  .colS-head .n{background:rgba(255,255,255,.15);border-radius:999px;padding:1px 8px;font-size:10px}
+  .colS-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+  .cw{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;box-shadow:var(--shadow)}
+  .cw-top{display:flex;gap:9px;align-items:center}
+  .cw b{font-size:12.5px;display:block}
+  .cw small{font-size:10.5px;color:var(--soft)}
+  .load{height:5px;border-radius:99px;background:var(--band);margin-top:8px;overflow:hidden}
+  .load i{display:block;height:100%;border-radius:99px;background:var(--green)}
+  .cw-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .toolbar select,.toolbar input{padding:8px 11px;border:1px solid var(--border);border-radius:10px;
+    font:inherit;font-size:12.5px;background:var(--card);color:var(--ink)}
+  .toolbar label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--soft)}
+
+  /* B — matriz */
+  .mx-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+  table.mx{border-collapse:separate;border-spacing:0;min-width:900px;width:100%;font-size:11.5px}
+  .mx th{background:var(--teal);color:#F5E9DA;padding:8px 10px;font-size:10px;letter-spacing:.5px;
+    text-transform:uppercase;position:sticky;top:0}
+  .mx th:first-child{text-align:left;min-width:190px}
+  .mx td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:center}
+  .mx td.name{text-align:left;background:var(--band)}
+  .mx tr.spec td{background:var(--card2);font-weight:800;font-size:10px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--soft);text-align:left;padding:7px 10px}
+  .cell{width:64px;height:30px;margin:0 auto;border-radius:8px;border:1.5px dashed var(--border);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--soft);
+    background:transparent;transition:all .12s}
+  .cell:hover{border-color:var(--navy)}
+  .cell.on{border:1.5px solid var(--green);background:color-mix(in srgb,var(--green) 12%, var(--card));}
+  .cell.on input{width:56px;border:none;background:transparent;text-align:center;font:inherit;
+    font-family:ui-monospace,monospace;font-size:11px;font-weight:700;color:var(--ink);outline:none}
+  .mx .tot{font-weight:800}
+  .mx tfoot td{background:var(--band);font-weight:800;border-top:2px solid var(--border)}
+
+  /* C — roster */
+  .split{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+  @media(max-width:860px){.split{grid-template-columns:1fr}}
+  .roster{display:flex;flex-direction:column;gap:8px}
+  .r-item{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);
+    border-radius:12px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
+  .r-item.sel{border-color:var(--navy);box-shadow:0 0 0 1.5px var(--navy)}
+  .r-item .bar{height:4px;border-radius:99px;background:var(--band);margin-top:5px;overflow:hidden}
+  .r-item .bar i{display:block;height:100%;background:var(--navy)}
+  .detail{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .d-head{background:var(--teal);color:#fff;padding:14px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .d-head .spacer{flex:1}
+  .d-head input{padding:6px 9px;border-radius:8px;border:none;font:inherit;font-size:12px}
+  .d-kpis{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);background:var(--band)}
+  .d-kpi{padding:12px 16px;border-right:1px solid var(--border)}
+  .d-kpi:last-child{border-right:none}
+  .d-kpi b{font-size:19px}
+  .d-kpi span{display:block;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--soft)}
+  .d-rows{padding:6px 0}
+  .d-row{display:flex;align-items:center;gap:10px;padding:9px 18px;border-bottom:1px solid var(--band);font-size:12px}
+  .d-row:last-child{border-bottom:none}
+  .d-row .pr{flex:1;font-weight:700}
+  .d-row .dates{color:var(--soft);font-size:11px}
+  .part{width:110px;height:6px;border-radius:99px;background:var(--band);overflow:hidden}
+  .part i{display:block;height:100%;background:var(--green)}
+  .btn{border:none;border-radius:10px;padding:8px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .btn-cream{background:#F5E9DA;color:#16323D}
+  .note{margin-top:16px;background:var(--band);border:1px solid var(--border);border-left:4px solid var(--gold);
+    border-radius:12px;padding:12px 15px;font-size:12.5px;color:var(--soft)}
+  .note b{color:var(--ink)}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--teal);
+    color:#F5E9DA;padding:10px 18px;border-radius:12px;font-size:13px;transition:transform .25s;z-index:99}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  @media (prefers-reduced-motion: reduce){#toast{transition:none}}
+</style>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-top">
+      <div class="brand">
+        <div class="logo">LD</div>
+        <div><small>Luxaris Design · Equipo</small><h1 class="bookman">Co-workers por Especialidad</h1></div>
+      </div>
+      <span class="proto-badge">Prototipo · 3 opciones</span>
+    </div>
+    <div class="opt-tabs" role="tablist">
+      <button class="opt-tab active" id="tA" onclick="setOpt('A')"><b>A · Tablero por especialidad</b><span>Columnas tipo kanban — visión de cuadrilla</span></button>
+      <button class="opt-tab" id="tB" onclick="setOpt('B')"><b>B · Matriz de asignación</b><span>Grilla coworker × proyecto con montos — base de reportes</span></button>
+      <button class="opt-tab" id="tC" onclick="setOpt('C')"><b>C · Roster + Reportes</b><span>Perfil con participación, fechas, montos y export</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="opt-banner" id="banner"></div>
+
+  <!-- ═══ A: TABLERO ═══ -->
+  <div id="viewA">
+    <div class="toolbar">
+      <label>Resaltar proyecto:</label>
+      <select id="hlProject" onchange="renderA()"><option value="">— Ninguno —</option></select>
+      <label style="margin-left:12px">Capacidad = nº de proyectos activos (máx 5)</label>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="note"><b>Cómo se usa:</b> cada columna es una especialidad; cada tarjeta un co-worker con su tarifa,
+    proyectos asignados y barra de carga. Resaltar un proyecto ilumina quién participa en él — ideal para armar cuadrillas rápido.</div>
+  </div>
+
+  <!-- ═══ B: MATRIZ ═══ -->
+  <div id="viewB" style="display:none">
+    <div class="mx-wrap"><table class="mx" id="matrix"></table></div>
+    <div class="note"><b>Cómo se usa:</b> haz clic en una celda vacía para asignar el co-worker al proyecto (crea el registro con monto editable);
+    clic en la ✕ para quitar. Los totales por fila (carga por persona) y por columna (costo de equipo por proyecto) se recalculan al instante.
+    <b>Esta grilla es exactamente la estructura de datos que alimentará los reportes</b> (participación, montos, fechas).</div>
+  </div>
+
+  <!-- ═══ C: ROSTER ═══ -->
+  <div id="viewC" style="display:none">
+    <div class="split">
+      <div class="roster" id="roster"></div>
+      <div class="detail" id="detail"></div>
+    </div>
+    <div class="note"><b>Cómo se usa:</b> selecciona un co-worker; el panel muestra sus KPIs, proyectos con fechas y montos,
+    y su % de participación sobre el total del equipo. El rango de fechas filtra (base de los reportes por período) y
+    <b>Export CSV</b> descarga los datos listos para Excel.</div>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ── Datos demo ─────────────────────────────────────────────── */
+const SPECIALTIES = ["Finisher","Bathroom","Painting","Electrical","Plumbing","Handyman"];
+const CW = [
+  {id:1,name:"Carlos Méndez",spec:"Finisher",rate:"$85/hr"},
+  {id:2,name:"Diego Rojas",spec:"Bathroom",rate:"$4.50/sqft"},
+  {id:3,name:"Frank Delgado",spec:"Painting",rate:"$95/día"},
+  {id:4,name:"Luis Herrera",spec:"Electrical",rate:"$70/hr"},
+  {id:5,name:"Mario Peña",spec:"Plumbing",rate:"$75/hr"},
+  {id:6,name:"José Vargas",spec:"Handyman",rate:"$45/hr"},
+  {id:7,name:"Ana Torres",spec:"Painting",rate:"$80/día"},
+  {id:8,name:"Pedro Silva",spec:"Finisher",rate:"$90/hr"},
+];
+const PR = [
+  {id:"p1",name:"MASTER BATHROOM"},
+  {id:"p2",name:"HOUSE REMODELING · Simon"},
+  {id:"p3",name:"JACUZZI – SUNNY ISLAND"},
+  {id:"p4",name:"WALL UNIT/DESK"},
+  {id:"p5",name:"KRIS OFFICE"},
+  {id:"p6",name:"OFFICE – DESK"},
+];
+let ASG = [
+  {cw:1,pr:"p1",amt:1800,from:"2026-07-01",to:"2026-07-15"},
+  {cw:1,pr:"p4",amt:2400,from:"2026-06-20",to:"2026-07-10"},
+  {cw:2,pr:"p1",amt:3200,from:"2026-07-03",to:"2026-07-25"},
+  {cw:3,pr:"p2",amt:1500,from:"2026-06-15",to:"2026-07-05"},
+  {cw:3,pr:"p5",amt:950,from:"2026-07-08",to:"2026-07-20"},
+  {cw:4,pr:"p3",amt:2100,from:"2026-07-10",to:"2026-08-01"},
+  {cw:5,pr:"p1",amt:1400,from:"2026-07-05",to:"2026-07-18"},
+  {cw:6,pr:"p6",amt:700,from:"2026-07-12",to:"2026-07-16"},
+  {cw:7,pr:"p2",amt:1200,from:"2026-06-25",to:"2026-07-08"},
+  {cw:8,pr:"p4",amt:2000,from:"2026-07-01",to:"2026-07-22"},
+];
+
+const money = n => "$" + Math.round(n).toLocaleString("en-US");
+const initials = s => s.split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+const asgOf = id => ASG.filter(a=>a.cw===id);
+let toastT; const toast = m => { const t=document.getElementById("toast"); t.textContent=m;
+  t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); };
+
+const BANNERS = {
+  A:"<b>Opción A — Tablero por especialidad.</b> Vista operativa: quién es de qué oficio, en qué anda y cuánta carga tiene. Perfecta como página principal del equipo.",
+  B:"<b>Opción B — Matriz de asignación.</b> Vista de gestión: una grilla coworker × proyecto con montos asignados y totales vivos. Es la estructura que alimenta los reportes futuros (participación, montos por proyecto/persona/fecha).",
+  C:"<b>Opción C — Roster + panel de reportes.</b> Vista analítica: perfil por co-worker con KPIs, fechas, % de participación y export a CSV. Es el embrión de la página de reportes.",
+};
+function setOpt(o){
+  for(const k of ["A","B","C"]){
+    document.getElementById("t"+k).classList.toggle("active",k===o);
+    document.getElementById("view"+k).style.display = k===o ? "" : "none";
+  }
+  document.getElementById("banner").innerHTML = BANNERS[o];
+  if(o==="A")renderA(); if(o==="B")renderB(); if(o==="C")renderC();
+}
+
+/* ── A: tablero ── */
+function renderA(){
+  const hl = document.getElementById("hlProject").value;
+  const sel = document.getElementById("hlProject");
+  if(sel.options.length===1) PR.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.name;sel.appendChild(o)});
+  const board = document.getElementById("board"); board.innerHTML="";
+  for(const spec of SPECIALTIES){
+    const people = CW.filter(c=>c.spec===spec);
+    const col = document.createElement("div"); col.className="colS";
+    col.innerHTML = `<div class="colS-head"><span>${spec}</span><span class="n">${people.length}</span></div>`;
+    const body = document.createElement("div"); body.className="colS-body";
+    for(const c of people){
+      const mine = asgOf(c.id);
+      const load = Math.min(100, mine.length/5*100);
+      const chips = mine.map(a=>{
+        const p = PR.find(x=>x.id===a.pr);
+        return `<span class="chipP ${hl===a.pr?"hl":""}">${p.name.split("·")[0].trim()}</span>`;
+      }).join("");
+      const dim = hl && !mine.some(a=>a.pr===hl);
+      body.insertAdjacentHTML("beforeend", `
+        <div class="cw" style="${dim?"opacity:.35":""}">
+          <div class="cw-top">
+            <div class="avatar" style="width:34px;height:34px;font-size:12px">${initials(c.name)}</div>
+            <div><b>${c.name}</b><small>${c.spec} · ${c.rate}</small></div>
+          </div>
+          <div class="load"><i style="width:${load}%"></i></div>
+          <div class="cw-chips">${chips || '<span class="chipP">sin proyectos</span>'}</div>
+        </div>`);
+    }
+    col.appendChild(body); board.appendChild(col);
+  }
+}
+
+/* ── B: matriz ── */
+function renderB(){
+  const t = document.getElementById("matrix");
+  let html = "<thead><tr><th>Co-worker</th>" +
+    PR.map(p=>`<th>${p.name.split("·")[0].trim()}</th>`).join("") +
+    "<th>Total</th></tr></thead><tbody>";
+  for(const spec of SPECIALTIES){
+    const people = CW.filter(c=>c.spec===spec);
+    if(!people.length) continue;
+    html += `<tr class="spec"><td colspan="${PR.length+2}">${spec}</td></tr>`;
+    for(const c of people){
+      const rowTotal = asgOf(c.id).reduce((s,a)=>s+a.amt,0);
+      html += `<tr><td class="name"><div style="display:flex;gap:8px;align-items:center">
+        <div class="avatar" style="width:26px;height:26px;font-size:10px;border-radius:7px">${initials(c.name)}</div>
+        <div><b style="font-size:11.5px">${c.name}</b><br><span style="font-size:9.5px;color:var(--soft)">${c.rate}</span></div></div></td>`;
+      for(const p of PR){
+        const a = ASG.find(x=>x.cw===c.id && x.pr===p.id);
+        html += `<td>${ a
+          ? `<div class="cell on" title="Clic en ✕ para quitar">
+               <input value="${a.amt}" onchange="setAmt(${c.id},'${p.id}',this.value)" onclick="event.stopPropagation()">
+               <span style="cursor:pointer;color:var(--red);font-weight:800" onclick="unassign(${c.id},'${p.id}')">✕</span>
+             </div>`
+          : `<div class="cell" onclick="assign(${c.id},'${p.id}')">+</div>` }</td>`;
+      }
+      html += `<td class="tot money">${money(rowTotal)}</td></tr>`;
+    }
+  }
+  html += "</tbody><tfoot><tr><td>Total por proyecto</td>" +
+    PR.map(p=>{const s=ASG.filter(a=>a.pr===p.id).reduce((x,a)=>x+a.amt,0);
+      return `<td class="money">${money(s)}</td>`}).join("") +
+    `<td class="money">${money(ASG.reduce((s,a)=>s+a.amt,0))}</td></tr></tfoot>`;
+  t.innerHTML = html;
+}
+function assign(cw,pr){ ASG.push({cw,pr,amt:500,from:"2026-07-10",to:"2026-07-24"}); renderB();
+  toast("Asignado — edita el monto directamente en la celda"); }
+function unassign(cw,pr){ ASG = ASG.filter(a=>!(a.cw===cw&&a.pr===pr)); renderB(); toast("Asignación eliminada"); }
+function setAmt(cw,pr,v){ const a=ASG.find(x=>x.cw===cw&&x.pr===pr); if(a) a.amt = parseFloat(v)||0; renderB(); }
+
+/* ── C: roster ── */
+let selCw = 1, dFrom = "2026-06-01", dTo = "2026-08-31";
+function renderC(){
+  const grand = ASG.reduce((s,a)=>s+a.amt,0);
+  const roster = document.getElementById("roster"); roster.innerHTML="";
+  for(const c of CW){
+    const tot = asgOf(c.id).reduce((s,a)=>s+a.amt,0);
+    const pct = grand ? Math.round(tot/grand*100) : 0;
+    roster.insertAdjacentHTML("beforeend", `
+      <div class="r-item ${selCw===c.id?"sel":""}" onclick="selCw=${c.id};renderC()">
+        <div class="avatar" style="width:36px;height:36px;font-size:12px">${initials(c.name)}</div>
+        <div style="flex:1;min-width:0">
+          <b style="font-size:12.5px">${c.name}</b>
+          <small style="display:block;font-size:10.5px;color:var(--soft)">${c.spec} · ${c.rate}</small>
+          <div class="bar"><i style="width:${pct}%"></i></div>
+        </div>
+        <div style="text-align:right">
+          <b class="money" style="font-size:12px">${money(tot)}</b>
+          <small style="display:block;font-size:10px;color:var(--soft)">${pct}% del equipo</small>
+        </div>
+      </div>`);
+  }
+  const c = CW.find(x=>x.id===selCw);
+  const mine = asgOf(c.id).filter(a=> a.to>=dFrom && a.from<=dTo);
+  const tot = mine.reduce((s,a)=>s+a.amt,0);
+  const pct = grand ? Math.round(tot/grand*100) : 0;
+  document.getElementById("detail").innerHTML = `
+    <div class="d-head">
+      <div class="avatar" style="width:42px;height:42px;font-size:14px;background:#F5E9DA;color:#16323D">${initials(c.name)}</div>
+      <div><b style="font-size:15px" class="bookman">${c.name}</b>
+        <span style="display:block;font-size:11px;opacity:.7">${c.spec} · ${c.rate}</span></div>
+      <div class="spacer"></div>
+      <input type="date" value="${dFrom}" onchange="dFrom=this.value;renderC()">
+      <input type="date" value="${dTo}" onchange="dTo=this.value;renderC()">
+      <button class="btn btn-cream" onclick="exportCsv()">⬇ Export CSV</button>
+    </div>
+    <div class="d-kpis">
+      <div class="d-kpi"><b>${mine.length}</b><span>Proyectos en el período</span></div>
+      <div class="d-kpi"><b class="money">${money(tot)}</b><span>Monto asignado</span></div>
+      <div class="d-kpi"><b>${pct}%</b><span>Participación del equipo</span></div>
+    </div>
+    <div class="d-rows">
+      ${ mine.length ? mine.map(a=>{
+        const p = PR.find(x=>x.id===a.pr);
+        const w = tot ? Math.round(a.amt/tot*100) : 0;
+        return `<div class="d-row">
+          <span class="pr">${p.name}</span>
+          <span class="dates">${a.from} → ${a.to}</span>
+          <span class="part"><i style="width:${w}%"></i></span>
+          <b class="money" style="width:70px;text-align:right">${money(a.amt)}</b>
+        </div>`;
+      }).join("") : '<div class="d-row" style="color:var(--soft);font-style:italic">Sin asignaciones en el rango de fechas.</div>' }
+    </div>`;
+}
+function exportCsv(){
+  const c = CW.find(x=>x.id===selCw);
+  const rows = [["Coworker","Especialidad","Proyecto","Desde","Hasta","Monto"]];
+  asgOf(c.id).filter(a=>a.to>=dFrom&&a.from<=dTo).forEach(a=>{
+    const p=PR.find(x=>x.id===a.pr);
+    rows.push([c.name,c.spec,p.name,a.from,a.to,a.amt]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = `reporte-${c.name.replace(/\s+/g,"-").toLowerCase()}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast("CSV descargado — ábrelo en Excel/Sheets");
+}
+
+setOpt("A");
+</script>
