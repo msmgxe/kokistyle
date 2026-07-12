@@ -382,3 +382,25 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 );
 ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON push_subscriptions FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- ── Prospects (leads del AI Design gratuito de la landing) ───────────────────
+-- SIN política anon: datos de contacto privados. Se crean/leen SOLO vía service_role
+-- en API routes (/api/prospects, /api/design-render). El límite de renders por
+-- prospecto (renders_used) controla el abuso del endpoint de render de pago.
+CREATE TABLE IF NOT EXISTS prospects (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name            TEXT NOT NULL,
+  email           TEXT NOT NULL,
+  phone           TEXT NOT NULL,
+  room_type       TEXT,
+  style           TEXT,
+  renders_used    INT  NOT NULL DEFAULT 0,
+  last_render_url TEXT,
+  status          TEXT NOT NULL DEFAULT 'new',   -- 'new' | 'contacted' | 'converted' | 'discarded'
+  notes           TEXT,
+  source          TEXT NOT NULL DEFAULT 'ai_design',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_used_at    TIMESTAMPTZ
+);
+ALTER TABLE prospects ENABLE ROW LEVEL SECURITY;
+-- (sin CREATE POLICY: acceso denegado a anon, permitido solo a service_role)

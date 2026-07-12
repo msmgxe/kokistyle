@@ -41,7 +41,7 @@ final; son cambios de backend + políticas SQL.
 |---|---|---|---|
 | **C1** | Login de colaboradores consulta `app_users` **desde el navegador** con la anon key comparando `pin` en texto plano. Implica que `app_users` es legible por cualquiera → se puede volcar la tabla con los PINs. | `AuthContext.tsx` (login colaborador), `UsersPanel.tsx` (PIN plaintext) | Robo de credenciales de todo el equipo |
 | **C2** | Tablas de negocio sin RLS habilitada: `projects, contacts, tasks, materials, payments, expenses, project_notes, budget_items…` | `schema.sql` bloques 1–10 | Cualquier visitante lee/edita/borra finanzas, PII de clientes y **costos/ganancia internos** |
-| **C3** | `/api/design-render` sin autenticación | `api/design-render/route.ts` | Abuso de facturación de Replicate (renders ilimitados) |
+| **C3** | ~~`/api/design-render` sin autenticación~~ **MITIGADO (jul 2026)** | `api/design-render/route.ts` | El endpoint ahora exige un **prospecto válido** con límite `FREE_RENDER_LIMIT` (default 3), o credencial de superadmin para uso interno. Ya no es invocable de forma anónima ilimitada. Pendiente reforzar con rate-limit por IP en Fase 1. |
 | **C4** | `/api/estimate/send-email` es un **relay de correo abierto** — cualquiera envía correos desde tu cuenta Yahoo con `to`/`asunto`/`cuerpo`/PDF arbitrarios | `api/estimate/send-email/route.ts` | Spam/abuso desde tu dominio, sin límite de tamaño del PDF |
 | **C5** | `/api/voice` sin autenticación | `api/voice/route.ts` | Abuso de facturación del modelo Claude |
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/src/lib/supabase";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useAuth } from "@/src/context/AuthContext";
 import type { Project } from "@/src/types/project";
 
 const ROOMS = [
@@ -45,6 +46,7 @@ interface Props {
 
 export default function DesignTab({ project, toast }: Props) {
   const { language } = useLanguage();
+  const { currentUser } = useAuth();
   const isEN = language === "en";
 
   const [photos, setPhotos]         = useState<{ url: string; path: string }[]>([]);
@@ -181,6 +183,8 @@ export default function DesignTab({ project, toast }: Props) {
           roomType: room,
           style,
           strength,
+          adminPin:   currentUser?.pin || undefined,
+          adminToken: typeof window !== "undefined" ? (localStorage.getItem("kokistyle-device-token") || undefined) : undefined,
         }),
       });
       let data: Record<string, unknown>;

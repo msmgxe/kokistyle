@@ -1001,6 +1001,39 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
+      id: "prospects", icon: "🎯",
+      title: EN ? "Prospects (AI Design leads)" : "Prospectos (leads del Diseño IA)",
+      desc:  EN ? "The free AI Design tool on the public site captures every visitor who tries it as a prospect — with name, email and phone — so you can follow up and win the project."
+                : "La herramienta gratuita de Diseño IA del sitio público captura como prospecto a cada visitante que la usa — con nombre, correo y teléfono — para que puedas contactarlo y ganar el proyecto.",
+      mockup: null,
+      steps: EN ? [
+        { t:"How leads are captured", d:"On the landing, the <b>AI Design</b> section lets a visitor reimagine their space for free. Before generating, they must enter <b>name, email and phone</b> — that becomes a prospect. This also limits abuse: each person gets a few free renders (set by <code>FREE_RENDER_LIMIT</code>)." },
+        { t:"Open the Prospects tab", d:"Click <b>Prospects</b> in the top navigation (superadmin only). You'll see every lead newest-first, with 3 KPI cards: Total, New and Converted." },
+        { t:"Contact in one tap", d:"Each card has <b>Call</b>, <b>Email</b> and <b>WhatsApp</b> buttons wired to the lead's number/email — reach out while they're still warm." },
+        { t:"Track the pipeline", d:"Set each lead's status with the dropdown: <b>New → Contacted → Converted</b> (or Discarded). Use the filter pills and the search box to focus." },
+        { t:"Add private notes", d:"Type a note in each card (e.g. \"wants a kitchen quote, call Friday\") and tap <b>Save note</b>. Notes are internal only." },
+        { t:"See what they designed", d:"If the lead generated a render, <b>View last render</b> opens the AI image they made — great context before you call." },
+      ] : [
+        { t:"Cómo se capturan los leads", d:"En la landing, la sección <b>Diseño IA</b> deja al visitante reimaginar su espacio gratis. Antes de generar, debe ingresar <b>nombre, correo y teléfono</b> — eso se vuelve un prospecto. También limita el abuso: cada persona recibe unos pocos renders gratis (definido por <code>FREE_RENDER_LIMIT</code>)." },
+        { t:"Abrir el tab Prospectos", d:"Clic en <b>Prospectos</b> en la navegación superior (solo superadmin). Verás cada lead del más reciente al más antiguo, con 3 tarjetas KPI: Total, Nuevos y Convertidos." },
+        { t:"Contactar en un toque", d:"Cada tarjeta tiene botones <b>Llamar</b>, <b>Correo</b> y <b>WhatsApp</b> conectados al número/correo del lead — contáctalo mientras está interesado." },
+        { t:"Seguir el pipeline", d:"Define el estado de cada lead con el selector: <b>Nuevo → Contactado → Convertido</b> (o Descartado). Usa los filtros y el buscador para enfocarte." },
+        { t:"Agregar notas privadas", d:"Escribe una nota en cada tarjeta (ej: \"quiere cotización de cocina, llamar el viernes\") y toca <b>Guardar nota</b>. Las notas son solo internas." },
+        { t:"Ver lo que diseñaron", d:"Si el lead generó un render, <b>Ver último render</b> abre la imagen IA que creó — excelente contexto antes de llamar." },
+      ],
+      tips: EN ? [
+        "🎯 The AI tool is a <b>lead magnet</b>: free for the visitor, but every use leaves you a contact you can call — turning curiosity into projects.",
+        "🔒 Prospect contact data is <b>private</b> — the table has no public access; only the superadmin reads it through a secured server route.",
+        "🛡️ The free render is <b>rate-limited per person</b> (name/email/phone gate + render cap) so it can't be abused to burn your AI budget.",
+        "💬 <b>WhatsApp</b> is usually the fastest channel in South Florida — the button pre-opens the chat with the lead's number.",
+      ] : [
+        "🎯 La herramienta IA es un <b>imán de leads</b>: gratis para el visitante, pero cada uso te deja un contacto para llamar — convierte la curiosidad en proyectos.",
+        "🔒 Los datos de contacto de los prospectos son <b>privados</b> — la tabla no tiene acceso público; solo el superadmin los lee por una ruta de servidor protegida.",
+        "🛡️ El render gratis está <b>limitado por persona</b> (gate de nombre/correo/teléfono + tope de renders) para que no se abuse y gaste tu presupuesto de IA.",
+        "💬 <b>WhatsApp</b> suele ser el canal más rápido en el sur de Florida — el botón abre el chat con el número del lead.",
+      ],
+    },
+    {
       id: "agenda", icon: "🗓",
       title: EN ? "My Agenda" : "Mi Agenda",
       desc:  EN ? "Personal admin agenda: appointments, project tasks and meetings for new projects — with reminders you can repeat until the event and export to your phone's calendar."

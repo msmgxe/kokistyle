@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+
+// Renders gratuitos por prospecto (control de abuso del endpoint de pago)
+const FREE_RENDER_LIMIT = Number(process.env.FREE_RENDER_LIMIT ?? 3);
 
 // POST — creates prediction and returns immediately (works on all Vercel plans)
 // Client polls GET until status === "succeeded"
@@ -11,17 +15,49 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { imageUrl?: string; prompt?: string; roomType?: string; style?: string; strength?: number };
+  let body: { imageUrl?: string; prompt?: string; roomType?: string; style?: string; strength?: number; prospectId?: string; adminPin?: string; adminToken?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { imageUrl, prompt, roomType = "Living Room", style = "Modern", strength = 0.75 } = body;
+  const { imageUrl, prompt, roomType = "Living Room", style = "Modern", strength = 0.75, prospectId, adminPin, adminToken } = body;
 
   if (!imageUrl || !prompt) {
     return NextResponse.json({ error: "imageUrl and prompt required" }, { status: 400 });
+  }
+
+  const admin = getSupabaseAdmin();
+
+  // ── Gate anti-abuso (endurece C3) ──────────────────────────────────────────
+  // Dos vías: (a) superadmin interno (Design tab del panel) — sin límite;
+  //           (b) prospecto público válido bajo su FREE_RENDER_LIMIT.
+  let internal = false;
+  if (adminPin) {
+    const { data } = await admin.from("superadmin_config").select("pin").eq("id", true).maybeSingle();
+    if (data && String(adminPin) === String(data.pin)) internal = true;
+  }
+  if (!internal && adminToken) {
+    const { data } = await admin.from("device_tokens").select("user_id, revoked").eq("token", adminToken).maybeSingle();
+    if (data && data.user_id === "superadmin" && !data.revoked) internal = true;
+  }
+
+  if (!internal) {
+    if (!prospectId) {
+      return NextResponse.json({ error: "prospectId required" }, { status: 401 });
+    }
+    const { data: prospect } = await admin
+      .from("prospects").select("id, renders_used").eq("id", prospectId).maybeSingle();
+    if (!prospect) {
+      return NextResponse.json({ error: "invalid_prospect" }, { status: 403 });
+    }
+    if (prospect.renders_used >= FREE_RENDER_LIMIT) {
+      return NextResponse.json({ error: "limit_reached", limit: FREE_RENDER_LIMIT }, { status: 429 });
+    }
+    await admin.from("prospects")
+      .update({ renders_used: prospect.renders_used + 1, last_used_at: new Date().toISOString() })
+      .eq("id", prospectId);
   }
 
   const negativePrompt =

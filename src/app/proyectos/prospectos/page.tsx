@@ -1,0 +1,182 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Phone, Mail, MessageCircle, Trash2, ExternalLink, Search } from "lucide-react";
+import { useAuth } from "@/src/context/AuthContext";
+import { useLanguage } from "@/src/context/LanguageContext";
+import { initials } from "@/src/lib/utils";
+import type { Prospect, ProspectStatus } from "@/src/types/prospect";
+
+const STATUSES: ProspectStatus[] = ["new", "contacted", "converted", "discarded"];
+const STATUS_STYLE: Record<ProspectStatus, string> = {
+  new:       "bg-[#DCE8E9] text-[#4E7A82]",
+  contacted: "bg-[#EDE3CF] text-[#7A6230]",
+  converted: "bg-[#DCEBDD] text-[#4F8A63]",
+  discarded: "bg-[#F0E0DC] text-[#B0492F]",
+};
+
+export default function ProspectosPage() {
+  const { isSuperAdmin, currentUser } = useAuth();
+  const { t } = useLanguage();
+  const tp = t.panel.prospects;
+
+  const [rows, setRows]       = useState<Prospect[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState("");
+  const [filter, setFilter]   = useState<"all" | ProspectStatus>("all");
+  const [toast, setToast]     = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((m: string) => {
+    setToast(m);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2600);
+  }, []);
+
+  const creds = useCallback(() => ({
+    pin: currentUser?.pin || undefined,
+    token: typeof window !== "undefined" ? (localStorage.getItem("kokistyle-device-token") || undefined) : undefined,
+  }), [currentUser]);
+
+  const call = useCallback(async (body: Record<string, unknown>) => {
+    const res = await fetch("/api/prospects/admin", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...creds(), ...body }),
+    });
+    return res.json();
+  }, [creds]);
+
+  const load = useCallback(async () => {
+    const res = await call({ op: "list" });
+    if (res.ok) setRows(res.prospects);
+    setLoading(false);
+  }, [call]);
+
+  useEffect(() => { if (isSuperAdmin) load(); }, [isSuperAdmin, load]);
+
+  const setStatus = useCallback(async (id: string, status: ProspectStatus) => {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    await call({ op: "update", id, status });
+  }, [call]);
+
+  const saveNote = useCallback(async (id: string) => {
+    const notes = noteDraft[id] ?? "";
+    setRows(prev => prev.map(r => r.id === id ? { ...r, notes } : r));
+    await call({ op: "update", id, notes });
+    showToast(tp.saved);
+  }, [call, noteDraft, showToast, tp.saved]);
+
+  const remove = useCallback(async (id: string) => {
+    if (!window.confirm(tp.confirmDelete)) return;
+    setRows(prev => prev.filter(r => r.id !== id));
+    await call({ op: "delete", id });
+    showToast(tp.deleted);
+  }, [call, showToast, tp.confirmDelete, tp.deleted]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rows.filter(r =>
+      (filter === "all" || r.status === filter) &&
+      (!q || `${r.name} ${r.email} ${r.phone}`.toLowerCase().includes(q)));
+  }, [rows, search, filter]);
+
+  const kpi = useMemo(() => ({
+    total: rows.length,
+    nw: rows.filter(r => r.status === "new").length,
+    conv: rows.filter(r => r.status === "converted").length,
+  }), [rows]);
+
+  if (!isSuperAdmin) {
+    return <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm font-semibold text-[#5C6A6E]">{tp.onlyAdmin}</div>;
+  }
+
+  const statusLabel = (s: ProspectStatus) =>
+    s === "new" ? tp.statusNew : s === "contacted" ? tp.statusContacted : s === "converted" ? tp.statusConverted : tp.statusDiscarded;
+  const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, "")}`;
+
+  return (
+    <div>
+      <div className="mb-5">
+        <h1 className="font-bookman text-2xl text-[#16323D]">🎯 {tp.title}</h1>
+        <p className="text-sm text-[#5C6A6E]">{tp.subtitle}</p>
+      </div>
+
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        {[{ v: kpi.total, l: tp.kpiTotal }, { v: kpi.nw, l: tp.kpiNew }, { v: kpi.conv, l: tp.kpiConverted }].map(k => (
+          <div key={k.l} className="rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3">
+            <p className="text-2xl font-bold tabular-nums text-[#16323D]">{k.v}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{k.l}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#97A1A0]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tp.search}
+            className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-white pl-9 pr-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+        </div>
+        <div className="inline-flex rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+          {(["all", ...STATUSES] as const).map(s => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${filter === s ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+              {s === "all" ? tp.filterAll : statusLabel(s)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="h-40 animate-pulse rounded-2xl bg-[#F0EAE0]" />
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#5C6A6E]">{tp.empty}</div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(p => (
+            <div key={p.id} className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+              <div className="flex flex-wrap items-center gap-3 bg-[#F2EFE7] px-4 py-3">
+                <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#16323D] text-[12px] font-bold text-[#F5E9DA]">{initials(p.name)}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[14px] font-bold text-[#16323D]">{p.name}</div>
+                  <div className="truncate text-[11px] text-[#5C6A6E]">
+                    {p.email} · {p.phone}
+                    {(p.room_type || p.style) && <> · {tp.interestedIn}: {[p.style, p.room_type].filter(Boolean).join(" ")}</>}
+                    {" · "}{p.renders_used} {tp.renders}
+                  </div>
+                </div>
+                <select value={p.status} onChange={e => setStatus(p.id, e.target.value as ProspectStatus)}
+                  className={`shrink-0 cursor-pointer rounded-full border-0 px-2.5 py-1 text-[11px] font-bold ${STATUS_STYLE[p.status]}`}>
+                  {STATUSES.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                </select>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+                <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#16323D] px-3 py-1.5 text-[11px] font-bold text-[#16323D] hover:bg-[#F7F3EA]"><Phone size={12} /> {tp.call}</a>
+                <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] hover:bg-[#F7F3EA]"><Mail size={12} /> {tp.email}</a>
+                <a href={waLink(p.phone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-[#4F8A63] px-3 py-1.5 text-[11px] font-bold text-[#4F8A63] hover:bg-[#EEF6F0]"><MessageCircle size={12} /> {tp.whatsapp}</a>
+                {p.last_render_url && (
+                  <a href={p.last_render_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[11px] font-bold text-[#395886] hover:bg-[#EDF3FB]"><ExternalLink size={12} /> {tp.lastRender}</a>
+                )}
+                <button onClick={() => remove(p.id)} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[#B0492F] hover:bg-[#FFF0EE]"><Trash2 size={12} /> {tp.delete}</button>
+              </div>
+
+              <div className="flex items-center gap-2 border-t border-[#F2EFE7] px-4 py-2.5">
+                <input
+                  value={noteDraft[p.id] ?? p.notes ?? ""}
+                  onChange={e => setNoteDraft(d => ({ ...d, [p.id]: e.target.value }))}
+                  placeholder={tp.notesPh}
+                  className="h-9 flex-1 rounded-lg border border-[#E6DDCB] bg-[#FBF8F2] px-3 text-[12px] text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                <button onClick={() => saveNote(p.id)} className="rounded-lg bg-[#16323D] px-3 py-2 text-[11px] font-bold text-white hover:bg-[#0e2630]">{tp.saveNote}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[#16323D] px-5 py-3 text-sm font-semibold text-[#F5E9DA] shadow-xl">{toast}</div>
+      )}
+    </div>
+  );
+}

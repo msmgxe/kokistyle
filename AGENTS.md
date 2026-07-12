@@ -54,7 +54,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase → Settings → API → anon/public
 SUPABASE_SERVICE_ROLE_KEY=      # Supabase → Settings → API → service_role (SOLO server)
 RESEND_API_KEY=                 # resend.com → API Keys
 ANTHROPIC_API_KEY=              # console.anthropic.com → API Keys (asistente de voz)
-REPLICATE_API_TOKEN=            # replicate.com → Account → API Tokens (Design tab img2img)
+REPLICATE_API_TOKEN=            # replicate.com → Account → API Tokens (Design tab img2img + AI Design público)
+FREE_RENDER_LIMIT=             # renders gratis por prospecto en el AI Design de la landing (default 3)
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=   # npx web-push generate-vapid-keys (avisos push de Agenda)
 VAPID_PRIVATE_KEY=              # par privado de la anterior (SOLO server)
 CRON_SECRET=                    # secreto del cron /api/agenda/remind (Vercel lo envía como Bearer)
@@ -168,6 +169,7 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `agenda_events` | Agenda personal del admin (citas, tasks, reuniones con recordatorios) |
 | `device_tokens` | Tokens de acceso directo sin PIN — **sin política anon**, solo service_role |
 | `push_subscriptions` | Suscripciones Web Push por dispositivo (avisos de la Agenda) |
+| `prospects` | Leads del AI Design gratuito — datos de contacto + renders usados. **Sin política anon**, solo service_role |
 
 ### Tablas del módulo Estimate
 
@@ -361,14 +363,24 @@ Secciones activas (de arriba a abajo):
 | Hero | `Hero.tsx` | Headline principal + CTA |
 | Services | `Services.tsx` | Grid de servicios ofrecidos |
 | Before/After | `BeforeAfter.tsx` | Slider comparativo de fotos |
-| AI Design | `AiDesignPreview.tsx` | Showcase "Reimagina tu espacio" — slider antes/IA interactivo + CTA a reservas (`#ai-design`) |
+| AI Design | `AiDesignPreview.tsx` | Herramienta **gratuita** "Reimagina tu espacio" — gate de datos (nombre/correo/teléfono) → sube foto → render IA real (Replicate) → slider antes/después (`#ai-design`) |
 | Process | `Process.tsx` | Timeline de 5 pasos (Consulta → Diseño → Estimado → Construcción → Entrega) (`#process`) |
 | Tours | `VirtualTour.tsx` | Embed de tours virtuales 360° |
 | Testimonials | `Testimonials.tsx` | Reseñas de clientes con estrellas (`#reviews`) |
 | FAQ | `Faq.tsx` | Acordeón de preguntas frecuentes + CTA a reservas (`#faq`) |
 | Footer | `Footer.tsx` | Info de contacto + redes |
 
-> **Nota de seguridad:** la sección **AI Design** de la landing es un *showcase* (slider antes/IA con ejemplos + CTA a reservar consulta) — **no** invoca el endpoint de render real (`/api/design-render`), que es de pago y hoy no está autenticado (ver hallazgo C3 en `SECURITY_PLAN.md`). El render real sigue solo dentro del panel privado (Design tab).
+### AI Design gratuito + captura de prospectos (jul 2026)
+
+La sección **AI Design** de la landing es una **herramienta gratuita real** (tipo "prueba gratis" de ChatGPT) que a la vez **captura leads**:
+
+1. **Gate de datos:** el visitante ingresa nombre + correo + teléfono → `POST /api/prospects` (server-side, `supabase-admin`, valida formato, dedupe por email) crea/reutiliza un registro en `prospects` y devuelve `{ id, rendersUsed }`. El `id` se guarda en `localStorage` (`luxaris-prospect`) para no re-pedir datos.
+2. **Herramienta:** sube foto (a `kokistyle-files/design-leads/<prospectId>/`), elige cuarto + estilo → `POST /api/design-render` **con `prospectId`** → render real de Replicate → slider antes/después. El último render se persiste en `prospects.last_render_url`.
+3. **Control de abuso (endurece C3):** `/api/design-render` ahora **exige un `prospectId` válido** y aplica `FREE_RENDER_LIMIT` (default 3) leyendo/incrementando `renders_used` con el admin client — ya no es invocable de forma anónima ilimitada. Al agotar el límite, la UI muestra CTA a reservar.
+
+**Prospectos (`/proyectos/prospectos`, solo superadmin):** lista de leads capturados con datos de contacto, cuarto/estilo de interés, nº de renders y último render. Acciones: llamar/email/WhatsApp, estado (`new`/`contacted`/`converted`/`discarded`), nota editable, eliminar. Lee/escribe vía `POST /api/prospects/admin` (gateado por PIN superadmin **o** token de dispositivo superadmin — funciona con ambas sesiones). La tabla `prospects` **no tiene política anon** (datos de contacto privados), solo `service_role`.
+
+> El **Design tab del panel privado** sigue funcionando sin límite: envía `adminPin`/`adminToken` (superadmin) y `/api/design-render` los valida server-side como **bypass interno** (sin consumir renders de prospecto). Las dos vías del gate: superadmin interno (ilimitado) o prospecto público (limitado por `FREE_RENDER_LIMIT`).
 
 > **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing; su link "Estimate" del navbar se reemplazó (jul 2026) por AI Design · Process · Reviews · FAQ. El archivo `src/components/estimate/EstimateBuilder.tsx` puede eliminarse si no hay otras referencias.
 
@@ -429,6 +441,7 @@ Orden: Dashboard → Gantt G → Contacts → Team (superadmin) → Agenda (supe
 | Gantt G | `/proyectos/plan` | Vista Gantt global, proyectos ordenados por start_date ASC |
 | Contacts | `/proyectos/contactos` | Lista global de contactos |
 | Team | `/proyectos/equipo` | Matriz de asignación + Reportes — solo visible para superadmin |
+| Prospects | `/proyectos/prospectos` | Leads del AI Design gratuito — solo visible para superadmin |
 | Agenda | `/proyectos/agenda` | Agenda personal — solo visible para superadmin |
 | Activity | `/proyectos/activity` | Solo visible para superadmin |
 | Bookings | `/proyectos/reservas` | Reservas online — solo visible para superadmin |
