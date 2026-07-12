@@ -357,14 +357,20 @@ Secciones activas (de arriba a abajo):
 
 | Sección | Componente | Descripción |
 |---|---|---|
-| Navbar | `Navbar.tsx` | Logo · links de nav · EN/ES · teléfono · Login |
+| Navbar | `Navbar.tsx` | Logo · links de nav (Services · Before/After · AI Design · Process · Tours · Reviews · FAQ) · EN/ES · teléfono · Book Now · Login |
 | Hero | `Hero.tsx` | Headline principal + CTA |
 | Services | `Services.tsx` | Grid de servicios ofrecidos |
 | Before/After | `BeforeAfter.tsx` | Slider comparativo de fotos |
+| AI Design | `AiDesignPreview.tsx` | Showcase "Reimagina tu espacio" — slider antes/IA interactivo + CTA a reservas (`#ai-design`) |
+| Process | `Process.tsx` | Timeline de 5 pasos (Consulta → Diseño → Estimado → Construcción → Entrega) (`#process`) |
 | Tours | `VirtualTour.tsx` | Embed de tours virtuales 360° |
+| Testimonials | `Testimonials.tsx` | Reseñas de clientes con estrellas (`#reviews`) |
+| FAQ | `Faq.tsx` | Acordeón de preguntas frecuentes + CTA a reservas (`#faq`) |
 | Footer | `Footer.tsx` | Info de contacto + redes |
 
-> **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing. El archivo `src/components/estimate/EstimateBuilder.tsx` puede eliminarse si no hay otras referencias.
+> **Nota de seguridad:** la sección **AI Design** de la landing es un *showcase* (slider antes/IA con ejemplos + CTA a reservar consulta) — **no** invoca el endpoint de render real (`/api/design-render`), que es de pago y hoy no está autenticado (ver hallazgo C3 en `SECURITY_PLAN.md`). El render real sigue solo dentro del panel privado (Design tab).
+
+> **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing; su link "Estimate" del navbar se reemplazó (jul 2026) por AI Design · Process · Reviews · FAQ. El archivo `src/components/estimate/EstimateBuilder.tsx` puede eliminarse si no hay otras referencias.
 
 ---
 

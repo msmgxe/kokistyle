@@ -13,8 +13,11 @@ import AdminModal from "../ui/AdminModal";
 const navItems = [
   { labelKey: "services", href: "/#services" },
   { labelKey: "beforeAfter", href: "/#before-after" },
+  { labelKey: "aiDesign", href: "/#ai-design" },
+  { labelKey: "process", href: "/#process" },
   { labelKey: "tours", href: "/#tours" },
-  { labelKey: "estimate", href: "/#estimate" },
+  { labelKey: "reviews", href: "/#reviews" },
+  { labelKey: "faq", href: "/#faq" },
 ] as const;
 
 const languages: Language[] = ["en", "es"];
@@ -62,8 +65,11 @@ export default function Navbar() {
   const navLabels = {
     services: t.nav.services,
     beforeAfter: t.nav.beforeAfter,
+    aiDesign: t.nav.aiDesign,
+    process: t.nav.process,
     tours: t.nav.tours,
-    estimate: t.nav.estimate,
+    reviews: t.nav.reviews,
+    faq: t.nav.faq,
   };
 
   return (
@@ -83,12 +89,12 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-8 lg:flex">
+        <div className="hidden items-center gap-4 lg:flex xl:gap-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm font-medium text-slate-700 transition hover:text-[#0F3D56]"
+              className="whitespace-nowrap text-sm font-medium text-slate-700 transition hover:text-[#0F3D56]"
             >
               {navLabels[item.labelKey]}
             </Link>
