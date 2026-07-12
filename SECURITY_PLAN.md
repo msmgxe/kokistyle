@@ -100,6 +100,15 @@ Ataca M1, M2.
 
 ---
 
+## Nota sobre módulos nuevos (Equipo / Asignaciones — jul 2026)
+
+El módulo **Equipo** (`/proyectos/equipo`, matriz de asignación + reportes) escribe montos por co-worker en
+`project_contacts`. Mitigaciones aplicadas dentro del modelo actual: la página está **gateada a superadmin**
+(`isSuperAdmin`) y las asignaciones se **auditan** en `activity_log`. Sin embargo, `project_contacts` sigue
+operando con la anon key como el resto del negocio, por lo que hereda **C2** — su endurecimiento definitivo
+(RLS por rol para que los montos internos no sean legibles con la clave pública) forma parte de la **Fase 2**.
+No se introdujo ninguna vulnerabilidad nueva; sí un dato financiero más que la Fase 2 debe cubrir.
+
 ## Cómo priorizar si el tiempo es limitado
 
 - **Esta semana:** Fase 1 completa (detiene abuso de facturación y el relay de correo — el riesgo más "explotable hoy").

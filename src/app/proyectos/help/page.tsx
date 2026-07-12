@@ -966,6 +966,41 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
+      id: "teamassign", icon: "👷",
+      title: EN ? "Team & Assignments" : "Equipo y Asignaciones",
+      desc:  EN ? "Assign co-workers to projects with amounts and dates in a matrix, then read participation reports by person and date range — the base for the reporting module."
+                : "Asigna co-workers a proyectos con montos y fechas en una matriz, y luego lee reportes de participación por persona y rango de fechas — la base del módulo de reportes.",
+      mockup: null,
+      steps: EN ? [
+        { t:"Open the Team tab", d:"Click <b>Team</b> in the top navigation (superadmin only). Co-workers come from Contacts (type = Co-worker); add them there first if the list is empty." },
+        { t:"Assignment matrix", d:"The <b>Assignment matrix</b> sub-tab shows a grid of co-workers (grouped by specialty) × projects. Tap an empty cell to assign that person to that project — it creates the record with today's date and a 2-week default range." },
+        { t:"Set the amount and dates", d:"Type the assigned <b>amount</b> directly in the cell. Tap the small date link under the amount to set the <b>start and end dates</b>. Tap the <b>✕</b> to remove the assignment. Everything saves instantly." },
+        { t:"Read the live totals", d:"The <b>Total</b> column shows each co-worker's total load; the bottom row shows the <b>team cost per project</b>; the corner shows the grand total. All recalculate as you type." },
+        { t:"Reports sub-tab", d:"Switch to <b>Reports</b>. Pick a co-worker from the roster on the left to see their KPIs: projects in range, assigned amount, and share of the team. Each project shows its dates and a share bar." },
+        { t:"Filter by date range", d:"Use the <b>From / To</b> date pickers in the report header to restrict to a period — this is the base for future date-based reports." },
+        { t:"Export to Excel", d:"Tap <b>Export CSV</b> to download the selected co-worker's assignments (project, client, dates, amount) as a spreadsheet file, ready for Excel or Google Sheets." },
+      ] : [
+        { t:"Abrir el tab Equipo", d:"Clic en <b>Equipo</b> en la navegación superior (solo superadmin). Los co-workers salen de Contactos (tipo = Co-worker); agrégalos ahí primero si la lista está vacía." },
+        { t:"Matriz de asignación", d:"El sub-tab <b>Matriz de asignación</b> muestra una grilla de co-workers (agrupados por especialidad) × proyectos. Toca una celda vacía para asignar esa persona a ese proyecto — crea el registro con la fecha de hoy y un rango de 2 semanas por defecto." },
+        { t:"Definir el monto y las fechas", d:"Escribe el <b>monto</b> asignado directamente en la celda. Toca el pequeño link de fechas bajo el monto para fijar la <b>fecha de inicio y fin</b>. Toca la <b>✕</b> para quitar la asignación. Todo se guarda al instante." },
+        { t:"Leer los totales en vivo", d:"La columna <b>Total</b> muestra la carga total de cada co-worker; la fila inferior muestra el <b>costo de equipo por proyecto</b>; la esquina muestra el total general. Todo se recalcula al escribir." },
+        { t:"Sub-tab Reportes", d:"Cambia a <b>Reportes</b>. Elige un co-worker del roster de la izquierda para ver sus KPIs: proyectos en el rango, monto asignado y participación del equipo. Cada proyecto muestra sus fechas y una barra de participación." },
+        { t:"Filtrar por rango de fechas", d:"Usa los selectores <b>Desde / Hasta</b> en la cabecera del reporte para restringir a un período — esta es la base de los futuros reportes por fecha." },
+        { t:"Exportar a Excel", d:"Toca <b>Export CSV</b> para descargar las asignaciones del co-worker seleccionado (proyecto, cliente, fechas, monto) como archivo de hoja de cálculo, listo para Excel o Google Sheets." },
+      ],
+      tips: EN ? [
+        "🧩 The matrix and the reports read the <b>same data</b> — assign in the matrix, analyze in reports. It's the groundwork for reports by date, project, participation and amounts.",
+        "👷 Co-workers are grouped by <b>specialty</b> (Plumbing, Painting, Electrical…) taken from their Contact card.",
+        "🔐 The Team panel is <b>superadmin-only</b> — assigned amounts are internal financial data and are never shown to co-workers or clients.",
+        "📊 <b>Export CSV</b> opens directly in Excel/Sheets — build pivot tables and charts on top of the raw assignments.",
+      ] : [
+        "🧩 La matriz y los reportes leen los <b>mismos datos</b> — asigna en la matriz, analiza en reportes. Es la base para reportes por fecha, proyecto, participación y montos.",
+        "👷 Los co-workers se agrupan por <b>especialidad</b> (Plomería, Pintura, Electricidad…) tomada de su ficha de Contacto.",
+        "🔐 El panel de Equipo es <b>solo superadmin</b> — los montos asignados son datos financieros internos y nunca se muestran a co-workers ni clientes.",
+        "📊 <b>Export CSV</b> abre directo en Excel/Sheets — arma tablas dinámicas y gráficos sobre las asignaciones.",
+      ],
+    },
+    {
       id: "agenda", icon: "🗓",
       title: EN ? "My Agenda" : "Mi Agenda",
       desc:  EN ? "Personal admin agenda: appointments, project tasks and meetings for new projects — with reminders you can repeat until the event and export to your phone's calendar."

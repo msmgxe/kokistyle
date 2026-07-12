@@ -78,6 +78,7 @@ src/
 │   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
 │   │   ├── plan/page.tsx             # Gantt G global (todas las tareas, orden por start_date asc)
 │   │   ├── activity/page.tsx         # Registro de actividad — solo superadmin (login, create, update, delete)
+│   │   ├── equipo/page.tsx           # Equipo — Matriz de asignación + Reportes por co-worker (solo superadmin)
 │   │   ├── reservas/page.tsx         # Admin de reservas online (tabla bookings) — solo superadmin
 │   │   └── help/page.tsx             # Página de ayuda — guía paso a paso bilingüe (EN/ES)
 │   ├── acceso/[token]/page.tsx       # Login automático por token de dispositivo → redirige a /proyectos
@@ -153,7 +154,7 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 |---|---|
 | `projects` | Proyectos de remodelación |
 | `contacts` | Especialistas y proveedores (global) |
-| `project_contacts` | Relación N:M proyectos ↔ contactos |
+| `project_contacts` | Relación N:M proyectos ↔ contactos + `amount`/`start_date`/`end_date` (asignación de co-workers) |
 | `tasks` | Tareas por proyecto (Kanban/Gantt) |
 | `materials` | Materiales con checkbox "comprado" |
 | `payments` | Ingresos recibidos del cliente |
@@ -414,17 +415,37 @@ ALTER TABLE projects ALTER COLUMN status SET DEFAULT 'prospecto';
 
 ### Navegación del panel (top nav)
 
-Orden: Dashboard → Gantt G → Contacts → Agenda (superadmin) → Activity (superadmin) → Bookings (superadmin) → Help
+Orden: Dashboard → Gantt G → Contacts → Team (superadmin) → Agenda (superadmin) → Activity (superadmin) → Bookings (superadmin) → Help
 
 | Link | Ruta | Notas |
 |---|---|---|
 | Dashboard | `/proyectos` | — |
 | Gantt G | `/proyectos/plan` | Vista Gantt global, proyectos ordenados por start_date ASC |
 | Contacts | `/proyectos/contactos` | Lista global de contactos |
+| Team | `/proyectos/equipo` | Matriz de asignación + Reportes — solo visible para superadmin |
 | Agenda | `/proyectos/agenda` | Agenda personal — solo visible para superadmin |
 | Activity | `/proyectos/activity` | Solo visible para superadmin |
 | Bookings | `/proyectos/reservas` | Reservas online — solo visible para superadmin |
 | Help | `/proyectos/help` | — |
+
+---
+
+## Equipo — Matriz de asignación + Reportes (`/proyectos/equipo`)
+
+Panel del superadmin para asignar co-workers a proyectos con **monto y fechas**, y leer reportes de participación. Es la base del futuro módulo de reportes (por fecha, proyecto, participación, montos).
+
+- **Datos:** reutiliza `project_contacts` (N:M) extendida con `amount`, `start_date`, `end_date`. Los co-workers salen de `contacts` con `type = 'coworker'`, agrupados por `specialty`.
+- **Sub-tab Matriz (opción B del prototipo):** grilla co-workers (agrupados por especialidad) × proyectos. Celda vacía → clic asigna (insert con fecha de hoy + 2 semanas); monto editable inline; popover de fechas; ✕ elimina. Totales por fila (carga/persona), por columna (costo de equipo/proyecto) y total general, recalculados en vivo.
+- **Sub-tab Reportes (opción C):** roster con % de participación; al seleccionar un co-worker, panel con KPIs (proyectos en rango, monto asignado, participación), filtro `Desde/Hasta`, lista de proyectos con fechas y barra de participación, y **Export CSV** (client-side, escapado con comillas).
+- **Especialidades:** módulo compartido `src/lib/specialties.ts` (`SPECIALTY_OPTIONS_EN/ES` + `specialtyDisplay()`), reutilizado también por `contactos/page.tsx`. La DB guarda el valor en inglés.
+- **Seguridad:** página gateada a `isSuperAdmin` (los montos por co-worker son datos financieros internos). Las asignaciones se auditan en `activity_log`. Nota: `project_contacts` hoy usa la anon key como el resto del negocio — su endurecimiento (RLS por rol) está en la Fase 2 de `SECURITY_PLAN.md`.
+
+Migración SQL (ya en `schema.sql`):
+```sql
+ALTER TABLE project_contacts ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE project_contacts ADD COLUMN IF NOT EXISTS start_date DATE;
+ALTER TABLE project_contacts ADD COLUMN IF NOT EXISTS end_date DATE;
+```
 
 ---
 

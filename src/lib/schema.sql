@@ -39,11 +39,19 @@ CREATE TABLE IF NOT EXISTS contacts (
 -- ALTER TABLE contacts ADD COLUMN IF NOT EXISTS rate_type TEXT NOT NULL DEFAULT 'hour';
 
 -- 4. Tabla de Relación Proyectos-Contactos (Muchos a Muchos)
+-- amount/start_date/end_date alimentan la Matriz de asignación y los Reportes de Equipo
 CREATE TABLE IF NOT EXISTS project_contacts (
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   contact_id UUID REFERENCES contacts(id) ON DELETE CASCADE,
+  amount     NUMERIC(12,2) NOT NULL DEFAULT 0,
+  start_date DATE,
+  end_date   DATE,
   PRIMARY KEY (project_id, contact_id)
 );
+-- Migration: run if upgrading from older schema
+-- ALTER TABLE project_contacts ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;
+-- ALTER TABLE project_contacts ADD COLUMN IF NOT EXISTS start_date DATE;
+-- ALTER TABLE project_contacts ADD COLUMN IF NOT EXISTS end_date DATE;
 
 -- 5. Tabla de Actividades (Tareas del Gantt / Kanban)
 CREATE TABLE IF NOT EXISTS tasks (

@@ -23,6 +23,15 @@ export interface Contact {
   projects?: string[];
 }
 
+/** Asignación de un co-worker a un proyecto — base de la Matriz y los Reportes de Equipo */
+export interface ProjectAssignment {
+  project_id: string;
+  contact_id: string;
+  amount: number;
+  start_date: string | null;
+  end_date: string | null;
+}
+
 export interface Task {
   id: string;
   project_id: string;

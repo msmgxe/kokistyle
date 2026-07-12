@@ -5,17 +5,9 @@ import { supabase } from "@/src/lib/supabase";
 import { initials } from "@/src/lib/utils";
 import type { Contact, Project } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { SPECIALTY_OPTIONS_EN, SPECIALTY_OPTIONS_ES, specialtyDisplay as sharedSpecialtyDisplay } from "@/src/lib/specialties";
 
 type TabKey = "all" | "friend" | "coworker" | "customer";
-
-const SPECIALTY_OPTIONS_EN = [
-  "Plumbing", "Painting", "Finisher", "Electrical", "Marble",
-  "Flooring", "Bathroom", "Handyman", "Helper",
-];
-const SPECIALTY_OPTIONS_ES = [
-  "Plomería", "Pintura", "Finishero", "Electricidad", "Mármol",
-  "Piso", "Baño", "Handyman", "Ayudante",
-];
 
 type TPanel = ReturnType<typeof useLanguage>["t"]["panel"];
 
@@ -233,11 +225,7 @@ function ContactModal({
   );
 }
 
-function specialtyDisplay(en: string, language: string): string {
-  const idx = SPECIALTY_OPTIONS_EN.indexOf(en);
-  if (idx === -1) return en;
-  return language === "es" ? SPECIALTY_OPTIONS_ES[idx] : en;
-}
+const specialtyDisplay = sharedSpecialtyDisplay;
 
 export default function ContactosPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
