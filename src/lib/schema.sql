@@ -407,3 +407,18 @@ ALTER TABLE prospects ENABLE ROW LEVEL SECURITY;
 -- (sin CREATE POLICY: acceso denegado a anon, permitido solo a service_role)
 -- Migration: run if upgrading
 -- ALTER TABLE prospects ADD COLUMN IF NOT EXISTS last_before_url TEXT;
+
+-- ── Site content (CMS de la landing) ─────────────────────────────────────────
+-- Singleton JSONB. RLS: LECTURA pública (la landing la sirve a cualquiera) pero
+-- ESCRITURA solo vía service_role (panel Sitio). Buen patrón: contenido público,
+-- edición protegida. La estructura de `data` la define src/types/site.ts.
+CREATE TABLE IF NOT EXISTS site_content (
+  id         BOOLEAN PRIMARY KEY DEFAULT true,
+  data       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT site_content_singleton CHECK (id)
+);
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+CREATE POLICY site_content_read ON site_content FOR SELECT TO anon USING (true);
+-- (sin política de escritura para anon: INSERT/UPDATE solo con service_role)
+INSERT INTO site_content (id, data) VALUES (true, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;

@@ -1034,6 +1034,41 @@ function useFeatures(EN: boolean) {
       ],
     },
     {
+      id: "site", icon: "🖥️",
+      title: EN ? "Home Page Editor" : "Editor de la Página de Inicio",
+      desc:  EN ? "A built-in CMS to edit the texts, images and visible sections of your public landing page — no developer needed. This is the piece that makes the platform sellable to other companies."
+                : "Un CMS integrado para editar los textos, imágenes y secciones visibles de tu landing pública — sin depender de un programador. Es la pieza que hace la plataforma vendible a otras empresas.",
+      mockup: null,
+      steps: EN ? [
+        { t:"Open the Site tab", d:"Click <b>Site</b> in the top navigation (superadmin only). Use <b>Open home page</b> to preview your public site in a new tab at any time." },
+        { t:"Edit the Hero", d:"In the <b>Hero</b> tab, change the eyebrow, headline, description, the two buttons (label + link), the two hero images and the floating badge. Every text has an <b>English and a Spanish</b> field side by side." },
+        { t:"Change images two ways", d:"For any image, either <b>Upload</b> a file from your computer or paste an <b>image URL</b>. A live thumbnail shows the current picture." },
+        { t:"Edit Before / After cards", d:"In the <b>Before / After</b> tab, edit the section heading and each transformation card (before image, after image, space name, city). Use <b>+ Add card</b> or <b>Remove</b> to manage the list." },
+        { t:"Show or hide sections", d:"In the <b>Sections</b> tab, toggle each landing section on/off: Before/After, AI Design, Process, Virtual Tours, Reviews, FAQ. Turn off what you don't need." },
+        { t:"Save and see it live", d:"Tap <b>Save changes</b> in the bottom bar. Refresh the home page and your edits are live — instantly, worldwide." },
+      ] : [
+        { t:"Abrir el tab Sitio", d:"Clic en <b>Sitio</b> en la navegación superior (solo superadmin). Usa <b>Abrir página de inicio</b> para previsualizar tu sitio público en una pestaña nueva cuando quieras." },
+        { t:"Editar la Portada (Hero)", d:"En el tab <b>Portada</b>, cambia el antetítulo, el titular, la descripción, los dos botones (texto + enlace), las dos imágenes y el badge flotante. Cada texto tiene un campo en <b>inglés y otro en español</b> lado a lado." },
+        { t:"Cambiar imágenes de dos formas", d:"Para cualquier imagen, puedes <b>Subir</b> un archivo de tu computadora o pegar la <b>URL de una imagen</b>. Una miniatura muestra la foto actual en vivo." },
+        { t:"Editar tarjetas Antes / Después", d:"En el tab <b>Antes / Después</b>, edita el encabezado de la sección y cada tarjeta de transformación (imagen antes, imagen después, nombre del espacio, ciudad). Usa <b>+ Agregar tarjeta</b> o <b>Quitar</b> para gestionar la lista." },
+        { t:"Mostrar u ocultar secciones", d:"En el tab <b>Secciones</b>, prende/apaga cada sección de la landing: Antes/Después, Diseño IA, Proceso, Tours Virtuales, Reseñas, Preguntas. Apaga lo que no necesites." },
+        { t:"Guardar y verlo en vivo", d:"Toca <b>Guardar cambios</b> en la barra inferior. Refresca la página de inicio y tus cambios están en vivo — al instante, en todo el mundo." },
+      ],
+      tips: EN ? [
+        "🖥️ It's a real <b>content manager</b>: you control your website without touching code or waiting on anyone.",
+        "🌐 Everything is <b>bilingual</b> — fill the English and Spanish fields so both audiences see polished copy.",
+        "↩️ Leave any text <b>empty to use the built-in default</b> — the site never breaks, even before you customize it.",
+        "🔒 Only the superadmin can edit; the content is <b>publicly readable but write-protected</b> at the database level — a clean, secure CMS pattern.",
+        "💼 This editor is a strong <b>selling point</b>: other remodeling companies can run their own site from the same panel.",
+      ] : [
+        "🖥️ Es un <b>gestor de contenido</b> real: controlas tu web sin tocar código ni esperar a nadie.",
+        "🌐 Todo es <b>bilingüe</b> — completa los campos en inglés y español para que ambos públicos vean textos pulidos.",
+        "↩️ Deja cualquier texto <b>vacío para usar el valor por defecto</b> — el sitio nunca se rompe, incluso antes de personalizarlo.",
+        "🔒 Solo el superadmin edita; el contenido es <b>de lectura pública pero protegido contra escritura</b> a nivel de base de datos — un patrón CMS limpio y seguro.",
+        "💼 Este editor es un fuerte <b>argumento de venta</b>: otras empresas de remodelación pueden manejar su propio sitio desde el mismo panel.",
+      ],
+    },
+    {
       id: "agenda", icon: "🗓",
       title: EN ? "My Agenda" : "Mi Agenda",
       desc:  EN ? "Personal admin agenda: appointments, project tasks and meetings for new projects — with reminders you can repeat until the event and export to your phone's calendar."

@@ -80,6 +80,8 @@ src/
 │   │   ├── plan/page.tsx             # Gantt G global (todas las tareas, orden por start_date asc)
 │   │   ├── activity/page.tsx         # Registro de actividad — solo superadmin (login, create, update, delete)
 │   │   ├── equipo/page.tsx           # Equipo — Matriz de asignación + Reportes por co-worker (solo superadmin)
+│   │   ├── prospectos/page.tsx       # Prospectos — leads del AI Design gratuito (solo superadmin)
+│   │   ├── sitio/page.tsx            # Editor de la landing (CMS: textos, imágenes, visibilidad) — solo superadmin
 │   │   ├── reservas/page.tsx         # Admin de reservas online (tabla bookings) — solo superadmin
 │   │   └── help/page.tsx             # Página de ayuda — guía paso a paso bilingüe (EN/ES)
 │   ├── acceso/[token]/page.tsx       # Login automático por token de dispositivo → redirige a /proyectos
@@ -170,6 +172,7 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `device_tokens` | Tokens de acceso directo sin PIN — **sin política anon**, solo service_role |
 | `push_subscriptions` | Suscripciones Web Push por dispositivo (avisos de la Agenda) |
 | `prospects` | Leads del AI Design gratuito — datos de contacto + renders usados. **Sin política anon**, solo service_role |
+| `site_content` | CMS de la landing (singleton JSONB). **Lectura pública** (anon SELECT), **escritura solo service_role** |
 
 ### Tablas del módulo Estimate
 
@@ -382,7 +385,17 @@ La sección **AI Design** de la landing es una **herramienta gratuita real** (ti
 
 > El **Design tab del panel privado** sigue funcionando sin límite: envía `adminPin`/`adminToken` (superadmin) y `/api/design-render` los valida server-side como **bypass interno** (sin consumir renders de prospecto). Las dos vías del gate: superadmin interno (ilimitado) o prospecto público (limitado por `FREE_RENDER_LIMIT`).
 
-> **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing; su link "Estimate" del navbar se reemplazó (jul 2026) por AI Design · Process · Reviews · FAQ. El archivo `src/components/estimate/EstimateBuilder.tsx` puede eliminarse si no hay otras referencias.
+### CMS de la landing (`/proyectos/sitio`, solo superadmin)
+
+Editor visual de la página de inicio — el diferencial "vendible" a otras empresas.
+
+- **Datos:** tabla `site_content` (singleton JSONB `data`, estructura en `src/types/site.ts`). RLS destacado: **lectura pública** (`FOR SELECT TO anon`), **escritura solo `service_role`** vía `POST /api/site-content/admin` (gateado por PIN o token de dispositivo superadmin).
+- **Provider:** `SiteContentProvider` (`src/context/SiteContentContext.tsx`) envuelve la landing (`page.tsx` → `LandingBody`), lee la fila una vez con la anon key y expone `useSiteContent()` + `isVisible(section)`.
+- **Fallback:** cada campo del CMS cae a su default — textos a `translations.ts`, imágenes a `SITE_DEFAULTS` en `types/site.ts`. Un texto vacío = usa el default. Así la landing funciona aunque la tabla esté vacía.
+- **Editable:** Hero (antetítulo, titular, descripción, 2 botones con label+enlace, 2 imágenes, badge) · Before/After (encabezado + N tarjetas con imagen antes/después, nombre y ciudad; agregar/quitar) · Visibilidad on/off de 6 secciones (beforeAfter, aiDesign, process, tours, reviews, faq). Todo bilingüe EN/ES (campos lado a lado). Imágenes por **subida** a `kokistyle-files/site/` o pegando URL.
+- **Bug evitado:** los sub-componentes `BiText`/`ImageField` están a **nivel de módulo** (no dentro del componente) para no perder el foco del input al escribir; `ImageField` es autónomo (sube y maneja su propio estado).
+
+> **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing; su link "Estimate" del navbar se reemplazó (jul 2026) por AI Design · Process · Reviews · FAQ, y el CTA "Get Estimate" del Hero por "Try Free AI Design" (→ `#ai-design`). El archivo `src/components/estimate/EstimateBuilder.tsx` puede eliminarse si no hay otras referencias.
 
 ---
 
@@ -442,6 +455,7 @@ Orden: Dashboard → Gantt G → Contacts → Team (superadmin) → Agenda (supe
 | Contacts | `/proyectos/contactos` | Lista global de contactos |
 | Team | `/proyectos/equipo` | Matriz de asignación + Reportes — solo visible para superadmin |
 | Prospects | `/proyectos/prospectos` | Leads del AI Design gratuito — solo visible para superadmin |
+| Site | `/proyectos/sitio` | Editor CMS de la landing (textos/imágenes/secciones) — solo visible para superadmin |
 | Agenda | `/proyectos/agenda` | Agenda personal — solo visible para superadmin |
 | Activity | `/proyectos/activity` | Solo visible para superadmin |
 | Bookings | `/proyectos/reservas` | Reservas online — solo visible para superadmin |

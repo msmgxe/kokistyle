@@ -4,22 +4,28 @@ import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Play } from "lucide-react";
 
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useSiteContent } from "@/src/context/SiteContentContext";
+import { SITE_DEFAULTS } from "@/src/types/site";
 import Button from "../ui/Button";
 import Container from "../ui/Container";
 
-const galleryImages = [
-  {
-    src: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1000&q=90",
-    alt: "Luxury interior remodel with warm natural light",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=700&q=85",
-    alt: "Premium kitchen remodeling with marble island",
-  },
-];
-
 export default function Hero() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { content } = useSiteContent();
+  const h = content.hero ?? {};
+  const bi = (f?: { en?: string; es?: string }, fb = "") => (language === "es" ? f?.es : f?.en) || fb;
+
+  const eyebrow      = bi(h.eyebrow, t.hero.eyebrow);
+  const title        = bi(h.title, t.hero.title);
+  const description  = bi(h.description, t.hero.description);
+  const primaryLabel = bi(h.primaryLabel, t.hero.primaryCta);
+  const primaryHref  = h.primaryHref || "#ai-design";
+  const secondaryLbl = bi(h.secondaryLabel, t.hero.secondaryCta);
+  const secondaryHref = h.secondaryHref || "#tours";
+  const imgMain      = h.imageMain || SITE_DEFAULTS.heroMain;
+  const imgSecondary = h.imageSecondary || SITE_DEFAULTS.heroSecondary;
+  const focusLabel   = bi(h.focusLabel, t.hero.currentFocusLabel);
+  const focusValue   = bi(h.focusValue, t.hero.currentFocus);
 
   return (
     <section
@@ -35,23 +41,23 @@ export default function Hero() {
           className="max-w-3xl"
         >
           <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#0F3D56]/75 sm:text-sm">
-            {t.hero.eyebrow}
+            {eyebrow}
           </p>
 
           <h1 className="font-display text-5xl font-semibold leading-[0.95] text-[#0F3D56] sm:text-6xl lg:text-7xl">
-            {t.hero.title}
+            {title}
           </h1>
 
           <p className="mt-7 max-w-2xl text-base leading-8 text-slate-700 sm:text-lg">
-            {t.hero.description}
+            {description}
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button href="#ai-design">
-              {t.hero.primaryCta} <ArrowRight size={18} />
+            <Button href={primaryHref}>
+              {primaryLabel} <ArrowRight size={18} />
             </Button>
-            <Button href="#tours" variant="secondary">
-              <Play size={18} /> {t.hero.secondaryCta}
+            <Button href={secondaryHref} variant="secondary">
+              <Play size={18} /> {secondaryLbl}
             </Button>
           </div>
 
@@ -81,25 +87,19 @@ export default function Hero() {
           className="relative min-h-[520px]"
         >
           <div className="absolute right-0 top-0 h-[72%] w-[82%] overflow-hidden rounded-lg shadow-[0_32px_90px_rgba(15,61,86,0.22)]">
-            <img
-              src={galleryImages[0].src}
-              alt={galleryImages[0].alt}
-              className="h-full w-full object-cover object-center"
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imgMain} alt={title} className="h-full w-full object-cover object-center" />
           </div>
           <div className="absolute bottom-0 left-0 h-[46%] w-[54%] overflow-hidden rounded-lg border-8 border-[#F5E9DA] shadow-[0_24px_70px_rgba(15,61,86,0.2)]">
-            <img
-              src={galleryImages[1].src}
-              alt={galleryImages[1].alt}
-              className="h-full w-full object-cover"
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imgSecondary} alt={focusValue} className="h-full w-full object-cover" />
           </div>
           <div className="absolute bottom-10 right-4 max-w-[260px] rounded-lg bg-white/92 p-5 shadow-[0_18px_55px_rgba(15,61,86,0.18)] backdrop-blur">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
-              {t.hero.currentFocusLabel}
+              {focusLabel}
             </p>
             <p className="mt-2 text-xl font-bold leading-tight text-[#0F3D56]">
-              {t.hero.currentFocus}
+              {focusValue}
             </p>
           </div>
         </motion.div>
