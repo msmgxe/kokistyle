@@ -47,7 +47,7 @@ export default function Hero() {
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button href="#estimate">
+            <Button href="#ai-design">
               {t.hero.primaryCta} <ArrowRight size={18} />
             </Button>
             <Button href="#tours" variant="secondary">

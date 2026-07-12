@@ -395,7 +395,8 @@ CREATE TABLE IF NOT EXISTS prospects (
   room_type       TEXT,
   style           TEXT,
   renders_used    INT  NOT NULL DEFAULT 0,
-  last_render_url TEXT,
+  last_before_url TEXT,   -- foto que subió el prospecto (antes)
+  last_render_url TEXT,   -- render IA generado (después)
   status          TEXT NOT NULL DEFAULT 'new',   -- 'new' | 'contacted' | 'converted' | 'discarded'
   notes           TEXT,
   source          TEXT NOT NULL DEFAULT 'ai_design',
@@ -404,3 +405,5 @@ CREATE TABLE IF NOT EXISTS prospects (
 );
 ALTER TABLE prospects ENABLE ROW LEVEL SECURITY;
 -- (sin CREATE POLICY: acceso denegado a anon, permitido solo a service_role)
+-- Migration: run if upgrading
+-- ALTER TABLE prospects ADD COLUMN IF NOT EXISTS last_before_url TEXT;

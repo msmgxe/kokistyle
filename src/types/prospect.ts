@@ -8,6 +8,7 @@ export interface Prospect {
   room_type: string | null;
   style: string | null;
   renders_used: number;
+  last_before_url: string | null;
   last_render_url: string | null;
   status: ProspectStatus;
   notes: string | null;

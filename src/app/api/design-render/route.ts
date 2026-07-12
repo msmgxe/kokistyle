@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 
+export const maxDuration = 60; // permite el resultado síncrono (Prefer: wait)
+
 // Renders gratuitos por prospecto (control de abuso del endpoint de pago)
 const FREE_RENDER_LIMIT = Number(process.env.FREE_RENDER_LIMIT ?? 3);
 
-// POST — creates prediction and returns immediately (works on all Vercel plans)
-// Client polls GET until status === "succeeded"
+// POST — pide el resultado síncrono a Replicate (Prefer: wait). El render tarda ~7s,
+// así que casi siempre devuelve el output directo; el cliente usa GET como respaldo.
 export async function POST(req: NextRequest) {
   const token = process.env.REPLICATE_API_TOKEN;
   if (!token) {
@@ -43,6 +45,9 @@ export async function POST(req: NextRequest) {
     if (data && data.user_id === "superadmin" && !data.revoked) internal = true;
   }
 
+  // El prospecto se valida ANTES de gastar; el conteo se incrementa solo si Replicate
+  // acepta el job (no se "gasta" un render en un fallo).
+  let prospectRow: { id: string; renders_used: number } | null = null;
   if (!internal) {
     if (!prospectId) {
       return NextResponse.json({ error: "prospectId required" }, { status: 401 });
@@ -55,9 +60,7 @@ export async function POST(req: NextRequest) {
     if (prospect.renders_used >= FREE_RENDER_LIMIT) {
       return NextResponse.json({ error: "limit_reached", limit: FREE_RENDER_LIMIT }, { status: 429 });
     }
-    await admin.from("prospects")
-      .update({ renders_used: prospect.renders_used + 1, last_used_at: new Date().toISOString() })
-      .eq("id", prospectId);
+    prospectRow = prospect;
   }
 
   const negativePrompt =
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
         headers: {
           Authorization: `Token ${token}`,
           "Content-Type": "application/json",
-          // No "Prefer: wait" — return prediction ID immediately, client polls
+          Prefer: "wait=55", // espera el resultado (render ~7s) → output directo, sin depender del polling
         },
         body: JSON.stringify({
           input: {
@@ -97,7 +100,7 @@ export async function POST(req: NextRequest) {
       } catch {
         errDetail = await res.text().catch(() => "");
       }
-      console.error("[/api/design-render POST]", res.status, errDetail);
+      console.error(JSON.stringify({ route: "/api/design-render", stage: "post", status: res.status, error: errDetail }));
       return NextResponse.json(
         { error: errDetail || `HTTP ${res.status}`, httpStatus: res.status },
         { status: res.status }
@@ -105,9 +108,21 @@ export async function POST(req: NextRequest) {
     }
 
     const prediction = await res.json();
+
+    // Replicate aceptó (o completó) el job → cobra el render al prospecto
+    if (prospectRow && prediction?.status !== "failed") {
+      await admin.from("prospects")
+        .update({ renders_used: prospectRow.renders_used + 1, last_used_at: new Date().toISOString() })
+        .eq("id", prospectRow.id);
+    }
+    if (prediction?.status === "failed") {
+      console.error(JSON.stringify({ route: "/api/design-render", stage: "predict", error: prediction?.error ?? "failed" }));
+      return NextResponse.json({ error: prediction?.error ?? "render_failed" }, { status: 502 });
+    }
+
     return NextResponse.json(prediction);
   } catch (err) {
-    console.error("[/api/design-render POST] fetch error", err);
+    console.error(JSON.stringify({ route: "/api/design-render", stage: "fetch", error: err instanceof Error ? err.message : String(err) }));
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Replicate request failed" },
       { status: 500 }

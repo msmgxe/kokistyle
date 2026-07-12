@@ -13,9 +13,9 @@ export async function POST(req: NextRequest) {
 
     // Actualización ligera del último render (tras un render exitoso en el cliente)
     if (body.id && body.renderUrl) {
-      await getSupabaseAdmin().from("prospects")
-        .update({ last_render_url: clean(body.renderUrl, 600) })
-        .eq("id", clean(body.id, 60));
+      const patch: Record<string, string> = { last_render_url: clean(body.renderUrl, 600) };
+      if (body.beforeUrl) patch.last_before_url = clean(body.beforeUrl, 600);
+      await getSupabaseAdmin().from("prospects").update(patch).eq("id", clean(body.id, 60));
       return NextResponse.json({ ok: true });
     }
 

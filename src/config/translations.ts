@@ -93,7 +93,7 @@ export const translations = {
       title: "Transforming spaces into luxury experiences",
       description:
         "Premium residential and commercial remodeling with curated design, precise construction, and sales-ready project showcases for Florida properties.",
-      primaryCta: "Get Estimate",
+      primaryCta: "Try Free AI Design",
       secondaryCta: "View Virtual Tour",
       stats: [
         { value: "120+", label: "premium remodels" },
@@ -314,6 +314,10 @@ export const translations = {
         saved: "Saved.",
         interestedIn: "Interested in",
         lastRender: "View last render",
+        theyTried: "What they tried",
+        beforeLbl: "Their photo",
+        afterLbl: "AI result",
+        openFull: "Open full size",
       },
       team: {
         title: "Team & Assignments",
@@ -926,7 +930,7 @@ export const translations = {
       title: "Transformamos espacios en experiencias de lujo",
       description:
         "Remodelación residencial y comercial premium con diseño curado, construcción precisa y presentaciones listas para vender proyectos en Florida.",
-      primaryCta: "Solicitar Presupuesto",
+      primaryCta: "Diseño IA Gratis",
       secondaryCta: "Ver Tour Virtual",
       stats: [
         { value: "120+", label: "remodelaciones premium" },
@@ -1147,6 +1151,10 @@ export const translations = {
         saved: "Guardado.",
         interestedIn: "Interesado en",
         lastRender: "Ver último render",
+        theyTried: "Lo que probó",
+        beforeLbl: "Su foto",
+        afterLbl: "Resultado IA",
+        openFull: "Abrir en grande",
       },
       team: {
         title: "Equipo y Asignaciones",

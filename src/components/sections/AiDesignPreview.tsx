@@ -113,25 +113,28 @@ export default function AiDesignPreview() {
       });
       const started = await res.json();
       if (res.status === 429) { persist(prospectId, 3); setToolMsg(null); setBusy(false); return; }
-      if (!res.ok) { setToolMsg(started.error ? ta.errGeneric : ta.errGeneric); setBusy(false); return; }
+      if (res.status === 502) { setToolMsg(ta.errRender); setBusy(false); return; } // render falló, no cuenta
+      if (!res.ok) { setToolMsg(ta.errGeneric); setBusy(false); return; }
 
       persist(prospectId, rendersUsed + 1);
 
-      // Resultado directo o polling
-      let output: string | null = Array.isArray(started.output) ? started.output[0] : started.output ?? null;
+      // Con Prefer:wait el POST suele traer el output directo; el polling es respaldo
+      const pickOut = (o: unknown): string | null =>
+        Array.isArray(o) ? (o[0] as string) ?? null : (typeof o === "string" ? o : null);
+      let output: string | null = started?.status === "succeeded" ? pickOut(started.output) : pickOut(started.output);
       const id = started.id;
       let tries = 0;
-      while (!output && id && tries < 40) {
+      while (!output && id && tries < 60) {
         await new Promise(r => setTimeout(r, 2500));
         const pr = await fetch(`/api/design-render?id=${id}`).then(r => r.json()).catch(() => null);
-        if (pr?.status === "succeeded") output = Array.isArray(pr.output) ? pr.output[0] : pr.output;
+        if (pr?.status === "succeeded") output = pickOut(pr.output);
         else if (pr?.status === "failed" || pr?.status === "canceled") break;
         tries++;
       }
       if (output) {
         setAfterUrl(output); setPos(50); setToolMsg(null);
         fetch("/api/prospects", { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: prospectId, renderUrl: output }) }).catch(() => {});
+          body: JSON.stringify({ id: prospectId, renderUrl: output, beforeUrl }) }).catch(() => {});
       }
       else setToolMsg(ta.errRender);
     } catch { setToolMsg(ta.errRender); }

@@ -155,11 +155,31 @@ export default function ProspectosPage() {
                 <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#16323D] px-3 py-1.5 text-[11px] font-bold text-[#16323D] hover:bg-[#F7F3EA]"><Phone size={12} /> {tp.call}</a>
                 <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] hover:bg-[#F7F3EA]"><Mail size={12} /> {tp.email}</a>
                 <a href={waLink(p.phone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-[#4F8A63] px-3 py-1.5 text-[11px] font-bold text-[#4F8A63] hover:bg-[#EEF6F0]"><MessageCircle size={12} /> {tp.whatsapp}</a>
-                {p.last_render_url && (
-                  <a href={p.last_render_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[11px] font-bold text-[#395886] hover:bg-[#EDF3FB]"><ExternalLink size={12} /> {tp.lastRender}</a>
-                )}
                 <button onClick={() => remove(p.id)} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[#B0492F] hover:bg-[#FFF0EE]"><Trash2 size={12} /> {tp.delete}</button>
               </div>
+
+              {(p.last_before_url || p.last_render_url) && (
+                <div className="border-t border-[#F2EFE7] px-4 py-3">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{tp.theyTried}</p>
+                  <div className="flex flex-wrap gap-3">
+                    {p.last_before_url && (
+                      <a href={p.last_before_url} target="_blank" rel="noopener noreferrer" className="group relative block" title={tp.openFull}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.last_before_url} alt={tp.beforeLbl} className="h-28 w-40 rounded-lg object-cover ring-1 ring-[#E6DDCB]" />
+                        <span className="absolute left-1.5 top-1.5 rounded bg-white/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">{tp.beforeLbl}</span>
+                      </a>
+                    )}
+                    {p.last_render_url && (
+                      <a href={p.last_render_url} target="_blank" rel="noopener noreferrer" className="group relative block" title={tp.openFull}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.last_render_url} alt={tp.afterLbl} className="h-28 w-40 rounded-lg object-cover ring-1 ring-[#C9A227]" />
+                        <span className="absolute left-1.5 top-1.5 rounded bg-[#C9A227] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#16323D]">{tp.afterLbl}</span>
+                        <span className="absolute bottom-1.5 right-1.5 rounded bg-black/45 p-1 text-white opacity-0 transition group-hover:opacity-100"><ExternalLink size={11} /></span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 border-t border-[#F2EFE7] px-4 py-2.5">
                 <input
