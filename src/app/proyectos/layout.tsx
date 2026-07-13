@@ -94,7 +94,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           className="sticky top-0 z-30 border-b border-[#D5DEEF] bg-[#F7F3EB]"
           aria-label="Panel de administración"
         >
-          <div className="mx-auto flex max-w-[1180px] items-center gap-4 px-6 py-3">
+          <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-5 py-3">
             <Link href="/proyectos" className="flex items-center gap-3" aria-label={`${branding.companyShort} Panel`}>
               <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#16323D] text-sm font-bold text-white">
                 {branding.initials}
@@ -105,7 +105,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               </span>
             </Link>
 
-            <nav className="hidden flex-1 gap-1 overflow-x-auto [scrollbar-width:none] md:flex">
+            <nav className="hidden flex-1 gap-0.5 overflow-x-auto [scrollbar-width:none] lg:flex">
               <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
               <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
               <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
@@ -117,14 +117,14 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               <PanelTab href="/proyectos/help" label={t.panel.nav.help} />
             </nav>
 
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <LangSwitch />
             </div>
 
             <button
               id="panel-logout-btn"
               onClick={logout}
-              className="hidden flex-none items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1] md:inline-flex"
+              className="hidden flex-none items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1] lg:inline-flex"
               aria-label={t.panel.nav.signOut}
             >
               <LogOut size={14} />
@@ -134,7 +134,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
             {/* Hamburguesa — solo móvil */}
             <button
               onClick={() => setMenuOpen(true)}
-              className="ml-auto grid size-10 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#16323D] transition hover:bg-[#ECE3D1] md:hidden"
+              className="ml-auto grid size-10 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#16323D] transition hover:bg-[#ECE3D1] lg:hidden"
               aria-label="Menu"
             >
               <Menu size={18} />
@@ -144,7 +144,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
         {/* ── Drawer móvil ─────────────────────────────────────────────────── */}
         {menuOpen && (
-          <div className="fixed inset-0 z-[400] md:hidden" onClick={() => setMenuOpen(false)}>
+          <div className="fixed inset-0 z-[400] lg:hidden" onClick={() => setMenuOpen(false)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <div
               className="absolute right-0 top-0 flex h-full w-72 flex-col bg-[#F7F3EB] shadow-2xl"
@@ -188,7 +188,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
-        <main className="mx-auto max-w-[1180px] px-6 pb-28 pt-7">{children}</main>
+        <main className="mx-auto max-w-[1400px] px-6 pb-28 pt-7">{children}</main>
 
         <VoiceFAB />
       </div>
@@ -221,7 +221,7 @@ function PanelTab({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
+      className={`whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-bold transition ${
         isActive
           ? "bg-[#395886] text-white shadow-sm"
           : "text-[#628ECB] hover:bg-[#F0F3FA] hover:text-[#395886]"
