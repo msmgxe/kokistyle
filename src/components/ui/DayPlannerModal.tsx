@@ -135,19 +135,22 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
 // ─── Draggable card ───────────────────────────────────────────────────────────
 
 function ItemCard({
-  item, overlay, contacts, onAssign, days, onJumpToDay,
+  item, overlay, EN, contacts, onAssign, days, onJumpToDay, onEdit,
 }: {
   item: PlanItem;
   overlay?: boolean;
+  EN?: boolean;
   contacts?: PlanContact[];
   onAssign?: (itemId: string, contactId: string | null) => void;
   days?: { index: number; label: string; date: string }[];
   onJumpToDay?: (itemId: string, dayIndex: number | null) => void;
+  onEdit?: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
 }) {
   // El overlay usa un id propio para no colisionar con el sortable real durante el arrastre
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: overlay ? `${item.id}__ov` : item.id });
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
 
   const style = !overlay && transform
     ? { transform: `translate3d(${transform.x}px,${transform.y}px,0)`, transition }
@@ -156,6 +159,7 @@ function ItemCard({
   const assignedName    = contacts?.find(c => c.id === item.assignedContactId)?.name;
   const currentDay      = days?.find(d => d.index === item.dayIndex);
   const currentDayLabel = currentDay?.label ?? "";
+  const canExpand       = !overlay;
 
   const handleDateChange = useCallback((selectedDate: string) => {
     if (!selectedDate || !days || !onJumpToDay) return;
@@ -176,81 +180,151 @@ function ItemCard({
     <div
       ref={overlay ? undefined : setNodeRef}
       style={style}
-      {...(overlay ? {} : attributes)}
-      {...(overlay ? {} : listeners)}
-      className={`touch-none select-none rounded-xl border bg-white px-2.5 py-2 transition
-        ${overlay ? "cursor-grabbing shadow-xl border-[#395886]" : "cursor-grab active:cursor-grabbing border-[#E6DDCB] hover:border-[#395886]/50 hover:shadow-sm"}
+      className={`touch-none select-none rounded-lg border bg-white transition
+        ${overlay ? "shadow-xl border-[#395886]" : "border-[#E6DDCB] hover:border-[#395886]/50 hover:shadow-sm"}
         ${isDragging && !overlay ? "opacity-25" : ""}`}
     >
-      <span className={`mb-1 inline-block rounded-full px-1.5 py-0.5 text-[9px] font-bold ${item.tagStyle}`}>
-        {item.sectionTag}
-      </span>
-      {item.isCustom && (
-        <span className="mb-1 ml-1 inline-block rounded-full bg-[#EDE3CF] px-1.5 py-0.5 text-[9px] font-bold text-[#7A6230]">
-          custom
+      {/* ── Fila compacta (una línea): grip arrastra · resto expande ── */}
+      <div className="flex items-center gap-1.5 px-2 py-1.5">
+        <span
+          {...(overlay ? {} : attributes)}
+          {...(overlay ? {} : listeners)}
+          className={`shrink-0 leading-none text-[#C6BCA6] ${overlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing hover:text-[#395886]"}`}
+          aria-label={EN ? "Drag to reorder" : "Arrastrar para reordenar"}
+        >
+          ⋮⋮
         </span>
-      )}
-      <div className="text-[11px] leading-tight text-[#16323D]">{item.description}</div>
-      <div className="mt-1.5 flex items-center gap-1.5 text-[9px] text-[#5C6A6E]">
-        <span className="font-mono">{money(item.amount)}</span>
-        <span>·</span>
-        <span>{item.hours}h</span>
-        {item.taskId && (
-          <>
-            <span>·</span>
-            <span className="rounded-full bg-[#DCEBDD] px-1 py-0.5 text-[8px] font-bold text-[#4F8A63]">saved</span>
-          </>
-        )}
+
+        <button
+          type="button"
+          onClick={() => canExpand && setOpen(o => !o)}
+          disabled={!canExpand}
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+        >
+          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${item.tagStyle}`}>
+            {item.sectionTag}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-[11px] font-medium leading-tight text-[#16323D]">
+            {item.description}
+          </span>
+          <span className="shrink-0 font-mono text-[9px] text-[#5C6A6E]">{item.hours}h</span>
+          {item.taskId && (
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4F8A63]" aria-label="saved" />
+          )}
+          {canExpand && (
+            <span className={`shrink-0 text-[9px] text-[#9A907C] transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
+          )}
+        </button>
       </div>
 
-      {/* Day date-picker — tap label to open native calendar */}
-      {!overlay && days && days.length > 0 && onJumpToDay && (
+      {/* ── Acordeón: detalle editable ── */}
+      {canExpand && open && (
         <div
-          className="mt-1.5 border-t border-[#F0EBE0] pt-1.5"
+          className="space-y-2 border-t border-[#F0EBE0] px-2 pb-2 pt-2"
           onPointerDown={e => e.stopPropagation()}
         >
-          <button
-            type="button"
-            onClick={() => {
-              try { dateInputRef.current?.showPicker(); }
-              catch { dateInputRef.current?.click(); }
-            }}
-            className={`flex w-full items-center gap-1 text-left text-[9px] font-semibold transition
-              ${item.dayIndex !== null ? "text-[#4F8A63]" : "text-[#B0492F] hover:text-[#16323D]"}`}
-          >
-            <span>{item.dayIndex !== null ? "✓" : "📅"}</span>
-            <span className="truncate">
-              {item.dayIndex !== null ? currentDayLabel : "Agregar a día..."}
+          {item.isCustom && (
+            <span className="inline-block rounded-full bg-[#EDE3CF] px-1.5 py-0.5 text-[8px] font-bold text-[#7A6230]">
+              custom
             </span>
-          </button>
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={currentDay?.date ?? ""}
-            min={days[0]?.date ?? ""}
-            max={days[days.length - 1]?.date ?? ""}
-            onChange={e => handleDateChange(e.target.value)}
-            className="pointer-events-none h-0 w-0 opacity-0"
-          />
-        </div>
-      )}
+          )}
 
-      {!overlay && contacts && contacts.length > 0 && onAssign && (
-        <div className="relative mt-1 border-t border-[#F0EBE0] pt-1.5">
-          <span className="pointer-events-none block truncate text-[9px] font-semibold text-[#395886]">
-            {assignedName ?? "Own team"}
-          </span>
-          <select
-            value={item.assignedContactId ?? ""}
-            onPointerDown={e => e.stopPropagation()}
-            onChange={e => onAssign(item.id, e.target.value || null)}
-            className="absolute inset-0 cursor-pointer opacity-0"
-          >
-            <option value="">Own team</option>
-            {contacts.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          {/* Descripción editable */}
+          {onEdit && (
+            <label className="block">
+              <span className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-[#9A907C]">
+                {EN ? "Description" : "Descripción"}
+              </span>
+              <textarea
+                value={item.description}
+                onChange={e => onEdit(item.id, { description: e.target.value })}
+                rows={2}
+                className="w-full resize-none rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] leading-tight text-[#16323D] outline-none focus:border-[#395886]"
+              />
+            </label>
+          )}
+
+          {/* Horas + Monto */}
+          {onEdit && (
+            <div className="flex gap-2">
+              <label className="flex-1">
+                <span className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-[#9A907C]">
+                  {EN ? "Hours" : "Horas"}
+                </span>
+                <input
+                  type="number" min={0} step={0.5}
+                  value={item.hours}
+                  onChange={e => onEdit(item.id, { hours: Number(e.target.value) || 0 })}
+                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[#16323D] outline-none focus:border-[#395886]"
+                />
+              </label>
+              <label className="flex-1">
+                <span className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-[#9A907C]">
+                  {EN ? "Amount" : "Monto"}
+                </span>
+                <input
+                  type="number" min={0} step={1}
+                  value={item.amount}
+                  onChange={e => onEdit(item.id, { amount: Number(e.target.value) || 0 })}
+                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[#16323D] outline-none focus:border-[#395886]"
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Día programado */}
+          {days && days.length > 0 && onJumpToDay && (
+            <div>
+              <span className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-[#9A907C]">
+                {EN ? "Day" : "Día"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  try { dateInputRef.current?.showPicker(); }
+                  catch { dateInputRef.current?.click(); }
+                }}
+                className={`flex w-full items-center gap-1 rounded-md border px-1.5 py-1 text-left text-[10px] font-semibold transition
+                  ${item.dayIndex !== null ? "border-[#CFE3D2] bg-[#F2F8F3] text-[#4F8A63]" : "border-[#F0D9D2] bg-[#FDF5F3] text-[#B0492F] hover:text-[#16323D]"}`}
+              >
+                <span>{item.dayIndex !== null ? "✓" : "📅"}</span>
+                <span className="truncate">
+                  {item.dayIndex !== null ? currentDayLabel : (EN ? "Add to day..." : "Agregar a día...")}
+                </span>
+              </button>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={currentDay?.date ?? ""}
+                min={days[0]?.date ?? ""}
+                max={days[days.length - 1]?.date ?? ""}
+                onChange={e => handleDateChange(e.target.value)}
+                className="pointer-events-none h-0 w-0 opacity-0"
+              />
+            </div>
+          )}
+
+          {/* Asignación de co-worker */}
+          {contacts && contacts.length > 0 && onAssign && (
+            <div>
+              <span className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-[#9A907C]">
+                {EN ? "Assignee" : "Asignado"}
+              </span>
+              <select
+                value={item.assignedContactId ?? ""}
+                onChange={e => onAssign(item.id, e.target.value || null)}
+                className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] font-semibold text-[#395886] outline-none focus:border-[#395886]"
+              >
+                <option value="">{EN ? "Own team" : "Equipo propio"}</option>
+                {contacts.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {assignedName && (
+                <span className="mt-0.5 block truncate text-[9px] text-[#5C6A6E]">{assignedName}</span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -260,7 +334,7 @@ function ItemCard({
 // ─── Pool ─────────────────────────────────────────────────────────────────────
 
 function ItemPool({
-  items, EN, onAddCustom, contacts, onAssign, days, onJumpToDay,
+  items, EN, onAddCustom, contacts, onAssign, days, onJumpToDay, onEdit,
 }: {
   items: PlanItem[];
   EN: boolean;
@@ -269,6 +343,7 @@ function ItemPool({
   onAssign: (itemId: string, contactId: string | null) => void;
   days: { index: number; label: string; date: string }[];
   onJumpToDay: (itemId: string, dayIndex: number | null) => void;
+  onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "pool" });
   return (
@@ -293,10 +368,12 @@ function ItemPool({
             <ItemCard
               key={i.id}
               item={i}
+              EN={EN}
               contacts={contacts}
               onAssign={onAssign}
               days={days}
               onJumpToDay={onJumpToDay}
+              onEdit={onEdit}
             />
           ))}
         </SortableContext>
@@ -308,7 +385,7 @@ function ItemPool({
 // ─── Day column ───────────────────────────────────────────────────────────────
 
 function DayColumn({
-  day, items, capacity, date, EN, onDateChange, contacts, onAssign,
+  day, items, capacity, date, EN, onDateChange, contacts, onAssign, days, onJumpToDay, onEdit,
 }: {
   day: number;
   items: PlanItem[];
@@ -318,6 +395,9 @@ function DayColumn({
   onDateChange: (iso: string) => void;
   contacts: PlanContact[];
   onAssign: (itemId: string, contactId: string | null) => void;
+  days: { index: number; label: string; date: string }[];
+  onJumpToDay: (itemId: string, dayIndex: number | null) => void;
+  onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day}` });
   const used = items.reduce((s, i) => s + i.hours, 0);
@@ -325,7 +405,7 @@ function DayColumn({
   const over = used > capacity;
 
   return (
-    <div className="flex w-[196px] shrink-0 flex-col gap-2">
+    <div className="flex w-[240px] shrink-0 flex-col gap-2">
       {/* Header */}
       <div className="rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5">
         <div className="flex items-center justify-between">
@@ -369,7 +449,18 @@ function DayColumn({
           ${isOver ? "border-[#395886] bg-[#EDF3FB]" : items.length ? "border-transparent bg-[#F7F3EA]" : "border-[#D7CBB3]"}`}
       >
         <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-          {items.map(i => <ItemCard key={i.id} item={i} contacts={contacts} onAssign={onAssign} />)}
+          {items.map(i => (
+            <ItemCard
+              key={i.id}
+              item={i}
+              EN={EN}
+              contacts={contacts}
+              onAssign={onAssign}
+              days={days}
+              onJumpToDay={onJumpToDay}
+              onEdit={onEdit}
+            />
+          ))}
         </SortableContext>
         {items.length === 0 && (
           <div className="flex flex-1 items-center justify-center text-[10px] text-[#C4B89A]">
@@ -750,6 +841,11 @@ export default function DayPlannerModal({
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, dayIndex } : i));
   }, []);
 
+  // ── Inline edit of existing card fields (description / hours / amount) ────────
+  const handleEdit = useCallback((itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => {
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, ...patch } : i));
+  }, []);
+
   // ── Day labels for the card selector ─────────────────────────────────────────
   const dayLabels = useMemo(() =>
     Array.from({ length: numDays }, (_, d) => ({
@@ -802,6 +898,9 @@ export default function DayPlannerModal({
       .filter(i => i.taskId !== null)
       .map(item => ({
         id:                  item.taskId!,
+        name:                item.description,
+        hours:               item.hours,
+        amount:              item.amount,
         scheduled_date:      dayDates[item.dayIndex ?? 0] ?? null,
         sort_order:          orderOf(item),
         assigned_contact_id: item.assignedContactId,
@@ -834,6 +933,9 @@ export default function DayPlannerModal({
     await Promise.all(
       toUpdate.map(u =>
         supabase.from("tasks").update({
+          name:                u.name,
+          hours:               u.hours,
+          amount:              u.amount,
           scheduled_date:      u.scheduled_date,
           sort_order:          u.sort_order,
           assigned_contact_id: u.assigned_contact_id,
@@ -918,7 +1020,7 @@ export default function DayPlannerModal({
           <div className="flex min-h-0 flex-1 gap-4 overflow-y-hidden p-4" style={{ minHeight: embedded ? "520px" : undefined }}>
 
             {/* Left: Pool */}
-            <div className="flex w-[224px] shrink-0 flex-col gap-2">
+            <div className="flex w-[280px] shrink-0 flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
                   {EN ? "Item Pool" : "Pool de Items"}
@@ -943,6 +1045,7 @@ export default function DayPlannerModal({
                   onAssign={handleAssign}
                   days={dayLabels}
                   onJumpToDay={handleJumpToDay}
+                  onEdit={handleEdit}
                 />
               </div>
             </div>
@@ -979,6 +1082,9 @@ export default function DayPlannerModal({
                     onDateChange={iso => setDayDate(d, iso)}
                     contacts={contacts}
                     onAssign={handleAssign}
+                    days={dayLabels}
+                    onJumpToDay={handleJumpToDay}
+                    onEdit={handleEdit}
                   />
                 ))}
               </div>
