@@ -3,10 +3,13 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   DndContext, DragEndEvent, DragStartEvent, DragOverlay,
-  useDraggable, useDroppable,
+  useDroppable, closestCorners,
   PointerSensor, TouchSensor,
   useSensors, useSensor,
 } from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, arrayMove, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { X, Zap, CalendarDays, Plus, Save } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
@@ -141,11 +144,13 @@ function ItemCard({
   days?: { index: number; label: string; date: string }[];
   onJumpToDay?: (itemId: string, dayIndex: number | null) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id });
+  // El overlay usa un id propio para no colisionar con el sortable real durante el arrastre
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: overlay ? `${item.id}__ov` : item.id });
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const style = !overlay && transform
-    ? { transform: `translate3d(${transform.x}px,${transform.y}px,0)` }
+    ? { transform: `translate3d(${transform.x}px,${transform.y}px,0)`, transition }
     : undefined;
 
   const assignedName    = contacts?.find(c => c.id === item.assignedContactId)?.name;
@@ -169,10 +174,10 @@ function ItemCard({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={overlay ? undefined : setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(overlay ? {} : attributes)}
+      {...(overlay ? {} : listeners)}
       className={`touch-none select-none rounded-xl border bg-white px-2.5 py-2 transition
         ${overlay ? "cursor-grabbing shadow-xl border-[#395886]" : "cursor-grab active:cursor-grabbing border-[#E6DDCB] hover:border-[#395886]/50 hover:shadow-sm"}
         ${isDragging && !overlay ? "opacity-25" : ""}`}
@@ -277,16 +282,18 @@ function ItemPool({
           ✓ {EN ? "All items scheduled" : "Todos los items asignados"}
         </div>
       ) : (
-        items.map(i => (
-          <ItemCard
-            key={i.id}
-            item={i}
-            contacts={contacts}
-            onAssign={onAssign}
-            days={days}
-            onJumpToDay={onJumpToDay}
-          />
-        ))
+        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+          {items.map(i => (
+            <ItemCard
+              key={i.id}
+              item={i}
+              contacts={contacts}
+              onAssign={onAssign}
+              days={days}
+              onJumpToDay={onJumpToDay}
+            />
+          ))}
+        </SortableContext>
       )}
       <button
         onClick={onAddCustom}
@@ -361,7 +368,9 @@ function DayColumn({
         className={`flex min-h-[150px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition
           ${isOver ? "border-[#395886] bg-[#EDF3FB]" : items.length ? "border-transparent bg-[#F7F3EA]" : "border-[#D7CBB3]"}`}
       >
-        {items.map(i => <ItemCard key={i.id} item={i} contacts={contacts} onAssign={onAssign} />)}
+        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+          {items.map(i => <ItemCard key={i.id} item={i} contacts={contacts} onAssign={onAssign} />)}
+        </SortableContext>
         {items.length === 0 && (
           <div className="flex flex-1 items-center justify-center text-[10px] text-[#C4B89A]">
             {EN ? "Drop items here" : "Arrastra aquí"}
@@ -518,9 +527,10 @@ export default function DayPlannerModal({
       const [{ data: existingTasks }, { data: projectContacts }] = await Promise.all([
         supabase
           .from("tasks")
-          .select("id, source_key, scheduled_date, name, hours, amount, source, source_section, estimate_item_id, estimate_section_id, assigned_contact_id")
+          .select("id, source_key, scheduled_date, name, hours, amount, source, source_section, estimate_item_id, estimate_section_id, assigned_contact_id, sort_order")
           .eq("project_id", projectId)
-          .or("source.eq.estimate,source.eq.planner"),
+          .or("source.eq.estimate,source.eq.planner")
+          .order("sort_order", { ascending: true }),
         supabase
           .from("project_contacts")
           .select("contacts(id, name)")
@@ -633,12 +643,33 @@ export default function DayPlannerModal({
   const activeItem = useMemo(() => items.find(i => i.id === activeId), [items, activeId]);
 
   const handleDragStart = ({ active }: DragStartEvent) => setActiveId(active.id as string);
-  const handleDragEnd   = ({ active, over }: DragEndEvent) => {
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveId(null);
     if (!over) return;
-    const overId = over.id as string;
-    const newDay = overId === "pool" ? null : parseInt(overId.replace("day-", ""), 10);
-    setItems(prev => prev.map(i => i.id === (active.id as string) ? { ...i, dayIndex: newDay } : i));
+    const activeId = active.id as string;
+    const overId   = over.id as string;
+    if (activeId === overId) return;
+
+    setItems(prev => {
+      const activeIdx = prev.findIndex(i => i.id === activeId);
+      if (activeIdx === -1) return prev;
+
+      // Contenedor destino: un día vacío/pool (id = "pool"/"day-N") o el día del item sobre el que se soltó
+      let newDay: number | null;
+      let overIdx: number;
+      if (overId === "pool") { newDay = null; overIdx = prev.length; }
+      else if (overId.startsWith("day-")) { newDay = parseInt(overId.replace("day-", ""), 10); overIdx = prev.length; }
+      else {
+        const overItem = prev.find(i => i.id === overId);
+        if (!overItem) return prev;
+        newDay = overItem.dayIndex;
+        overIdx = prev.findIndex(i => i.id === overId);
+      }
+
+      // Aplica el día destino y reordena la lista global (el orden relativo dentro del día = orden de la lista)
+      const updated = prev.map(i => i.id === activeId ? { ...i, dayIndex: newDay } : i);
+      return arrayMove(updated, activeIdx, overIdx);
+    });
   };
 
   // ── Phase-ordered + even-spread auto-assign ─────────────────────────────────
@@ -735,16 +766,27 @@ export default function DayPlannerModal({
     const assigned    = items.filter(i => i.dayIndex !== null);
     const unscheduled = items.filter(i => i.dayIndex === null && i.taskId !== null);
 
+    // Posición de cada item DENTRO de su día (el orden de `items` ya refleja el drag & drop)
+    const posInDay = new Map<string, number>();
+    const dayCounters: Record<number, number> = {};
+    for (const it of assigned) {
+      const d = it.dayIndex ?? 0;
+      const c = dayCounters[d] ?? 0;
+      posInDay.set(it.id, c);
+      dayCounters[d] = c + 1;
+    }
+    const orderOf = (it: PlanItem) => (it.dayIndex ?? 0) * 1000 + (posInDay.get(it.id) ?? 0);
+
     // New tasks to INSERT
     const toInsert = assigned
       .filter(i => !i.taskId)
-      .map((item, index) => ({
+      .map((item) => ({
         project_id:          projectId,
         name:                item.description,
         hours:               item.hours,
         duration_weeks:      1,
         status:              "pend",
-        sort_order:          (item.dayIndex ?? 0) * 100 + index,
+        sort_order:          orderOf(item),
         assigned_contact_id: item.assignedContactId,
         scheduled_date:      dayDates[item.dayIndex ?? 0] ?? null,
         estimate_item_id:    item.estimateItemId,
@@ -755,13 +797,13 @@ export default function DayPlannerModal({
         amount:              item.amount,
       }));
 
-    // Existing tasks to UPDATE (scheduled_date / assignee may have changed)
+    // Existing tasks to UPDATE (scheduled_date / assignee / order may have changed)
     const toUpdate = assigned
       .filter(i => i.taskId !== null)
       .map(item => ({
         id:                  item.taskId!,
         scheduled_date:      dayDates[item.dayIndex ?? 0] ?? null,
-        sort_order:          (item.dayIndex ?? 0) * 100,
+        sort_order:          orderOf(item),
         assigned_contact_id: item.assignedContactId,
       }));
 
@@ -885,7 +927,7 @@ export default function DayPlannerModal({
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
         </div>
       ) : (
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex min-h-0 flex-1 gap-4 overflow-y-hidden p-4" style={{ minHeight: embedded ? "520px" : undefined }}>
 
             {/* Left: Pool */}
