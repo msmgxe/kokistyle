@@ -69,6 +69,7 @@ export const TAB_ACCESS_OPTIONS: { id: string; label: string; coworker: boolean;
   { id: "plan",        label: "Gantt",        coworker: true,  client: true  },
   { id: "materiales",  label: "Materials",    coworker: false, client: false },
   { id: "contactos",   label: "Contacts",     coworker: false, client: false },
+  { id: "fotos",       label: "Photos",       coworker: true,  client: true  },
   { id: "notas",       label: "Notes",        coworker: true,  client: true  },
   { id: "design",      label: "Design",       coworker: false, client: true  },
 ];

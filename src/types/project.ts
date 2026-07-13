@@ -119,6 +119,18 @@ export interface ProjectNote {
   updated_at?: string;
 }
 
+export type PhotoTag = "antes" | "avance" | "despues" | "problema" | "material";
+
+export interface ProjectPhoto {
+  id: string;
+  project_id: string;
+  url: string;
+  caption: string | null;
+  tag: PhotoTag;
+  taken_at: string;
+  created_at?: string;
+}
+
 // ─── Estimate ─────────────────────────────────────────────────────────────────
 
 export interface DepositEntry {

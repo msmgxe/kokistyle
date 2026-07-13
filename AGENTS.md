@@ -76,6 +76,7 @@ src/
 │   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs + eliminar proyecto)
 │   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Gantt · Materials · Contacts · Notes · Design
 │   │   ├── hoy/page.tsx              # Vista "Hoy" — checklist móvil del día: tareas por proyecto (checkbox grande → tasks.status), notas del día (agenda_events, superadmin), anillo de progreso, filtros, navegación ‹hoy›. Respeta my_tasks_only. Destino del shortcut /acceso/<token>?to=hoy y del shortcut PWA del manifest
+│   │   ├── fotos/page.tsx            # Fotos de obra (global) — selector de proyecto + cámara/carrete → ProjectPhotos
 │   │   ├── agenda/page.tsx           # Agenda personal del admin — citas/tasks/reuniones + captura por voz + .ics (solo superadmin)
 │   │   ├── contactos/page.tsx        # Contacts — 2 tabs: Directorio (lista global) + Team & Assignments (TeamPanel, solo superadmin; deep link ?tab=equipo)
 │   │   ├── equipo/page.tsx           # Redirect → /proyectos/contactos?tab=equipo (el panel de Equipo vive en Contacts desde jul 2026)
@@ -168,6 +169,7 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `payments` | Ingresos recibidos del cliente |
 | `expenses` | Egresos pagados a proveedores |
 | `project_notes` | Notas con adjuntos JSONB por proyecto |
+| `project_photos` | Fotos de obra por proyecto (url en Storage, caption, tag antes/avance/despues/problema/material, taken_at) |
 | `app_users` | Colaboradores con permisos granulares |
 | `user_project_access` | Proyectos asignados por colaborador |
 | `superadmin_config` | PIN + email del superadmin (singleton) |
@@ -562,6 +564,34 @@ Shortcut para smartphone/tableta que abre el panel **ya autenticado**, sin PIN. 
 
 ---
 
+## Fotos de obra (`/proyectos/fotos` + tab Photos del proyecto)
+
+Componente compartido `src/components/ui/ProjectPhotos.tsx` (jul 2026):
+
+- **Captura**: `input capture="environment"` (abre la cámara trasera en el teléfono) o selección **múltiple** del carrete. Compositor con preview, comentario y etiqueta de color (`antes/avance/despues/problema/material`).
+- **Compresión client-side**: `createImageBitmap` (con `imageOrientation: "from-image"`) + canvas → JPEG máx 1600px @0.82 antes de subir — las fotos de teléfono de 5-15MB quedan en ~200-400KB.
+- **Storage**: `kokistyle-files/project-photos/<projectId>/<uuid>.jpg` (políticas anon existentes). Fila en `project_photos` con `taken_at` tomado de `file.lastModified` — las fotos viejas del carrete quedan ordenadas en su fecha real.
+- **Galería**: agrupada por `taken_at` desc, filtros por etiqueta con conteos, grid 3 col (6 en desktop), visor fullscreen con ‹ ›, comentario, etiqueta y eliminar (borra fila + archivo del Storage best-effort, confirmación de dos toques).
+- **Dos entradas**: página global `/proyectos/fotos` (selector de proyecto + opción "Todos" solo-ver con etiqueta del proyecto en cada miniatura) y **tab `fotos`** en el detalle del proyecto (proyecto fijo). El tab se gatea con la sección de permisos `workflow` y está en `TAB_ACCESS_OPTIONS` (default coworker ✓, client ✓).
+- Migración SQL (Bloque 8 de `schema.sql`):
+
+```sql
+CREATE TABLE IF NOT EXISTS project_photos (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  url         TEXT NOT NULL,
+  caption     TEXT,
+  tag         TEXT NOT NULL DEFAULT 'avance',
+  taken_at    DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS project_photos_project_idx ON project_photos(project_id, taken_at DESC);
+ALTER TABLE project_photos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON project_photos FOR ALL TO anon USING (true) WITH CHECK (true);
+```
+
+---
+
 ## Sistema de autenticación
 
 ### Superadmin
@@ -786,7 +816,7 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | `index02.html` | Prototipo 02 — referencia del patrón SpeechRecognition usado en Design tab (movido desde la raíz) |
 | `gantt-report-print.html` | Prototipo del **reporte diario de actividades** — implementado en producción como `src/components/ui/DailyReport.tsx` (vista "Reporte diario" del Gantt G, jul 2026) |
 | `vista-hoy-movil.html` | Prototipo de la **vista "Hoy" móvil** — implementado en producción como `/proyectos/hoy` (jul 2026) |
-| `fotos-obra-movil.html` | Prototipo de **Fotos de obra** (pendiente de aprobación): cámara del teléfono (`input capture=environment`) → foto etiquetada (Antes/Avance/Después/Problema/Material) + comentario al proyecto elegido → historial por fecha con galería 3-col y visor. Plan de implementación: tabla `project_photos` (project_id, url, caption, tag, taken_at) + Storage `kokistyle-files/project-photos/<projectId>/` + tab "Photos" en el proyecto |
+| `fotos-obra-movil.html` | Prototipo de **Fotos de obra** — implementado en producción como `ProjectPhotos.tsx` (página `/proyectos/fotos` + tab Photos del proyecto, jul 2026) |
 | `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
 | `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
 

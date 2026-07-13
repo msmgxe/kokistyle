@@ -423,3 +423,19 @@ ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
 CREATE POLICY site_content_read ON site_content FOR SELECT TO anon USING (true);
 -- (sin política de escritura para anon: INSERT/UPDATE solo con service_role)
 INSERT INTO site_content (id, data) VALUES (true, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BLOQUE 8: Fotos de obra por proyecto (jul 2026)
+-- ═══════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS project_photos (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  url         TEXT NOT NULL,
+  caption     TEXT,
+  tag         TEXT NOT NULL DEFAULT 'avance',  -- 'antes' | 'avance' | 'despues' | 'problema' | 'material'
+  taken_at    DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS project_photos_project_idx ON project_photos(project_id, taken_at DESC);
+ALTER TABLE project_photos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON project_photos FOR ALL TO anon USING (true) WITH CHECK (true);

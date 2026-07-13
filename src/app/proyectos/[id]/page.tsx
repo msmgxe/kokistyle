@@ -52,6 +52,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 import EstimateTab from "@/src/components/ui/EstimateTab";
 import DayPlannerModal from "@/src/components/ui/DayPlannerModal";
+import ProjectPhotos from "@/src/components/ui/ProjectPhotos";
 import DesignTab from "@/src/components/ui/DesignTab";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ interface ProjectFull extends Project {
   project_notes: ProjectNote[];
 }
 
-type TabId = "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas" | "design";
+type TabId = "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "fotos" | "notas" | "design";
 type PaySubTab = "ingresos" | "egresos";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -2045,6 +2046,7 @@ export default function ProjectDetailPage() {
     { id: "plan",        label: tp.tabs.plan },
     { id: "materiales",  label: tp.tabs.materials },
     { id: "contactos",   label: tp.tabs.contacts },
+    { id: "fotos",       label: tp.nav.photos },
     { id: "notas",       label: tp.tabs.notes },
     { id: "design",      label: tp.tabs.design },
   ];
@@ -2055,7 +2057,7 @@ export default function ProjectDetailPage() {
     // Explicit tab_access list takes precedence (new granular system)
     if (currentUser?.tab_access) return currentUser.tab_access.includes(t.id);
     // Legacy: derive from permissions
-    const sec = t.id === "pagos" ? "pagos" : t.id === "plan" || t.id === "planner" || t.id === "design" ? "workflow" : t.id as import("@/src/types/auth").PermissionSection;
+    const sec = t.id === "pagos" ? "pagos" : t.id === "plan" || t.id === "planner" || t.id === "design" || t.id === "fotos" ? "workflow" : t.id as import("@/src/types/auth").PermissionSection;
     return hasPermission(sec, "view");
   });
 
@@ -2101,6 +2103,7 @@ export default function ProjectDetailPage() {
       planner:     "project.planner",
       pagos:       "project.pagos.ingresos",
       plan:        "project.plan",
+      fotos:       "project.fotos",
       notas:       "project.notas",
       design:      "project.design",
     };
@@ -2222,6 +2225,7 @@ export default function ProjectDetailPage() {
         contacts={project.contacts} onRefresh={fetchProject} toast={showToast}
         onSubTabChange={(sub) => setMeta({ context: `project.pagos.${sub}`, projectId: project.id, projectTitle: project.title, contacts: project.contacts?.map((c) => c.name) ?? [] })}
       />}
+      {activeTab === "fotos"       && <ProjectPhotos projectId={project.id} projects={[{ id: project.id, title: project.title }]} toast={showToast} />}
       {activeTab === "plan"        && <PlanTab        project={project} tasks={filteredTasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "notas"       && <NotasTab       project={project} notes={project.project_notes ?? []} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "design"      && <DesignTab      project={project} toast={showToast} />}
