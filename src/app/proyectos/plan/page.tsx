@@ -14,6 +14,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
 import { addDays, dShort } from "@/src/lib/utils";
 import ProjectThumb from "@/src/components/ui/ProjectThumb";
+import DailyReport from "@/src/components/ui/DailyReport";
 import { branding } from "@/src/config/branding";
 import type { Project, Task } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -90,6 +91,7 @@ export default function PlanPage() {
   const [toastVisible, setToastVisible] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | "prospecto" | "presupuesto" | "aprobado" | "en_obra" | "terminado">("all");
   const [ganttUnit, setGanttUnit] = useState<"week" | "day">("day");
+  const [view, setView] = useState<"gantt" | "report">("gantt");
   const { t, language } = useLanguage();
   const tp = t.panel;
   const EN = language === "en";
@@ -190,14 +192,27 @@ export default function PlanPage() {
   };
 
   const DarkBar = ({ withControls }: { withControls: boolean }) => (
-    <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#16323D] px-5 py-3">
+    <div className={`mb-4 flex items-center gap-3 rounded-2xl bg-[#16323D] px-5 py-3 ${view === "report" ? "print:hidden" : ""}`}>
       <div className="flex shrink-0 items-center gap-2">
         <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block">{branding.companyName}</span>
         <span className="hidden text-white/20 sm:block">·</span>
         <h1 className="font-bookman text-[17px] font-semibold text-white">{gp.title}</h1>
         <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70">{projects.length}</span>
       </div>
-      {withControls && (<>
+      {withControls && (
+        <>
+          <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
+          <div className="flex shrink-0 items-center gap-1">
+            {(["gantt", "report"] as const).map(v => (
+              <button key={v} onClick={() => setView(v)}
+                className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${view === v ? "bg-white text-[#16323D]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                {v === "gantt" ? tp.dailyReport.viewGantt : tp.dailyReport.viewReport}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {withControls && view === "gantt" && (<>
         <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           <button onClick={() => setFilterStatus("all")}
@@ -246,6 +261,11 @@ export default function PlanPage() {
     <div className="animate-in fade-in duration-300">
       <DarkBar withControls />
 
+      {view === "report" && (
+        <DailyReport projects={projects} toast={showToast} onRefresh={fetchProjects} />
+      )}
+
+      {view === "gantt" && (<>
       <div className="rpt-only mb-3 hidden">
         <h2 className="text-lg font-bold text-[#16323D]">{gp.reportTitle}</h2>
         <p className="text-xs text-[#5C6A6E]">{gp.generatedOn} {new Date().toLocaleDateString(EN ? "en-US" : "es-US", { day: "numeric", month: "long", year: "numeric" })}</p>
@@ -392,6 +412,7 @@ export default function PlanPage() {
         <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#DCEBDD] px-2 py-0.5 text-[9px] font-bold text-[#4F8A63]">{tp.workflow.colDone}</span></span>
         <span className="text-[#97A1A0]">· {EN ? "Drag rows to set priority" : "Arrastra las filas para fijar la prioridad"}</span>
       </div>
+      </>)}
 
       {confirmDel && (
         <ConfirmModal title={gp.deleteProject}

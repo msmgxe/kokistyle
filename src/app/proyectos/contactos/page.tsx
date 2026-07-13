@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { Users, HardHat } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { initials } from "@/src/lib/utils";
 import type { Contact, Project } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useAuth } from "@/src/context/AuthContext";
+import TeamPanel from "@/src/components/ui/TeamPanel";
 import { SPECIALTY_OPTIONS_EN, SPECIALTY_OPTIONS_ES, specialtyDisplay as sharedSpecialtyDisplay } from "@/src/lib/specialties";
 
 type TabKey = "all" | "friend" | "coworker" | "customer";
+type SectionKey = "directory" | "team";
 
 type TPanel = ReturnType<typeof useLanguage>["t"]["panel"];
 
@@ -233,12 +237,20 @@ export default function ContactosPage() {
   const [assigned, setAssigned] = useState<Record<string, Set<string>>>({});
   const [editor, setEditor] = useState<{ contact?: Contact } | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [section, setSection] = useState<SectionKey>("directory");
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const { isSuperAdmin } = useAuth();
   const { t, language } = useLanguage();
   const tp = t.panel;
   const gc = tp.globalContacts;
+  const tt = tp.team;
+
+  // Deep link desde la ruta vieja /proyectos/equipo (?tab=equipo)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "equipo") setSection("team");
+  }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -320,13 +332,39 @@ export default function ContactosPage() {
     return c.name.toLowerCase().includes(q) || c.specialty.toLowerCase().includes(q);
   });
 
+  const showTeam = isSuperAdmin && section === "team";
+
   return (
     <div className="animate-in fade-in duration-300">
       <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
-        <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">{gc.title}</h1>
-        <p className="mt-1 text-sm text-[#B1C9EF]">{gc.subtitle}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">
+              {showTeam ? tt.title : gc.title}
+            </h1>
+            <p className="mt-1 text-sm text-[#B1C9EF]">{showTeam ? tt.subtitle : gc.subtitle}</p>
+          </div>
+          {isSuperAdmin && (
+            <div className="flex rounded-xl bg-white/10 p-1">
+              {([
+                { id: "directory", icon: <Users size={13} />,   label: gc.tabDirectory },
+                { id: "team",      icon: <HardHat size={13} />, label: tt.title },
+              ] as const).map(s => (
+                <button key={s.id} onClick={() => setSection(s.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-bold transition ${
+                    section === s.id ? "bg-white text-[#395886] shadow-sm" : "text-[#B1C9EF] hover:text-white"
+                  }`}>
+                  {s.icon} {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
+      {showTeam && <TeamPanel />}
+
+      {!showTeam && (<>
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#5C6A6E]">
@@ -454,6 +492,7 @@ export default function ContactosPage() {
           onClose={() => setEditor(null)}
         />
       )}
+      </>)}
 
       <div
         className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}

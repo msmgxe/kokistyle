@@ -76,8 +76,9 @@ src/
 │   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs + eliminar proyecto)
 │   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Gantt · Materials · Contacts · Notes · Design
 │   │   ├── agenda/page.tsx           # Agenda personal del admin — citas/tasks/reuniones + captura por voz + .ics (solo superadmin)
-│   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
-│   │   ├── plan/page.tsx             # Gantt G — reporte de status por días: columnas (prio/estado/cliente/ubicación/días) + barra de duración con avance + acordeón de actividades por estado + prioridad reordenable + PDF
+│   │   ├── contactos/page.tsx        # Contacts — 2 tabs: Directorio (lista global) + Team & Assignments (TeamPanel, solo superadmin; deep link ?tab=equipo)
+│   │   ├── equipo/page.tsx           # Redirect → /proyectos/contactos?tab=equipo (el panel de Equipo vive en Contacts desde jul 2026)
+│   │   ├── plan/page.tsx             # Gantt G — 2 vistas: Gantt (status por días, prioridad reordenable, PDF landscape) + Reporte diario (DailyReport, PDF portrait)
 │   │   ├── activity/page.tsx         # Registro de actividad — solo superadmin (login, create, update, delete)
 │   │   ├── equipo/page.tsx           # Equipo — Matriz de asignación + Reportes por co-worker (solo superadmin)
 │   │   ├── prospectos/page.tsx       # Prospectos — leads del AI Design gratuito (solo superadmin)
@@ -114,6 +115,8 @@ src/
 │       ├── UsersPanel.tsx            # Gestión de equipo: co-workers + clientes, tab_access, contact_id, my_tasks_only
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
+│       ├── DailyReport.tsx           # Reporte diario de actividades (vista del Gantt G): rango de fechas + multi-select de estados + checkbox done en vivo + print PDF portrait
+│       ├── TeamPanel.tsx             # Matriz de asignación + Reportes por co-worker (antes /proyectos/equipo) — embebido en Contacts
 │       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop (@dnd-kit) + checkbox de completado
 │       ├── EstimateTab.tsx           # Tab de estimado — layout de sub-tabs: 📐 Sections + 💰 Payment Schedule; cabecera dark con WA/Copy/PDF/Save; FAB flotante eliminado
 │       ├── Button.tsx                # Botón reutilizable
@@ -439,14 +442,13 @@ ALTER TABLE projects ALTER COLUMN status SET DEFAULT 'prospecto';
 
 ### Navegación del panel (top nav)
 
-Orden: Dashboard → Gantt G → Contacts → Team (superadmin) → Agenda (superadmin) → Activity (superadmin) → Bookings (superadmin) → Help
+Orden: Dashboard → Gantt G → Contacts → Prospects (superadmin) → Site (superadmin) → Agenda (superadmin) → Activity (superadmin) → Bookings (superadmin) → Help
 
 | Link | Ruta | Notas |
 |---|---|---|
 | Dashboard | `/proyectos` | — |
-| Gantt G | `/proyectos/plan` | Reporte de status por días (barra de duración + avance, acordeón de actividades por estado, prioridad reordenable → `priority_rank`, PDF por impresión) |
-| Contacts | `/proyectos/contactos` | Lista global de contactos |
-| Team | `/proyectos/equipo` | Matriz de asignación + Reportes — solo visible para superadmin |
+| Gantt G | `/proyectos/plan` | 2 vistas con toggle en la barra oscura: **Gantt** (status por días, prioridad reordenable → `priority_rank`, PDF landscape) y **Reporte diario** (`DailyReport` — rango de fechas + multi-select de estados con In Progress default, agrupado día→proyecto→tareas con checkbox done en vivo, sáb/dom teñidos, PDF portrait) |
+| Contacts | `/proyectos/contactos` | 2 tabs: **Directorio** (lista global) + **Team & Assignments** (`TeamPanel`, solo superadmin). La ruta vieja `/proyectos/equipo` redirige a `?tab=equipo` |
 | Prospects | `/proyectos/prospectos` | Leads del AI Design gratuito — solo visible para superadmin |
 | Site | `/proyectos/sitio` | Editor CMS de la landing (textos/imágenes/secciones) — solo visible para superadmin |
 | Agenda | `/proyectos/agenda` | Agenda personal — solo visible para superadmin |
@@ -456,7 +458,9 @@ Orden: Dashboard → Gantt G → Contacts → Team (superadmin) → Agenda (supe
 
 ---
 
-## Equipo — Matriz de asignación + Reportes (`/proyectos/equipo`)
+## Equipo — Matriz de asignación + Reportes (tab "Team & Assignments" en `/proyectos/contactos`)
+
+> **Movido (jul 2026):** el panel vive en `src/components/ui/TeamPanel.tsx`, embebido como segundo tab de Contacts (solo superadmin). `/proyectos/equipo` quedó como redirect a `/proyectos/contactos?tab=equipo`.
 
 Panel del superadmin para asignar co-workers a proyectos con **monto y fechas**, y leer reportes de participación. Es la base del futuro módulo de reportes (por fecha, proyecto, participación, montos).
 
@@ -776,7 +780,7 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | `payment-schedule-sidebar.html` | Prototipo "Opción A" del layout de Estimate — cabecera dark + sub-tabs (referencia del diseño implementado) |
 | `agenda-admin-prototype.html` | Prototipo de la Agenda personal — captura por voz + 3 opciones de notificación (referencia del diseño implementado) |
 | `index02.html` | Prototipo 02 — referencia del patrón SpeechRecognition usado en Design tab (movido desde la raíz) |
-| `gantt-report-print.html` | Prototipo del **reporte diario de actividades** para el Gantt G: rango de fechas + multi-select de estados de proyecto (In Progress por defecto, se pueden sumar Approved etc.), agrupado por día (sáb/dom teñidos) → proyecto → tareas con checkbox de completado, KPIs y pie de firmas; `window.print()` → PDF |
+| `gantt-report-print.html` | Prototipo del **reporte diario de actividades** — implementado en producción como `src/components/ui/DailyReport.tsx` (vista "Reporte diario" del Gantt G, jul 2026) |
 | `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
 | `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
 

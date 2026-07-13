@@ -109,7 +109,6 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
               <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
               <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
-              {isSuperAdmin && <PanelTab href="/proyectos/equipo" label={t.panel.nav.team} />}
               {isSuperAdmin && <PanelTab href="/proyectos/prospectos" label={t.panel.nav.prospects} />}
               {isSuperAdmin && <PanelTab href="/proyectos/sitio" label={t.panel.nav.site} />}
               {isSuperAdmin && <PanelTab href="/proyectos/agenda" label={t.panel.nav.agenda} />}
@@ -167,7 +166,6 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
                 <MobileTab href="/proyectos" label={t.panel.nav.dashboard} />
                 <MobileTab href="/proyectos/plan" label={t.panel.nav.plan} />
                 <MobileTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
-                {isSuperAdmin && <MobileTab href="/proyectos/equipo" label={t.panel.nav.team} />}
                 {isSuperAdmin && <MobileTab href="/proyectos/prospectos" label={t.panel.nav.prospects} />}
                 {isSuperAdmin && <MobileTab href="/proyectos/sitio" label={t.panel.nav.site} />}
                 {isSuperAdmin && <MobileTab href="/proyectos/agenda" label={t.panel.nav.agenda} />}
