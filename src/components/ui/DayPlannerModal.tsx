@@ -31,6 +31,7 @@ interface PlanItem {
   taskId: string | null;
   isCustom: boolean;
   assignedContactId: string | null;
+  done: boolean;
 }
 
 interface PlanContact { id: string; name: string; }
@@ -66,6 +67,63 @@ const TAG_STYLES = [
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+// Los días vacíos no existen en `tasks`; se recuerdan por dispositivo para sobrevivir al reload
+function plannerDaysKey(projectId: string): string {
+  return `kokistyle-planner-days:${projectId}`;
+}
+
+function loadStoredDayDates(projectId: string): string[] {
+  try {
+    const raw = localStorage.getItem(plannerDaysKey(projectId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((d): d is string => typeof d === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeDayDates(projectId: string, dates: string[]) {
+  try {
+    localStorage.setItem(plannerDaysKey(projectId), JSON.stringify(dates));
+  } catch { /* storage lleno o bloqueado — no crítico */ }
+}
+
+function weekendKind(iso: string): "sat" | "sun" | null {
+  if (!iso) return null;
+  const day = new Date(iso + "T00:00:00").getDay();
+  return day === 6 ? "sat" : day === 0 ? "sun" : null;
+}
+
+// Colores elegidos para secciones custom — no hay columna en DB, se recuerdan por dispositivo
+function plannerColorsKey(projectId: string): string {
+  return `kokistyle-planner-colors:${projectId}`;
+}
+
+function loadStoredTagColors(projectId: string): Record<string, number> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(plannerColorsKey(projectId)) ?? "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function storeTagColor(projectId: string, tag: string, styleIdx: number) {
+  try {
+    localStorage.setItem(
+      plannerColorsKey(projectId),
+      JSON.stringify({ ...loadStoredTagColors(projectId), [tag]: styleIdx })
+    );
+  } catch { /* no crítico */ }
+}
+
+// Fallback determinístico: misma sección → mismo color en cualquier dispositivo
+function hashTagStyleIdx(tag: string): number {
+  let h = 0;
+  for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) >>> 0;
+  return h % TAG_STYLES.length;
 }
 
 function addDaysStr(iso: string, n: number): string {
@@ -109,6 +167,7 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
           taskId: null,
           isCustom: false,
           assignedContactId: null,
+          done: false,
         });
       });
     } else if (sec.section_total > 0) {
@@ -126,6 +185,7 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
         taskId: null,
         isCustom: false,
         assignedContactId: null,
+        done: false,
       });
     }
   });
@@ -135,7 +195,7 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
 // ─── Draggable card ───────────────────────────────────────────────────────────
 
 function ItemCard({
-  item, overlay, EN, contacts, onAssign, days, onJumpToDay, onEdit,
+  item, overlay, EN, contacts, onAssign, days, onJumpToDay, onEdit, onToggleDone,
 }: {
   item: PlanItem;
   overlay?: boolean;
@@ -145,6 +205,7 @@ function ItemCard({
   days?: { index: number; label: string; date: string }[];
   onJumpToDay?: (itemId: string, dayIndex: number | null) => void;
   onEdit?: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
+  onToggleDone?: (itemId: string, done: boolean) => void;
 }) {
   // El overlay usa un id propio para no colisionar con el sortable real durante el arrastre
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -195,16 +256,26 @@ function ItemCard({
           ⋮⋮
         </span>
 
+        <input
+          type="checkbox"
+          checked={item.done}
+          disabled={overlay || !onToggleDone}
+          onChange={e => onToggleDone?.(item.id, e.target.checked)}
+          onPointerDown={e => e.stopPropagation()}
+          className="size-3.5 shrink-0 cursor-pointer accent-[#4F8A63]"
+          aria-label={EN ? "Mark completed" : "Marcar completada"}
+        />
+
         <button
           type="button"
           onClick={() => canExpand && setOpen(o => !o)}
           disabled={!canExpand}
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
         >
-          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${item.tagStyle}`}>
+          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${item.done ? "opacity-50" : ""} ${item.tagStyle}`}>
             {item.sectionTag}
           </span>
-          <span className="min-w-0 flex-1 truncate text-[11px] font-medium leading-tight text-[#16323D]">
+          <span className={`min-w-0 flex-1 truncate text-[11px] font-medium leading-tight ${item.done ? "text-[#8A9B8E] line-through" : "text-[#16323D]"}`}>
             {item.description}
           </span>
           <span className="shrink-0 font-mono text-[9px] text-[#5C6A6E]">{item.hours}h</span>
@@ -334,7 +405,7 @@ function ItemCard({
 // ─── Pool ─────────────────────────────────────────────────────────────────────
 
 function ItemPool({
-  items, EN, onAddCustom, contacts, onAssign, days, onJumpToDay, onEdit,
+  items, EN, onAddCustom, contacts, onAssign, days, onJumpToDay, onEdit, onToggleDone,
 }: {
   items: PlanItem[];
   EN: boolean;
@@ -344,6 +415,7 @@ function ItemPool({
   days: { index: number; label: string; date: string }[];
   onJumpToDay: (itemId: string, dayIndex: number | null) => void;
   onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
+  onToggleDone: (itemId: string, done: boolean) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "pool" });
   return (
@@ -374,6 +446,7 @@ function ItemPool({
               days={days}
               onJumpToDay={onJumpToDay}
               onEdit={onEdit}
+              onToggleDone={onToggleDone}
             />
           ))}
         </SortableContext>
@@ -385,7 +458,7 @@ function ItemPool({
 // ─── Day column ───────────────────────────────────────────────────────────────
 
 function DayColumn({
-  day, items, capacity, date, EN, onDateChange, contacts, onAssign, days, onJumpToDay, onEdit,
+  day, items, capacity, date, EN, onDateChange, contacts, onAssign, days, onJumpToDay, onEdit, onToggleDone,
 }: {
   day: number;
   items: PlanItem[];
@@ -398,19 +471,46 @@ function DayColumn({
   days: { index: number; label: string; date: string }[];
   onJumpToDay: (itemId: string, dayIndex: number | null) => void;
   onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
+  onToggleDone: (itemId: string, done: boolean) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day}` });
   const used = items.reduce((s, i) => s + i.hours, 0);
   const pct = capacity > 0 ? Math.min((used / capacity) * 100, 100) : 0;
   const over = used > capacity;
 
+  // Sáb/dom con color diferenciador (azul/naranja); con tareas el fondo baja a gris suave pero el acento persiste
+  const wk = weekendKind(date);
+  const headerCls = wk === "sat"
+    ? "border-[#9DC3E6] bg-[#EAF3FA]"
+    : wk === "sun"
+    ? "border-[#F4B183] bg-[#FDF1E7]"
+    : "border-[#E6DDCB] bg-white";
+  const dropCls = isOver
+    ? "border-[#395886] bg-[#EDF3FB]"
+    : items.length
+    ? wk === "sat"
+      ? "border-[#9DC3E6]/70 bg-[#F0F2F4]"
+      : wk === "sun"
+      ? "border-[#F4B183]/70 bg-[#F4F1EE]"
+      : "border-transparent bg-[#F7F3EA]"
+    : wk === "sat"
+    ? "border-[#9DC3E6] bg-[#D9EAF7]"
+    : wk === "sun"
+    ? "border-[#F4B183] bg-[#FBE3D2]"
+    : "border-[#D7CBB3]";
+
   return (
     <div className="flex w-[240px] shrink-0 flex-col gap-2">
       {/* Header */}
-      <div className="rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5">
+      <div className={`rounded-xl border px-3 py-2.5 ${headerCls}`}>
         <div className="flex items-center justify-between">
           <span className="text-[12px] font-bold text-[#16323D]">
             {EN ? `Day ${day + 1}` : `Día ${day + 1}`}
+            {wk && (
+              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase ${wk === "sat" ? "bg-[#9DC3E6]/40 text-[#2E5E8C]" : "bg-[#F4B183]/40 text-[#9C5221]"}`}>
+                {wk === "sat" ? (EN ? "Sat" : "Sáb") : (EN ? "Sun" : "Dom")}
+              </span>
+            )}
           </span>
           <span className={`text-[10px] font-semibold ${over ? "text-[#B0492F]" : "text-[#5C6A6E]"}`}>
             {used}h / {capacity}h
@@ -445,8 +545,7 @@ function DayColumn({
       {/* Drop zone */}
       <div
         ref={setNodeRef}
-        className={`flex min-h-[150px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition
-          ${isOver ? "border-[#395886] bg-[#EDF3FB]" : items.length ? "border-transparent bg-[#F7F3EA]" : "border-[#D7CBB3]"}`}
+        className={`flex min-h-[150px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition ${dropCls}`}
       >
         <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
           {items.map(i => (
@@ -459,6 +558,7 @@ function DayColumn({
               days={days}
               onJumpToDay={onJumpToDay}
               onEdit={onEdit}
+              onToggleDone={onToggleDone}
             />
           ))}
         </SortableContext>
@@ -497,59 +597,152 @@ function Stepper({ label, value, min, max, onChange }: {
 
 // ─── Custom item form ─────────────────────────────────────────────────────────
 
+const NEW_SECTION = "__new__";
+
 function CustomItemForm({
-  EN, onAdd, onCancel,
+  EN, onAdd, onCancel, sections, contacts, days,
 }: {
   EN: boolean;
-  onAdd: (item: { description: string; sectionTag: string; hours: number; amount: number }) => void;
+  onAdd: (item: {
+    description: string; sectionTag: string; tagStyle: string; isNewSection: boolean;
+    hours: number; amount: number; dayIndex: number | null; assignedContactId: string | null;
+  }) => void;
   onCancel: () => void;
+  sections: { tag: string; style: string }[];
+  contacts: PlanContact[];
+  days: { index: number; label: string; date: string }[];
 }) {
-  const [desc, setDesc]     = useState("");
-  const [tag, setTag]       = useState("");
-  const [hours, setHours]   = useState(2);
-  const [amount, setAmount] = useState(0);
+  const usedStyles    = useMemo(() => new Set(sections.map(s => s.style)), [sections]);
+  const freeStyles    = useMemo(() => TAG_STYLES.filter(s => !usedStyles.has(s)), [usedStyles]);
+  const [desc, setDesc]         = useState("");
+  const [section, setSection]   = useState(sections[0]?.tag ?? NEW_SECTION);
+  const [newTag, setNewTag]     = useState("");
+  const [newStyle, setNewStyle] = useState(freeStyles[0] ?? TAG_STYLES[0]);
+  const [hours, setHours]       = useState(2);
+  const [amount, setAmount]     = useState(0);
+  const [dayIndex, setDayIndex] = useState<number | null>(null);
+  const [assignee, setAssignee] = useState<string | null>(null);
+
+  const isNew        = section === NEW_SECTION;
+  const resolvedTag  = isNew ? newTag.trim() : section;
+  const resolvedStyle = isNew
+    ? newStyle
+    : sections.find(s => s.tag === section)?.style ?? TAG_STYLES[0];
+  const canAdd = desc.trim().length > 0 && resolvedTag.length > 0;
+
+  const inputCls = "w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[#16323D] focus:border-[#395886] focus:outline-none";
+  const labelCls = "mb-1 block text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]";
 
   return (
     <div className="rounded-xl border border-[#395886] bg-white p-3 shadow-md">
       <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#395886]">
         {EN ? "New custom item" : "Nuevo item personalizado"}
       </div>
-      <input
-        autoFocus
-        placeholder={EN ? "Description" : "Descripción"}
-        value={desc}
-        onChange={e => setDesc(e.target.value)}
-        className="mb-2 w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[#16323D] focus:border-[#395886] focus:outline-none"
-      />
-      <input
-        placeholder={EN ? "Section tag (e.g. Plumbing)" : "Sección (ej. Plomería)"}
-        value={tag}
-        onChange={e => setTag(e.target.value)}
-        className="mb-2 w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[#16323D] focus:border-[#395886] focus:outline-none"
-      />
-      <div className="mb-2 flex gap-2">
-        <div className="flex-1">
-          <div className="mb-1 text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN ? "Hours" : "Horas"}</div>
+
+      <label className="mb-2 block">
+        <span className={labelCls}>{EN ? "Description" : "Descripción"}</span>
+        <textarea
+          autoFocus
+          rows={2}
+          placeholder={EN ? "e.g. Install fan extractor" : "ej. Instalar extractor"}
+          value={desc}
+          onChange={e => setDesc(e.target.value)}
+          className={`${inputCls} resize-none`}
+        />
+      </label>
+
+      <label className="mb-2 block">
+        <span className={labelCls}>{EN ? "Section" : "Sección"}</span>
+        <select value={section} onChange={e => setSection(e.target.value)} className={inputCls}>
+          {sections.map(s => (
+            <option key={s.tag} value={s.tag}>{s.tag}</option>
+          ))}
+          <option value={NEW_SECTION}>＋ {EN ? "New section…" : "Nueva sección…"}</option>
+        </select>
+      </label>
+
+      {isNew ? (
+        <div className="mb-2 rounded-lg border border-dashed border-[#D7CBB3] p-2">
           <input
-            type="number"
-            min={1}
-            max={24}
+            placeholder={EN ? "Section name (e.g. Permits)" : "Nombre de sección (ej. Permisos)"}
+            value={newTag}
+            onChange={e => setNewTag(e.target.value)}
+            className={`${inputCls} mb-2`}
+          />
+          <span className={labelCls}>{EN ? "Color" : "Color"}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {(freeStyles.length > 0 ? freeStyles : TAG_STYLES).map(style => (
+              <button
+                key={style}
+                type="button"
+                onClick={() => setNewStyle(style)}
+                className={`rounded-full px-2 py-0.5 text-[9px] font-bold transition ${style}
+                  ${newStyle === style ? "ring-2 ring-[#395886] ring-offset-1" : "opacity-70 hover:opacity-100"}`}
+              >
+                {newTag.trim() || "Aa"}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-2">
+          <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold ${resolvedStyle}`}>
+            {resolvedTag}
+          </span>
+        </div>
+      )}
+
+      <div className="mb-2 flex gap-2">
+        <label className="flex-1">
+          <span className={labelCls}>{EN ? "Hours" : "Horas"}</span>
+          <input
+            type="number" min={1} max={24}
             value={hours}
             onChange={e => setHours(Math.max(1, Number(e.target.value)))}
-            className="w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[#16323D] focus:border-[#395886] focus:outline-none"
+            className={inputCls}
           />
-        </div>
-        <div className="flex-1">
-          <div className="mb-1 text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN ? "Amount ($)" : "Monto ($)"}</div>
+        </label>
+        <label className="flex-1">
+          <span className={labelCls}>{EN ? "Amount ($)" : "Monto ($)"}</span>
           <input
-            type="number"
-            min={0}
+            type="number" min={0}
             value={amount}
             onChange={e => setAmount(Math.max(0, Number(e.target.value)))}
-            className="w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[#16323D] focus:border-[#395886] focus:outline-none"
+            className={inputCls}
           />
-        </div>
+        </label>
       </div>
+
+      <label className="mb-2 block">
+        <span className={labelCls}>{EN ? "Day" : "Día"}</span>
+        <select
+          value={dayIndex === null ? "" : String(dayIndex)}
+          onChange={e => setDayIndex(e.target.value === "" ? null : Number(e.target.value))}
+          className={inputCls}
+        >
+          <option value="">{EN ? "Pool (no day yet)" : "Pool (sin día aún)"}</option>
+          {days.map(d => (
+            <option key={d.index} value={d.index}>{d.label}</option>
+          ))}
+        </select>
+      </label>
+
+      {contacts.length > 0 && (
+        <label className="mb-2 block">
+          <span className={labelCls}>{EN ? "Assignee" : "Asignado"}</span>
+          <select
+            value={assignee ?? ""}
+            onChange={e => setAssignee(e.target.value || null)}
+            className={inputCls}
+          >
+            <option value="">{EN ? "Own team" : "Equipo propio"}</option>
+            {contacts.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
+
       <div className="flex gap-2">
         <button
           onClick={onCancel}
@@ -558,11 +751,23 @@ function CustomItemForm({
           {EN ? "Cancel" : "Cancelar"}
         </button>
         <button
-          onClick={() => { if (desc.trim()) onAdd({ description: desc.trim(), sectionTag: tag.trim() || "Custom", hours, amount }); }}
-          disabled={!desc.trim()}
+          onClick={() => {
+            if (!canAdd) return;
+            onAdd({
+              description: desc.trim(),
+              sectionTag: resolvedTag,
+              tagStyle: resolvedStyle,
+              isNewSection: isNew,
+              hours,
+              amount,
+              dayIndex,
+              assignedContactId: assignee,
+            });
+          }}
+          disabled={!canAdd}
           className="flex-1 rounded-lg bg-[#395886] py-1.5 text-[10px] font-bold text-white disabled:opacity-40"
         >
-          {EN ? "Add to pool" : "Agregar al pool"}
+          {EN ? "Add item" : "Agregar item"}
         </button>
       </div>
     </div>
@@ -618,7 +823,7 @@ export default function DayPlannerModal({
       const [{ data: existingTasks }, { data: projectContacts }] = await Promise.all([
         supabase
           .from("tasks")
-          .select("id, source_key, scheduled_date, name, hours, amount, source, source_section, estimate_item_id, estimate_section_id, assigned_contact_id, sort_order")
+          .select("id, source_key, scheduled_date, name, hours, amount, source, source_section, estimate_item_id, estimate_section_id, assigned_contact_id, sort_order, status")
           .eq("project_id", projectId)
           .or("source.eq.estimate,source.eq.planner")
           .order("sort_order", { ascending: true }),
@@ -636,29 +841,26 @@ export default function DayPlannerModal({
         .filter(Boolean);
       setContacts(loadedContacts);
 
-      // Collect unique scheduled dates (sorted)
-      const scheduledDates = [
-        ...new Set(
-          tasks
-            .filter(t => t.scheduled_date)
-            .map(t => t.scheduled_date as string)
-        ),
-      ].sort();
+      // Días = fechas con tareas ∪ fechas configuradas en este dispositivo (días vacíos incluidos)
+      const scheduledDates = tasks
+        .filter(t => t.scheduled_date)
+        .map(t => t.scheduled_date as string);
+      const allDates = [...new Set([...scheduledDates, ...loadStoredDayDates(projectId)])].sort();
 
-      const newNumDays = Math.max(4, scheduledDates.length);
+      const newNumDays = Math.max(4, allDates.length);
 
       // Build dayDates: first from existing, fill remainder consecutively
       const newDayDates: Record<number, string> = {};
-      scheduledDates.forEach((d, i) => { newDayDates[i] = d; });
-      const fillBase = scheduledDates.length > 0
-        ? scheduledDates[scheduledDates.length - 1]
+      allDates.forEach((d, i) => { newDayDates[i] = d; });
+      const fillBase = allDates.length > 0
+        ? allDates[allDates.length - 1]
         : todayIso();
-      for (let i = scheduledDates.length; i < newNumDays; i++) {
-        newDayDates[i] = addDaysStr(fillBase, i - scheduledDates.length + 1);
+      for (let i = allDates.length; i < newNumDays; i++) {
+        newDayDates[i] = addDaysStr(fillBase, i - allDates.length + 1);
       }
 
       // date → day index
-      const dateToIdx = new Map(scheduledDates.map((d, i) => [d, i]));
+      const dateToIdx = new Map(allDates.map((d, i) => [d, i]));
 
       // Build map: source_key → task row
       const taskByKey = new Map(tasks.map(t => [t.source_key as string, t]));
@@ -672,19 +874,27 @@ export default function DayPlannerModal({
           taskId: task.id as string,
           dayIndex: task.scheduled_date ? (dateToIdx.get(task.scheduled_date as string) ?? null) : null,
           assignedContactId: (task.assigned_contact_id as string | null) ?? null,
+          done: task.status === "done",
         };
       });
 
-      // Custom planner items (source = 'planner')
+      // Custom planner items (source = 'planner') — color: sección del estimate > color elegido > hash
+      const storedColors = loadStoredTagColors(projectId);
+      const tagStyleOf = (tag: string): string => {
+        const fromEstimate = estimateItems.find(i => i.sectionTag === tag)?.tagStyle;
+        if (fromEstimate) return fromEstimate;
+        const idx = storedColors[tag];
+        return TAG_STYLES[typeof idx === "number" ? Math.abs(idx) % TAG_STYLES.length : hashTagStyleIdx(tag)];
+      };
       const customItems: PlanItem[] = tasks
         .filter(t => t.source === "planner")
-        .map((t, ci) => ({
+        .map(t => ({
           id: `planner-${t.id}`,
           estimateSectionId: (t.estimate_section_id as string | null) ?? null,
           estimateItemId: (t.estimate_item_id as string | null) ?? null,
           sourceKey: (t.source_key as string) ?? `planner-custom:${t.id}`,
           sectionTag: (t.source_section as string) ?? "Custom",
-          tagStyle: TAG_STYLES[(estimateItems.length + ci) % TAG_STYLES.length],
+          tagStyle: tagStyleOf((t.source_section as string) ?? "Custom"),
           description: t.name as string,
           amount: (t.amount as number) ?? 0,
           hours: (t.hours as number) ?? 2,
@@ -692,6 +902,7 @@ export default function DayPlannerModal({
           taskId: t.id as string,
           isCustom: true,
           assignedContactId: (t.assigned_contact_id as string | null) ?? null,
+          done: t.status === "done",
         }));
 
       setNumDays(newNumDays);
@@ -710,19 +921,37 @@ export default function DayPlannerModal({
   // ── numDays stepper: extend/trim dayDates ───────────────────────────────────
   const handleNumDaysChange = (n: number) => {
     setNumDays(n);
+    if (n < numDays) {
+      // Items de días recortados vuelven al pool — si conservaran el dayIndex huérfano se grabarían sin fecha
+      setItems(prev => prev.map(i => (i.dayIndex !== null && i.dayIndex >= n) ? { ...i, dayIndex: null } : i));
+    }
     setDayDates(prev => {
       const next: Record<number, string> = {};
-      const base = prev[0] ?? todayIso();
+      const used = new Set<string>();
       for (let i = 0; i < n; i++) {
-        next[i] = prev[i] ?? addDaysStr(base, i);
+        if (prev[i]) { next[i] = prev[i]; used.add(prev[i]); }
+      }
+      // Días nuevos: continuar después de la última fecha, saltando duplicados —
+      // el reload reconstruye los días desde fechas ÚNICAS, así que dos días con la misma fecha se fusionan
+      let cursor = [...used].sort().pop() ?? todayIso();
+      for (let i = 0; i < n; i++) {
+        if (next[i]) continue;
+        do { cursor = addDaysStr(cursor, 1); } while (used.has(cursor));
+        next[i] = cursor;
+        used.add(cursor);
       }
       return next;
     });
   };
 
   const setDayDate = useCallback((day: number, iso: string) => {
+    const taken = Object.entries(dayDates).some(([k, v]) => Number(k) !== day && v === iso);
+    if (taken) {
+      toast(EN ? "Another day already has that date" : "Otro día ya tiene esa fecha");
+      return;
+    }
     setDayDates(prev => ({ ...prev, [day]: iso }));
-  }, []);
+  }, [dayDates, EN, toast]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -809,32 +1038,59 @@ export default function DayPlannerModal({
 
   // ── Add custom item ──────────────────────────────────────────────────────────
   const addCustomItem = useCallback((fields: {
-    description: string; sectionTag: string; hours: number; amount: number;
+    description: string; sectionTag: string; tagStyle: string; isNewSection: boolean;
+    hours: number; amount: number; dayIndex: number | null; assignedContactId: string | null;
   }) => {
     const uuid = crypto.randomUUID();
+    const tag = fields.sectionTag || "Custom";
+    if (fields.isNewSection) {
+      storeTagColor(projectId, tag, Math.max(0, TAG_STYLES.indexOf(fields.tagStyle)));
+    }
     const newItem: PlanItem = {
       id: `custom-new-${uuid}`,
       estimateSectionId: null,
       estimateItemId: null,
       sourceKey: `planner-custom:${uuid}`,
-      sectionTag: fields.sectionTag || "Custom",
-      tagStyle: TAG_STYLES[items.length % TAG_STYLES.length],
+      sectionTag: tag,
+      tagStyle: fields.tagStyle,
       description: fields.description,
       amount: fields.amount,
       hours: fields.hours,
-      dayIndex: null,
+      dayIndex: fields.dayIndex,
       taskId: null,
       isCustom: true,
-      assignedContactId: null,
+      assignedContactId: fields.assignedContactId,
+      done: false,
     };
     setItems(prev => [newItem, ...prev]);
     setShowCustomForm(false);
-  }, [items.length]);
+  }, [projectId]);
 
   // ── Assign contact to item ───────────────────────────────────────────────────
   const handleAssign = useCallback((itemId: string, contactId: string | null) => {
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, assignedContactId: contactId } : i));
   }, []);
+
+  // ── Completado: reemplaza al Kanban del Workflow — persiste al instante si ya es task ──
+  const handleToggleDone = useCallback((itemId: string, done: boolean) => {
+    const target = items.find(i => i.id === itemId);
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, done } : i));
+    if (target?.taskId) {
+      supabase.from("tasks")
+        .update({ status: done ? "done" : "pend" })
+        .eq("id", target.taskId)
+        .then(({ error }) => {
+          if (error) toast(EN ? "Error updating status" : "Error al actualizar estado");
+        });
+    }
+  }, [items, toast, EN]);
+
+  // Secciones existentes (tag + color) para el combo del formulario custom
+  const sectionOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const i of items) if (!seen.has(i.sectionTag)) seen.set(i.sectionTag, i.tagStyle);
+    return [...seen.entries()].map(([tag, style]) => ({ tag, style }));
+  }, [items]);
 
   // ── Jump item to specific day (or back to pool) from the card selector ────────
   const handleJumpToDay = useCallback((itemId: string, dayIndex: number | null) => {
@@ -859,6 +1115,8 @@ export default function DayPlannerModal({
   const save = async () => {
     setSaving(true);
 
+    storeDayDates(projectId, Array.from({ length: numDays }, (_, i) => dayDates[i]).filter(Boolean));
+
     const assigned    = items.filter(i => i.dayIndex !== null);
     const unscheduled = items.filter(i => i.dayIndex === null && i.taskId !== null);
 
@@ -881,7 +1139,7 @@ export default function DayPlannerModal({
         name:                item.description,
         hours:               item.hours,
         duration_weeks:      1,
-        status:              "pend",
+        status:              item.done ? "done" : "pend",
         sort_order:          orderOf(item),
         assigned_contact_id: item.assignedContactId,
         scheduled_date:      dayDates[item.dayIndex ?? 0] ?? null,
@@ -961,6 +1219,7 @@ export default function DayPlannerModal({
 
   const scheduledCount = items.filter(i => i.dayIndex !== null).length;
   const savedCount     = items.filter(i => i.taskId !== null).length;
+  const doneCount      = items.filter(i => i.done).length;
 
   return (
     <div className={embedded
@@ -985,7 +1244,7 @@ export default function DayPlannerModal({
           <div className="text-[10px] text-[#5C6A6E]">
             {loading
               ? (EN ? "Loading…" : "Cargando…")
-              : `${scheduledCount}/${items.length} ${EN ? "scheduled" : "asignados"} · ${savedCount} ${EN ? "saved in Workflow" : "guardados en Workflow"}`
+              : `${scheduledCount}/${items.length} ${EN ? "scheduled" : "asignados"} · ${savedCount} ${EN ? "saved" : "guardados"} · ${doneCount} ${EN ? "completed" : "completados"}`
             }
           </div>
         </div>
@@ -1033,7 +1292,14 @@ export default function DayPlannerModal({
               </div>
 
               {showCustomForm ? (
-                <CustomItemForm EN={EN} onAdd={addCustomItem} onCancel={() => setShowCustomForm(false)} />
+                <CustomItemForm
+                  EN={EN}
+                  onAdd={addCustomItem}
+                  onCancel={() => setShowCustomForm(false)}
+                  sections={sectionOptions}
+                  contacts={contacts}
+                  days={dayLabels}
+                />
               ) : null}
 
               <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
@@ -1046,6 +1312,7 @@ export default function DayPlannerModal({
                   days={dayLabels}
                   onJumpToDay={handleJumpToDay}
                   onEdit={handleEdit}
+                  onToggleDone={handleToggleDone}
                 />
               </div>
             </div>
@@ -1085,6 +1352,7 @@ export default function DayPlannerModal({
                     days={dayLabels}
                     onJumpToDay={handleJumpToDay}
                     onEdit={handleEdit}
+                    onToggleDone={handleToggleDone}
                   />
                 ))}
               </div>
@@ -1113,7 +1381,13 @@ export default function DayPlannerModal({
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-2 rounded-full bg-[#4F8A63] opacity-60 outline outline-1 outline-[#4F8A63]" />
-          {EN ? "\"saved\" badge = already in Workflow" : "badge \"saved\" = ya está en Workflow"}
+          {EN ? "green dot = saved · checkbox = completed" : "punto verde = guardada · checkbox = completada"}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-sm bg-[#9DC3E6]" />
+          {EN ? "Saturday" : "Sábado"}
+          <span className="ml-1 inline-block h-2 w-2 rounded-sm bg-[#F4B183]" />
+          {EN ? "Sunday" : "Domingo"}
         </span>
         <span className="ml-auto">
           {EN
