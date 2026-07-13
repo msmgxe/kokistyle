@@ -277,6 +277,12 @@ function ItemPool({
       className={`flex min-h-[100px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition
         ${isOver ? "border-[#395886] bg-[#EDF3FB]" : "border-[#D7CBB3] bg-[#FDFAF6]"}`}
     >
+      <button
+        onClick={onAddCustom}
+        className="flex items-center justify-center gap-1 rounded-xl border border-dashed border-[#D7CBB3] py-1.5 text-[10px] font-semibold text-[#5C6A6E] transition hover:border-[#395886] hover:text-[#395886]"
+      >
+        <Plus size={10} /> {EN ? "Add custom item" : "Agregar item"}
+      </button>
       {items.length === 0 ? (
         <div className="flex flex-1 items-center justify-center py-4 text-[11px] text-[#5C6A6E]">
           ✓ {EN ? "All items scheduled" : "Todos los items asignados"}
@@ -295,12 +301,6 @@ function ItemPool({
           ))}
         </SortableContext>
       )}
-      <button
-        onClick={onAddCustom}
-        className="mt-1 flex items-center justify-center gap-1 rounded-xl border border-dashed border-[#D7CBB3] py-1.5 text-[10px] font-semibold text-[#5C6A6E] transition hover:border-[#395886] hover:text-[#395886]"
-      >
-        <Plus size={10} /> {EN ? "Add custom item" : "Agregar item"}
-      </button>
     </div>
   );
 }
@@ -906,19 +906,6 @@ export default function DayPlannerModal({
         >
           <Zap size={12} /> {EN ? "Auto-assign" : "Auto-asignar"}
         </button>
-        <button
-          onClick={save}
-          disabled={saving || loading}
-          className="flex items-center gap-1.5 rounded-xl bg-[#16323D] px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-[#0F2830] disabled:opacity-50"
-        >
-          <Save size={12} />
-          {saving
-            ? "…"
-            : EN
-              ? `Save (${scheduledCount})`
-              : `Guardar (${scheduledCount})`
-          }
-        </button>
       </div>
 
       {/* ── Main canvas ────────────────────────────────────────────────────── */}
@@ -1028,6 +1015,19 @@ export default function DayPlannerModal({
             : `Capacidad: ${dayCapacity}h/día (${workersPerDay} trab. × ${hoursPerWorker}h)`}
         </span>
       </div>
+
+      {/* Save flotante — accesible en cualquier momento */}
+      {!loading && (
+        <button
+          onClick={save}
+          disabled={saving}
+          className="fixed bottom-6 right-6 z-[350] inline-flex items-center gap-2 rounded-full bg-[#B0492F] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_rgba(176,73,47,0.45)] transition hover:bg-[#983c25] disabled:opacity-60"
+          aria-label={EN ? "Save" : "Guardar"}
+        >
+          <Save size={16} />
+          {saving ? "…" : EN ? `Save (${scheduledCount})` : `Guardar (${scheduledCount})`}
+        </button>
+      )}
     </div>
   );
 }
