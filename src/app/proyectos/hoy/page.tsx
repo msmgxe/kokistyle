@@ -6,6 +6,7 @@ import { supabase } from "@/src/lib/supabase";
 import { initials } from "@/src/lib/utils";
 import { logActivity } from "@/src/lib/activity";
 import { branding } from "@/src/config/branding";
+import QuickPhoto from "@/src/components/ui/QuickPhoto";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import type { Task } from "@/src/types/project";
@@ -334,6 +335,11 @@ export default function HoyPage() {
                   <span className="ml-auto font-mono text-[11px] font-bold text-[#4F8A63]">
                     {pAll.filter(tk => tk.status === "done").length}/{pAll.length} ✓
                   </span>
+                  <QuickPhoto
+                    projectId={pid}
+                    projectTitle={p?.title.split(" — ")[0] ?? ""}
+                    toast={showToast}
+                  />
                 </div>
                 <div className="space-y-2">
                   {pt.map(task => {

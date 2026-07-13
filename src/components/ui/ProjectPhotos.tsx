@@ -4,42 +4,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X, Trash2 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
+import {
+  PHOTOS_BUCKET, PHOTO_TAG_ORDER, PHOTO_TAG_COLORS, uploadProjectPhoto,
+} from "@/src/lib/photos";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import type { ProjectPhoto, PhotoTag } from "@/src/types/project";
 
-const TAG_COLORS: Record<PhotoTag, string> = {
-  antes:    "#5C6A6E",
-  avance:   "#395886",
-  despues:  "#4F8A63",
-  problema: "#B0492F",
-  material: "#B98A2F",
-};
-const TAG_ORDER: PhotoTag[] = ["antes", "avance", "despues", "problema", "material"];
-
-const BUCKET = "kokistyle-files";
+const TAG_COLORS = PHOTO_TAG_COLORS;
+const TAG_ORDER = PHOTO_TAG_ORDER;
+const BUCKET = PHOTOS_BUCKET;
 
 function toIso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-// Las fotos del teléfono pesan 5-15MB — se comprimen a máx 1600px JPEG antes de subir
-async function compressImage(file: File): Promise<Blob> {
-  try {
-    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-    const w = Math.max(1, Math.round(bmp.width * scale));
-    const h = Math.max(1, Math.round(bmp.height * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext("2d")!.drawImage(bmp, 0, 0, w, h);
-    bmp.close();
-    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, "image/jpeg", 0.82));
-    return blob && blob.size < file.size ? blob : file;
-  } catch {
-    return file;
-  }
 }
 
 export default function ProjectPhotos({
@@ -130,22 +107,7 @@ export default function ProjectPhotos({
       setUploadStep(i + 1);
       const file = pending[i];
       try {
-        const blob = await compressImage(file);
-        const path = `project-photos/${activeProject}/${crypto.randomUUID()}.jpg`;
-        const { error: upErr } = await supabase.storage.from(BUCKET)
-          .upload(path, blob, { contentType: "image/jpeg" });
-        if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        // taken_at desde la fecha real del archivo — las fotos viejas del carrete quedan en su día
-        const takenAt = toIso(new Date(file.lastModified || Date.now()));
-        const { error: insErr } = await supabase.from("project_photos").insert({
-          project_id: activeProject,
-          url: pub.publicUrl,
-          caption: caption.trim() || null,
-          tag,
-          taken_at: takenAt,
-        });
-        if (insErr) throw insErr;
+        await uploadProjectPhoto({ projectId: activeProject, file, caption, tag });
         okCount++;
       } catch {
         toast(tf.uploadError);

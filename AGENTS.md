@@ -572,7 +572,7 @@ Componente compartido `src/components/ui/ProjectPhotos.tsx` (jul 2026):
 - **Compresión client-side**: `createImageBitmap` (con `imageOrientation: "from-image"`) + canvas → JPEG máx 1600px @0.82 antes de subir — las fotos de teléfono de 5-15MB quedan en ~200-400KB.
 - **Storage**: `kokistyle-files/project-photos/<projectId>/<uuid>.jpg` (políticas anon existentes). Fila en `project_photos` con `taken_at` tomado de `file.lastModified` — las fotos viejas del carrete quedan ordenadas en su fecha real.
 - **Galería**: agrupada por `taken_at` desc, filtros por etiqueta con conteos, grid 3 col (6 en desktop), visor fullscreen con ‹ ›, comentario, etiqueta y eliminar (borra fila + archivo del Storage best-effort, confirmación de dos toques).
-- **Dos entradas**: página global `/proyectos/fotos` (selector de proyecto + opción "Todos" solo-ver con etiqueta del proyecto en cada miniatura) y **tab `fotos`** en el detalle del proyecto (proyecto fijo). El tab se gatea con la sección de permisos `workflow` y está en `TAB_ACCESS_OPTIONS` (default coworker ✓, client ✓).
+- **Tres entradas**: página global `/proyectos/fotos` (selector de proyecto + opción "Todos" solo-ver con etiqueta del proyecto en cada miniatura), **tab `fotos`** en el detalle del proyecto (proyecto fijo), y **`QuickPhoto.tsx`** — botón 📷 en la cabecera de cada proyecto de la vista "Hoy" que abre la cámara y sube con modal (comentario+etiqueta) **siempre anclado a ese proyecto**. El tab se gatea con la sección de permisos `workflow` y está en `TAB_ACCESS_OPTIONS` (default coworker ✓, client ✓). Lógica compartida en `src/lib/photos.ts` (`compressImage`, `uploadProjectPhoto`, colores/orden de tags).
 - Migración SQL (Bloque 8 de `schema.sql`):
 
 ```sql
