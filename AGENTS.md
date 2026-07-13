@@ -75,6 +75,7 @@ src/
 │   │   ├── layout.tsx                # Layout del panel: nav top, logout, VoiceFAB, LangSwitch
 │   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs + eliminar proyecto)
 │   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Gantt · Materials · Contacts · Notes · Design
+│   │   ├── hoy/page.tsx              # Vista "Hoy" — checklist móvil del día: tareas por proyecto (checkbox grande → tasks.status), notas del día (agenda_events, superadmin), anillo de progreso, filtros, navegación ‹hoy›. Respeta my_tasks_only. Destino del shortcut /acceso/<token>?to=hoy y del shortcut PWA del manifest
 │   │   ├── agenda/page.tsx           # Agenda personal del admin — citas/tasks/reuniones + captura por voz + .ics (solo superadmin)
 │   │   ├── contactos/page.tsx        # Contacts — 2 tabs: Directorio (lista global) + Team & Assignments (TeamPanel, solo superadmin; deep link ?tab=equipo)
 │   │   ├── equipo/page.tsx           # Redirect → /proyectos/contactos?tab=equipo (el panel de Equipo vive en Contacts desde jul 2026)
@@ -448,6 +449,7 @@ Orden: Dashboard → Gantt G → Contacts → Prospects (superadmin) → Site (s
 | Link | Ruta | Notas |
 |---|---|---|
 | Dashboard | `/proyectos` | — |
+| Hoy / Today | `/proyectos/hoy` | Checklist móvil del día (tareas + notas). Shortcuts: `/acceso/<token>?to=hoy` y `shortcuts` del `manifest.json` (long-press del ícono PWA) |
 | Gantt G | `/proyectos/plan` | 2 vistas con toggle en la barra oscura: **Gantt** (calendario estilo Excel vía `GanttCalendar` — columna real por día/semana, sáb azul/dom naranja, línea de hoy, scroll horizontal con columnas izquierdas sticky, auto-scroll a hoy, prioridad reordenable → `priority_rank`, PDF landscape; **solo lista proyectos con tareas** + combo para aislar un proyecto) y **Reporte diario** (`DailyReport` — rango de fechas + multi-select de estados con In Progress default, agrupado día→proyecto→tareas con checkbox done en vivo, sáb/dom teñidos, PDF portrait) |
 | Contacts | `/proyectos/contactos` | 2 tabs: **Directorio** (lista global) + **Team & Assignments** (`TeamPanel`, solo superadmin). La ruta vieja `/proyectos/equipo` redirige a `?tab=equipo` |
 | Prospects | `/proyectos/prospectos` | Leads del AI Design gratuito — solo visible para superadmin |
@@ -547,7 +549,7 @@ Shortcut para smartphone/tableta que abre el panel **ya autenticado**, sin PIN. 
 
 1. Dashboard → **Seguridad → Dispositivos** (`AdminSettings`, solo superadmin): nombre del dispositivo + PIN → `POST /api/auth/device-tokens` (`op: "create"`) genera un token aleatorio (`crypto.randomBytes(24)`, base64url) y lo guarda en `device_tokens`.
 2. El admin copia el enlace `https://<host>/acceso/<token>` y lo abre en el teléfono → "Añadir a pantalla de inicio".
-3. `/acceso/[token]` llama a `POST /api/auth/device-login` (server-side, `supabase-admin`): valida token no revocado/no expirado, actualiza `last_used_at` y retorna la sesión (`role: superadmin` + name, o el registro de `app_users`).
+3. `/acceso/[token]` llama a `POST /api/auth/device-login` (server-side, `supabase-admin`): valida token no revocado/no expirado, actualiza `last_used_at` y retorna la sesión (`role: superadmin` + name, o el registro de `app_users`). Acepta `?to=hoy` para aterrizar en `/proyectos/hoy` (checklist del día) en vez del dashboard — permite 2 shortcuts en el teléfono con el mismo token.
 4. `AuthContext.loginWithToken()` crea la sesión en `localStorage` + guarda el token en `kokistyle-device-token` (superadmin con `pin: ""` — el PIN **nunca** viaja en el enlace) y registra el login en `activity_log` con `details: { method: "device_token" }`.
 5. En **cada apertura posterior** la sesión persistente se revalida llamando a `device-login` con el token guardado — si fue revocado o expiró, se cierra sola. Esto hace que el botón **Revocar** funcione como "cerrar sesión en ese dispositivo".
 6. Revocación individual desde el mismo panel (`op: "revoke"`).

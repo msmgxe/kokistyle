@@ -21,6 +21,35 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "productivity"],
-  "lang": "es"
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "lang": "es",
+  "shortcuts": [
+    {
+      "name": "Hoy — actividades del día",
+      "short_name": "Hoy",
+      "description": "Checklist de tareas y notas del día",
+      "url": "/proyectos/hoy",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Panel de proyectos",
+      "short_name": "Panel",
+      "description": "Dashboard completo",
+      "url": "/proyectos",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }

@@ -15,8 +15,11 @@ export default function AccesoTokenPage() {
   useEffect(() => {
     if (!token || attempted.current) return;
     attempted.current = true;
+    // ?to=hoy → el shortcut aterriza en el checklist del día en vez del dashboard
+    const to = new URLSearchParams(window.location.search).get("to");
+    const dest = to === "hoy" ? "/proyectos/hoy" : "/proyectos";
     loginWithToken(String(token)).then(ok => {
-      if (ok) router.replace("/proyectos");
+      if (ok) router.replace(dest);
       else setFailed(true);
     });
   }, [token, loginWithToken, router]);

@@ -107,6 +107,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
             <nav className="hidden flex-1 gap-0.5 overflow-x-auto [scrollbar-width:none] lg:flex">
               <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
+              <PanelTab href="/proyectos/hoy" label={t.panel.nav.today} />
               <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
               <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
               {isSuperAdmin && <PanelTab href="/proyectos/prospectos" label={t.panel.nav.prospects} />}
@@ -164,6 +165,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
               <nav className="flex-1 space-y-1 overflow-y-auto p-3">
                 <MobileTab href="/proyectos" label={t.panel.nav.dashboard} />
+                <MobileTab href="/proyectos/hoy" label={t.panel.nav.today} />
                 <MobileTab href="/proyectos/plan" label={t.panel.nav.plan} />
                 <MobileTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
                 {isSuperAdmin && <MobileTab href="/proyectos/prospectos" label={t.panel.nav.prospects} />}

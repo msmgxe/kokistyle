@@ -279,6 +279,7 @@ export const translations = {
     panel: {
       nav: {
         dashboard: "Dashboard",
+        today: "Today",
         contacts: "Contacts",
         plan: "Gantt G",
         activity: "Activity",
@@ -825,6 +826,21 @@ export const translations = {
         noteDeleted: "Note deleted",
         noteError: "Error saving note",
       },
+      hoy: {
+        todayTag: "TODAY",
+        todayBtn: "Today",
+        prevDay: "Previous day",
+        nextDay: "Next day",
+        completed: "completed",
+        ofDay: "of the day",
+        filterAll: "All",
+        filterPend: "Pending",
+        filterDone: "Done",
+        emptyDay: "No activities scheduled for this day",
+        emptyDone: "Nothing completed yet",
+        emptyPend: "All done — great job ✨",
+        savedToast: "✓ Saved",
+      },
       globalContacts: {
         title: "Contacts",
         subtitle: "Specialist directory. Tap a project to assign or remove.",
@@ -1184,6 +1200,7 @@ export const translations = {
     panel: {
       nav: {
         dashboard: "Panel",
+        today: "Hoy",
         agenda: "Agenda",
         contacts: "Contactos",
         plan: "Gantt G",
@@ -1726,6 +1743,21 @@ export const translations = {
         noteSaved: "Nota guardada — también aparece en tu Agenda",
         noteDeleted: "Nota eliminada",
         noteError: "Error al guardar la nota",
+      },
+      hoy: {
+        todayTag: "HOY",
+        todayBtn: "Hoy",
+        prevDay: "Día anterior",
+        nextDay: "Día siguiente",
+        completed: "completadas",
+        ofDay: "del día",
+        filterAll: "Todas",
+        filterPend: "Pendientes",
+        filterDone: "Hechas",
+        emptyDay: "Sin actividades programadas para este día",
+        emptyDone: "Aún no hay nada completado",
+        emptyPend: "Todo listo — buen trabajo ✨",
+        savedToast: "✓ Guardado",
       },
       globalContacts: {
         title: "Contactos",
