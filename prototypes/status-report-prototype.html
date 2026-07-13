@@ -1,0 +1,360 @@
+<title>Reporte de Status de Proyectos — Prototipo</title>
+<style>
+  :root{
+    --teal:#16323D; --teal2:#1E4152; --cream:#F5E9DA; --card:#FFFFFF; --band:#F2EFE7;
+    --border:#E6DDCB; --ink:#16323D; --soft:#5C6A6E; --green:#4F8A63; --red:#B0492F;
+    --amber:#C9A227; --navy:#395886; --slate:#7C8A99;
+    --todo:#E3E8EE; --todoInk:#44586B; --prog:#EDE3CF; --progInk:#7A6230; --done:#DCEBDD; --doneInk:#4F8A63;
+    --shadow:0 1px 3px rgba(22,50,61,.07);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --cream:#0E1F26; --card:#152E38; --band:#112731; --border:#274753; --ink:#EDE6D8; --soft:#9FB2B8;
+      --todo:#20323C; --todoInk:#9FB6C4; --prog:#33301F; --progInk:#D9C489; --done:#1E3226; --doneInk:#8FC7A2; }
+  }
+  :root[data-theme="light"]{ --cream:#F5E9DA; --card:#FFFFFF; --band:#F2EFE7; --border:#E6DDCB; --ink:#16323D; --soft:#5C6A6E;
+    --todo:#E3E8EE; --todoInk:#44586B; --prog:#EDE3CF; --progInk:#7A6230; --done:#DCEBDD; --doneInk:#4F8A63; }
+  :root[data-theme="dark"]{ --cream:#0E1F26; --card:#152E38; --band:#112731; --border:#274753; --ink:#EDE6D8; --soft:#9FB2B8;
+    --todo:#20323C; --todoInk:#9FB6C4; --prog:#33301F; --progInk:#D9C489; --done:#1E3226; --doneInk:#8FC7A2; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+  .bookman{font-family:"Bookman Old Style","Book Antiqua",Palatino,Georgia,serif}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 20px 70px}
+
+  header.hero{background:var(--teal);color:#fff;padding:24px 20px 0}
+  .hero-in{max-width:1160px;margin:0 auto}
+  .hero-top{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{width:44px;height:44px;border-radius:12px;background:#F5E9DA;color:#16323D;display:flex;
+    align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .brand h1{font-size:21px;margin:0;font-weight:400}
+  .brand small{display:block;font-size:11px;opacity:.72;letter-spacing:1.4px;text-transform:uppercase}
+  .badge{font-size:11px;letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(245,233,218,.4);
+    border-radius:999px;padding:5px 14px;color:#F5E9DA}
+  .tabs{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}
+  .tab{border:1px solid rgba(245,233,218,.25);background:transparent;color:#F5E9DA;border-radius:12px 12px 0 0;
+    padding:11px 16px 13px;cursor:pointer;font:inherit;font-size:13px;text-align:left;min-width:210px;flex:1}
+  .tab b{display:block;font-size:14px;margin-bottom:1px}
+  .tab span{opacity:.68;font-size:11.5px}
+  .tab.active{background:var(--cream);color:var(--ink);border-color:var(--cream)}
+  .tab.active span{color:var(--soft);opacity:.9}
+
+  .desc{background:var(--band);border:1px solid var(--border);border-top:none;border-radius:0 0 14px 14px;
+    padding:12px 18px;font-size:12.5px;color:var(--soft);margin-bottom:20px}
+  .desc b{color:var(--ink)}
+
+  /* toolbar */
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+  .toolbar .grp{display:flex;gap:4px;align-items:center;background:var(--card);border:1px solid var(--border);
+    border-radius:12px;padding:4px}
+  .toolbar label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--soft);padding:0 6px}
+  .pill{border:none;background:transparent;color:var(--soft);border-radius:8px;padding:5px 10px;font:inherit;
+    font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .pill.on{background:var(--navy);color:#fff}
+  .pill .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .switch{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink)}
+  .toggle .track{width:40px;height:22px;border-radius:99px;background:var(--border);position:relative;transition:.15s}
+  .toggle .track i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .toggle.on .track{background:var(--green)} .toggle.on .track i{left:20px}
+  .btn{border:none;border-radius:11px;padding:9px 16px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px}
+  .btn-pdf{background:var(--teal);color:#F5E9DA}
+
+  /* summary strip */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;box-shadow:var(--shadow)}
+  .kpi b{font-size:22px;display:block}
+  .kpi span{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--soft)}
+
+  /* badges */
+  .st{font-size:10px;font-weight:800;border-radius:999px;padding:2px 9px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+  .st.prospecto{background:var(--todo);color:var(--todoInk)} .st.presupuesto{background:#DCE6E6;color:#0E2630}
+  .st.aprobado{background:#DCE8E9;color:#4E7A82} .st.en_obra{background:var(--prog);color:var(--progInk)}
+  .st.terminado{background:var(--done);color:var(--doneInk)}
+  .st.todo{background:var(--todo);color:var(--todoInk)} .st.prog{background:var(--prog);color:var(--progInk)} .st.done{background:var(--done);color:var(--doneInk)}
+  .pr{font-size:9.5px;font-weight:800;border-radius:6px;padding:2px 7px;text-transform:uppercase;letter-spacing:.4px}
+  .pr.high{background:color-mix(in srgb,var(--red) 15%,var(--card));color:var(--red);border:1px solid color-mix(in srgb,var(--red) 30%,transparent)}
+  .pr.med{background:color-mix(in srgb,var(--amber) 18%,var(--card));color:#8a6d10;border:1px solid color-mix(in srgb,var(--amber) 35%,transparent)}
+  .pr.low{background:var(--band);color:var(--soft);border:1px solid var(--border)}
+
+  .progbar{height:6px;border-radius:99px;background:var(--band);overflow:hidden;min-width:90px}
+  .progbar i{display:block;height:100%;border-radius:99px;background:var(--green)}
+
+  /* A — acordeón por proyecto */
+  .pcard{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+  .phead{display:flex;gap:12px;align-items:center;padding:13px 16px;cursor:pointer}
+  .pthumb{width:38px;height:38px;border-radius:10px;background:var(--teal);color:#F5E9DA;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:12px;flex:none}
+  .phead .nm{flex:1;min-width:0}
+  .phead .nm b{font-size:14px;display:block}
+  .phead .nm small{font-size:11px;color:var(--soft)}
+  .phead .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .chev{transition:.2s;color:var(--soft);font-size:12px}
+  .pcard.open .chev{transform:rotate(90deg)}
+  .pbody{display:none;border-top:1px solid var(--band);padding:6px 16px 14px}
+  .pcard.open .pbody{display:block}
+  .stgroup{margin-top:10px}
+  .stgroup h4{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--soft);margin:0 0 6px}
+  .stgroup h4 .cnt{background:var(--band);border-radius:999px;padding:0 7px;font-size:10px}
+  .task{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;background:var(--band);margin-bottom:5px;font-size:12.5px}
+  .task .tn{flex:1;min-width:0}
+  .task .tn b{font-weight:700}
+  .task .tn small{display:block;font-size:10.5px;color:var(--soft)}
+
+  /* B — pipeline board */
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;align-items:start}
+  .col{background:var(--band);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .col-h{background:var(--teal);color:#F5E9DA;padding:9px 13px;font-size:11.5px;font-weight:800;letter-spacing:.4px;
+    display:flex;justify-content:space-between;align-items:center}
+  .col-h .n{background:rgba(255,255,255,.15);border-radius:999px;padding:0 8px;font-size:10px}
+  .col-b{padding:9px;display:flex;flex-direction:column;gap:8px;min-height:50px}
+  .bcard{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px;box-shadow:var(--shadow)}
+  .bcard .bt{display:flex;justify-content:space-between;gap:8px;align-items:start}
+  .bcard b{font-size:12.5px}
+  .bcard small{font-size:10.5px;color:var(--soft);display:block;margin-top:1px}
+  .bcard .row{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .bmini{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:4px}
+  .bchip{font-size:9px;border-radius:6px;padding:2px 6px;font-weight:700}
+
+  /* C — calendario */
+  .cal-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+  table.cal{border-collapse:separate;border-spacing:0;min-width:820px;width:100%;font-size:11.5px}
+  .cal th{background:var(--teal);color:#F5E9DA;padding:8px 10px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;text-align:center}
+  .cal th:first-child{text-align:left;min-width:170px}
+  .cal td{border-bottom:1px solid var(--border);padding:5px 6px;text-align:center;vertical-align:middle}
+  .cal td.pj{text-align:left;background:var(--band)}
+  .cal td.pj b{font-size:12px} .cal td.pj small{font-size:10px;color:var(--soft);display:block}
+  .ev{display:inline-block;border-radius:7px;padding:3px 7px;font-size:10px;font-weight:700;margin:1px;white-space:nowrap}
+  .ev.todo{background:var(--todo);color:var(--todoInk)} .ev.prog{background:var(--prog);color:var(--progInk)} .ev.done{background:var(--done);color:var(--doneInk)}
+  .ev.hi{box-shadow:inset 0 0 0 1.5px var(--red)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:11.5px;color:var(--soft);align-items:center}
+  .legend .k{display:inline-flex;align-items:center;gap:6px}
+  .legend .sw{width:12px;height:12px;border-radius:4px}
+
+  .rpt-head{display:none}
+  @media print{
+    @page{margin:14mm}
+    body{background:#fff;color:#000}
+    header.hero,.desc,.toolbar,.tab,.tabs,#themeBtn,.no-print{display:none!important}
+    .wrap{max-width:100%;padding:0}
+    .rpt-head{display:block;margin-bottom:14px;border-bottom:2px solid #16323D;padding-bottom:10px}
+    .rpt-head h2{margin:0;font-size:20px;color:#16323D}
+    .rpt-head p{margin:3px 0 0;font-size:12px;color:#555}
+    .pcard,.kpi,.col,.bcard,.cal-wrap{box-shadow:none;break-inside:avoid}
+    .pbody{display:block!important}
+    .view{display:block!important}
+  }
+</style>
+
+<header class="hero">
+  <div class="hero-in">
+    <div class="hero-top">
+      <div class="brand">
+        <div class="logo">LD</div>
+        <div><small>Luxaris Design · Reportes</small><h1 class="bookman">Status de Proyectos</h1></div>
+      </div>
+      <span class="badge">Prototipo · 3 vistas</span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" id="tA" onclick="setView('A')"><b>A · Por proyecto (acordeón)</b><span>Estado + progreso, actividades por estado</span></button>
+      <button class="tab" id="tB" onclick="setView('B')"><b>B · Pipeline por estado</b><span>Tablero ejecutivo del embudo</span></button>
+      <button class="tab" id="tC" onclick="setView('C')"><b>C · Calendario de actividades</b><span>Línea de tiempo por proyecto y fecha</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="desc" id="desc"></div>
+
+  <!-- toolbar -->
+  <div class="toolbar no-print">
+    <div class="grp">
+      <label>Estado</label>
+      <button class="pill on" data-f="status" data-v="all" onclick="setFilter('status','all')">Todos</button>
+      <button class="pill" data-f="status" data-v="presupuesto" onclick="setFilter('status','presupuesto')">Estimado</button>
+      <button class="pill" data-f="status" data-v="aprobado" onclick="setFilter('status','aprobado')">Aprobado</button>
+      <button class="pill" data-f="status" data-v="en_obra" onclick="setFilter('status','en_obra')">En obra</button>
+      <button class="pill" data-f="status" data-v="terminado" onclick="setFilter('status','terminado')">Terminado</button>
+    </div>
+    <div class="grp">
+      <label>Prioridad</label>
+      <button class="pill on" data-f="pr" data-v="all" onclick="setFilter('pr','all')">Todas</button>
+      <button class="pill" data-f="pr" data-v="high" onclick="setFilter('pr','high')"><span class="dot" style="background:var(--red)"></span>Alta</button>
+      <button class="pill" data-f="pr" data-v="med" onclick="setFilter('pr','med')"><span class="dot" style="background:var(--amber)"></span>Media</button>
+      <button class="pill" data-f="pr" data-v="low" onclick="setFilter('pr','low')"><span class="dot" style="background:var(--slate)"></span>Baja</button>
+    </div>
+    <div class="switch">
+      <div class="toggle on" id="detailToggle" onclick="toggleDetail()">
+        <span class="track"><i></i></span> Con detalle
+      </div>
+      <button class="btn btn-pdf" onclick="window.print()">⬇ Generar PDF</button>
+    </div>
+  </div>
+
+  <!-- report header (solo impresión) -->
+  <div class="rpt-head">
+    <h2>Luxaris Design · Status de Proyectos</h2>
+    <p id="rptSub">Reporte generado el <span id="rptDate"></span></p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- vistas -->
+  <div id="viewA" class="view"></div>
+  <div id="viewB" class="view" style="display:none"></div>
+  <div id="viewC" class="view" style="display:none"></div>
+
+  <div class="legend no-print">
+    <span class="k"><span class="sw" style="background:var(--todo)"></span> Por hacer</span>
+    <span class="k"><span class="sw" style="background:var(--prog)"></span> En proceso</span>
+    <span class="k"><span class="sw" style="background:var(--done)"></span> Hecho</span>
+    <span class="k"><span class="pr high">Alta</span> <span class="pr med">Media</span> <span class="pr low">Baja</span> prioridad</span>
+  </div>
+</div>
+
+<script>
+const STATUS_ES={prospecto:"Prospecto",presupuesto:"Estimado",aprobado:"Aprobado",en_obra:"En obra",terminado:"Terminado"};
+const TSTATE_ES={todo:"Por hacer",prog:"En proceso",done:"Hecho"};
+const PR_ES={high:"Alta",med:"Media",low:"Baja"};
+const money=n=>"$"+n.toLocaleString("en-US");
+const ini=s=>s.split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+
+const PROJECTS=[
+  {name:"MASTER BATHROOM",client:"Sofiya",status:"en_obra",priority:"high",budget:18290,tasks:[
+    {n:"Glass door",s:"todo",p:"high",d:"16/07",h:2,sec:"Demolición"},
+    {n:"Shower walls",s:"todo",p:"med",d:"18/07",h:6,sec:"Tile"},
+    {n:"Plumbing rough-in",s:"todo",p:"high",d:"20/07",h:8,sec:"Plomería"},
+    {n:"Vanity install",s:"todo",p:"low",d:"24/07",h:4,sec:"Handyman"},
+    {n:"Final paint",s:"todo",p:"low",d:"28/07",h:5,sec:"Pintura"},
+  ]},
+  {name:"HOUSE REMODELING",client:"Simon Cemer",status:"en_obra",priority:"high",budget:35000,tasks:[
+    {n:"Demolition",s:"done",p:"high",d:"05/06",h:12,sec:"Demolición"},
+    {n:"Electrical",s:"done",p:"high",d:"12/06",h:16,sec:"Eléctrico"},
+    {n:"Kitchen tile",s:"prog",p:"med",d:"08/07",h:20,sec:"Tile"},
+    {n:"Cabinets",s:"prog",p:"high",d:"15/07",h:14,sec:"Carpintería"},
+    {n:"Paint & finish",s:"todo",p:"low",d:"22/07",h:10,sec:"Pintura"},
+  ]},
+  {name:"WALL UNIT/DESK",client:"Craig Krishner",status:"terminado",priority:"med",budget:10750,tasks:[
+    {n:"Build frame",s:"done",p:"med",d:"02/06",h:10,sec:"Carpintería"},
+    {n:"Formica finish",s:"done",p:"med",d:"10/06",h:8,sec:"Acabados"},
+    {n:"Install & trim",s:"done",p:"low",d:"18/06",h:6,sec:"Handyman"},
+  ]},
+  {name:"KRIS OFFICE",client:"Kris Morin",status:"aprobado",priority:"low",budget:16800,tasks:[
+    {n:"Flooring",s:"todo",p:"med",d:"01/08",h:14,sec:"Pisos"},
+    {n:"Lighting",s:"todo",p:"low",d:"08/08",h:9,sec:"Eléctrico"},
+  ]},
+  {name:"OFFICE – DESK",client:"Craig Kirsner",status:"presupuesto",priority:"med",budget:7850,tasks:[]},
+];
+
+let view="A", fStatus="all", fPr="all", detail=true;
+
+const DESCS={
+  A:"<b>Opción A — Por proyecto.</b> Cada proyecto se expande en un acordeón que agrupa sus actividades por estado (Por hacer · En proceso · Hecho). Ideal para revisar proyecto por proyecto cómo va cada uno. El toggle <b>Con detalle</b> muestra u oculta las actividades.",
+  B:"<b>Opción B — Pipeline por estado.</b> Tablero ejecutivo: los proyectos se ordenan en columnas según su estado (Estimado → Aprobado → En obra → Terminado). Vista de un vistazo del embudo completo del negocio, con prioridad y progreso real.",
+  C:"<b>Opción C — Calendario de actividades.</b> Línea de tiempo: cada fila es un proyecto y cada actividad cae en su semana según la fecha programada, coloreada por estado y con borde rojo si es prioridad alta. Para saber cómo va tu calendario por proyecto.",
+};
+
+function pct(p){ if(!p.tasks.length) return 0; return Math.round(p.tasks.filter(t=>t.s==="done").length/p.tasks.length*100); }
+function visible(){ return PROJECTS.filter(p=>(fStatus==="all"||p.status===fStatus)); }
+function visTasks(p){ return p.tasks.filter(t=>fPr==="all"||t.p===fPr); }
+
+function setView(v){ view=v;
+  for(const k of ["A","B","C"]){ document.getElementById("t"+k).classList.toggle("active",k===v);
+    document.getElementById("view"+k).style.display=k===v?"block":"none"; }
+  document.getElementById("desc").innerHTML=DESCS[v]; render();
+}
+function setFilter(f,val){ if(f==="status")fStatus=val; else fPr=val;
+  document.querySelectorAll(`.pill[data-f="${f}"]`).forEach(b=>b.classList.toggle("on",b.dataset.v===val)); render(); }
+function toggleDetail(){ detail=!detail; document.getElementById("detailToggle").classList.toggle("on",detail); render(); }
+
+function renderKpis(){
+  const ps=visible();
+  const all=ps.flatMap(p=>p.tasks);
+  const done=all.filter(t=>t.s==="done").length;
+  const prog=all.filter(t=>t.s==="prog").length;
+  const todo=all.filter(t=>t.s==="todo").length;
+  const hi=ps.filter(p=>p.priority==="high").length;
+  document.getElementById("kpis").innerHTML=[
+    ["Proyectos",ps.length,""],["Prioridad alta",hi,"proyectos"],
+    ["Por hacer",todo,"actividades"],["En proceso",prog,"actividades"],
+    ["Hechas",done,"actividades"],
+  ].map(([l,v,s])=>`<div class="kpi"><b>${v}</b><span>${l}${s?" · "+s:""}</span></div>`).join("");
+}
+
+/* A */
+function renderA(){
+  const el=document.getElementById("viewA");
+  el.innerHTML=visible().map((p,i)=>{
+    const tks=visTasks(p), pc=pct(p);
+    const groups=["todo","prog","done"].map(st=>{
+      const list=tks.filter(t=>t.s===st); if(!list.length)return"";
+      return `<div class="stgroup"><h4><span class="st ${st}">${TSTATE_ES[st]}</span><span class="cnt">${list.length}</span></h4>
+        ${list.map(t=>`<div class="task"><span class="pr ${t.p}">${PR_ES[t.p]}</span>
+          <span class="tn"><b>${t.n}</b><small>${t.sec} · ${t.h}h · ${t.d}</small></span>
+          <span class="st ${t.s}">${TSTATE_ES[t.s]}</span></div>`).join("")}</div>`;
+    }).join("");
+    return `<div class="pcard ${i===0?"open":""}">
+      <div class="phead" onclick="this.parentNode.classList.toggle('open')">
+        <div class="pthumb">${ini(p.name)}</div>
+        <div class="nm"><b>${p.name}</b><small>${p.client} · ${money(p.budget)}</small></div>
+        <div class="meta">
+          <span class="pr ${p.priority}">${PR_ES[p.priority]}</span>
+          <span class="st ${p.status}">${STATUS_ES[p.status]}</span>
+          <span class="progbar" style="width:90px"><i style="width:${pc}%"></i></span>
+          <b class="mono" style="font-size:12px">${pc}%</b>
+          <span class="chev">▶</span>
+        </div>
+      </div>
+      <div class="pbody">${ detail ? (groups||'<p style="color:var(--soft);font-size:12px;font-style:italic">Sin actividades registradas.</p>')
+        : '<p style="color:var(--soft);font-size:12px;padding:4px 0">'+tks.length+' actividades · '+pc+'% completado</p>' }</div>
+    </div>`;
+  }).join("") || empty();
+}
+
+/* B */
+function renderB(){
+  const cols=["presupuesto","aprobado","en_obra","terminado"];
+  const el=document.getElementById("viewB");
+  el.innerHTML=`<div class="board">${cols.map(st=>{
+    const ps=visible().filter(p=>p.status===st);
+    return `<div class="col"><div class="col-h"><span>${STATUS_ES[st]}</span><span class="n">${ps.length}</span></div>
+      <div class="col-b">${ps.map(p=>{
+        const pc=pct(p), tks=visTasks(p);
+        return `<div class="bcard"><div class="bt"><div><b>${p.name}</b><small>${p.client}</small></div><span class="pr ${p.priority}">${PR_ES[p.priority]}</span></div>
+          <div class="row"><span class="progbar" style="flex:1"><i style="width:${pc}%"></i></span><b class="mono" style="font-size:11px">${pc}%</b></div>
+          ${detail && tks.length ? `<div class="bmini">${["todo","prog","done"].map(s=>{const c=tks.filter(t=>t.s===s).length;return c?`<span class="bchip st ${s}">${c} ${TSTATE_ES[s]}</span>`:""}).join("")}</div>`:""}
+        </div>`;
+      }).join("")||'<p style="color:var(--soft);font-size:11px;padding:6px;text-align:center">—</p>'}</div></div>`;
+  }).join("")}</div>`;
+}
+
+/* C */
+function renderC(){
+  const weeks=["May","W1 Jun","W2","W3","W4 Jul","W1","W2","W3","W4 Ago"];
+  const colOf=d=>{ const [dd,mm]=d.split("/").map(Number);
+    if(mm===6) return dd<=7?1:dd<=14?2:dd<=21?3:4;
+    if(mm===7) return dd<=7?4:dd<=14?5:dd<=21?6:7;
+    if(mm===8) return 8; return 0; };
+  const el=document.getElementById("viewC");
+  el.innerHTML=`<div class="cal-wrap"><table class="cal"><thead><tr><th>Proyecto</th>${weeks.map(w=>`<th>${w}</th>`).join("")}</tr></thead><tbody>${
+    visible().map(p=>{
+      const tks=visTasks(p);
+      const cells=Array(9).fill("");
+      tks.forEach(t=>{ const c=colOf(t.d); cells[c]+=`<span class="ev ${t.s} ${t.p==="high"?"hi":""}" title="${t.n} · ${PR_ES[t.p]}">${t.n.length>14?t.n.slice(0,13)+"…":t.n}</span>`; });
+      return `<tr><td class="pj"><b>${p.name}</b><small>${p.client} · <span class="st ${p.status}" style="font-size:9px">${STATUS_ES[p.status]}</span></small></td>${cells.map(c=>`<td>${c||""}</td>`).join("")}</tr>`;
+    }).join("")
+  }</tbody></table></div>`;
+}
+
+function empty(){ return '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:30px;text-align:center;color:var(--soft)">Sin proyectos para este filtro.</div>'; }
+
+function render(){ renderKpis(); if(view==="A")renderA(); else if(view==="B")renderB(); else renderC(); }
+
+document.getElementById("rptDate").textContent=new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+setView("A");
+</script>
