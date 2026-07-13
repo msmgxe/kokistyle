@@ -267,7 +267,15 @@ export default function PlanPage() {
     return <div><DarkBar withControls={false} /><div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">{gp.noProjects}</div></div>;
   }
 
-  const stTasks = (p: ProjectWithTasks, st: "pend"|"prog"|"done") => p.tasks.filter(tk => tk.status === st);
+  // Cronológico ascendente dentro de cada estado; sin fecha al final
+  const stTasks = (p: ProjectWithTasks, st: "pend"|"prog"|"done") =>
+    p.tasks
+      .filter(tk => tk.status === st)
+      .sort((a, b) => {
+        const da = a.scheduled_date ?? "9999-12-31";
+        const db = b.scheduled_date ?? "9999-12-31";
+        return da !== db ? da.localeCompare(db) : a.sort_order - b.sort_order;
+      });
 
   return (
     <div className="animate-in fade-in duration-300">
