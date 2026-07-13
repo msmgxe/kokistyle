@@ -134,12 +134,28 @@ export default function PlanPage() {
     .filter(p => filterStatus === "all" || p.status === filterStatus)
     .filter(p => filterProject === "all" || p.id === filterProject);
 
-  // Rango temporal (barras por fecha real) — ajustado a los proyectos visibles
+  // Rango temporal — con tareas fechadas la barra va de la primera a la última fecha real;
+  // el fallback por semanas (Σ duration_weeks) queda solo para proyectos sin fechas programadas
   const spans = visibleProjects.map((p) => {
-    const start = new Date((p.start_date ?? todayIsoLocal()) + "T00:00:00");
-    let end = addDays(p.start_date ?? "", totalWeeks(p.tasks) * 7);
-    if (p.end_date) { const e = new Date(p.end_date + "T00:00:00"); if (e > end) end = e; }
-    p.tasks.forEach(tk => { if (tk.scheduled_date) { const d = addDays(tk.scheduled_date, 1); if (d > end) end = d; } });
+    const dates = p.tasks
+      .filter(tk => tk.scheduled_date)
+      .map(tk => tk.scheduled_date as string)
+      .sort();
+    let start: Date;
+    let end: Date;
+    if (dates.length > 0) {
+      const firstIso = p.start_date && p.start_date < dates[0] ? p.start_date : dates[0];
+      start = new Date(firstIso + "T00:00:00");
+      end = addDays(dates[dates.length - 1], 1);
+    } else {
+      const baseIso = p.start_date ?? todayIsoLocal();
+      start = new Date(baseIso + "T00:00:00");
+      end = addDays(baseIso, totalWeeks(p.tasks) * 7);
+    }
+    if (p.end_date) {
+      const e = addDays(p.end_date, 1);
+      if (e > end) end = e;
+    }
     return { p, start, end };
   });
   let minDate = spans[0]?.start ?? new Date();
