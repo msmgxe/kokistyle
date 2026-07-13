@@ -61,6 +61,14 @@ export default function AiDesignPreview() {
     try { localStorage.setItem(LS_KEY, JSON.stringify({ id, rendersUsed: used })); } catch { /* noop */ }
   };
 
+  // Volver al formulario para probar con otros datos (tablet compartida, otro correo)
+  const resetGate = () => {
+    try { localStorage.removeItem(LS_KEY); } catch { /* noop */ }
+    setProspectId(null); setRendersUsed(0); setPhase("gate");
+    setBeforeUrl(null); setAfterUrl(null);
+    setForm({ name: "", email: "", phone: "" }); setGateErr(null); setToolMsg(null);
+  };
+
   /* ── Gate ──────────────────────────────────────────────────────────────── */
   const submitGate = async () => {
     setGateErr(null);
@@ -194,6 +202,9 @@ export default function AiDesignPreview() {
                     <Link href="/reservas" className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A227] px-5 py-2.5 text-sm font-bold text-[#16323D] hover:bg-[#dab63f]">
                       {ta.cta} <ArrowRight size={15} />
                     </Link>
+                    <button onClick={resetGate} className="mt-3 block w-full text-[12px] font-semibold text-[#9FB9C4] underline-offset-2 hover:text-white hover:underline">
+                      {ta.useAnother}
+                    </button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
@@ -218,7 +229,12 @@ export default function AiDesignPreview() {
                     {toolMsg && <p className="text-xs font-semibold text-[#9FB9C4]">{toolMsg}</p>}
                   </div>
                 )}
-                <p className="mt-4 text-[11px] leading-5 text-[#8FA6AF]">{ta.note}</p>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <p className="text-[11px] leading-5 text-[#8FA6AF]">{ta.note}</p>
+                  <button onClick={resetGate} className="shrink-0 text-[11px] font-semibold text-[#9FB9C4] underline-offset-2 hover:text-white hover:underline">
+                    {ta.notYou}
+                  </button>
+                </div>
               </div>
             )}
           </div>
