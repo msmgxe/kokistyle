@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Luxaris — Reporte diario de actividades (prototipo)</title>
+<style>
+  :root {
+    --desk: #E9E2D4;
+    --desk-text: #5C6A6E;
+    --bar-bg: #FDFBF6;
+    --bar-border: #D7CBB3;
+    --bar-text: #16323D;
+    --chip-bg: #F7F3EA;
+    --chip-border: #E6DDCB;
+
+    --ink: #16323D;
+    --soft: #5C6A6E;
+    --faint: #97A1A0;
+    --paper: #FFFFFF;
+    --panel: #F7F3EA;
+    --line: #E6DDCB;
+    --navy: #395886;
+    --ok: #4F8A63;
+    --warn: #B98A2F;
+    --bad: #B0492F;
+    --sat: #9DC3E6;
+    --sat-soft: #EAF3FA;
+    --sun: #F4B183;
+    --sun-soft: #FDF1E7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --desk: #1C2529;
+      --desk-text: #9FB0B5;
+      --bar-bg: #243137;
+      --bar-border: #3A4A52;
+      --bar-text: #E8EDEA;
+      --chip-bg: #2C3B42;
+      --chip-border: #3A4A52;
+    }
+  }
+  :root[data-theme="dark"] {
+    --desk: #1C2529;
+    --desk-text: #9FB0B5;
+    --bar-bg: #243137;
+    --bar-border: #3A4A52;
+    --bar-text: #E8EDEA;
+    --chip-bg: #2C3B42;
+    --chip-border: #3A4A52;
+  }
+  :root[data-theme="light"] {
+    --desk: #E9E2D4;
+    --desk-text: #5C6A6E;
+    --bar-bg: #FDFBF6;
+    --bar-border: #D7CBB3;
+    --bar-text: #16323D;
+    --chip-bg: #F7F3EA;
+    --chip-border: #E6DDCB;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--desk);
+    font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+  }
+  .serif { font-family: "Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ── Barra de controles (solo pantalla) ─────────────────────────── */
+  .controls {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bar-bg);
+    border-bottom: 1px solid var(--bar-border);
+    padding: 14px 20px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px;
+    color: var(--bar-text);
+  }
+  .ctl-group { display: flex; align-items: center; gap: 8px; }
+  .ctl-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--desk-text);
+  }
+  .controls input[type="date"] {
+    font: inherit; font-size: 12.5px; color: var(--bar-text);
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border); border-radius: 9px;
+    padding: 6px 9px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600;
+    padding: 6px 12px; border-radius: 999px;
+    border: 1.5px solid var(--chip-border);
+    background: var(--chip-bg); color: var(--bar-text);
+    cursor: pointer; user-select: none;
+    transition: border-color .15s, background .15s;
+  }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .chip .n { font-size: 10.5px; color: var(--desk-text); }
+  .chip.on { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .chip.on .n { color: #C9D6EA; }
+  .chip:focus-visible, .btn-print:focus-visible, .toggle input:focus-visible {
+    outline: 2px solid var(--navy); outline-offset: 2px;
+  }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; color: var(--bar-text);
+  }
+  .toggle input { accent-color: var(--ok); width: 15px; height: 15px; }
+  .btn-print {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 8px;
+    font: inherit; font-size: 13px; font-weight: 700;
+    color: #fff; background: var(--bad);
+    border: 0; border-radius: 999px; padding: 10px 20px;
+    cursor: pointer; box-shadow: 0 6px 18px rgba(176, 73, 47, .35);
+  }
+  .btn-print:hover { background: #983C25; }
+
+  /* ── Hoja ───────────────────────────────────────────────────────── */
+  .sheet-wrap { padding: 28px 16px 60px; }
+  .sheet {
+    max-width: 860px; margin: 0 auto;
+    background: var(--paper); color: var(--ink);
+    box-shadow: 0 24px 60px rgba(22, 50, 61, .22);
+    border-radius: 4px; overflow: hidden;
+  }
+
+  .masthead {
+    background: #16323D; color: #fff;
+    padding: 26px 34px 22px;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 20px;
+  }
+  .masthead .brand { font-size: 11px; font-weight: 700; letter-spacing: .28em; color: #A8C0BC; }
+  .masthead h1 {
+    margin: 6px 0 4px; font-size: 26px; font-weight: 400; letter-spacing: .01em;
+    text-wrap: balance;
+  }
+  .masthead .meta { font-size: 11.5px; color: #A8C0BC; }
+  .masthead .meta b { color: #fff; font-weight: 600; }
+  .masthead .stamp { text-align: right; font-size: 10.5px; color: #A8C0BC; line-height: 1.7; white-space: nowrap; }
+  .masthead .stamp .day { font-size: 15px; color: #fff; font-weight: 600; }
+
+  .kpis {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  .kpi { padding: 14px 20px 12px; border-right: 1px solid var(--line); }
+  .kpi:last-child { border-right: 0; }
+  .kpi .v { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  .kpi .v small { font-size: 12px; font-weight: 600; color: var(--soft); }
+  .kpi .k {
+    font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--soft); margin-top: 2px;
+  }
+  .kpi .bar { height: 4px; border-radius: 99px; background: var(--line); margin-top: 8px; overflow: hidden; }
+  .kpi .bar i { display: block; height: 100%; background: var(--ok); border-radius: 99px; }
+
+  .body { padding: 8px 34px 30px; }
+
+  /* ── Bloque por día ─────────────────────────────────────────────── */
+  .day { display: flex; gap: 18px; padding: 18px 0 6px; break-inside: avoid; }
+  .day + .day { border-top: 1px solid var(--line); }
+  .rail { width: 74px; flex: none; text-align: center; padding-top: 2px; }
+  .rail .wd {
+    font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--soft);
+  }
+  .rail .dn { font-size: 30px; font-weight: 300; line-height: 1.1; letter-spacing: -.02em; }
+  .rail .mo { font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; }
+  .rail .badge {
+    margin: 7px auto 0; width: fit-content;
+    font-size: 8.5px; font-weight: 800; letter-spacing: .1em;
+    padding: 3px 8px; border-radius: 999px;
+  }
+  .day.sat .rail { background: var(--sat-soft); border-radius: 12px; padding-bottom: 10px; }
+  .day.sat .rail .badge { background: var(--sat); color: #1E4A70; }
+  .day.sun .rail { background: var(--sun-soft); border-radius: 12px; padding-bottom: 10px; }
+  .day.sun .rail .badge { background: var(--sun); color: #7A3C12; }
+
+  .day-main { flex: 1; min-width: 0; }
+  .day-sum {
+    display: flex; align-items: baseline; gap: 12px;
+    font-size: 11px; color: var(--soft); margin-bottom: 8px;
+  }
+  .day-sum .pct { margin-left: auto; font-weight: 700; color: var(--ok); }
+  .empty-day { font-size: 12px; color: var(--faint); font-style: italic; padding: 6px 0 12px; }
+
+  .proj { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .proj-head {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--panel); padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .proj-head .pname { font-size: 14.5px; font-weight: 600; }
+  .proj-head .pclient { font-size: 11px; color: var(--soft); }
+  .proj-head .ptally { margin-left: auto; font-size: 11px; color: var(--soft); }
+  .status {
+    font-size: 9px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .st-en_obra     { background: #DCEBDD; color: #35664A; }
+  .st-aprobado    { background: #EDF3FB; color: #395886; }
+  .st-presupuesto { background: #F5E6C3; color: #7A6230; }
+  .st-prospecto   { background: #EFEFEF; color: #5C5C5C; }
+  .st-terminado   { background: #16323D; color: #fff; }
+
+  table.tasks { width: 100%; border-collapse: collapse; }
+  .tasks td { padding: 7px 10px; border-top: 1px solid #F0EBE0; font-size: 12.5px; vertical-align: middle; }
+  .tasks tr:first-child td { border-top: 0; }
+  .td-chk { width: 34px; text-align: center; }
+  .cbox {
+    display: inline-block; width: 15px; height: 15px;
+    border: 1.6px solid #C6BCA6; border-radius: 4px; position: relative;
+  }
+  .cbox.done { background: var(--ok); border-color: var(--ok); }
+  .cbox.done::after {
+    content: ""; position: absolute; left: 4px; top: 1px;
+    width: 4px; height: 8px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(42deg);
+  }
+  .sec {
+    display: inline-block; font-size: 9px; font-weight: 800;
+    padding: 2.5px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .td-sec { width: 108px; }
+  .td-desc { }
+  tr.done .td-desc { color: var(--faint); text-decoration: line-through; }
+  .td-who { width: 130px; font-size: 11.5px; color: var(--soft); }
+  .td-who .avatar {
+    display: inline-grid; place-items: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--ink); color: #fff; font-size: 7.5px; font-weight: 800;
+    margin-right: 6px; vertical-align: -4px;
+  }
+  .td-hrs { width: 46px; text-align: right; font-size: 11.5px; color: var(--soft); }
+
+  .sheet-foot {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 30px;
+    padding: 22px 34px 26px; border-top: 2px solid var(--ink); margin-top: 6px;
+  }
+  .sheet-foot .co { font-size: 10px; color: var(--soft); line-height: 1.7; }
+  .sheet-foot .co b { color: var(--ink); letter-spacing: .18em; font-size: 10.5px; }
+  .sign { display: flex; gap: 34px; }
+  .sign .line { width: 170px; text-align: center; }
+  .sign .line .rule { border-top: 1px solid var(--soft); margin-bottom: 5px; }
+  .sign .line span { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
+
+  .nores {
+    max-width: 860px; margin: 40px auto; text-align: center;
+    color: var(--desk-text); font-size: 14px;
+  }
+
+  @media (max-width: 640px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .kpi:nth-child(2) { border-right: 0; }
+    .body, .masthead, .sheet-foot { padding-left: 18px; padding-right: 18px; }
+    .day { flex-direction: column; gap: 8px; }
+    .rail { width: 100%; display: flex; align-items: baseline; gap: 8px; text-align: left; padding: 4px 10px; }
+    .td-who { width: auto; }
+  }
+
+  /* ── Impresión: solo la hoja ────────────────────────────────────── */
+  @media print {
+    body { background: #fff; }
+    .controls { display: none; }
+    .sheet-wrap { padding: 0; }
+    .sheet { box-shadow: none; border-radius: 0; max-width: none; }
+    .day { break-inside: avoid; }
+    .proj { break-inside: avoid; }
+    @page { margin: 12mm; }
+  }
+</style>
+
+<div class="controls">
+  <div class="ctl-group">
+    <span class="ctl-label">Desde</span>
+    <input type="date" id="from" value="2026-07-13">
+    <span class="ctl-label">Hasta</span>
+    <input type="date" id="to" value="2026-07-19">
+  </div>
+  <div class="ctl-group">
+    <span class="ctl-label">Estados</span>
+    <div class="chips" id="chips"></div>
+  </div>
+  <label class="toggle"><input type="checkbox" id="pending"> Solo pendientes</label>
+  <button class="btn-print" onclick="window.print()">🖨 Imprimir / PDF</button>
+</div>
+
+<div class="sheet-wrap">
+  <div class="sheet">
+    <div class="masthead">
+      <div>
+        <div class="brand">LUXARIS DESIGN</div>
+        <h1 class="serif">Reporte diario de actividades</h1>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="stamp">
+        <div>GENERADO</div>
+        <div class="day" id="stamp-date"></div>
+        <div>South Florida · Miami · Boca Raton</div>
+      </div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="body" id="days"></div>
+    <div class="sheet-foot">
+      <div class="co">
+        <b>LUXARIS DESIGN LLC</b><br>
+        Remodeling &amp; Construction Management<br>
+        kokistyle.vercel.app
+      </div>
+      <div class="sign">
+        <div class="line"><div class="rule"></div><span>Preparado por</span></div>
+        <div class="line"><div class="rule"></div><span>Supervisor de obra</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nores" id="nores" hidden>No hay actividades para los estados y fechas seleccionados.</div>
+
+<script>
+  const STATUSES = [
+    { id: "en_obra",     label: "In Progress" },
+    { id: "aprobado",    label: "Approved" },
+    { id: "presupuesto", label: "Estimate" },
+    { id: "prospecto",   label: "Prospect" },
+    { id: "terminado",   label: "Completed" },
+  ];
+
+  const SEC = {
+    demo:  { name: "DEMOLITION", bg: "#FDF0ED", fg: "#B0492F" },
+    plumb: { name: "PLUMBING",   bg: "#DCE8E9", fg: "#4E7A82" },
+    elec:  { name: "ELECTRICAL", bg: "#EDE3CF", fg: "#7A6230" },
+    tile:  { name: "TILE",       bg: "#EDF3FB", fg: "#395886" },
+    paint: { name: "PAINTING",   bg: "#F0E8F7", fg: "#6D3AAD" },
+    admin: { name: "ADMIN",      bg: "#EFEFEF", fg: "#5C5C5C" },
+    mat:   { name: "MATERIALS",  bg: "#DCEBDD", fg: "#4F8A63" },
+  };
+
+  const PROJECTS = [
+    { id: "p1", name: "Brickell Bay Kitchen",    client: "Coral Reyes",  city: "Miami",           status: "en_obra" },
+    { id: "p2", name: "Boca Raton Master Bath",  client: "D. Whitman",   city: "Boca Raton",      status: "en_obra" },
+    { id: "p3", name: "Las Olas Terrace",        client: "M. Fontaine",  city: "Fort Lauderdale", status: "aprobado" },
+    { id: "p4", name: "Coconut Grove Kitchen",   client: "A. Delgado",   city: "Miami",           status: "presupuesto" },
+    { id: "p5", name: "Sunny Isles Condo",       client: "R. Kaplan",    city: "Sunny Isles",     status: "terminado" },
+  ];
+
+  const TASKS = [
+    { p: "p1", d: "2026-07-13", s: "demo",  t: "Demolición de muro de cocina y retiro de gabinetes", who: "Jorge M.",  h: 6, done: true  },
+    { p: "p1", d: "2026-07-13", s: "demo",  t: "Retiro de piso existente (320 sq.ft)",               who: "Jorge M.",  h: 4, done: true  },
+    { p: "p1", d: "2026-07-14", s: "plumb", t: "Reubicar línea de agua del fregadero a la isla",     who: "Luis P.",   h: 5, done: true  },
+    { p: "p1", d: "2026-07-14", s: "elec",  t: "Nuevo circuito 220V para cooktop",                   who: "E. Ramos",  h: 4, done: false },
+    { p: "p1", d: "2026-07-15", s: "elec",  t: "Salidas LED bajo gabinete + dimmer",                 who: "E. Ramos",  h: 3, done: false },
+    { p: "p1", d: "2026-07-16", s: "tile",  t: "Instalación porcelanato 24×48 en piso",              who: "V. Costa",  h: 8, done: false },
+    { p: "p1", d: "2026-07-18", s: "tile",  t: "Backsplash calacatta hasta el techo",                who: "V. Costa",  h: 6, done: false },
+    { p: "p2", d: "2026-07-14", s: "demo",  t: "Demolición de shower wall y bañera",                 who: "Jorge M.",  h: 5, done: true  },
+    { p: "p2", d: "2026-07-15", s: "plumb", t: "Válvula nueva + drenaje lineal en ducha",            who: "Luis P.",   h: 6, done: false },
+    { p: "p2", d: "2026-07-16", s: "plumb", t: "Re-instalar vanity doble con llaves nuevas",         who: "Luis P.",   h: 4, done: false },
+    { p: "p2", d: "2026-07-17", s: "tile",  t: "Muros de ducha en mármol (niche incluido)",          who: "V. Costa",  h: 8, done: false },
+    { p: "p2", d: "2026-07-18", s: "paint", t: "Pintura completa del baño y del pasillo",            who: "H. Núñez",  h: 5, done: false },
+    { p: "p3", d: "2026-07-13", s: "admin", t: "Someter permiso de construcción a la ciudad",        who: "Oficina",   h: 2, done: true  },
+    { p: "p3", d: "2026-07-14", s: "admin", t: "Aprobación de HOA — enviar planos y seguro",         who: "Oficina",   h: 1, done: false },
+    { p: "p3", d: "2026-07-15", s: "mat",   t: "Ordenar porcelanato exterior (40 cajas)",            who: "Oficina",   h: 1, done: false },
+    { p: "p3", d: "2026-07-16", s: "admin", t: "Programar dumpster y baño portátil",                 who: "Oficina",   h: 1, done: false },
+    { p: "p4", d: "2026-07-15", s: "admin", t: "Visita técnica: medidas y fotos del sitio",          who: "Marco",     h: 2, done: false },
+    { p: "p4", d: "2026-07-17", s: "admin", t: "Presentar estimado al cliente",                      who: "Marco",     h: 1, done: false },
+    { p: "p5", d: "2026-07-13", s: "paint", t: "Punch list: retoques de pintura en sala",            who: "H. Núñez",  h: 3, done: true  },
+    { p: "p5", d: "2026-07-19", s: "admin", t: "Walkthrough final y entrega de llaves",              who: "Marco",     h: 1, done: false },
+  ];
+
+  const selected = new Set(["en_obra"]);
+  const WD = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+  const MO = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+
+  const dayOf = iso => new Date(iso + "T00:00:00");
+  const toIso = d =>
+    d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const isoAddDays = (iso, n) => {
+    const d = dayOf(iso);
+    d.setDate(d.getDate() + n);
+    return toIso(d);
+  };
+  const fmt = iso => {
+    const d = dayOf(iso);
+    return WD[d.getDay()] + " " + d.getDate() + " " + MO[d.getMonth()];
+  };
+  const initials = n => n.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function renderChips() {
+    const box = document.getElementById("chips");
+    box.innerHTML = "";
+    for (const st of STATUSES) {
+      const count = PROJECTS.filter(p => p.status === st.id).length;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (selected.has(st.id) ? " on" : "");
+      b.innerHTML = '<span class="dot"></span>' + st.label + ' <span class="n">' + count + "</span>";
+      b.onclick = () => {
+        selected.has(st.id) ? selected.delete(st.id) : selected.add(st.id);
+        renderChips(); render();
+      };
+      box.appendChild(b);
+    }
+  }
+
+  function render() {
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+    const onlyPending = document.getElementById("pending").checked;
+
+    const projOk = new Set(PROJECTS.filter(p => selected.has(p.status)).map(p => p.id));
+    const rows = TASKS.filter(t =>
+      projOk.has(t.p) && t.d >= from && t.d <= to && (!onlyPending || !t.done)
+    );
+
+    const stampNow = new Date();
+    document.getElementById("stamp-date").textContent =
+      fmt(toIso(stampNow)) + " " + stampNow.getFullYear();
+    document.getElementById("meta").innerHTML =
+      "Rango: <b>" + fmt(from) + " — " + fmt(to) + "</b> &nbsp;·&nbsp; Estados: <b>" +
+      (STATUSES.filter(s => selected.has(s.id)).map(s => s.label).join(" + ") || "—") + "</b>" +
+      (onlyPending ? " &nbsp;·&nbsp; <b>solo pendientes</b>" : "");
+
+    const doneN = rows.filter(t => t.done).length;
+    const hours = rows.reduce((s, t) => s + t.h, 0);
+    const projN = new Set(rows.map(t => t.p)).size;
+    const pct = rows.length ? Math.round(doneN / rows.length * 100) : 0;
+    document.getElementById("kpis").innerHTML =
+      '<div class="kpi"><div class="v num">' + projN + '</div><div class="k">Proyectos</div></div>' +
+      '<div class="kpi"><div class="v num">' + rows.length + ' <small>tareas</small></div><div class="k">Actividades</div></div>' +
+      '<div class="kpi"><div class="v num">' + hours + '<small>h</small></div><div class="k">Horas planificadas</div></div>' +
+      '<div class="kpi"><div class="v num">' + pct + '%</div><div class="k">Completado</div>' +
+      '<div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+
+    const days = [];
+    for (let iso = from; iso && iso <= to && days.length < 62; iso = isoAddDays(iso, 1)) {
+      days.push(iso);
+    }
+
+    let html = "";
+    for (const iso of days) {
+      const dayRows = rows.filter(t => t.d === iso);
+      const wd = dayOf(iso).getDay();
+      const cls = wd === 6 ? " sat" : wd === 0 ? " sun" : "";
+      const badge = wd === 6 ? '<div class="badge">SÁBADO</div>' : wd === 0 ? '<div class="badge">DOMINGO</div>' : "";
+      const rail =
+        '<div class="rail"><div class="wd">' + WD[wd] + '</div>' +
+        '<div class="dn num serif">' + dayOf(iso).getDate() + '</div>' +
+        '<div class="mo">' + MO[dayOf(iso).getMonth()] + '</div>' + badge + '</div>';
+
+      if (dayRows.length === 0) {
+        html += '<div class="day' + cls + '">' + rail +
+          '<div class="day-main"><div class="empty-day">Sin actividades programadas</div></div></div>';
+        continue;
+      }
+
+      const dDone = dayRows.filter(t => t.done).length;
+      const dHrs = dayRows.reduce((s, t) => s + t.h, 0);
+      let main =
+        '<div class="day-sum"><span>' + dayRows.length + " actividades · " + dHrs + 'h</span>' +
+        '<span class="pct num">' + dDone + "/" + dayRows.length + " ✓</span></div>";
+
+      for (const p of PROJECTS) {
+        const pt = dayRows.filter(t => t.p === p.id);
+        if (!pt.length) continue;
+        const st = STATUSES.find(s => s.id === p.status);
+        main +=
+          '<div class="proj"><div class="proj-head">' +
+          '<span class="pname serif">' + esc(p.name) + '</span>' +
+          '<span class="status st-' + p.status + '">' + st.label + '</span>' +
+          '<span class="pclient">' + esc(p.client) + " · " + esc(p.city) + '</span>' +
+          '<span class="ptally num">' + pt.filter(t => t.done).length + "/" + pt.length +
+          " ✓ · " + pt.reduce((s, t) => s + t.h, 0) + 'h</span></div><table class="tasks">';
+        for (const t of pt) {
+          const sec = SEC[t.s];
+          main +=
+            '<tr class="' + (t.done ? "done" : "") + '">' +
+            '<td class="td-chk"><span class="cbox' + (t.done ? " done" : "") + '"></span></td>' +
+            '<td class="td-sec"><span class="sec" style="background:' + sec.bg + ";color:" + sec.fg + '">' + sec.name + '</span></td>' +
+            '<td class="td-desc">' + esc(t.t) + '</td>' +
+            '<td class="td-who"><span class="avatar">' + initials(t.who) + '</span>' + esc(t.who) + '</td>' +
+            '<td class="td-hrs num">' + t.h + 'h</td></tr>';
+        }
+        main += "</table></div>";
+      }
+      html += '<div class="day' + cls + '">' + rail + '<div class="day-main">' + main + "</div></div>";
+    }
+
+    document.getElementById("days").innerHTML = html;
+    document.getElementById("nores").hidden = rows.length > 0;
+  }
+
+  document.getElementById("from").onchange = render;
+  document.getElementById("to").onchange = render;
+  document.getElementById("pending").onchange = render;
+  renderChips();
+  render();
+</script>
+
+</body>
+</html>

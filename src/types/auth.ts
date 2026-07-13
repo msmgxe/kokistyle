@@ -59,23 +59,23 @@ export const DEFAULT_CLIENT_PERMISSIONS: Permissions = {
   notas:       { view: true,  create: false, edit: false, delete: false },
 };
 
-export const DEFAULT_COWORKER_TAB_ACCESS: string[] = ["workflow", "planner", "notas"];
-export const DEFAULT_CLIENT_TAB_ACCESS:   string[] = ["presupuesto", "workflow", "plan", "notas", "design"];
+export const DEFAULT_COWORKER_TAB_ACCESS: string[] = ["planner", "notas"];
+export const DEFAULT_CLIENT_TAB_ACCESS:   string[] = ["presupuesto", "plan", "notas", "design"];
 
 export const TAB_ACCESS_OPTIONS: { id: string; label: string; coworker: boolean; client: boolean }[] = [
   { id: "presupuesto", label: "Estimate",    coworker: false, client: true  },
   { id: "pagos",       label: "Cash Flow",   coworker: false, client: false },
   { id: "planner",     label: "Day Planner", coworker: true,  client: false },
-  { id: "workflow",    label: "Workflow",     coworker: true,  client: true  },
-  { id: "plan",        label: "Gantt",        coworker: false, client: true  },
+  { id: "plan",        label: "Gantt",        coworker: true,  client: true  },
   { id: "materiales",  label: "Materials",    coworker: false, client: false },
   { id: "contactos",   label: "Contacts",     coworker: false, client: false },
   { id: "notas",       label: "Notes",        coworker: true,  client: true  },
   { id: "design",      label: "Design",       coworker: false, client: true  },
 ];
 
+// "workflow" sigue como sección de permisos: gatea Day Planner, Gantt y Design (el tab Workflow ya no existe)
 export const SECTION_LABELS: Record<PermissionSection, string> = {
-  workflow:    "Workflow",
+  workflow:    "Tasks (Planner/Gantt)",
   materiales:  "Materials",
   contactos:   "Contacts",
   presupuesto: "Estimate",

@@ -25,7 +25,6 @@ import {
   DragOverEvent,
   DragOverlay,
   defaultDropAnimationSideEffects,
-  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -63,7 +62,7 @@ interface ProjectFull extends Project {
   project_notes: ProjectNote[];
 }
 
-type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas" | "design";
+type TabId = "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas" | "design";
 type PaySubTab = "ingresos" | "egresos";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -252,392 +251,6 @@ const dropAnimation = {
     styles: { active: { opacity: "0.5" } },
   }),
 };
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// TAB: WORKFLOW (Kanban con DnD en cada columna y entre columnas)
-// ═══════════════════════════════════════════════════════════════════════════════
-const KANBAN_COLS_BASE = [
-  { key: "pend", color: "#D7CBB3" },
-  { key: "prog", color: "#4E7A82" },
-  { key: "done", color: "#4F8A63" },
-] as const;
-
-type KanbanStatus = "pend" | "prog" | "done";
-
-function DroppableKanbanCol({
-  col, tasks, contacts, onEdit,
-}: {
-  col: { key: KanbanStatus; name: string; color: string };
-  tasks: Task[];
-  contacts: Contact[];
-  onEdit: (t: Task) => void;
-}) {
-  const { t: trans } = useLanguage();
-  const ownTeamLabel = trans.panel.workflow.ownTeam;
-  const { setNodeRef, isOver } = useDroppable({ id: col.key });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`min-w-[268px] flex-none rounded-2xl border p-3 transition-colors ${
-        isOver ? "border-[#4E7A82] bg-[#D5E5E8]" : "border-[#E6DDCB] bg-[#ECE3D1]"
-      }`}
-    >
-      <h4 className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[#5C6A6E]">
-        <span className="size-2 rounded-full" style={{ background: col.color }} />
-        {col.name}
-        <span className="ml-auto rounded-full border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-0.5 font-mono text-[11px]">
-          {tasks.length}
-        </span>
-      </h4>
-
-      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-        {tasks.length === 0 && (
-          <p className="py-5 text-center text-xs text-[#97A1A0]">—</p>
-        )}
-        {tasks.map((t) => (
-          <SortableRow key={t.id} id={t.id}>
-            {({ listeners, attributes }, isDragging) => (
-              <div
-                {...listeners} {...attributes}
-                onClick={() => onEdit(t)}
-                className={`mb-2 flex cursor-pointer select-none items-stretch overflow-hidden rounded-xl border border-[#E6DDCB] bg-white shadow-sm transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : ""}`}
-              >
-                <DragHandle />
-                <div className="flex-1 py-3 pr-3">
-                  <div className="text-sm font-semibold leading-snug text-[#16323D]">{t.name}</div>
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#5C6A6E]">
-                      <span className="grid size-5 place-items-center rounded-full bg-[#16323D] text-[8px] font-bold text-white">
-                        {initials(t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? "EP" : "EP")}
-                      </span>
-                      <span className="max-w-[100px] truncate text-[10.5px]">
-                        {t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? ownTeamLabel : ownTeamLabel}
-                      </span>
-                    </span>
-                    <span className="font-mono text-[11px] text-[#5C6A6E]">{t.hours}h</span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10.5px] font-semibold text-[#5C6A6E]">
-                    {t.scheduled_date && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#EDF3FB] px-2 py-0.5 text-[#395886]">
-                        <CalendarDays size={11} /> {dateFmt(t.scheduled_date)}
-                      </span>
-                    )}
-                    {t.source === "estimate" && (
-                      <span className="rounded-full bg-[#EDE3CF] px-2 py-0.5 text-[#7A6230]">
-                        {t.source_section ?? "Estimate"}
-                      </span>
-                    )}
-                    {typeof t.amount === "number" && t.amount > 0 && (
-                      <span className="rounded-full bg-[#F7F3EA] px-2 py-0.5 font-mono">
-                        {money(t.amount)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </SortableRow>
-        ))}
-      </SortableContext>
-    </div>
-  );
-}
-
-function WorkflowTab({
-  project, tasks, contacts, onRefresh, toast,
-}: {
-  project: Project; tasks: Task[]; contacts: Contact[];
-  onRefresh: () => void; toast: (m: string) => void;
-}) {
-  const { t } = useLanguage();
-  const tp = t.panel;
-  const [items, setItems]   = useState<Task[]>(tasks);
-  const [editor, setEditor] = useState<EditorOpts | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [assigneeFilter, setAssigneeFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
-  const persist = usePersistOrder("tasks");
-
-  const KANBAN_COLS = [
-    { key: "pend" as const, name: tp.workflow.todo,       color: "#D7CBB3" },
-    { key: "prog" as const, name: tp.workflow.inProgress, color: "#4E7A82" },
-    { key: "done" as const, name: tp.workflow.done,       color: "#4F8A63" },
-  ];
-
-  useEffect(() => { setItems(tasks); }, [tasks]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
-  const ownTeamLabel = tp.workflow.ownTeam;
-  const whoOptions = [ownTeamLabel, ...contacts.map((c) => c.name)];
-  const assigneeOptions = [
-    { value: "all", label: tp.workflow.allAssignees },
-    { value: "own", label: ownTeamLabel },
-    ...contacts.map((c) => ({ value: c.id, label: c.name })),
-  ];
-  const dateOptions = [
-    { value: "all", label: tp.workflow.allDates },
-    { value: "unscheduled", label: tp.workflow.unscheduled },
-    ...Array.from(new Set(items.map((task) => task.scheduled_date).filter(Boolean) as string[]))
-      .sort()
-      .map((iso) => ({ value: iso, label: dateFmt(iso) })),
-  ];
-  const matchesAssignee = (task: Task) => {
-    if (assigneeFilter === "all") return true;
-    if (assigneeFilter === "own") return !task.assigned_contact_id;
-    return task.assigned_contact_id === assigneeFilter;
-  };
-  const matchesDate = (task: Task) => {
-    if (dateFilter === "all") return true;
-    if (dateFilter === "unscheduled") return !task.scheduled_date;
-    return task.scheduled_date === dateFilter;
-  };
-  const filteredItems = items.filter((task) => matchesAssignee(task) && matchesDate(task));
-  const byStatus = (s: KanbanStatus) =>
-    filteredItems.filter((task) => task.status === s).sort((a, b) => a.sort_order - b.sort_order);
-
-  const openEdit = (t: Task) => {
-    setEditor({
-      title: tp.workflow.editTask,
-      fields: [
-        { key: "name",           label: tp.workflow.activity,       type: "text",   value: t.name },
-        { key: "hours",          label: tp.workflow.estHours,        type: "number", value: t.hours },
-        { key: "duration_weeks", label: tp.workflow.durationWeeks,   type: "number", value: t.duration_weeks },
-        { key: "scheduled_date", label: tp.workflow.scheduledDate,    type: "date",   value: t.scheduled_date ?? "" },
-        { key: "status",         label: tp.workflow.status,          type: "select", options: ["pend", "prog", "done"], optionLabels: { pend: tp.workflow.colPend, prog: tp.workflow.colProg, done: tp.workflow.colDone }, value: t.status },
-        {
-          key: "assignee_name", label: tp.workflow.responsible, type: "select", options: whoOptions,
-          value: t.assigned_contact_id ? contacts.find((c) => c.id === t.assigned_contact_id)?.name ?? ownTeamLabel : ownTeamLabel,
-        },
-      ],
-      onSave: async (vals) => {
-        const assignee = contacts.find((c) => c.name === vals.assignee_name);
-        const { error } = await supabase.from("tasks").update({
-          name: vals.name, hours: vals.hours, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
-          scheduled_date: vals.scheduled_date ? String(vals.scheduled_date) : null,
-          status: vals.status, assigned_contact_id: assignee?.id ?? null,
-        }).eq("id", t.id);
-        if (error) { toast(tp.common.errorSaving + error.message); return; }
-        onRefresh(); toast(tp.workflow.taskUpdated);
-      },
-      onDelete: async () => {
-        const { error } = await supabase.from("tasks").delete().eq("id", t.id);
-        if (error) { toast(tp.common.errorDeleting + error.message); return; }
-        onRefresh(); toast(tp.workflow.taskDeleted);
-      },
-    });
-  };
-
-  const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
-
-  const handleDragOver = (e: DragOverEvent) => {
-    const { active, over } = e;
-    if (!over) return;
-    const draggedId = String(active.id);
-    const overId    = String(over.id);
-    if (draggedId === overId) return;
-
-    const overIsCol    = KANBAN_COLS.some((c) => c.key === overId);
-    const overTask     = overIsCol ? null : items.find((t) => t.id === overId);
-    const targetStatus = (overIsCol ? overId : (overTask?.status ?? null)) as KanbanStatus | null;
-    if (!targetStatus) return;
-
-    setItems((prev) =>
-      prev.map((t) => (t.id === draggedId ? { ...t, status: targetStatus } : t))
-    );
-  };
-
-  const handleDragEnd = async (e: DragEndEvent) => {
-    setActiveId(null);
-    const { active, over } = e;
-    if (!over) {
-      setItems(tasks); // reset visuals if dropped outside
-      return;
-    }
-
-    const draggedId = String(active.id);
-    const overId    = String(over.id);
-
-    const draggedTask = items.find((t) => t.id === draggedId);
-    if (!draggedTask) return;
-
-    const originalStatus = (tasks.find((t) => t.id === draggedId)?.status ?? draggedTask.status) as KanbanStatus;
-
-    // Derive target status from the drop target directly — avoids stale closure
-    // on `items` state that handleDragOver may not have flushed yet.
-    const overIsCol    = KANBAN_COLS.some((c) => c.key === overId);
-    const overTask     = overIsCol ? null : items.find((t) => t.id === overId);
-    const targetStatus = (overIsCol ? overId : (overTask?.status ?? originalStatus)) as KanbanStatus;
-
-    if (targetStatus !== originalStatus) {
-      // Cross-column move: apply optimistic update then persist
-      setItems((prev) => prev.map((t) => t.id === draggedId ? { ...t, status: targetStatus } : t));
-      const { error } = await supabase.from("tasks").update({ status: targetStatus }).eq("id", draggedId);
-      if (error) {
-        setItems(tasks);
-        toast(tp.common.errorSaving + error.message);
-        return;
-      }
-      const colName = KANBAN_COLS.find((c) => c.key === targetStatus)?.name ?? targetStatus;
-      toast(`${tp.workflow.taskMoved} "${colName}"`);
-    } else if (draggedId !== overId && !overIsCol) {
-      // Same-column reorder
-      const colItems = items
-        .filter((t) => t.status === originalStatus)
-        .sort((a, b) => a.sort_order - b.sort_order);
-      const oldIdx = colItems.findIndex((t) => t.id === draggedId);
-      const newIdx = colItems.findIndex((t) => t.id === overId);
-      if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
-      const reordered = arrayMove(colItems, oldIdx, newIdx);
-      const next = items.map((t) => {
-        const idx = reordered.findIndex((r) => r.id === t.id);
-        return idx !== -1 ? { ...t, sort_order: idx } : t;
-      });
-      setItems(next);
-      await persist(reordered);
-      toast(tp.common.orderUpdated);
-    }
-  };
-
-  const addTask = () => {
-    setEditor({
-      title: tp.workflow.newTask,
-      fields: [
-        { key: "name",           label: tp.workflow.activity,       type: "text",   value: "" },
-        { key: "hours",          label: tp.workflow.estHours,        type: "number", value: 8 },
-        { key: "duration_weeks", label: tp.workflow.durationWeeks,   type: "number", value: 1 },
-        { key: "scheduled_date", label: tp.workflow.scheduledDate,    type: "date",   value: project.start_date },
-        { key: "assignee_name",  label: tp.workflow.responsible,     type: "select", options: whoOptions, value: ownTeamLabel },
-      ],
-      onSave: async (vals) => {
-        const assignee = contacts.find((c) => c.name === vals.assignee_name);
-        const { error } = await supabase.from("tasks").insert({
-          project_id: project.id, name: vals.name || tp.workflow.activity,
-          hours: vals.hours || 0, duration_weeks: Math.max(1, Number(vals.duration_weeks)),
-          scheduled_date: vals.scheduled_date ? String(vals.scheduled_date) : null,
-          status: "pend", sort_order: items.length, assigned_contact_id: assignee?.id ?? null,
-          source: "manual",
-        });
-        if (error) { toast(tp.common.errorSaving + error.message); return; }
-        onRefresh(); toast(tp.workflow.taskAdded);
-      },
-    });
-  };
-
-  const kanbanCollision = useCallback((args: Parameters<typeof pointerWithin>[0]) => {
-    const pw = pointerWithin(args);
-    return pw.length ? pw : rectIntersection(args);
-  }, []);
-
-  const totalTasks       = items.length;
-  const fromEstimate     = items.filter((t) => t.source === "estimate").length;
-  const doneTasks        = items.filter((t) => t.status === "done").length;
-  const progressPct      = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={kanbanCollision}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      {/* Summary metrics */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricTotal}</div>
-          <div className="mt-1.5 font-mono text-2xl font-semibold text-[#16323D]">{totalTasks}</div>
-        </div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricFromEstimate}</div>
-          <div className="mt-1.5 font-mono text-2xl font-semibold text-[#395886]">{fromEstimate}</div>
-        </div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricDone}</div>
-          <div className="mt-1.5 font-mono text-2xl font-semibold text-[#4F8A63]">{doneTasks}</div>
-        </div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.workflow.metricProgress}</div>
-          <div className="mt-1.5 flex items-end gap-2">
-            <span className="font-mono text-2xl font-semibold text-[#16323D]">{progressPct}%</span>
-          </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#E6DDCB]">
-            <div
-              className="h-full rounded-full bg-[#4F8A63] transition-all"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <p className="mb-4 text-[11.5px] text-[#5C6A6E]">
-        {tp.workflow.hint}
-      </p>
-      <div className="mb-4 flex flex-wrap items-end gap-2 rounded-2xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
-        <label className="min-w-[180px] flex-1 text-[10px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-          {tp.workflow.filterAssignee}
-          <select
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm normal-case tracking-normal text-[#16323D] focus:border-[#16323D] focus:outline-none"
-          >
-            {assigneeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        </label>
-        <label className="min-w-[160px] flex-1 text-[10px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
-          {tp.workflow.filterDate}
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm normal-case tracking-normal text-[#16323D] focus:border-[#16323D] focus:outline-none"
-          >
-            {dateOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        </label>
-        <button
-          onClick={() => { setAssigneeFilter("all"); setDateFilter("all"); }}
-          className="rounded-xl border border-[#D7CBB3] bg-white px-4 py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#ECE3D1] hover:text-[#16323D]"
-        >
-          {tp.workflow.clearFilters}
-        </button>
-        <span className="ml-auto rounded-full bg-[#EDF3FB] px-3 py-2 text-[11px] font-bold text-[#395886]">
-          {filteredItems.length}/{items.length}
-        </span>
-      </div>
-      <div className="flex gap-3 overflow-x-auto pb-3">
-        {KANBAN_COLS.map((col) => (
-          <DroppableKanbanCol
-            key={col.key}
-            col={col}
-            tasks={byStatus(col.key)}
-            contacts={contacts}
-            onEdit={openEdit}
-          />
-        ))}
-      </div>
-
-      <DragOverlay dropAnimation={dropAnimation}>
-        {activeTask && (
-          <div className="rounded-xl border border-[#395886] bg-white px-4 py-3 shadow-2xl ring-1 ring-[#395886] opacity-90">
-            <div className="text-sm font-semibold text-[#16323D]">{activeTask.name}</div>
-            <div className="font-mono text-[11px] text-[#5C6A6E]">{activeTask.hours}h</div>
-          </div>
-        )}
-      </DragOverlay>
-
-      <button onClick={addTask} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]">
-        + {tp.workflow.addTask}
-      </button>
-
-      {editor && <EditorModal opts={editor} onClose={() => setEditor(null)} />}
-    </DndContext>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: MATERIALES con DnD
@@ -2435,7 +2048,6 @@ export default function ProjectDetailPage() {
     { id: "presupuesto", label: tp.tabs.budget },
     { id: "pagos",       label: tp.tabs.payments },
     { id: "planner",     label: tp.tabs.planner },
-    { id: "workflow",    label: tp.tabs.workflow },
     { id: "plan",        label: tp.tabs.plan },
     { id: "materiales",  label: tp.tabs.materials },
     { id: "contactos",   label: tp.tabs.contacts },
@@ -2451,6 +2063,13 @@ export default function ProjectDetailPage() {
     // Legacy: derive from permissions
     const sec = t.id === "pagos" ? "pagos" : t.id === "plan" || t.id === "planner" || t.id === "design" ? "workflow" : t.id as import("@/src/types/auth").PermissionSection;
     return hasPermission(sec, "view");
+  });
+
+  // Si el tab activo no es visible para el usuario (p.ej. tab_access legado con "workflow"), saltar al primero
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.some(tab => tab.id === activeTab)) {
+      setActiveTab(visibleTabs[0].id);
+    }
   });
 
   // For co-workers with "my tasks only", filter tasks to their assigned ones
@@ -2482,7 +2101,6 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (!project) return;
     const ctxMap: Record<TabId, string> = {
-      workflow:    "project.workflow",
       materiales:  "project.materiales",
       contactos:   "project.contactos",
       presupuesto: "project.presupuesto",
@@ -2601,7 +2219,6 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Contenido */}
-      {activeTab === "workflow"    && <WorkflowTab    project={project} tasks={filteredTasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "materiales"  && <MaterialesTab  project={project} materials={project.materials} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "contactos"   && <ContactosTab   project={project} contacts={project.contacts} allContacts={allContacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "presupuesto" && <EstimateTab project={project} onRefresh={fetchProject} toast={showToast} />}

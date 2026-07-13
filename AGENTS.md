@@ -74,7 +74,7 @@ src/
 │   ├── proyectos/
 │   │   ├── layout.tsx                # Layout del panel: nav top, logout, VoiceFAB, LangSwitch
 │   │   ├── page.tsx                  # Dashboard de proyectos (lista + KPIs + eliminar proyecto)
-│   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Workflow · Gantt · Materials · Contacts · Notes · Design
+│   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Gantt · Materials · Contacts · Notes · Design
 │   │   ├── agenda/page.tsx           # Agenda personal del admin — citas/tasks/reuniones + captura por voz + .ics (solo superadmin)
 │   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
 │   │   ├── plan/page.tsx             # Gantt G — reporte de status por días: columnas (prio/estado/cliente/ubicación/días) + barra de duración con avance + acordeón de actividades por estado + prioridad reordenable + PDF
@@ -114,7 +114,7 @@ src/
 │       ├── UsersPanel.tsx            # Gestión de equipo: co-workers + clientes, tab_access, contact_id, my_tasks_only
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
-│       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop Estimate→Workflow (@dnd-kit)
+│       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop (@dnd-kit) + checkbox de completado
 │       ├── EstimateTab.tsx           # Tab de estimado — layout de sub-tabs: 📐 Sections + 💰 Payment Schedule; cabecera dark con WA/Copy/PDF/Save; FAB flotante eliminado
 │       ├── Button.tsx                # Botón reutilizable
 │       └── Container.tsx             # Contenedor de ancho máximo
@@ -184,9 +184,11 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `estimate_sections` | Secciones del estimado (N:1 → project_estimates) |
 | `estimate_items` | Items dentro de cada sección |
 
-### Estimate → Workflow (Day Planner)
+### Estimate → Tasks (Day Planner)
 
-- El Day Planner se abre desde EstimateTab → botón "Generate Workflow Tasks".
+> **Eliminado (jul 2026):** el **tab Workflow** (Kanban) fue removido. El control de actividades es ahora el **checkbox de completado** en cada tarjeta del Day Planner (persiste `tasks.status = 'done' | 'pend'` al instante). La clave de permisos `workflow` en `app_users.permissions` **sigue existiendo** y gatea Day Planner/Gantt/Design.
+
+- El Day Planner vive en su tab dedicado (`planner`).
 - Al abrir, **carga las tareas existentes** (`source IN ('estimate','planner')`) y pre-popula los day columns desde `scheduled_date`.
 - El usuario arrastra items entre columnas; al presionar **Save** se hace:
   - `INSERT` para ítems asignados sin taskId todavía
@@ -201,16 +203,8 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
   - `source_key` — llave estable para upsert; unique index en `(project_id, source_key) WHERE source_key IS NOT NULL`
   - `source_section` — etiqueta visible de sección (Demolition, Plumbing, etc.)
   - `amount` — monto del item para contexto operativo
-- Workflow y Plan tabs se refrescan automáticamente después del Save (`onGenerated → fetchProject`).
-- Para reprogramar: abrir la tarjeta de Workflow y editar **Scheduled date / Fecha programada**. El Plan/Gantt respeta esa fecha.
-
-### Tab Workflow — métricas resumen
-
-El tab Workflow muestra 4 KPI cards en la parte superior:
-- **Total tasks** — todas las tareas del proyecto
-- **From estimate** — tareas con `source = 'estimate'` o `'planner'`
-- **Completed** — tareas con `status = 'done'`
-- **Progress %** — `done / total * 100` con barra visual
+- El Plan/Gantt se refresca automáticamente después del Save (`onGenerated → fetchProject`).
+- Para reprogramar: abrir el acordeón de la tarjeta en el Day Planner y cambiar el **Día**, o editar la tarea desde el Gantt. El Plan/Gantt respeta esa fecha.
 
 Migración SQL requerida si estas columnas no existen:
 ```sql
@@ -405,14 +399,13 @@ Requiere autenticación por PIN. Layout en `src/app/proyectos/layout.tsx`.
 
 ### Tabs del detalle de proyecto (`/proyectos/[id]`)
 
-Orden de tabs (TabId array): `presupuesto · pagos · planner · workflow · plan · materiales · contactos · notas · design`
+Orden de tabs (TabId array): `presupuesto · pagos · planner · plan · materiales · contactos · notas · design`
 
 | Tab (id) | Label UI | Descripción |
 |---|---|---|
 | `presupuesto` | Estimate | Estimado profesional: secciones, items, PDF, WhatsApp send |
 | `pagos` | Cash Flow | Ingresos y egresos con balance en tiempo real |
-| `planner` | Day Planner | Planificador por día embebido — drag&drop, co-workers, custom items, auto-assign |
-| `workflow` | Workflow | Kanban (Pendiente → En Proceso → Listo) + vista Gantt |
+| `planner` | Day Planner | Planificador por día embebido — drag&drop, co-workers, custom items, auto-assign, checkbox de completado |
 | `plan` | Gantt | Vista Gantt de todas las tareas del proyecto — cabecera `bg-[#16323D]` |
 | `materiales` | Materials | Lista de compras con checkbox "comprado" + import desde Estimate |
 | `contactos` | Contacts | Especialistas/proveedores vinculados al proyecto |
@@ -572,8 +565,8 @@ Shortcut para smartphone/tableta que abre el panel **ya autenticado**, sin PIN. 
 
 | Tipo | `user_type` | Default tab_access | Descripción |
 |---|---|---|---|
-| Co-worker | `"coworker"` | workflow, planner, notas | Cuadrilla/especialistas — ve solo sus tareas |
-| Cliente | `"client"` | presupuesto, workflow, plan, notas, design | Dueño/cliente — vista de seguimiento, sin datos financieros |
+| Co-worker | `"coworker"` | planner, notas | Cuadrilla/especialistas — ve solo sus tareas |
+| Cliente | `"client"` | presupuesto, plan, notas, design | Dueño/cliente — vista de seguimiento, sin datos financieros |
 
 ### Colaboradores y clientes (`app_users`)
 - Creados desde panel "Equipo" del dashboard (solo superadmin puede crear)
@@ -588,7 +581,7 @@ Shortcut para smartphone/tableta que abre el panel **ya autenticado**, sin PIN. 
 | `user_type` | `TEXT` | `'coworker'` \| `'client'` — determina preset de acceso |
 | `contact_id` | `UUID` | FK → `contacts(id)` — vincula al co-worker con su ficha de contacto |
 | `tab_access` | `JSONB` | Array de TabId visibles. `null` = usar permisos legacy |
-| `my_tasks_only` | `BOOLEAN` | Si true, Workflow y Gantt filtran a tareas asignadas a `contact_id` |
+| `my_tasks_only` | `BOOLEAN` | Si true, el Gantt filtra a tareas asignadas a `contact_id` |
 | `permissions` | `JSONB` | CRUD granular: view/create/edit/delete por sección de datos |
 
 ### Tab access vs Data permissions
@@ -602,6 +595,8 @@ Shortcut para smartphone/tableta que abre el panel **ya autenticado**, sin PIN. 
 
 `workflow` · `materiales` · `contactos` · `presupuesto` · `pagos` · `notas`
 
+> `workflow` se conserva como **sección de permisos** (label UI: "Tasks (Planner/Gantt)") aunque el tab Workflow fue eliminado — gatea la visibilidad legacy de Day Planner, Gantt y Design.
+
 ### Filtrado "My tasks only" en detalle de proyecto
 
 En `src/app/proyectos/[id]/page.tsx`:
@@ -611,7 +606,7 @@ const filteredTasks = myContactId
   ? project.tasks.filter(t => t.assigned_contact_id === myContactId)
   : project.tasks;
 ```
-`filteredTasks` se pasa a `WorkflowTab` y `PlanTab`. Day Planner filtra internamente por `assigned_contact_id`.
+`filteredTasks` se pasa a `PlanTab`. Day Planner filtra internamente por `assigned_contact_id`.
 
 ### SQL de migración (`app_users`)
 ```sql
@@ -730,7 +725,6 @@ El tab Estimate usa un layout de sub-tabs con cabecera oscura. Implementado en j
 - Secciones con drag & drop (@dnd-kit)
 - **Catálogo auto-alimentado**: al nombrar una "+ Sección personalizada", el nombre se graba en `estimate_section_catalog` (dedupe por nombre, se omite el placeholder) y aparece en el modal "Add Section" desde entonces — no hay que re-escribirla. El modal muestra el emoji por tipo (`sectionEmoji()`: 💧 plomería, ⚡ eléctrico, 🎨 pintura… 📦 si es material)
 - Footer de totales: Labor subtotal → Descuento (rojo `#B0492F`) → Grand Total
-- Botón "Generate Workflow Tasks"
 
 ### Sub-tab 💰 Payment Schedule
 
@@ -782,6 +776,7 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | `payment-schedule-sidebar.html` | Prototipo "Opción A" del layout de Estimate — cabecera dark + sub-tabs (referencia del diseño implementado) |
 | `agenda-admin-prototype.html` | Prototipo de la Agenda personal — captura por voz + 3 opciones de notificación (referencia del diseño implementado) |
 | `index02.html` | Prototipo 02 — referencia del patrón SpeechRecognition usado en Design tab (movido desde la raíz) |
+| `gantt-report-print.html` | Prototipo del **reporte diario de actividades** para el Gantt G: rango de fechas + multi-select de estados de proyecto (In Progress por defecto, se pueden sumar Approved etc.), agrupado por día (sáb/dom teñidos) → proyecto → tareas con checkbox de completado, KPIs y pie de firmas; `window.print()` → PDF |
 | `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
 | `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
 
@@ -925,22 +920,25 @@ Costo estimado: ~$0.01 por render. Cuentas nuevas reciben créditos gratuitos.
   - Muestra spinner si carga, mensaje si no hay estimado
 - Drag & drop: `@dnd-kit` (DndContext, useDraggable, useDroppable, DragOverlay)
 - Estado: pool de items sin asignar + columnas de días (hasta N días)
-- Fechas: cada columna tiene datepicker nativo (`<input type="date">` con overlay transparente)
+- Fechas: cada columna tiene datepicker nativo (`<input type="date">` con overlay transparente). No se permiten dos días con la misma fecha (el reload reconstruye días desde fechas únicas de `scheduled_date` — duplicados se fusionarían)
+- **Días y fechas (jul 2026)**: al aumentar el stepper de días, los nuevos días continúan después de la **última** fecha existente saltando duplicados (antes se rellenaba `día1 + i`, lo que generaba fechas repetidas con días no consecutivos y los días 5+ "desaparecían" al recargar). Al disminuir, los items de días recortados vuelven al pool. La configuración de días (incluye días vacíos) se persiste en `localStorage` (`kokistyle-planner-days:<projectId>`) al guardar y se une con las fechas de tareas en el load — los días sin items sobreviven al reload en el mismo dispositivo
 - Capacidad: `workersPerDay × hoursPerWorker` por día → barra de progreso visual
 - Auto-assign: **phase-ordered + even-spread** — ordena por fase constructiva (Materiales → Demolición → Estructura → Plomería → Eléctrico → Tile/Piso → Handyman → Pintura → Otro), distribuye equitativamente entre todos los días configurados (`targetPerDay = ceil(n/numDays)`), y avanza de día en los límites de fase
 - **Reordenar dentro de un día** (jul 2026): las tarjetas usan `@dnd-kit/sortable` (`useSortable` + `SortableContext` por día y por el pool, `closestCorners`). Arrastrar una tarjeta sobre otra del mismo día la reordena; soltarla en otro día/pool la mueve. El orden dentro del día se persiste en `tasks.sort_order = dayIndex*1000 + posiciónEnElDía` y la carga ordena por `sort_order`. El `DragOverlay` usa un id sufijado (`__ov`) para no colisionar con el sortable real.
 - Asignación de co-worker por item: selector `<select>` con `onPointerDown={e => e.stopPropagation()}` para no disparar el drag
 - **Quick-assign por fecha**: cada tarjeta del pool tiene un botón `📅 Agregar a día...` que llama a `inputRef.current?.showPicker()` abriendo el calendario nativo. Al elegir fecha se busca coincidencia exacta en `dayDates`; si no hay, se calcula el día más cercano por ms. Muestra `✓ Día N · fecha` en verde cuando ya está asignado.
-- **Custom items**: botón "+ Custom" en el pool → mini-formulario (descripción, sección tag, horas, monto) → `source = 'planner'`, `source_key = 'planner-custom:<uuid>'`
+- **Custom items (jul 2026)**: botón "+ Agregar item" en el pool → formulario completo (descripción, **sección como combo** de las existentes con su color + opción "Nueva sección…" con **selector de color** entre los TAG_STYLES no usados, horas, monto, día destino y asignado) → `source = 'planner'`, `source_key = 'planner-custom:<uuid>'`. El color elegido para secciones nuevas se persiste en `localStorage` (`kokistyle-planner-colors:<projectId>` como `{ tag: styleIdx }`); al cargar, el color de una sección custom se resuelve: sección del estimate > color guardado > hash determinístico del nombre.
+- **Checkbox de completado (jul 2026)**: cada tarjeta tiene un checkbox al costado (reemplaza al tab Workflow eliminado). Al marcarlo en una tarea ya guardada persiste `status = 'done'`/`'pend'` al instante; en items aún no guardados se aplica en el INSERT del Save. El texto se tacha y el header muestra `N completados`. El Save de items existentes **no** toca `status` (para no pisar `prog` puesto desde el Gantt).
+- **Columnas de fin de semana (jul 2026)**: `weekendKind(date)` colorea sábado en azul (`#9DC3E6`/`#EAF3FA`) y domingo en naranja (`#F4B183`/`#FDF1E7`) — header con badge SÁB/DOM y drop zone teñida; si el día tiene tareas, el fondo baja a gris suave pero el borde/acento del color persiste. Leyenda en el footer.
 - Output al guardar: `INSERT`/`UPDATE` en `tasks` con `scheduled_date`, `source_key`, `assigned_contact_id`, vínculo al Estimate para upsert sin duplicados
 
 ### Posición del tab `"planner"` en TabId
 
 ```typescript
-type TabId = "workflow" | "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas";
+type TabId = "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "notas" | "design";
 ```
 
-Orden en `TABS` array: Plan · Workflow · Estimate · **Day Planner** · Payments · Materials · Contacts · Notes
+Orden en `TABS` array: Estimate · Cash Flow · **Day Planner** · Gantt · Materials · Contacts · Notes · Design
 
 ---
 

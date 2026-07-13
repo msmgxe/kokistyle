@@ -42,37 +42,6 @@ function MockupDashboard({ EN }: { EN: boolean }) {
   );
 }
 
-function MockupWorkflow({ EN }: { EN: boolean }) {
-  const cols = EN
-    ? [{ label:"Pending", c:"#C4B89A", tasks:["Demo walls","Rough plumbing"] },
-       { label:"In Progress", c:"#4E7A82", tasks:["Tile installation"] },
-       { label:"Done ✓", c:"#4F8A63", tasks:["Demolition"] }]
-    : [{ label:"Pendiente", c:"#C4B89A", tasks:["Demoler paredes","Plomería"] },
-       { label:"En Proceso", c:"#4E7A82", tasks:["Instalación tile"] },
-       { label:"Listo ✓", c:"#4F8A63", tasks:["Demolición"] }];
-  return (
-    <div className="grid grid-cols-3 gap-2">
-      {cols.map(col => (
-        <div key={col.label} className="rounded-xl bg-[#F7F3EA] p-2">
-          <div className="mb-2 flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full" style={{ background: col.c }} />
-            <span className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]">{col.label}</span>
-          </div>
-          {col.tasks.map(t => (
-            <div key={t} className="mb-1.5 rounded-lg border border-[#E6DDCB] bg-white px-2 py-1.5">
-              <div className="text-[9px] font-semibold text-[#16323D]">{t}</div>
-              <div className="mt-0.5 text-[8px] text-[#5C6A6E]">4h · {EN?"Jorge":"Jorge"}</div>
-            </div>
-          ))}
-          <div className="mt-1.5 rounded-lg border border-dashed border-[#D7CBB3] py-1 text-center text-[8px] text-[#C4B89A]">
-            + {EN?"Add task":"Agregar tarea"}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function MockupEstimate({ EN }: { EN: boolean }) {
   return (
     <div className="space-y-2">
@@ -528,39 +497,6 @@ function useFeatures(EN: boolean) {
         "💡 La pestaña Plan lee el mismo campo <b>scheduled_date</b> asignado por el Planificador por Día — programar en Estimate impulsa el Gantt directamente.",
         "💡 Usa el toggle de <b>Días</b> cuando tu proyecto dura menos de 2 semanas — los días individuales se convierten en columnas visibles para programación precisa.",
         "💡 Cambiar la <b>fecha de inicio/fin</b> de una tarea en Plan también actualiza el ancho de la barra. Las tareas sin fecha aparecen al inicio sin barra.",
-      ],
-    },
-    {
-      id: "workflow", icon: "🗂",
-      title: EN ? "Workflow" : "Flujo de Trabajo",
-      desc:  EN ? "Manage project tasks with a Kanban board. Drag cards between columns or switch to Gantt timeline view."
-                : "Gestiona las tareas del proyecto con un tablero Kanban. Arrastra tarjetas entre columnas o cambia a vista Gantt.",
-      mockup: <MockupWorkflow EN={EN} />,
-      steps: EN ? [
-        { t:"Add a task", d:"Click <b>+ Add Task</b> under any column. Fill in name, estimated <b>hours</b>, duration in weeks, and optionally assign a contact." },
-        { t:"Drag to change status", d:"Drag cards between <b>Pending → In Progress → Done</b>. On mobile, long-press to start dragging." },
-        { t:"Read the metrics strip", d:"At the top of the Workflow board, <b>4 KPI cards</b> summarise the project at a glance: <b>Total tasks · From estimate · Completed · Progress %</b>. The Progress card shows a colour-coded progress bar." },
-        { t:"Switch to Gantt view", d:"Click the <b>Gantt</b> button above the board to see a horizontal timeline of all tasks by week." },
-        { t:"Import from Estimate", d:"In the <b>Estimate</b> tab, click <b>Generate Workflow Tasks</b> to open the Day Planner. Each scheduled estimate item becomes its own Kanban task, with date, hours and Estimate traceability." },
-        { t:"Filter generated work", d:"Use the Workflow filters to view tasks by <b>assignee</b> or <b>scheduled date</b>. This makes it easy to run the crew day by day." },
-        { t:"Reschedule tasks", d:"Tap any task and change <b>Scheduled date</b>. The date is saved in the task and reflected in the Plan/Gantt view." },
-      ] : [
-        { t:"Agregar una tarea", d:"Clic en <b>+ Agregar Tarea</b> en cualquier columna. Ingresa nombre, <b>horas</b> estimadas, semanas y asigna un contacto (opcional)." },
-        { t:"Arrastrar para cambiar estado", d:"Arrastra tarjetas entre <b>Pendiente → En Proceso → Listo</b>. En móvil, mantén presionado para arrastrar." },
-        { t:"Leer el panel de métricas", d:"Al inicio del tablero Workflow, <b>4 tarjetas KPI</b> resumen el proyecto de un vistazo: <b>Total tareas · Del estimado · Completadas · Progreso %</b>. La tarjeta de Progreso muestra una barra de avance con código de color." },
-        { t:"Cambiar a vista Gantt", d:"Clic en el botón <b>Gantt</b> encima del tablero para ver una línea de tiempo horizontal por semana." },
-        { t:"Importar desde Estimado", d:"En la pestaña <b>Estimado</b>, clic en <b>Generar Tareas</b> para abrir el Planificador por Día. Cada item programado del estimado se convierte en su propia tarea Kanban, con fecha, horas y trazabilidad al Estimate." },
-        { t:"Filtrar trabajo generado", d:"Usa los filtros del Workflow para ver tareas por <b>responsable</b> o por <b>fecha programada</b>. Así puedes gestionar la cuadrilla día por día." },
-        { t:"Reprogramar tareas", d:"Toca cualquier tarea y cambia <b>Fecha programada</b>. La fecha queda guardada en la tarea y se refleja en la vista Plan/Gantt." },
-      ],
-      tips: EN ? [
-        "📊 The <b>metrics strip</b> at the top shows: Total tasks, how many came <b>From estimate</b>, how many are <b>Completed</b>, and overall <b>Progress %</b> with a progress bar — updated in real time as you move cards.",
-        "💡 The <b>Day Planner</b> lets you drag estimate items into day columns (Day 1, Day 2…) with hours capacity bars. Use <b>Auto-assign</b> to fill days automatically. Generated tasks are skipped if they already exist, preventing duplicates.",
-        "🎙 Say <b>\"Add task [description]\"</b> to Katy to add it to the current project.",
-      ] : [
-        "📊 El <b>panel de métricas</b> arriba muestra: Total de tareas, cuántas vienen <b>Del estimado</b>, cuántas están <b>Completadas</b> y el <b>% de Progreso</b> con barra de avance — se actualiza en tiempo real al mover tarjetas.",
-        "💡 El <b>Planificador por Día</b> permite arrastrar items del estimado a columnas de días con barras de capacidad. Usa <b>Auto-asignar</b> para llenar automáticamente. Si una tarea ya existe, se omite para evitar duplicados.",
-        "🎙 Di <b>\"Agregar tarea [descripción]\"</b> a Katy para añadirla al proyecto actual.",
       ],
     },
     {
