@@ -77,7 +77,7 @@ src/
 │   │   ├── [id]/page.tsx             # Detalle de proyecto — tabs: Estimate · Cash Flow · Day Planner · Workflow · Gantt · Materials · Contacts · Notes · Design
 │   │   ├── agenda/page.tsx           # Agenda personal del admin — citas/tasks/reuniones + captura por voz + .ics (solo superadmin)
 │   │   ├── contactos/page.tsx        # Lista global de contactos (todos los proyectos)
-│   │   ├── plan/page.tsx             # Gantt G global (todas las tareas, orden por start_date asc)
+│   │   ├── plan/page.tsx             # Gantt G — reporte de status por días: columnas (prio/estado/cliente/ubicación/días) + barra de duración con avance + acordeón de actividades por estado + prioridad reordenable + PDF
 │   │   ├── activity/page.tsx         # Registro de actividad — solo superadmin (login, create, update, delete)
 │   │   ├── equipo/page.tsx           # Equipo — Matriz de asignación + Reportes por co-worker (solo superadmin)
 │   │   ├── prospectos/page.tsx       # Prospectos — leads del AI Design gratuito (solo superadmin)
@@ -451,7 +451,7 @@ Orden: Dashboard → Gantt G → Contacts → Team (superadmin) → Agenda (supe
 | Link | Ruta | Notas |
 |---|---|---|
 | Dashboard | `/proyectos` | — |
-| Gantt G | `/proyectos/plan` | Vista Gantt global, proyectos ordenados por start_date ASC |
+| Gantt G | `/proyectos/plan` | Reporte de status por días (barra de duración + avance, acordeón de actividades por estado, prioridad reordenable → `priority_rank`, PDF por impresión) |
 | Contacts | `/proyectos/contactos` | Lista global de contactos |
 | Team | `/proyectos/equipo` | Matriz de asignación + Reportes — solo visible para superadmin |
 | Prospects | `/proyectos/prospectos` | Leads del AI Design gratuito — solo visible para superadmin |

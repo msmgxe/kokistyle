@@ -2,26 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { GripVertical } from "lucide-react";
+import { GripVertical, ChevronRight, Trash2, Printer } from "lucide-react";
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  TouchSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  defaultDropAnimationSideEffects,
+  DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor,
+  useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
+  SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
@@ -31,145 +18,120 @@ import { branding } from "@/src/config/branding";
 import type { Project, Task } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
 
-interface ProjectWithTasks extends Project {
-  tasks: Task[];
-}
+interface ProjectWithTasks extends Project { tasks: Task[] }
 
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const LEFT = 520; // ancho total de las columnas de la izquierda (px) — alinea header y filas
+const GRID_COLS = "24px 30px 172px 78px 84px 34px 98px 1fr";
 
-const totalWeeks = (tasks: Task[]) =>
-  Math.max(1, tasks.reduce((s, t) => s + t.duration_weeks, 0));
+const totalWeeks = (tasks: Task[]) => Math.max(1, tasks.reduce((s, t) => s + (t.duration_weeks || 0), 0));
+const donePct = (tasks: Task[]) => tasks.length ? Math.round(tasks.filter(t => t.status === "done").length / tasks.length * 100) : 0;
 
-const BAR_COLORS: Record<string, string> = {
-  prospecto:   "bg-[#E3E8EE] text-[#44586B]",
-  presupuesto: "bg-[#D7CBB3] text-[#5C6A6E]",
-  aprobado:    "bg-[#16323D] text-white",
-  en_obra:     "bg-gradient-to-r from-[#4E7A82] to-[#5e8c94] text-white",
-  terminado:   "bg-gradient-to-r from-[#4F8A63] to-[#69a67e] text-white",
+// Barra de duración por estado (colores de la app)
+const BAR_BASE: Record<string, string> = {
+  prospecto:   "bg-[#D9DFE6]", presupuesto: "bg-[#D7CBB3]", aprobado: "bg-[#9DB6BC]",
+  en_obra:     "bg-[#7FA0A8]", terminado:   "bg-[#8FBE9F]",
+};
+const STATUS_PILL: Record<string, string> = {
+  prospecto:   "bg-[#E3E8EE] text-[#44586B]", presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
+  aprobado:    "bg-[#DCE8E9] text-[#4E7A82]", en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
+  terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
+};
+const TASK_PILL: Record<string, string> = {
+  pend: "bg-[#E3E8EE] text-[#44586B]", prog: "bg-[#F5E6C3] text-[#7A6230]", done: "bg-[#DCEBDD] text-[#4F8A63]",
 };
 
 function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
   return (
-    <button
-      type="button"
-      className="flex h-full cursor-grab touch-none items-center justify-center px-2 text-[#C4B89A] transition hover:text-[#16323D] active:cursor-grabbing"
-      {...(listeners ?? {})}
-      {...(attributes ?? {})}
-      tabIndex={-1}
-      aria-label="Arrastra para reordenar"
-    >
-      <GripVertical size={16} />
+    <button type="button" tabIndex={-1} aria-label="Arrastra para reordenar"
+      className="flex h-full cursor-grab touch-none items-center justify-center text-[#C4B89A] transition hover:text-[#16323D] active:cursor-grabbing"
+      {...(listeners ?? {})} {...(attributes ?? {})}>
+      <GripVertical size={15} />
     </button>
   );
 }
 
-function SortableRow({
-  id,
-  children,
-}: {
+function SortableRow({ id, children }: {
   id: string;
-  children: (
-    handleProps: { listeners?: object; attributes?: object },
-    isDragging: boolean
-  ) => React.ReactNode;
+  children: (h: { listeners?: object; attributes?: object }, dragging: boolean) => React.ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
-
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 50 : undefined,
-        opacity: isDragging ? 0.6 : 1,
-      }}
-    >
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined, opacity: isDragging ? 0.6 : 1 }}>
       {children({ listeners, attributes }, isDragging)}
     </div>
   );
 }
 
-function ConfirmModal({
-  title, body, label, onConfirm, onCancel,
-}: {
-  title: string; body: string; label: string;
-  onConfirm: () => void; onCancel: () => void;
-}) {
+function ConfirmModal({ title, body, label, onConfirm, onCancel }: { title: string; body: string; label: string; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
       <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
         <h3 className="mb-2 text-lg font-bold text-[#16323D]">{title}</h3>
         <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">
-            Cancelar
-          </button>
-          <button onClick={onConfirm} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">
-            {label}
-          </button>
+          <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
+          <button onClick={onConfirm} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">{label}</button>
         </div>
       </div>
     </div>
   );
 }
 
-const dropAnimation = {
-  sideEffects: defaultDropAnimationSideEffects({
-    styles: { active: { opacity: "0.5" } },
-  }),
-};
+const dropAnimation = { sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.5" } } }) };
 
 export default function PlanPage() {
   const [projects, setProjects] = useState<ProjectWithTasks[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [activeId, setActiveId]   = useState<string | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
-  const [toast, setToast]         = useState("");
+  const [openIds, setOpenIds]   = useState<Set<string>>(new Set());
+  const [toast, setToast]       = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | "prospecto" | "presupuesto" | "aprobado" | "en_obra" | "terminado">("all");
-  const [ganttUnit, setGanttUnit] = useState<"week" | "day">("week");
+  const [ganttUnit, setGanttUnit] = useState<"week" | "day">("day");
   const { t, language } = useLanguage();
   const tp = t.panel;
   const EN = language === "en";
+  const gp = tp.globalPlan;
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 3000);
-  };
+  const showToast = (msg: string) => { setToast(msg); setToastVisible(true); setTimeout(() => setToastVisible(false), 3000); };
 
   const fetchProjects = useCallback(async () => {
-    const { data } = await supabase
-      .from("projects")
-      .select("*, tasks(*)")
-      .order("start_date", { ascending: true });
-    if (data) setProjects(data as ProjectWithTasks[]);
+    const { data } = await supabase.from("projects").select("*, tasks(*)").order("start_date", { ascending: true });
+    if (data) {
+      const rows = data as ProjectWithTasks[];
+      // Orden por prioridad manual (priority_rank) si existe; si no, por fecha de inicio
+      rows.sort((a, b) => {
+        const ra = a.priority_rank, rb = b.priority_rank;
+        if (ra != null && rb != null) return ra - rb;
+        if (ra != null) return -1;
+        if (rb != null) return 1;
+        return (a.start_date ?? "").localeCompare(b.start_date ?? "");
+      });
+      setProjects(rows);
+    }
     setLoading(false);
   }, []);
-
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // Rango temporal (barras por fecha real)
   const spans = projects.map((p) => {
-    const wks = totalWeeks(p.tasks);
-    const start = new Date(p.start_date + "T00:00:00");
-    const end   = addDays(p.start_date, wks * 7);
+    const start = new Date((p.start_date ?? new Date().toISOString().slice(0, 10)) + "T00:00:00");
+    let end = addDays(p.start_date ?? "", totalWeeks(p.tasks) * 7);
+    if (p.end_date) { const e = new Date(p.end_date + "T00:00:00"); if (e > end) end = e; }
+    p.tasks.forEach(tk => { if (tk.scheduled_date) { const d = addDays(tk.scheduled_date, 1); if (d > end) end = d; } });
     return { p, start, end };
   });
-
   let minDate = spans[0]?.start ?? new Date();
   let maxDate = spans[0]?.end   ?? new Date();
-  spans.forEach(({ start, end }) => {
-    if (start < minDate) minDate = start;
-    if (end   > maxDate) maxDate = end;
-  });
+  spans.forEach(({ start, end }) => { if (start < minDate) minDate = start; if (end > maxDate) maxDate = end; });
   minDate = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
   maxDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 1);
   const totalMs = Math.max(maxDate.getTime() - minDate.getTime(), 1);
@@ -177,22 +139,15 @@ export default function PlanPage() {
   const monthLabels: { label: string; left: number }[] = [];
   let cur = new Date(minDate);
   while (cur < maxDate) {
-    monthLabels.push({
-      label: MONTHS[cur.getMonth()],
-      left: ((cur.getTime() - minDate.getTime()) / totalMs) * 100,
-    });
+    monthLabels.push({ label: `${MONTHS[cur.getMonth()]} ${String(cur.getFullYear()).slice(2)}`, left: ((cur.getTime() - minDate.getTime()) / totalMs) * 100 });
     cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
   }
-
   const totalDays = Math.max(1, Math.ceil(totalMs / 86400000));
   const unitLabels: { label: string; left: number }[] = [];
   if (ganttUnit === "week") {
-    const totalWeeks = Math.ceil(totalDays / 7);
-    for (let w = 0; w < totalWeeks; w++) {
-      unitLabels.push({ label: `W${w + 1}`, left: ((w * 7) / totalDays) * 100 });
-    }
+    for (let w = 0; w < Math.ceil(totalDays / 7); w++) unitLabels.push({ label: `W${w + 1}`, left: ((w * 7) / totalDays) * 100 });
   } else {
-    const step = totalDays > 120 ? 7 : totalDays > 30 ? 3 : totalDays > 14 ? 2 : 1;
+    const step = totalDays > 120 ? 7 : totalDays > 45 ? 3 : totalDays > 20 ? 2 : 1;
     for (let d = 0; d < totalDays; d += step) {
       const date = new Date(minDate.getTime() + d * 86400000);
       unitLabels.push({ label: `${date.getDate()}`, left: (d / totalDays) * 100 });
@@ -200,264 +155,251 @@ export default function PlanPage() {
   }
 
   const activeProject = activeId ? projects.find((p) => p.id === activeId) : null;
-
   const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
-  const handleDragEnd   = (e: DragEndEvent) => {
+  const handleDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const oldIdx = projects.findIndex((p) => p.id === active.id);
     const newIdx = projects.findIndex((p) => p.id === over.id);
-    setProjects((prev) => arrayMove(prev, oldIdx, newIdx));
-    showToast(tp.globalPlan.priorityUpdated);
+    const next = arrayMove(projects, oldIdx, newIdx);
+    setProjects(next);
+    // Persistir el nuevo ranking (fire-and-forget; requiere columna priority_rank)
+    next.forEach((p, i) => { supabase.from("projects").update({ priority_rank: i + 1 }).eq("id", p.id).then(() => {}); });
+    showToast(gp.priorityUpdated);
   };
 
   const deleteProject = async (id: string) => {
     await supabase.from("projects").delete().eq("id", id);
     setConfirmDel(null);
     setProjects((prev) => prev.filter((p) => p.id !== id));
-    showToast(tp.globalPlan.deleted);
+    showToast(gp.deleted);
   };
 
+  const toggleRow = (id: string) => setOpenIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => setOpenIds(prev => prev.size ? new Set() : new Set(projects.map(p => p.id)));
+
   if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
-      </div>
-    );
+    return <div className="flex min-h-[60vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" /></div>;
   }
 
   const STATUS_PILL_ACTIVE: Record<string, string> = {
-    prospecto:   "bg-[#E3E8EE] text-[#44586B]",
-    presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-    aprobado:    "bg-[#DCE8E9] text-[#4E7A82]",
-    en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
+    prospecto:   "bg-[#E3E8EE] text-[#44586B]", presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
+    aprobado:    "bg-[#DCE8E9] text-[#4E7A82]", en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
     terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
   };
 
   const DarkBar = ({ withControls }: { withControls: boolean }) => (
     <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#16323D] px-5 py-3">
       <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block">
-          {branding.companyName}
-        </span>
+        <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block">{branding.companyName}</span>
         <span className="hidden text-white/20 sm:block">·</span>
-        <h1 className="font-bookman text-[17px] font-semibold text-white">{tp.globalPlan.title}</h1>
-        <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70">
-          {projects.length}
-        </span>
+        <h1 className="font-bookman text-[17px] font-semibold text-white">{gp.title}</h1>
+        <span className="rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70">{projects.length}</span>
       </div>
-
-      {withControls && (
-        <>
-          <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
-
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-            <button
-              onClick={() => setFilterStatus("all")}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
-                filterStatus === "all"
-                  ? "bg-white text-[#16323D]"
-                  : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              {tp.globalPlan.tabAll}
-              <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${filterStatus === "all" ? "bg-black/10" : "bg-white/10"}`}>
-                {projects.length}
-              </span>
-            </button>
-            {(["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"] as const).map(s => {
-              const count = projects.filter(p => p.status === s).length;
-              if (count === 0) return null;
-              const isActive = filterStatus === s;
-              return (
-                <button
-                  key={s}
-                  onClick={() => setFilterStatus(s)}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
-                    isActive ? STATUS_PILL_ACTIVE[s] : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  <span className="size-1.5 rounded-full bg-current" />
-                  {tp.status[s]}
-                  <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${isActive ? "bg-black/10" : "bg-white/10"}`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
-
-          <div className="flex shrink-0 items-center gap-1">
-            {(["week", "day"] as const).map(u => (
-              <button
-                key={u}
-                onClick={() => setGanttUnit(u)}
-                className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
-                  ganttUnit === u
-                    ? "bg-white text-[#16323D]"
-                    : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {u === "week" ? (EN ? "Weeks" : "Semanas") : (EN ? "Days" : "Días")}
+      {withControls && (<>
+        <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          <button onClick={() => setFilterStatus("all")}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${filterStatus === "all" ? "bg-white text-[#16323D]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+            {gp.tabAll}
+            <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${filterStatus === "all" ? "bg-black/10" : "bg-white/10"}`}>{projects.length}</span>
+          </button>
+          {(["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"] as const).map(s => {
+            const count = projects.filter(p => p.status === s).length;
+            if (count === 0) return null;
+            const isActive = filterStatus === s;
+            return (
+              <button key={s} onClick={() => setFilterStatus(s)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${isActive ? STATUS_PILL_ACTIVE[s] : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                <span className="size-1.5 rounded-full bg-current" />{tp.status[s]}
+                <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${isActive ? "bg-black/10" : "bg-white/10"}`}>{count}</span>
               </button>
-            ))}
-          </div>
-        </>
-      )}
+            );
+          })}
+        </div>
+        <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
+        <button onClick={toggleAll} title={gp.expandAll} className="shrink-0 rounded-full border border-white/20 px-3 py-1 text-[10.5px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white">⇕</button>
+        <div className="flex shrink-0 items-center gap-1">
+          {(["week", "day"] as const).map(u => (
+            <button key={u} onClick={() => setGanttUnit(u)}
+              className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${ganttUnit === u ? "bg-white text-[#16323D]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+              {u === "week" ? (EN ? "Weeks" : "Semanas") : (EN ? "Days" : "Días")}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => window.print()} title={gp.printPdf} className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-bold text-[#16323D]">
+          <Printer size={12} /> {gp.printPdf}
+        </button>
+      </>)}
     </div>
   );
 
   if (projects.length === 0) {
-    return (
-      <div>
-        <DarkBar withControls={false} />
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
-          {tp.globalPlan.noProjects}
-        </div>
-      </div>
-    );
+    return <div><DarkBar withControls={false} /><div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">{gp.noProjects}</div></div>;
   }
 
   const visibleProjects = filterStatus === "all" ? projects : projects.filter((p) => p.status === filterStatus);
+  const stTasks = (p: ProjectWithTasks, st: "pend"|"prog"|"done") => p.tasks.filter(tk => tk.status === st);
 
   return (
     <div className="animate-in fade-in duration-300">
       <DarkBar withControls />
 
-      <div className="relative flex h-8 items-center overflow-hidden rounded-t-xl bg-[#16323D]" style={{ paddingLeft: "236px" }}>
-        <div className="absolute left-0 flex h-full w-[236px] items-center px-4">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">{tp.globalPlan.colProject}</span>
-        </div>
-        {monthLabels.map(({ label, left }) => (
-          <span
-            key={label + left}
-            className="absolute text-[10px] font-bold text-white/70"
-            style={{ left: `calc(236px + ${left}% + 6px)` }}
-          >
-            {label}
-          </span>
-        ))}
+      <div className="rpt-only mb-3 hidden">
+        <h2 className="text-lg font-bold text-[#16323D]">{gp.reportTitle}</h2>
+        <p className="text-xs text-[#5C6A6E]">{gp.generatedOn} {new Date().toLocaleDateString(EN ? "en-US" : "es-US", { day: "numeric", month: "long", year: "numeric" })}</p>
       </div>
 
-      {/* Sub-header semanas / días */}
-      <div className="relative mb-2 h-5 overflow-hidden rounded-b-xl border border-t-0 border-[#E6DDCB] bg-[#ECE3D1]" style={{ paddingLeft: "236px" }}>
-        {unitLabels.map(({ label, left }) => (
-          <span
-            key={label + left}
-            className="absolute top-0.5 text-[9px] font-semibold text-[#5C6A6E]"
-            style={{ left: `calc(236px + ${left}% + 6px)` }}
-          >
-            {label}
-          </span>
-        ))}
-      </div>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext items={projects.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-2">
-            {visibleProjects.map((p) => {
-              const sp = spans.find((s) => s.p.id === p.id);
-              const left  = sp ? ((sp.start.getTime() - minDate.getTime()) / totalMs) * 100 : 0;
-              const width = sp ? ((sp.end.getTime()   - sp.start.getTime()) / totalMs) * 100 : 10;
-              const statusLabels = tp.status;
-              const statusLabel = statusLabels[p.status as keyof typeof statusLabels] ?? p.status;
-
-              return (
-                <SortableRow key={p.id} id={p.id}>
-                  {({ listeners, attributes }, isDragging) => (
-                    <div
-                      className={`grid items-center gap-3 overflow-hidden rounded-xl border bg-white transition-shadow ${isDragging ? "border-[#16323D] shadow-lg" : "border-[#E6DDCB]"}`}
-                      style={{ gridTemplateColumns: "auto minmax(150px,224px) 1fr 36px" }}
-                    >
-                      <DragHandle listeners={listeners} attributes={attributes} />
-
-                      <Link
-                        href={`/proyectos/${p.id}`}
-                        className="group flex items-center gap-2.5 py-2 hover:bg-[#F7F3EA] transition-colors"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <ProjectThumb photoUrl={p.photo_url} title={p.title} size={36} />
-                        <div className="min-w-0">
-                          <div className="truncate text-[13px] font-semibold text-[#16323D] group-hover:text-[#395886] transition-colors">
-                            {p.title.split(" — ")[0]}
-                          </div>
-                          <div className="truncate font-mono text-[10.5px] text-[#5C6A6E]">
-                            {sp ? `${dShort(sp.start)}–${dShort(sp.end)}` : "—"}
-                            {" · "}{p.client}
-                          </div>
-                        </div>
-                      </Link>
-
-                      <Link
-                        href={`/proyectos/${p.id}`}
-                        className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1] hover:ring-1 hover:ring-[#395886]/30 transition-all"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <div
-                          className={`absolute top-0.5 h-4 rounded-[5px] px-2 text-[9.5px] font-bold leading-4 overflow-hidden whitespace-nowrap ${BAR_COLORS[p.status] ?? "bg-[#D7CBB3] text-[#5C6A6E]"}`}
-                          style={{ left: `${left}%`, width: `${Math.max(width, 6)}%` }}
-                        >
-                          {statusLabel}
-                        </div>
-                      </Link>
-
-                      <button
-                        onClick={() => setConfirmDel(p.id)}
-                        className="mr-2 grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]"
-                        aria-label={tp.globalPlan.deleteProject}
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  )}
-                </SortableRow>
-              );
-            })}
-          </div>
-        </SortableContext>
-
-        <DragOverlay dropAnimation={dropAnimation}>
-          {activeProject && (
-            <div className="rounded-xl border border-[#16323D] bg-white px-4 py-3 shadow-2xl ring-1 ring-[#16323D]">
-              <div className="text-sm font-semibold text-[#16323D]">
-                {activeProject.title.split(" — ")[0]}
-              </div>
-              <div className="font-mono text-[11px] text-[#5C6A6E]">{activeProject.client}</div>
+      <div className="overflow-x-auto rounded-2xl border border-[#E6DDCB] bg-white">
+        <div style={{ minWidth: 980 }}>
+          {/* Cabecera de columnas + meses */}
+          <div className="grid items-stretch bg-[#16323D] text-[9px] font-bold uppercase tracking-wider text-white/70" style={{ gridTemplateColumns: GRID_COLS }}>
+            <span />
+            <span className="px-1 py-2 text-center">{gp.colPrio}</span>
+            <span className="px-2 py-2">{gp.colProject}</span>
+            <span className="px-2 py-2">{gp.colClient}</span>
+            <span className="px-2 py-2">{gp.colLocation}</span>
+            <span className="px-1 py-2 text-center">{gp.colDays}</span>
+            <span className="px-2 py-2">{gp.colStatus}</span>
+            <div className="relative py-2">
+              {monthLabels.map(({ label, left }) => (
+                <span key={label + left} className="absolute whitespace-nowrap text-white/60" style={{ left: `calc(${left}% + 4px)` }}>{label}</span>
+              ))}
             </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+          </div>
+          {/* Sub-cabecera de semanas/días */}
+          <div className="grid border-b border-[#E6DDCB] bg-[#ECE3D1]" style={{ gridTemplateColumns: `${LEFT}px 1fr` }}>
+            <span />
+            <div className="relative h-5">
+              {unitLabels.map(({ label, left }) => (
+                <span key={label + left} className="absolute top-0.5 text-[8.5px] font-semibold text-[#5C6A6E]" style={{ left: `calc(${left}% + 3px)` }}>{label}</span>
+              ))}
+            </div>
+          </div>
 
-      <div className="mt-5 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E]">
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#16323D]" /> {tp.status.aprobado}</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4E7A82]" /> {tp.status.en_obra}</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4F8A63]" /> {tp.status.terminado}</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3]" /> {tp.status.presupuesto}</span>
+          {/* Filas */}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <SortableContext items={projects.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+              {visibleProjects.map((p, idx) => {
+                const sp = spans.find((s) => s.p.id === p.id);
+                const left  = sp ? ((sp.start.getTime() - minDate.getTime()) / totalMs) * 100 : 0;
+                const width = sp ? ((sp.end.getTime() - sp.start.getTime()) / totalMs) * 100 : 8;
+                const pc = donePct(p.tasks);
+                const days = sp ? Math.max(1, Math.round((sp.end.getTime() - sp.start.getTime()) / 86400000)) : 0;
+                const rank = p.priority_rank ?? (idx + 1);
+                const isOpen = openIds.has(p.id);
+                const statusLabel = tp.status[p.status as keyof typeof tp.status] ?? p.status;
+
+                return (
+                  <SortableRow key={p.id} id={p.id}>
+                    {({ listeners, attributes }, isDragging) => (
+                      <div className={`border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[#16323D]" : ""}`}>
+                        <div className="grid items-center" style={{ gridTemplateColumns: GRID_COLS }}>
+                          <DragHandle listeners={listeners} attributes={attributes} />
+
+                          <div className="flex h-full items-center justify-center bg-[#F2EFE7] font-mono text-[13px] font-bold text-[#16323D]">{rank}</div>
+
+                          {/* Proyecto (clic = acordeón) */}
+                          <button onClick={() => toggleRow(p.id)} className="group flex h-full items-center gap-2 px-2 py-2 text-left hover:bg-[#F7F3EA]">
+                            <ChevronRight size={13} className={`shrink-0 text-[#97A1A0] transition ${isOpen ? "rotate-90" : ""}`} />
+                            <ProjectThumb photoUrl={p.photo_url} title={p.title} size={30} rounded="rounded-md" />
+                            <span className="truncate text-[12.5px] font-semibold text-[#16323D] group-hover:text-[#395886]">{p.title.split(" — ")[0]}</span>
+                          </button>
+
+                          <Link href={`/proyectos/${p.id}`} className="truncate px-2 text-[11.5px] text-[#5C6A6E] hover:text-[#395886]">{p.client}</Link>
+                          <span className="truncate px-2 text-[11.5px] text-[#5C6A6E]">{p.address || "—"}</span>
+                          <span className="px-1 text-center font-mono text-[11.5px] font-bold text-[#5C6A6E]">{days}</span>
+
+                          <div className="flex flex-col gap-1 px-2 py-1.5">
+                            <span className={`w-fit rounded-full px-2 py-0.5 text-[9px] font-bold ${STATUS_PILL[p.status] ?? "bg-gray-100 text-gray-600"}`}>{statusLabel}</span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#F0EBE0]"><span className="block h-full rounded-full bg-[#4F8A63]" style={{ width: `${pc}%` }} /></span>
+                              <span className="font-mono text-[9px] font-bold text-[#5C6A6E]">{pc}%</span>
+                            </span>
+                          </div>
+
+                          {/* Timeline lane */}
+                          <button onClick={() => toggleRow(p.id)} className="relative h-full min-h-[46px] border-l border-[#F0EBE0]"
+                            style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent calc(100%/12 - 1px), #F0EBE0 calc(100%/12 - 1px), #F0EBE0 calc(100%/12))" }}>
+                            <span className={`absolute top-1/2 flex h-[15px] -translate-y-1/2 items-center overflow-hidden rounded-[5px] ${BAR_BASE[p.status] ?? "bg-[#D7CBB3]"}`}
+                              style={{ left: `${left}%`, width: `${Math.max(width, 2.5)}%` }}>
+                              <span className="h-full rounded-l-[5px] bg-[#4F8A63]/85" style={{ width: `${pc}%` }} />
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* Acordeón: actividades por estado */}
+                        {isOpen && (
+                          <div className="bg-[#FBF8F2] px-4 py-3" style={{ paddingLeft: 54 }}>
+                            <div className="mb-2 flex items-center gap-3 text-[11px] text-[#5C6A6E]">
+                              <span className="font-mono">{dShort(sp!.start)}–{dShort(sp!.end)}</span>
+                              <span>· {p.tasks.length} {gp.activities}</span>
+                              <button onClick={() => setConfirmDel(p.id)} className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-[#B0492F] hover:underline"><Trash2 size={11} /> {gp.delete}</button>
+                            </div>
+                            {p.tasks.length === 0 ? (
+                              <p className="text-[12px] italic text-[#97A1A0]">{gp.noTasks}</p>
+                            ) : (["pend", "prog", "done"] as const).map(st => {
+                              const list = stTasks(p, st);
+                              if (!list.length) return null;
+                              const stLabel = st === "pend" ? tp.workflow.colPend : st === "prog" ? tp.workflow.colProg : tp.workflow.colDone;
+                              return (
+                                <div key={st} className="mt-2">
+                                  <h4 className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                                    <span className={`rounded-full px-2 py-0.5 ${TASK_PILL[st]}`}>{stLabel}</span>
+                                    <span className="rounded-full border border-[#E6DDCB] bg-white px-1.5 text-[10px]">{list.length}</span>
+                                  </h4>
+                                  <div className="space-y-1">
+                                    {list.map(tk => (
+                                      <div key={tk.id} className="flex items-center gap-2 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px]">
+                                        <span className="flex-1 truncate font-semibold text-[#16323D]">{tk.name}</span>
+                                        <span className="hidden truncate text-[10.5px] text-[#5C6A6E] sm:inline">
+                                          {tk.source_section ? tk.source_section + " · " : ""}{tk.hours ? tk.hours + "h" : ""}{tk.scheduled_date ? " · " + dShort(new Date(tk.scheduled_date + "T00:00:00")) : ""}
+                                        </span>
+                                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${TASK_PILL[st]}`}>{stLabel}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </SortableRow>
+                );
+              })}
+            </SortableContext>
+
+            <DragOverlay dropAnimation={dropAnimation}>
+              {activeProject && (
+                <div className="rounded-xl border border-[#16323D] bg-white px-4 py-3 shadow-2xl ring-1 ring-[#16323D]">
+                  <div className="text-sm font-semibold text-[#16323D]">{activeProject.title.split(" — ")[0]}</div>
+                  <div className="font-mono text-[11px] text-[#5C6A6E]">{activeProject.client}</div>
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E]">
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded bg-[#7FA0A8]" /> {gp.colDays}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded bg-[#4F8A63]" /> {EN ? "Progress" : "Avance"}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#E3E8EE] px-2 py-0.5 text-[9px] font-bold text-[#44586B]">{tp.workflow.colPend}</span></span>
+        <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#F5E6C3] px-2 py-0.5 text-[9px] font-bold text-[#7A6230]">{tp.workflow.colProg}</span></span>
+        <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#DCEBDD] px-2 py-0.5 text-[9px] font-bold text-[#4F8A63]">{tp.workflow.colDone}</span></span>
+        <span className="text-[#97A1A0]">· {EN ? "Drag rows to set priority" : "Arrastra las filas para fijar la prioridad"}</span>
       </div>
 
       {confirmDel && (
-        <ConfirmModal
-          title={tp.globalPlan.deleteProject}
-          body={`"${projects.find((p) => p.id === confirmDel)?.title}" ${tp.globalPlan.deleteBody}`}
-          label={tp.globalPlan.delete}
-          onConfirm={() => deleteProject(confirmDel)}
-          onCancel={() => setConfirmDel(null)}
-        />
+        <ConfirmModal title={gp.deleteProject}
+          body={`"${projects.find((p) => p.id === confirmDel)?.title}" ${gp.deleteBody}`}
+          label={gp.delete} onConfirm={() => deleteProject(confirmDel)} onCancel={() => setConfirmDel(null)} />
       )}
 
-      <div
-        className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}
-      >
-        {toast}
-      </div>
+      <div className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}>{toast}</div>
     </div>
   );
 }

@@ -67,4 +67,9 @@ img {
   #estimate {
     padding: 0;
   }
+
+  /* Gantt G — reporte de status imprimible */
+  @page { size: landscape; }
+  .rpt-only { display: block !important; }
+  .fixed { display: none !important; }
 }

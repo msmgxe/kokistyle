@@ -8,6 +8,7 @@ export interface Project {
   start_date: string;
   end_date?: string | null;
   photo_url?: string | null;
+  priority_rank?: number | null;
   created_at?: string;
 }
 

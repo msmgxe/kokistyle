@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS projects (
 -- Migration: run if upgrading from older schema
 -- ALTER TABLE projects ADD COLUMN IF NOT EXISTS end_date DATE;
 -- ALTER TABLE projects ADD COLUMN IF NOT EXISTS photo_url TEXT;
+-- ALTER TABLE projects ADD COLUMN IF NOT EXISTS priority_rank INTEGER;  -- orden de prioridad en el Gantt G (1 = más urgente)
 
 -- 3. Tabla de Contactos (Especialistas / Proveedores)
 CREATE TABLE IF NOT EXISTS contacts (
