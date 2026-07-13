@@ -115,7 +115,7 @@ src/
 │       ├── UsersPanel.tsx            # Gestión de equipo: co-workers + clientes, tab_access, contact_id, my_tasks_only
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
-│       ├── DailyReport.tsx           # Reporte diario de actividades (vista del Gantt G): rango de fechas + multi-select de estados + checkbox done en vivo + print PDF portrait
+│       ├── DailyReport.tsx           # Reporte diario de actividades (vista del Gantt G): rango de fechas + multi-select de estados + checkbox done en vivo + notas del día (agenda_events, solo superadmin) + print PDF portrait
 │       ├── GanttCalendar.tsx         # Calendario Gantt estilo Excel compartido (Gantt G + tab Gantt del proyecto): buildGanttScale/ganttX/ganttBar/laneBg + GanttHeader (Mes · día-semana · nº día) + TodayLine — sáb/dom coloreados, escala real día/semana
 │       ├── TeamPanel.tsx             # Matriz de asignación + Reportes por co-worker (antes /proyectos/equipo) — embebido en Contacts
 │       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop (@dnd-kit) + checkbox de completado
@@ -502,6 +502,7 @@ Sección privada del superadmin para registrar **citas**, **tasks de proyecto** 
 - **Formulario manual**: botón "+ Nueva entrada" con los mismos campos.
 - **Export a calendario del teléfono**: cada tarjeta tiene botón **.ics** (Blob client-side con 2 `VALARM`: -2h y -1 día) y link directo a **Google Calendar** (`calendar.google.com/calendar/render?action=TEMPLATE`). El teléfono dispara las notificaciones nativas — sin backend.
 - Grupos **Hoy / Próximos / Pasados** + 3 KPIs (hoy, semana, avisos activos).
+- **Notas del día en el Reporte diario (jul 2026)**: el Reporte diario del Gantt G (`DailyReport`) lee/crea `agenda_events` como "notas del día" a nivel global (botón "+ Nota del día" por fecha → insert `event_type: "task"`; checkbox `done` y ✕ para eliminar). Misma tabla: la nota aparece también en la Agenda y hereda sus recordatorios. Solo superadmin.
 - Acciones registradas en `activity_log` (`entity_type: "agenda_event"`).
 - Katy (VoiceFAB) también soporta `create_agenda_event` desde cualquier página del panel.
 

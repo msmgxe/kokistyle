@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Printer } from "lucide-react";
+import { Printer, Pin, X } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { initials } from "@/src/lib/utils";
+import { logActivity } from "@/src/lib/activity";
 import { branding } from "@/src/config/branding";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useAuth } from "@/src/context/AuthContext";
 import type { Project, Task } from "@/src/types/project";
+import type { AgendaEvent } from "@/src/types/agenda";
+
+type DayNote = Pick<AgendaEvent, "id" | "title" | "event_date" | "event_time" | "done" | "event_type">;
 
 interface ProjectWithTasks extends Project { tasks: Task[] }
 
@@ -59,6 +64,7 @@ export default function DailyReport({
   onRefresh: () => void;
 }) {
   const { t, language } = useLanguage();
+  const { currentUser, isSuperAdmin } = useAuth();
   const tr = t.panel.dailyReport;
   const tp = t.panel;
   const EN = language === "en";
@@ -71,11 +77,62 @@ export default function DailyReport({
   // Overrides locales de checkbox — el padre refresca en segundo plano
   const [doneOverride, setDoneOverride] = useState<Map<string, boolean>>(new Map());
 
+  // Notas del día = agenda_events (globales, sin proyecto obligatorio) — solo superadmin
+  const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
+  const [addingNoteFor, setAddingNoteFor] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+
   useEffect(() => {
     supabase.from("contacts").select("id, name").then(({ data }) => {
       if (data) setContactNames(new Map(data.map(c => [c.id as string, c.name as string])));
     });
   }, []);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    supabase
+      .from("agenda_events")
+      .select("id, title, event_date, event_time, done, event_type")
+      .gte("event_date", from)
+      .lte("event_date", to)
+      .order("event_time", { ascending: true })
+      .then(({ data }) => { if (data) setDayNotes(data as DayNote[]); });
+  }, [isSuperAdmin, from, to]);
+
+  const addNote = async (iso: string) => {
+    const title = noteText.trim();
+    if (!title) return;
+    const { data, error } = await supabase
+      .from("agenda_events")
+      .insert({ event_type: "task", title, event_date: iso })
+      .select("id, title, event_date, event_time, done, event_type")
+      .single();
+    if (error || !data) { toast(tr.noteError); return; }
+    setDayNotes(prev => [...prev, data as DayNote]);
+    setNoteText("");
+    setAddingNoteFor(null);
+    logActivity({
+      user_id: currentUser?.id, user_name: currentUser?.name, user_role: "superadmin",
+      action: "create", entity_type: "agenda_event", entity_id: (data as DayNote).id, entity_name: title,
+    });
+    toast(tr.noteSaved);
+  };
+
+  const toggleNoteDone = async (id: string, done: boolean) => {
+    setDayNotes(prev => prev.map(n => n.id === id ? { ...n, done } : n));
+    const { error } = await supabase.from("agenda_events").update({ done }).eq("id", id);
+    if (error) {
+      setDayNotes(prev => prev.map(n => n.id === id ? { ...n, done: !done } : n));
+      toast(tr.statusError);
+    }
+  };
+
+  const deleteNote = async (id: string) => {
+    const { error } = await supabase.from("agenda_events").delete().eq("id", id);
+    if (error) { toast(tr.noteError); return; }
+    setDayNotes(prev => prev.filter(n => n.id !== id));
+    toast(tr.noteDeleted);
+  };
 
   const WD = EN
     ? ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
@@ -221,11 +278,12 @@ export default function DailyReport({
         </div>
 
         <div className="px-7 py-2">
-          {visibleRows.length === 0 && (
+          {visibleRows.length === 0 && !(isSuperAdmin && dayNotes.length > 0) && (
             <p className="py-10 text-center text-[13px] italic text-[#97A1A0]">{tr.noResults}</p>
           )}
-          {visibleRows.length > 0 && days.map(iso => {
+          {(visibleRows.length > 0 || (isSuperAdmin && dayNotes.length > 0)) && days.map(iso => {
             const dayRows = visibleRows.filter(r => r.task.scheduled_date === iso);
+            const notesOfDay = dayNotes.filter(n => n.event_date === iso);
             const wd = weekday(iso);
             const wk = wd === 6 ? "sat" : wd === 0 ? "sun" : null;
             const d = new Date(iso + "T00:00:00");
@@ -253,8 +311,62 @@ export default function DailyReport({
 
                 {/* Actividades del día */}
                 <div className="min-w-0 flex-1">
+                  {/* Notas del día (agenda_events) — recordatorios sueltos a nivel de todos los proyectos */}
+                  {isSuperAdmin && (notesOfDay.length > 0 || addingNoteFor === iso) && (
+                    <div className="mb-2.5 space-y-1.5">
+                      {notesOfDay.map(n => (
+                        <div key={n.id} className="flex items-center gap-2 rounded-lg border border-[#EAD9AC] bg-[#FBF5E6] px-3 py-1.5">
+                          <Pin size={11} className="shrink-0 text-[#B98A2F]" />
+                          <input
+                            type="checkbox"
+                            checked={n.done}
+                            onChange={e => toggleNoteDone(n.id, e.target.checked)}
+                            className="size-3.5 shrink-0 cursor-pointer accent-[#4F8A63]"
+                            aria-label={n.title}
+                          />
+                          <span className={`min-w-0 flex-1 truncate text-[12px] ${n.done ? "text-[#97A1A0] line-through" : "font-medium text-[#7A6230]"}`}>
+                            {n.title}
+                          </span>
+                          <span className="shrink-0 font-mono text-[10px] text-[#B98A2F]">{n.event_time?.slice(0, 5)}</span>
+                          <button
+                            onClick={() => deleteNote(n.id)}
+                            className="shrink-0 text-[#B0492F]/50 transition hover:text-[#B0492F] print:hidden"
+                            aria-label={tr.noteDeleted}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      {addingNoteFor === iso && (
+                        <div className="flex items-center gap-2 rounded-lg border border-[#B98A2F] bg-[#FBF5E6] px-3 py-1.5">
+                          <Pin size={11} className="shrink-0 text-[#B98A2F]" />
+                          <input
+                            autoFocus
+                            value={noteText}
+                            onChange={e => setNoteText(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") addNote(iso);
+                              if (e.key === "Escape") { setAddingNoteFor(null); setNoteText(""); }
+                            }}
+                            placeholder={tr.notePlaceholder}
+                            className="min-w-0 flex-1 bg-transparent text-[12px] text-[#16323D] placeholder:text-[#C4B27E] focus:outline-none"
+                          />
+                          <button
+                            onClick={() => addNote(iso)}
+                            disabled={!noteText.trim()}
+                            className="shrink-0 rounded-md bg-[#B98A2F] px-2.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
+                          >
+                            OK
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {dayRows.length === 0 ? (
-                    <p className="pt-2 text-[12px] italic text-[#C4B89A]">{tr.emptyDay}</p>
+                    (notesOfDay.length === 0 && addingNoteFor !== iso) && (
+                      <p className="pt-2 text-[12px] italic text-[#C4B89A]">{tr.emptyDay}</p>
+                    )
                   ) : (
                     <>
                       <div className="mb-2 flex items-baseline gap-3 text-[11px] text-[#5C6A6E]">
@@ -309,6 +421,15 @@ export default function DailyReport({
                         })}
                       </div>
                     </>
+                  )}
+
+                  {isSuperAdmin && addingNoteFor !== iso && (
+                    <button
+                      onClick={() => { setAddingNoteFor(iso); setNoteText(""); }}
+                      className="mt-1.5 text-[10.5px] font-bold text-[#B98A2F] transition hover:underline print:hidden"
+                    >
+                      {tr.addNote}
+                    </button>
                   )}
                 </div>
               </div>
