@@ -116,6 +116,7 @@ src/
 │       ├── VoiceFAB.tsx              # Asistente de voz flotante "Katy" (bottom-right)
 │       ├── ProjectFormModal.tsx      # Crear/editar proyecto
 │       ├── DailyReport.tsx           # Reporte diario de actividades (vista del Gantt G): rango de fechas + multi-select de estados + checkbox done en vivo + print PDF portrait
+│       ├── GanttCalendar.tsx         # Calendario Gantt estilo Excel compartido (Gantt G + tab Gantt del proyecto): buildGanttScale/ganttX/ganttBar/laneBg + GanttHeader (Mes · día-semana · nº día) + TodayLine — sáb/dom coloreados, escala real día/semana
 │       ├── TeamPanel.tsx             # Matriz de asignación + Reportes por co-worker (antes /proyectos/equipo) — embebido en Contacts
 │       ├── DayPlannerModal.tsx       # Day Planner drag-and-drop (@dnd-kit) + checkbox de completado
 │       ├── EstimateTab.tsx           # Tab de estimado — layout de sub-tabs: 📐 Sections + 💰 Payment Schedule; cabecera dark con WA/Copy/PDF/Save; FAB flotante eliminado
@@ -409,7 +410,7 @@ Orden de tabs (TabId array): `presupuesto · pagos · planner · plan · materia
 | `presupuesto` | Estimate | Estimado profesional: secciones, items, PDF, WhatsApp send |
 | `pagos` | Cash Flow | Ingresos y egresos con balance en tiempo real |
 | `planner` | Day Planner | Planificador por día embebido — drag&drop, co-workers, custom items, auto-assign, checkbox de completado |
-| `plan` | Gantt | Vista Gantt de todas las tareas del proyecto — cabecera `bg-[#16323D]` |
+| `plan` | Gantt | Gantt de tareas del proyecto sobre `GanttCalendar` (mismo calendario Excel del Gantt G: día/semana reales, sáb/dom coloreados, línea de hoy, left sticky + scroll horizontal, default Días) |
 | `materiales` | Materials | Lista de compras con checkbox "comprado" + import desde Estimate |
 | `contactos` | Contacts | Especialistas/proveedores vinculados al proyecto |
 | `notas` | Notes | Notas con adjuntos (imágenes + PDFs) |
@@ -447,7 +448,7 @@ Orden: Dashboard → Gantt G → Contacts → Prospects (superadmin) → Site (s
 | Link | Ruta | Notas |
 |---|---|---|
 | Dashboard | `/proyectos` | — |
-| Gantt G | `/proyectos/plan` | 2 vistas con toggle en la barra oscura: **Gantt** (status por días, prioridad reordenable → `priority_rank`, PDF landscape) y **Reporte diario** (`DailyReport` — rango de fechas + multi-select de estados con In Progress default, agrupado día→proyecto→tareas con checkbox done en vivo, sáb/dom teñidos, PDF portrait) |
+| Gantt G | `/proyectos/plan` | 2 vistas con toggle en la barra oscura: **Gantt** (calendario estilo Excel vía `GanttCalendar` — columna real por día/semana, sáb azul/dom naranja, línea de hoy, scroll horizontal con columnas izquierdas sticky, auto-scroll a hoy, prioridad reordenable → `priority_rank`, PDF landscape; **solo lista proyectos con tareas** + combo para aislar un proyecto) y **Reporte diario** (`DailyReport` — rango de fechas + multi-select de estados con In Progress default, agrupado día→proyecto→tareas con checkbox done en vivo, sáb/dom teñidos, PDF portrait) |
 | Contacts | `/proyectos/contactos` | 2 tabs: **Directorio** (lista global) + **Team & Assignments** (`TeamPanel`, solo superadmin). La ruta vieja `/proyectos/equipo` redirige a `?tab=equipo` |
 | Prospects | `/proyectos/prospectos` | Leads del AI Design gratuito — solo visible para superadmin |
 | Site | `/proyectos/sitio` | Editor CMS de la landing (textos/imágenes/secciones) — solo visible para superadmin |

@@ -41,6 +41,9 @@ import {
   addDays, dShort, initials,
 } from "@/src/lib/utils";
 import { exportCotizacion, exportEstadoCuenta } from "@/src/lib/pdf";
+import {
+  buildGanttScale, ganttBar, laneBg, isoOfDate, todayIsoLocal, ganttX, GanttHeader, TodayLine,
+} from "@/src/components/ui/GanttCalendar";
 import type {
   Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment,
 } from "@/src/types/project";
@@ -1357,16 +1360,17 @@ function PlanTab({
 }: {
   project: Project; tasks: Task[]; contacts: Contact[]; onRefresh: () => void; toast: (m: string) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const tp = t.panel;
   const [items, setItems] = useState<Task[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
-  const [ganttUnit, setGanttUnit] = useState<"week" | "day">("week");
+  const [ganttUnit, setGanttUnit] = useState<"week" | "day">("day");
   const [filterStatus, setFilterStatus] = useState<"all" | "pend" | "prog" | "done">("all");
   const [filterAssignee, setFilterAssignee] = useState("all");
   const [editTask, setEditTask] = useState<{ task: { task: Task; start: Date; end: Date; weekStart: number }; startDate: Date; endDate: Date } | null>(null);
   const persist = usePersistOrder("tasks");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setItems([...tasks].sort((a, b) => a.sort_order - b.sort_order));
@@ -1399,7 +1403,6 @@ function PlanTab({
   };
 
   const rows  = schedule();
-  const totalDays = Math.max(14, rows.reduce((max, row) => Math.max(max, row.dayStart + row.durationDays), 0));
   const ownTeamLabel = tp.workflow.ownTeam ?? "Own team";
   const assigneeOptions = [
     { value: "all", label: "All assignees" },
@@ -1415,32 +1418,22 @@ function PlanTab({
     });
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
 
-  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const monthLabels: { label: string; pct: number }[] = [];
-  {
-    const d = new Date(projectStart);
-    d.setDate(1);
-    while (d < new Date(projectStart.getTime() + totalDays * 86400000)) {
-      const pct = ((d.getTime() - projectStart.getTime()) / (totalDays * 86400000)) * 100;
-      monthLabels.push({ label: monthNames[d.getMonth()], pct: Math.max(0, pct) });
-      d.setMonth(d.getMonth() + 1);
-      d.setDate(1);
-    }
-  }
+  // Escala calendario (columna real por día/semana) — rango desde todas las tareas
+  let minIso = isoOfDate(projectStart);
+  let maxIso = minIso;
+  rows.forEach(r => {
+    const s = isoOfDate(r.start), e = isoOfDate(r.end);
+    if (s < minIso) minIso = s;
+    if (e > maxIso) maxIso = e;
+  });
+  const scale = buildGanttScale(minIso, maxIso, ganttUnit);
 
-  const unitLabels: { label: string; pct: number }[] = [];
-  if (ganttUnit === "week") {
-    const totalWeeks = Math.ceil(totalDays / 7);
-    for (let w = 0; w < totalWeeks; w++) {
-      unitLabels.push({ label: `W${w + 1}`, pct: ((w * 7) / totalDays) * 100 });
-    }
-  } else {
-    const step = totalDays > 30 ? 3 : totalDays > 14 ? 2 : 1;
-    for (let d = 0; d < totalDays; d += step) {
-      const date = new Date(projectStart.getTime() + d * 86400000);
-      unitLabels.push({ label: `${date.getDate()}`, pct: (d / totalDays) * 100 });
-    }
-  }
+  // Al montar o cambiar de escala, enfocar el scroll cerca de hoy
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = Math.max(0, ganttX(scale, todayIsoLocal()) - 200);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ganttUnit, items.length]);
 
   const COLORS: Record<string, string> = {
     done: "bg-gradient-to-r from-[#4F8A63] to-[#69a67e] text-white",
@@ -1515,83 +1508,78 @@ function PlanTab({
         </div>
       </div>
 
-      {/* Month header */}
-      <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6DDCB] bg-[#395886]"
-        style={{ paddingLeft: "196px" }}>
-        <div className="relative h-6">
-          {monthLabels.map(({ label, pct }) => (
-            <span key={label + pct}
-              className="absolute top-1 text-[10px] font-bold text-white/80"
-              style={{ left: `${pct}%` }}>
-              {label}
-            </span>
-          ))}
+      {filteredRows.length === 0 ? (
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
+          {tp.globalPlan.noTasks}
         </div>
-      </div>
-
-      {/* Week/Day header */}
-      <div className="mb-2 overflow-hidden rounded-b-xl border border-[#E6DDCB] bg-[#ECE3D1]"
-        style={{ paddingLeft: "196px" }}>
-        <div className="relative h-5">
-          {unitLabels.map(({ label, pct }) => (
-            <span key={label + pct}
-              className="absolute top-1 text-[9px] font-semibold text-[#5C6A6E]"
-              style={{ left: `${pct}%` }}>
-              {label}
-            </span>
-          ))}
-        </div>
-      </div>
+      ) : (
+      <div ref={scrollRef} className="overflow-x-auto rounded-2xl border border-[#E6DDCB] bg-white [scrollbar-width:thin]">
+        <div className="w-max min-w-full">
+          <GanttHeader
+            scale={scale}
+            EN={language === "en"}
+            leftWidth={300}
+            leftHeader={
+              <div className="flex h-full items-center border-r border-white/10 px-3 text-[9px] font-bold uppercase tracking-wider text-white/70">
+                {tp.workflow.activity}
+              </div>
+            }
+          />
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <SortableContext items={items.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-2">
-            {filteredRows.map(({ task: t, start, end, dayStart, durationDays }) => {
-              const left  = (dayStart / totalDays) * 100;
-              const width = Math.max((durationDays / totalDays) * 100, 2);
+        <SortableContext items={filteredRows.map((r) => r.task.id)} strategy={verticalListSortingStrategy}>
+            {filteredRows.map(({ task: t, start, end, dayStart }) => {
+              const bar = ganttBar(scale, isoOfDate(start), isoOfDate(end));
 
               return (
                 <SortableRow key={t.id} id={t.id}>
                   {({ listeners, attributes }, isDragging) => (
                     <div
-                      {...listeners} {...attributes}
-                      className={`grid select-none items-center gap-3 overflow-hidden rounded-xl border bg-white transition-shadow ${isDragging ? "border-[#16323D] shadow-lg" : "border-[#E6DDCB]"}`}
-                      style={{ gridTemplateColumns: "auto minmax(110px,170px) 1fr auto" }}
+                      className={`flex items-stretch border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[#16323D]" : ""}`}
+                      style={{ width: 300 + scale.laneWidth }}
                     >
-                      <DragHandle />
-                      <div className="py-2">
-                        <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-[#16323D]">{t.name}</div>
-                        <div className="font-mono text-[10.5px] text-[#5C6A6E]">
-                          {dShort(start)}–{dShort(end)} · {t.hours}h
-                          {t.assigned_contact_id && (
-                            <span className="ml-1 font-sans not-italic">· {contacts.find(c => c.id === t.assigned_contact_id)?.name ?? ""}</span>
-                          )}
+                      <div
+                        {...listeners} {...attributes}
+                        className="sticky left-0 z-10 flex shrink-0 select-none items-center border-r border-[#E6DDCB] bg-white"
+                        style={{ width: 300 }}
+                      >
+                        <DragHandle />
+                        <div className="min-w-0 flex-1 py-1.5">
+                          <div className="truncate text-[12px] font-semibold uppercase tracking-wide text-[#16323D]">{t.name}</div>
+                          <div className="truncate font-mono text-[10px] text-[#5C6A6E]">
+                            {dShort(start)}–{dShort(end)} · {t.hours}h
+                            {t.assigned_contact_id && (
+                              <span className="ml-1 font-sans not-italic">· {contacts.find(c => c.id === t.assigned_contact_id)?.name ?? ""}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mr-1.5 flex gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditTask({ task: { task: t, start, end, weekStart: dayStart }, startDate: start, endDate: end }); }}
+                            className="grid size-7 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+                            aria-label="Edit"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); setConfirmDel(t.id); }} className="grid size-7 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]" aria-label="Delete">🗑</button>
                         </div>
                       </div>
-                      <div className="relative h-5 overflow-hidden rounded-[6px] bg-[#ECE3D1]">
+
+                      {/* Carril calendario — sáb/dom coloreados, línea de hoy */}
+                      <div className="relative min-h-[44px] shrink-0" style={{ width: scale.laneWidth, ...laneBg(scale) }}>
+                        <TodayLine scale={scale} />
                         <div
-                          className={`absolute top-0.5 h-4 overflow-hidden rounded-[5px] px-1 text-[9px] font-bold leading-4 ${COLORS[t.status]}`}
-                          style={{ left: `${left}%`, width: `${width}%` }}
+                          className={`absolute top-1/2 h-[14px] -translate-y-1/2 overflow-hidden rounded-[5px] px-1 text-[8.5px] font-bold leading-[14px] shadow-sm ${COLORS[t.status]}`}
+                          style={{ left: bar.left, width: bar.width }}
                         >
-                          {durationDays >= 3 ? dShort(start) : ""}
+                          {bar.width > 56 ? dShort(start) : ""}
                         </div>
-                      </div>
-                      <div className="mr-2 flex gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setEditTask({ task: { task: t, start, end, weekStart: dayStart }, startDate: start, endDate: end }); }}
-                          className="grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
-                          aria-label="Edit"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); setConfirmDel(t.id); }} className="grid size-8 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]" aria-label="Delete">🗑</button>
                       </div>
                     </div>
                   )}
                 </SortableRow>
               );
             })}
-          </div>
         </SortableContext>
 
         <DragOverlay dropAnimation={dropAnimation}>
@@ -1603,12 +1591,18 @@ function PlanTab({
           )}
         </DragOverlay>
       </DndContext>
+        </div>
+      </div>
+      )}
 
       {/* Leyenda */}
       <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E]">
         <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4F8A63]" /> {tp.plan.done}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4E7A82]" /> {tp.plan.inProgress}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3]" /> {tp.plan.pending}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded border border-[#9DC3E6] bg-[#DCEBF7]" /> {language === "en" ? "Saturday" : "Sábado"}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded border border-[#F4B183] bg-[#FBE5D3]" /> {language === "en" ? "Sunday" : "Domingo"}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-[2px] bg-[#B0492F]/70" /> {language === "en" ? "Today" : "Hoy"}</span>
       </div>
 
       {confirmDel && (
