@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Luxaris — Fotos de obra (prototipo)</title>
+<style>
+  :root {
+    --desk: #E9E2D4; --desk-text: #5C6A6E;
+    --ink: #16323D; --soft: #5C6A6E; --faint: #97A1A0;
+    --cream: #F7F3EB; --card: #fff; --line: #E6DDCB;
+    --navy: #395886; --ok: #4F8A63; --bad: #B0492F; --amber: #B98A2F;
+  }
+  @media (prefers-color-scheme: dark) { :root { --desk: #1C2529; --desk-text: #9FB0B5; } }
+  :root[data-theme="dark"]  { --desk: #1C2529; --desk-text: #9FB0B5; }
+  :root[data-theme="light"] { --desk: #E9E2D4; --desk-text: #5C6A6E; }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--desk); color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 26px 12px 40px;
+  }
+  .intro { text-align: center; color: var(--desk-text); max-width: 430px; margin-bottom: 18px; }
+  .intro h1 { font-size: 15px; margin: 0 0 4px; letter-spacing: .04em; font-weight: 700; color: var(--desk-text); }
+  .intro p { font-size: 12px; margin: 0; line-height: 1.5; }
+
+  .phone {
+    width: 100%; max-width: 400px; background: #10181C;
+    border-radius: 44px; padding: 12px;
+    box-shadow: 0 30px 70px rgba(10,25,32,.45);
+  }
+  .screen {
+    background: var(--cream); border-radius: 34px; overflow: hidden;
+    height: 800px; max-height: 86vh; display: flex; flex-direction: column; position: relative;
+  }
+  @media (max-width: 480px) {
+    body { padding: 0; }
+    .intro { display: none; }
+    .phone { max-width: none; border-radius: 0; padding: 0; box-shadow: none; }
+    .screen { border-radius: 0; height: 100vh; max-height: none; }
+  }
+
+  /* Cabecera */
+  .top { background: var(--ink); color: #fff; padding: 18px 18px 16px; border-radius: 0 0 24px 24px; flex-shrink: 0; }
+  .top .brand { font-size: 9px; font-weight: 800; letter-spacing: .3em; color: #A8C0BC; }
+  .top h2 {
+    margin: 6px 0 10px; font-size: 21px; font-weight: 600;
+    font-family: "Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif;
+  }
+  .proj-select {
+    width: 100%; font: inherit; font-size: 13.5px; font-weight: 700;
+    background: rgba(255,255,255,.12); color: #fff;
+    border: 1.5px solid rgba(255,255,255,.25); border-radius: 13px; padding: 10px 12px;
+  }
+  .proj-select option { color: #16323D; background: #fff; }
+
+  .capture-row { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-cam, .btn-gal {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 0; border-radius: 14px; padding: 13px 8px;
+    font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+  }
+  .btn-cam { background: #B0492F; color: #fff; box-shadow: 0 6px 18px rgba(176,73,47,.4); }
+  .btn-gal { background: rgba(255,255,255,.14); color: #fff; }
+
+  /* Compositor de subida */
+  .composer { padding: 12px 14px 0; flex-shrink: 0; }
+  .composer-card { background: var(--card); border: 1.5px solid var(--navy); border-radius: 18px; padding: 12px; }
+  .composer-card .preview {
+    width: 100%; height: 150px; border-radius: 12px; object-fit: cover;
+    background: #ECE3D1; display: block;
+  }
+  .composer-card input[type="text"] {
+    width: 100%; margin-top: 10px; font: inherit; font-size: 13px;
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px;
+    background: var(--cream); color: var(--ink);
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .tagchip {
+    border: 1.5px solid var(--line); background: #fff; color: var(--soft);
+    font: inherit; font-size: 11px; font-weight: 800; border-radius: 999px;
+    padding: 5px 12px; cursor: pointer;
+  }
+  .tagchip.on { border-color: transparent; color: #fff; }
+  .composer-actions { display: flex; gap: 8px; margin-top: 11px; }
+  .composer-actions button {
+    flex: 1; border: 0; border-radius: 12px; padding: 11px; font: inherit;
+    font-size: 12.5px; font-weight: 800; cursor: pointer;
+  }
+  .b-cancel { background: #ECE3D1; color: var(--soft); }
+  .b-upload { background: var(--ok); color: #fff; }
+  .b-upload:disabled { opacity: .4; }
+
+  /* Filtros + galería */
+  .filters { display: flex; gap: 6px; padding: 12px 14px 4px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+  .fchip {
+    border: 1.5px solid var(--line); background: #fff; color: var(--soft);
+    font: inherit; font-size: 11px; font-weight: 800; border-radius: 999px;
+    padding: 6px 12px; cursor: pointer; white-space: nowrap;
+  }
+  .fchip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+  .gallery { flex: 1; overflow-y: auto; padding: 8px 14px 30px; }
+  .date-head {
+    display: flex; align-items: baseline; gap: 8px;
+    margin: 14px 2px 8px; font-size: 12px; font-weight: 800; color: var(--ink);
+  }
+  .date-head .n { font-size: 10.5px; font-weight: 700; color: var(--faint); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ph {
+    position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+    border: 0; padding: 0; cursor: pointer; background: #ECE3D1;
+  }
+  .ph img, .ph .fake { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ph .fake { display: grid; place-items: center; font-size: 30px; }
+  .ph .tagdot {
+    position: absolute; left: 6px; top: 6px;
+    font-size: 7.5px; font-weight: 800; letter-spacing: .06em; color: #fff;
+    padding: 2.5px 7px; border-radius: 999px;
+  }
+  .ph .proj-mini {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    font-size: 7.5px; font-weight: 700; color: #fff; text-align: left;
+    padding: 10px 7px 5px;
+    background: linear-gradient(transparent, rgba(10,25,32,.75));
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .empty { text-align: center; color: var(--faint); font-size: 13px; font-style: italic; padding: 40px 16px; }
+
+  /* Visor (lightbox) */
+  .viewer {
+    position: absolute; inset: 0; z-index: 20; background: rgba(10, 22, 28, .96);
+    display: none; flex-direction: column; color: #fff;
+  }
+  .viewer.open { display: flex; }
+  .viewer .v-top { display: flex; align-items: center; gap: 10px; padding: 14px 16px; }
+  .viewer .v-top .v-meta { flex: 1; min-width: 0; }
+  .viewer .v-top .v-proj { font-size: 13px; font-weight: 800; }
+  .viewer .v-top .v-date { font-size: 10.5px; color: #A8C0BC; }
+  .viewer .v-close {
+    border: 0; background: rgba(255,255,255,.12); color: #fff;
+    width: 34px; height: 34px; border-radius: 12px; font-size: 15px; cursor: pointer;
+  }
+  .viewer .v-img { flex: 1; display: grid; place-items: center; padding: 0 10px; min-height: 0; }
+  .viewer .v-img img, .viewer .v-img .fake {
+    max-width: 100%; max-height: 100%; border-radius: 14px; object-fit: contain;
+  }
+  .viewer .v-img .fake {
+    width: 100%; height: 100%; display: grid; place-items: center; font-size: 80px;
+  }
+  .viewer .v-cap { padding: 12px 18px 4px; font-size: 13px; text-align: center; color: #E8EDEA; }
+  .viewer .v-tag {
+    margin: 6px auto 0; width: fit-content; font-size: 9px; font-weight: 800;
+    letter-spacing: .08em; padding: 3px 10px; border-radius: 999px;
+  }
+  .viewer .v-nav { display: flex; gap: 10px; padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); }
+  .viewer .v-nav button {
+    border: 0; border-radius: 13px; padding: 12px; font: inherit;
+    font-size: 12.5px; font-weight: 800; cursor: pointer;
+  }
+  .v-prev, .v-next { flex: 1; background: rgba(255,255,255,.12); color: #fff; }
+  .v-del { background: rgba(176,73,47,.9); color: #fff; padding: 12px 16px !important; }
+
+  .toast {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--ink); color: #fff; font-size: 12px; font-weight: 600;
+    padding: 9px 16px; border-radius: 12px; opacity: 0; pointer-events: none;
+    transition: all .25s ease; white-space: nowrap; z-index: 30;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+
+<div class="intro">
+  <h1>PROTOTIPO — FOTOS DE OBRA</h1>
+  <p>Toca <b>📷 Tomar foto</b> (en el teléfono abre la cámara; en desktop, el selector de archivos), etiqueta la foto y súbela al proyecto elegido. Abajo, el historial por fecha. Nada se guarda — es solo para evaluar el flujo.</p>
+</div>
+
+<div class="phone"><div class="screen">
+  <div class="top">
+    <div class="brand">LUXARIS DESIGN</div>
+    <h2>Fotos de obra</h2>
+    <select class="proj-select" id="proj">
+      <option value="p1">Master Bathroom — Sofiya · Aventura</option>
+      <option value="p2">House Remodeling — Simon · Boca Raton</option>
+      <option value="p3">Las Olas Terrace — M. Fontaine · Ft. Lauderdale</option>
+      <option value="all">📁 Todos los proyectos (solo ver)</option>
+    </select>
+    <div class="capture-row">
+      <button class="btn-cam" onclick="document.getElementById('camInput').click()">📷 Tomar foto</button>
+      <button class="btn-gal" onclick="document.getElementById('galInput').click()">🖼 Del carrete</button>
+    </div>
+    <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+    <input type="file" id="galInput" accept="image/*" multiple hidden>
+  </div>
+
+  <div class="composer" id="composer" hidden>
+    <div class="composer-card">
+      <img class="preview" id="preview" alt="Vista previa">
+      <input type="text" id="caption" placeholder="Comentario (ej. Muro este demolido, listo para plomería)">
+      <div class="tags" id="tagRow"></div>
+      <div class="composer-actions">
+        <button class="b-cancel" onclick="cancelComposer()">Cancelar</button>
+        <button class="b-upload" id="btnUpload" onclick="uploadPhoto()">⬆ Subir al proyecto</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+  <div class="gallery" id="gallery"></div>
+
+  <div class="viewer" id="viewer">
+    <div class="v-top">
+      <div class="v-meta">
+        <div class="v-proj" id="vProj"></div>
+        <div class="v-date" id="vDate"></div>
+      </div>
+      <button class="v-close" onclick="closeViewer()">✕</button>
+    </div>
+    <div class="v-img" id="vImg"></div>
+    <div class="v-cap" id="vCap"></div>
+    <span class="v-tag" id="vTag"></span>
+    <div class="v-nav">
+      <button class="v-prev" onclick="moveViewer(-1)">‹ Anterior</button>
+      <button class="v-del" onclick="deleteCurrent()">🗑</button>
+      <button class="v-next" onclick="moveViewer(1)">Siguiente ›</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div></div>
+
+<script>
+  const TAGS = {
+    antes:    { label: "ANTES",    color: "#5C6A6E" },
+    avance:   { label: "AVANCE",   color: "#395886" },
+    despues:  { label: "DESPUÉS",  color: "#4F8A63" },
+    problema: { label: "PROBLEMA", color: "#B0492F" },
+    material: { label: "MATERIAL", color: "#B98A2F" },
+  };
+  const PROJECTS = {
+    p1: "Master Bathroom", p2: "House Remodeling", p3: "Las Olas Terrace",
+  };
+  // Historial de ejemplo — en producción: tabla project_photos + Storage kokistyle-files/project-photos/<id>/
+  let PHOTOS = [
+    { id: 1, p: "p1", tag: "avance",   cap: "Demolición de shower walls completa",   date: "Hoy · 16 jul",  emoji: "🔨", bg: "linear-gradient(135deg,#6b7f8a,#3d4f58)" },
+    { id: 2, p: "p1", tag: "problema", cap: "Fuga detrás de la válvula vieja",       date: "Hoy · 16 jul",  emoji: "💧", bg: "linear-gradient(135deg,#8a5a4a,#54382e)" },
+    { id: 3, p: "p1", tag: "material", cap: "Llegó el porcelanato 24×48 (12 cajas)", date: "Hoy · 16 jul",  emoji: "📦", bg: "linear-gradient(135deg,#a08a5c,#6e5c38)" },
+    { id: 4, p: "p2", tag: "avance",   cap: "Nivelación de piso en cocina",          date: "Ayer · 15 jul", emoji: "🏗", bg: "linear-gradient(135deg,#7d8a6b,#4d5840)" },
+    { id: 5, p: "p1", tag: "antes",    cap: "Estado inicial del baño",               date: "12 jul",        emoji: "🚿", bg: "linear-gradient(135deg,#8a9aa5,#5a6a75)" },
+    { id: 6, p: "p1", tag: "antes",    cap: "Vanity original a retirar",             date: "12 jul",        emoji: "🪞", bg: "linear-gradient(135deg,#9a8a7a,#6a5c4e)" },
+    { id: 7, p: "p3", tag: "antes",    cap: "Terraza antes del proyecto",            date: "10 jul",        emoji: "🌴", bg: "linear-gradient(135deg,#6a8a7a,#40584c)" },
+    { id: 8, p: "p2", tag: "despues",  cap: "Permiso aprobado y publicado en obra",  date: "10 jul",        emoji: "📋", bg: "linear-gradient(135deg,#5c7a9a,#38506e)" },
+  ];
+
+  let filter = "all";
+  let pendingFile = null;
+  let pendingTag = "avance";
+  let viewList = [];
+  let viewIdx = 0;
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function toastMsg(m) {
+    const el = $("toast");
+    el.textContent = m; el.classList.add("show");
+    clearTimeout(toastMsg._t);
+    toastMsg._t = setTimeout(() => el.classList.remove("show"), 2200);
+  }
+
+  /* ── Captura ── */
+  function handleFiles(files) {
+    if (!files || !files.length) return;
+    if ($("proj").value === "all") { toastMsg("Elige un proyecto para subir"); return; }
+    pendingFile = files[0];
+    $("preview").src = URL.createObjectURL(pendingFile);
+    $("composer").hidden = false;
+    $("caption").value = "";
+    pendingTag = "avance";
+    renderTagRow();
+  }
+  $("camInput").addEventListener("change", e => { handleFiles(e.target.files); e.target.value = ""; });
+  $("galInput").addEventListener("change", e => { handleFiles(e.target.files); e.target.value = ""; });
+
+  function renderTagRow() {
+    $("tagRow").innerHTML = Object.entries(TAGS).map(([k, t]) =>
+      '<button class="tagchip' + (pendingTag === k ? " on" : "") + '"' +
+      (pendingTag === k ? ' style="background:' + t.color + '"' : "") +
+      " onclick=\"pendingTag='" + k + "';renderTagRow()\">" + t.label + "</button>"
+    ).join("");
+  }
+
+  function cancelComposer() {
+    pendingFile = null;
+    $("composer").hidden = true;
+  }
+
+  function uploadPhoto() {
+    if (!pendingFile) return;
+    PHOTOS.unshift({
+      id: Date.now(), p: $("proj").value, tag: pendingTag,
+      cap: $("caption").value.trim() || "(sin comentario)",
+      date: "Hoy · 16 jul", src: URL.createObjectURL(pendingFile),
+    });
+    cancelComposer();
+    render();
+    toastMsg("✓ Foto subida a " + PROJECTS[$("proj").value]);
+  }
+
+  /* ── Galería ── */
+  function render() {
+    const proj = $("proj").value;
+    $("filters").innerHTML = ['<button class="fchip' + (filter === "all" ? " on" : "") + '" onclick="filter=\'all\';render()">Todas</button>']
+      .concat(Object.entries(TAGS).map(([k, t]) =>
+        '<button class="fchip' + (filter === k ? " on" : "") + '" onclick="filter=\'' + k + '\';render()">' + t.label + "</button>"
+      )).join("");
+
+    const list = PHOTOS
+      .filter(ph => proj === "all" || ph.p === proj)
+      .filter(ph => filter === "all" || ph.tag === filter);
+    viewList = list;
+
+    if (!list.length) {
+      $("gallery").innerHTML = '<p class="empty">Sin fotos aquí todavía — toma la primera 📷</p>';
+      return;
+    }
+    const byDate = new Map();
+    for (const ph of list) {
+      if (!byDate.has(ph.date)) byDate.set(ph.date, []);
+      byDate.get(ph.date).push(ph);
+    }
+    let html = "";
+    for (const [date, phs] of byDate) {
+      html += '<div class="date-head">' + esc(date) + '<span class="n">· ' + phs.length + " foto" + (phs.length !== 1 ? "s" : "") + "</span></div>";
+      html += '<div class="grid">' + phs.map(ph => {
+        const t = TAGS[ph.tag];
+        const inner = ph.src
+          ? '<img src="' + ph.src + '" alt="' + esc(ph.cap) + '">'
+          : '<span class="fake" style="background:' + ph.bg + '">' + ph.emoji + "</span>";
+        return '<button class="ph" onclick="openViewer(' + ph.id + ')">' + inner +
+          '<span class="tagdot" style="background:' + t.color + '">' + t.label + "</span>" +
+          (proj === "all" ? '<span class="proj-mini">' + esc(PROJECTS[ph.p]) + "</span>" : "") +
+          "</button>";
+      }).join("") + "</div>";
+    }
+    $("gallery").innerHTML = html;
+  }
+
+  /* ── Visor ── */
+  function openViewer(id) {
+    viewIdx = viewList.findIndex(ph => ph.id === id);
+    if (viewIdx < 0) return;
+    $("viewer").classList.add("open");
+    renderViewer();
+  }
+  function renderViewer() {
+    const ph = viewList[viewIdx];
+    if (!ph) { closeViewer(); return; }
+    const t = TAGS[ph.tag];
+    $("vProj").textContent = PROJECTS[ph.p];
+    $("vDate").textContent = ph.date + " · " + (viewIdx + 1) + " de " + viewList.length;
+    $("vImg").innerHTML = ph.src
+      ? '<img src="' + ph.src + '" alt="' + esc(ph.cap) + '">'
+      : '<span class="fake" style="background:' + ph.bg + ';border-radius:14px">' + ph.emoji + "</span>";
+    $("vCap").textContent = ph.cap;
+    $("vTag").textContent = t.label;
+    $("vTag").style.background = t.color;
+  }
+  function moveViewer(d) {
+    viewIdx = (viewIdx + d + viewList.length) % viewList.length;
+    renderViewer();
+  }
+  function closeViewer() { $("viewer").classList.remove("open"); }
+  function deleteCurrent() {
+    const ph = viewList[viewIdx];
+    PHOTOS = PHOTOS.filter(x => x.id !== ph.id);
+    closeViewer();
+    render();
+    toastMsg("Foto eliminada");
+  }
+
+  $("proj").addEventListener("change", render);
+  render();
+</script>
+
+</body>
+</html>

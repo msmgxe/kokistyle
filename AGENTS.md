@@ -785,7 +785,8 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | `agenda-admin-prototype.html` | Prototipo de la Agenda personal — captura por voz + 3 opciones de notificación (referencia del diseño implementado) |
 | `index02.html` | Prototipo 02 — referencia del patrón SpeechRecognition usado en Design tab (movido desde la raíz) |
 | `gantt-report-print.html` | Prototipo del **reporte diario de actividades** — implementado en producción como `src/components/ui/DailyReport.tsx` (vista "Reporte diario" del Gantt G, jul 2026) |
-| `vista-hoy-movil.html` | Prototipo de la **vista "Hoy" móvil** (pendiente de aprobación): checklist del día en la PWA del teléfono — tareas por proyecto con checkbox grande, notas del día, anillo de progreso, filtros Todas/Pendientes/Hechas, navegación ‹hoy›, tab bar inferior (Hoy·Reporte·Gantt·Agenda) |
+| `vista-hoy-movil.html` | Prototipo de la **vista "Hoy" móvil** — implementado en producción como `/proyectos/hoy` (jul 2026) |
+| `fotos-obra-movil.html` | Prototipo de **Fotos de obra** (pendiente de aprobación): cámara del teléfono (`input capture=environment`) → foto etiquetada (Antes/Avance/Después/Problema/Material) + comentario al proyecto elegido → historial por fecha con galería 3-col y visor. Plan de implementación: tabla `project_photos` (project_id, url, caption, tag, taken_at) + Storage `kokistyle-files/project-photos/<projectId>/` + tab "Photos" en el proyecto |
 | `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
 | `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
 
