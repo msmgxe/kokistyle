@@ -6,19 +6,22 @@ import { Menu, X } from "lucide-react";
 
 import { branding } from "@/src/config/branding";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useSiteContent } from "@/src/context/SiteContentContext";
 import type { Language } from "@/src/config/translations";
+import type { SiteSectionKey } from "@/src/types/site";
 import Container from "../ui/Container";
 import AdminModal from "../ui/AdminModal";
 
+// `section` liga el link a un toggle del CMS; sin `section` = siempre visible
 const navItems = [
   { labelKey: "services", href: "/#services" },
-  { labelKey: "beforeAfter", href: "/#before-after" },
-  { labelKey: "aiDesign", href: "/#ai-design" },
-  { labelKey: "process", href: "/#process" },
-  { labelKey: "tours", href: "/#tours" },
-  { labelKey: "reviews", href: "/#reviews" },
-  { labelKey: "faq", href: "/#faq" },
-] as const;
+  { labelKey: "beforeAfter", href: "/#before-after", section: "beforeAfter" },
+  { labelKey: "aiDesign", href: "/#ai-design", section: "aiDesign" },
+  { labelKey: "process", href: "/#process", section: "process" },
+  { labelKey: "tours", href: "/#tours", section: "tours" },
+  { labelKey: "reviews", href: "/#reviews", section: "reviews" },
+  { labelKey: "faq", href: "/#faq", section: "faq" },
+] as const satisfies ReadonlyArray<{ labelKey: string; href: string; section?: SiteSectionKey }>;
 
 const languages: Language[] = ["en", "es"];
 
@@ -59,8 +62,12 @@ function MobileLanguageSwitch() {
 
 export default function Navbar() {
   const { t } = useLanguage();
+  const { isVisible } = useSiteContent();
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+
+  // Oculta del nav los links de secciones apagadas en el editor (Sitio)
+  const visibleNavItems = navItems.filter(item => !("section" in item) || isVisible(item.section));
 
   const navLabels = {
     services: t.nav.services,
@@ -90,7 +97,7 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden items-center gap-4 lg:flex xl:gap-6">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -152,7 +159,7 @@ export default function Navbar() {
           className="border-t border-[#0F3D56]/10 bg-white/95 backdrop-blur-xl lg:hidden"
         >
           <Container className="flex flex-col gap-1 py-4">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
