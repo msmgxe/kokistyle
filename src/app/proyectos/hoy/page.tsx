@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pin, X } from "lucide-react";
+import { Pin, X, Pencil } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { initials } from "@/src/lib/utils";
 import { logActivity } from "@/src/lib/activity";
@@ -12,7 +12,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import type { Task } from "@/src/types/project";
 import type { AgendaEvent } from "@/src/types/agenda";
 
-type DayNote = Pick<AgendaEvent, "id" | "title" | "event_date" | "event_time" | "done" | "event_type">;
+type DayNote = Pick<AgendaEvent, "id" | "title" | "event_date" | "event_time" | "done" | "event_type" | "project_id">;
 interface ProjLite { id: string; title: string; client: string; address: string | null; status: string }
 type Filter = "all" | "pend" | "done";
 
@@ -67,6 +67,9 @@ export default function HoyPage() {
   const [loading, setLoading] = useState(true);
   const [addingNote, setAddingNote] = useState(false);
   const [noteText, setNoteText] = useState("");
+  const [editNoteId, setEditNoteId] = useState<string | null>(null);
+  const [editNoteTitle, setEditNoteTitle] = useState("");
+  const [editNoteProject, setEditNoteProject] = useState("");
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
 
@@ -96,7 +99,7 @@ export default function HoyPage() {
       isSuperAdmin
         ? supabase
             .from("agenda_events")
-            .select("id, title, event_date, event_time, done, event_type")
+            .select("id, title, event_date, event_time, done, event_type, project_id")
             .eq("event_date", iso)
             .order("event_time", { ascending: true })
         : Promise.resolve({ data: [] as DayNote[] }),
@@ -159,7 +162,7 @@ export default function HoyPage() {
     const { data, error } = await supabase
       .from("agenda_events")
       .insert({ event_type: "task", title, event_date: date })
-      .select("id, title, event_date, event_time, done, event_type")
+      .select("id, title, event_date, event_time, done, event_type, project_id")
       .single();
     if (error || !data) { showToast(tr.noteError); return; }
     setNotes(prev => [...prev, data as DayNote]);
@@ -178,6 +181,32 @@ export default function HoyPage() {
     setNotes(prev => prev.filter(n => n.id !== id));
     showToast(tr.noteDeleted);
   };
+
+  const startEditNote = (note: DayNote) => {
+    setEditNoteId(note.id);
+    setEditNoteTitle(note.title);
+    setEditNoteProject(note.project_id ?? "");
+    setAddingNote(false);
+  };
+
+  const saveEditNote = async () => {
+    const id = editNoteId;
+    if (!id) return;
+    const title = editNoteTitle.trim();
+    if (!title) return;
+    const project_id = editNoteProject || null;
+    const { error } = await supabase.from("agenda_events").update({ title, project_id }).eq("id", id);
+    if (error) { showToast(tr.noteError); return; }
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id } : n));
+    setEditNoteId(null);
+    showToast(tr.noteUpdated);
+  };
+
+  // Proyectos disponibles para el selector (los activos que ya cargamos)
+  const projectSelectOptions = useMemo(
+    () => [...projects.values()].map(p => ({ id: p.id, name: p.title.split(" — ")[0] })),
+    [projects]
+  );
 
   const filterCounts: Record<Filter, number> = {
     all: dayTasks.length,
@@ -259,6 +288,41 @@ export default function HoyPage() {
           {isSuperAdmin && (
             <div className="mb-3 space-y-1.5">
               {notes.map(n => (
+                editNoteId === n.id ? (
+                  <div key={n.id} className="space-y-2 rounded-2xl border border-[#B98A2F] bg-[#FBF5E6] px-3.5 py-3">
+                    <div className="flex items-center gap-2">
+                      <Pin size={13} className="shrink-0 text-[#B98A2F]" />
+                      <input
+                        autoFocus
+                        value={editNoteTitle}
+                        onChange={e => setEditNoteTitle(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") saveEditNote(); if (e.key === "Escape") setEditNoteId(null); }}
+                        className="min-w-0 flex-1 rounded-lg border border-[#EAD9AC] bg-white px-2.5 py-2 text-[13px] font-semibold text-[#16323D] focus:border-[#B98A2F] focus:outline-none"
+                      />
+                    </div>
+                    <label className="block text-[9px] font-bold uppercase tracking-wide text-[#B98A2F]">
+                      {tr.noteProject}
+                    </label>
+                    <select
+                      value={editNoteProject}
+                      onChange={e => setEditNoteProject(e.target.value)}
+                      className="w-full rounded-lg border border-[#EAD9AC] bg-white px-2.5 py-2 text-[13px] text-[#16323D] focus:border-[#B98A2F] focus:outline-none"
+                    >
+                      <option value="">{tr.noteNoProject}</option>
+                      {projectSelectOptions.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditNoteId(null)} className="flex-1 rounded-lg bg-[#ECE3D1] py-2 text-[12px] font-bold text-[#5C6A6E]">
+                        {th.filterAll === "All" ? "Cancel" : "Cancelar"}
+                      </button>
+                      <button onClick={saveEditNote} disabled={!editNoteTitle.trim()} className="flex-1 rounded-lg bg-[#B98A2F] py-2 text-[12px] font-bold text-white disabled:opacity-40">
+                        {tr.noteSaveEdit}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                 <div key={n.id} className="flex items-center gap-2.5 rounded-2xl border border-[#EAD9AC] bg-[#FBF5E6] px-3.5 py-2.5">
                   <Pin size={13} className="shrink-0 text-[#B98A2F]" />
                   <button
@@ -270,13 +334,25 @@ export default function HoyPage() {
                   >
                     {n.done && <span className="text-[11px] font-bold leading-none text-white">✓</span>}
                   </button>
-                  <span className={`min-w-0 flex-1 text-[13px] ${n.done ? "text-[#97A1A0] line-through" : "font-semibold text-[#7A6230]"}`}>
+                  <button
+                    onClick={() => startEditNote(n)}
+                    className={`min-w-0 flex-1 text-left text-[13px] ${n.done ? "text-[#97A1A0] line-through" : "font-semibold text-[#7A6230]"}`}
+                  >
                     {n.title}
-                  </span>
+                    {n.project_id && projects.get(n.project_id) && (
+                      <span className="ml-1.5 rounded-full bg-[#EAD9AC] px-1.5 py-0.5 text-[9px] font-bold text-[#7A6230]">
+                        {projects.get(n.project_id)!.title.split(" — ")[0]}
+                      </span>
+                    )}
+                  </button>
+                  <button onClick={() => startEditNote(n)} aria-label={tr.noteEdit} className="shrink-0 text-[#B98A2F]/60 hover:text-[#B98A2F]">
+                    <Pencil size={13} />
+                  </button>
                   <button onClick={() => deleteNote(n.id)} aria-label={tr.noteDeleted} className="shrink-0 text-[#B0492F]/50 hover:text-[#B0492F]">
                     <X size={14} />
                   </button>
                 </div>
+                )
               ))}
               {addingNote ? (
                 <div className="flex items-center gap-2.5 rounded-2xl border border-[#B98A2F] bg-[#FBF5E6] px-3.5 py-2.5">

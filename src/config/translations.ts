@@ -826,6 +826,11 @@ export const translations = {
         noteSaved: "Note saved — it also shows in your Agenda",
         noteDeleted: "Note deleted",
         noteError: "Error saving note",
+        noteEdit: "Edit note",
+        noteProject: "Linked project (optional)",
+        noteNoProject: "No project",
+        noteSaveEdit: "Save",
+        noteUpdated: "Note updated",
       },
       hoy: {
         todayTag: "TODAY",
@@ -1795,6 +1800,11 @@ export const translations = {
         noteSaved: "Nota guardada — también aparece en tu Agenda",
         noteDeleted: "Nota eliminada",
         noteError: "Error al guardar la nota",
+        noteEdit: "Editar nota",
+        noteProject: "Proyecto vinculado (opcional)",
+        noteNoProject: "Sin proyecto",
+        noteSaveEdit: "Guardar",
+        noteUpdated: "Nota actualizada",
       },
       hoy: {
         todayTag: "HOY",

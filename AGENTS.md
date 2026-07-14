@@ -510,6 +510,7 @@ Sección privada del superadmin para registrar **citas**, **tasks de proyecto** 
 - **Export a calendario del teléfono**: cada tarjeta tiene botón **.ics** (Blob client-side con 2 `VALARM`: -2h y -1 día) y link directo a **Google Calendar** (`calendar.google.com/calendar/render?action=TEMPLATE`). El teléfono dispara las notificaciones nativas — sin backend.
 - Grupos **Hoy / Próximos / Pasados** + 3 KPIs (hoy, semana, avisos activos).
 - **Notas del día en el Reporte diario (jul 2026)**: el Reporte diario del Gantt G (`DailyReport`) lee/crea `agenda_events` como "notas del día" a nivel global (botón "+ Nota del día" por fecha → insert `event_type: "task"`; checkbox `done` y ✕ para eliminar). Misma tabla: la nota aparece también en la Agenda y hereda sus recordatorios. Solo superadmin.
+- **Editar nota del día (jul 2026)**: tanto en `DailyReport` como en la vista `/proyectos/hoy`, cada nota tiene ✏️ para editar el **título** y **vincular/desvincular un proyecto opcional** (`agenda_events.project_id` vía `<select>`). El proyecto vinculado se muestra como badge junto al título — resuelve la ambigüedad de proyectos con el mismo nombre dictados por Katy.
 - Acciones registradas en `activity_log` (`entity_type: "agenda_event"`).
 - Katy (VoiceFAB) también soporta `create_agenda_event` desde cualquier página del panel.
 
