@@ -58,8 +58,15 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
   create_agenda_event: [{ key:"title", label:"Título", type:"text" }, { key:"event_type", label:"Tipo (cita/task/reunion)", type:"text" }, { key:"event_date", label:"Fecha", type:"date" }, { key:"event_time", label:"Hora", type:"text" }, { key:"remind_from", label:"Avisar desde (2h/1d/2d/1w)", type:"text" }, { key:"repeat_every", label:"Repetir (once/daily)", type:"text" }],
 };
 
+// Acciones que exigen proyecto — si no hay uno abierto, la tarjeta de confirmación ofrece elegirlo
+const PROJECT_ACTIONS = new Set([
+  "create_payment", "create_expense", "create_task",
+  "create_material", "create_budget_item", "update_task_status",
+]);
+
 async function saveAction(action: string, data: Record<string, unknown>, meta: VoiceMeta): Promise<string> {
-  const pid  = meta.projectId;
+  // Contextual: proyecto elegido en la tarjeta (__project_id) > proyecto abierto en pantalla
+  const pid  = data.__project_id ? String(data.__project_id) : meta.projectId;
   const date = String(data.date ?? TODAY());
 
   switch (action) {
@@ -145,7 +152,7 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
       const { error } = await supabase.from("agenda_events").insert({
         event_type:   validType,
         title:        String(data.title ?? "Sin título"),
-        project_id:   data.project_id ? String(data.project_id) : null,
+        project_id:   data.project_id ? String(data.project_id) : (pid ?? null),
         event_date:   /^\d{4}-\d{2}-\d{2}$/.test(String(data.event_date ?? "")) ? String(data.event_date) : TODAY(),
         event_time:   /^\d{2}:\d{2}$/.test(String(data.event_time ?? "")) ? String(data.event_time) : "10:00",
         remind_from:  ["2h", "1d", "2d", "1w"].includes(String(data.remind_from)) ? String(data.remind_from) : "1d",
@@ -428,6 +435,27 @@ export default function VoiceFAB() {
     (typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function");
   const preferRecRef    = useRef(false);
   const recorderStopRef = useRef<(() => void) | null>(null);
+  const [projectOptions, setProjectOptions] = useState<{ id: string; title: string }[]>([]);
+
+  // Si la acción necesita proyecto y no hay uno abierto, cargar la lista para el selector
+  useEffect(() => {
+    if (!pendingAction) return;
+    const needsPick =
+      (PROJECT_ACTIONS.has(pendingAction.action) || pendingAction.action === "create_agenda_event") &&
+      !metaRef.current.projectId;
+    if (!needsPick || projectOptions.length > 0) return;
+    const metaProjects = metaRef.current.projects;
+    if (metaProjects?.length) {
+      setProjectOptions(metaProjects.map(p => ({ id: p.id, title: p.title })));
+      return;
+    }
+    supabase
+      .from("projects")
+      .select("id, title")
+      .neq("status", "terminado")
+      .order("priority_rank", { ascending: true, nullsFirst: false })
+      .then(({ data }) => { if (data) setProjectOptions(data as { id: string; title: string }[]); });
+  }, [pendingAction, projectOptions.length]);
 
   useEffect(() => {
     msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -653,16 +681,15 @@ export default function VoiceFAB() {
 
       const opener = OPENERS[ctx] ?? tpVoice.openerDefault;
       apiHist.push({ role: "assistant", content: opener });
-      const alive = await say(opener);
-      if (!alive) return;
+      // Sin TTS de apertura: el saludo se muestra como texto y se escucha DE INMEDIATO
+      push("assistant", opener);
 
       let userInput = await listen();
       if (userInput === null) { showError(tpVoice.noMicAccess); return; }
       if (!userInput) {
-        const a2 = await say(tpVoice.didntHear);
-        if (!a2) return;
+        push("assistant", tpVoice.didntHear);
         userInput = await listen();
-        if (!userInput) { await say(tpVoice.whenReady); closeClean(); return; }
+        if (!userInput) { push("assistant", tpVoice.whenReady); closeClean(); return; }
       }
       transcriptRef.current = userInput;
       push("user", userInput);
@@ -703,10 +730,9 @@ export default function VoiceFAB() {
           const data: Record<string, unknown> = { event_type: "task", title: lastUser, event_date: TODAY(), event_time: "09:00" };
           setPendingAction({ action: "create_agenda_event", data });
           setEditableData({ ...data });
-          await say(language === "en"
+          push("assistant", language === "en"
             ? "AI is unreachable. Review and save your dictation:"
             : "No pude conectar con la IA. Revisa y guarda tu dictado:");
-          if (!activeRef.current) return;
           setPhase("confirm");
           return;
         }
@@ -720,10 +746,10 @@ export default function VoiceFAB() {
           setPendingAction({ action, data });
           setEditableData({ ...data });
 
+          // Directo a la tarjeta (sin narración): el resumen se lee, no se espera
           const summary = buildSummary(action, data);
           const label   = ACTION_LABELS[action] ?? "registro";
-          await say(`Voy a guardar ${label}: ${summary}. ¿Confirmamos?`);
-          if (!activeRef.current) return;
+          push("assistant", `Voy a guardar ${label}: ${summary}. Revisa y confirma.`);
           setPhase("confirm");
 
         } else {
@@ -905,6 +931,26 @@ export default function VoiceFAB() {
                 Revisa y corrige si es necesario
               </p>
               <div className="space-y-2">
+                {(PROJECT_ACTIONS.has(pendingAction.action) || pendingAction.action === "create_agenda_event") &&
+                  !metaRef.current.projectId && (
+                  <div className="flex items-center gap-2">
+                    <label className="w-[72px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#5C6A6E]">
+                      Proyecto
+                    </label>
+                    <select
+                      value={String(editableData.__project_id ?? "")}
+                      onChange={e => setEditableData(prev => ({ ...prev, __project_id: e.target.value }))}
+                      className="min-w-0 flex-1 rounded-lg border border-[#D7CBB3] bg-white px-2 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    >
+                      <option value="">
+                        {pendingAction.action === "create_agenda_event" ? "Sin proyecto (agenda general)" : "Elige el proyecto…"}
+                      </option>
+                      {projectOptions.map(p => (
+                        <option key={p.id} value={p.id}>{p.title.split(" — ")[0]}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {(EDIT_FIELDS[pendingAction.action] ?? []).map(f => (
                   <div key={f.key} className="flex items-center gap-2">
                     <label className="w-[72px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#5C6A6E]">
@@ -939,7 +985,8 @@ export default function VoiceFAB() {
                   Cancelar
                 </button>
                 <button onClick={handleConfirm}
-                  className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white transition hover:bg-[#0e2630]">
+                  disabled={PROJECT_ACTIONS.has(pendingAction.action) && !metaRef.current.projectId && !editableData.__project_id}
+                  className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white transition hover:bg-[#0e2630] disabled:opacity-40">
                   ✓ Confirmar
                 </button>
               </div>

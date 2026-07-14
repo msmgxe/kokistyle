@@ -846,6 +846,8 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 - Síntesis: `SpeechSynthesis` (voz en español preferida)
 - Modelo: `anthropic("claude-haiku-4-5")` via `@ai-sdk/anthropic` — lee `ANTHROPIC_API_KEY` del env automáticamente (**sin Vercel AI Gateway**). ⚠️ Nunca usar strings tipo `model: "anthropic/..."`: van por el AI Gateway (no configurado) y fallan — así estuvo rota Katy hasta jul 2026.
 - **Fallback si la IA no responde**: `/api/voice` devuelve `{ type: "error" }` y el cliente muestra el **dictado como pendiente editable de agenda** (create_agenda_event con el transcript) en vez de "Error de conexión" — el dictado nunca se pierde.
+- **Guardado contextual (jul 2026)**: `saveAction` resuelve el proyecto como `data.__project_id` (elegido en la tarjeta) > `meta.projectId` (proyecto abierto). Si la acción requiere proyecto y no hay uno abierto, la tarjeta de confirmación muestra un **selector de proyecto** (Confirmar se deshabilita hasta elegir; en agenda es opcional "Sin proyecto"). Los eventos de agenda dictados dentro de un proyecto quedan vinculados a él.
+- **Fluidez (jul 2026)**: sin TTS de apertura ni de resumen — al tocar el mic se **escucha de inmediato** (el saludo y el "voy a guardar…" van como texto); TTS solo para preguntas intermedias. Pausa post-TTS Android 700ms.
 - Intención: POST `/api/voice` → Claude (multi-turn) → JSON `{ action, fields }` → fallback `localDetect()`
 - Contexto: `VoiceContext` → `setMeta({ projectId, projectTitle, contacts, projects })` desde las páginas de proyecto
   - `projects` — lista de todos los proyectos activos (cargada en `page.tsx` del dashboard) para resolver referencias como "el de Brickell"
