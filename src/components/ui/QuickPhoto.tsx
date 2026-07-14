@@ -74,12 +74,13 @@ export default function QuickPhoto({
 
   return (
     <>
-      {/* label nativo — el click() programático sobre inputs display:none se ignora en varios Android */}
+      {/* label nativo sin `capture` — el intent directo de cámara falla en silencio en varios Android
+          (permiso de cámara del navegador denegado, quirks OEM); el picker nativo siempre abre e incluye "Cámara" */}
       <label
         aria-label={`${tf.takePhoto} — ${projectTitle}`}
         className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#FDF0ED] active:scale-95"
       >
-        <input type="file" accept="image/*" capture="environment" className="sr-only"
+        <input type="file" accept="image/*" className="sr-only"
           onChange={e => { pick(e.target.files); e.target.value = ""; }} />
         <Camera size={16} />
       </label>

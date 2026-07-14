@@ -176,10 +176,11 @@ export default function ProjectPhotos({
             <option value="all">{tf.allProjects}</option>
           </select>
         )}
-        {/* labels nativos — el click() programático sobre inputs display:none se ignora en varios Android */}
+        {/* labels nativos sin `capture` — el intent directo de cámara falla en silencio en varios Android;
+            el picker nativo (single-select) siempre abre e incluye "Cámara" en su hoja */}
         <div className="flex gap-2.5">
           <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#B0492F] px-3 py-3.5 text-[15px] font-bold text-white shadow-md transition hover:bg-[#983C25] active:scale-[0.98]">
-            <input type="file" accept="image/*" capture="environment" className="sr-only"
+            <input type="file" accept="image/*" className="sr-only"
               onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
             {tf.takePhoto}
           </label>
