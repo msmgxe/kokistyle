@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X, Trash2 } from "lucide-react";
+import CameraCapture from "@/src/components/ui/CameraCapture";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
 import {
@@ -49,6 +50,8 @@ export default function ProjectPhotos({
 
   const [viewIdx, setViewIdx] = useState<number | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [camOpen, setCamOpen] = useState(false);
+  const camFallbackRef = useRef<HTMLInputElement>(null);
 
   const activeProject = projectId ?? selProject;
   const projTitle = useCallback(
@@ -78,7 +81,7 @@ export default function ProjectPhotos({
   useEffect(() => { if (activeProject) load(); }, [activeProject, load]);
 
   /* ── Selección de archivos ─────────────────────────────────────────────── */
-  const pickFiles = (files: FileList | null) => {
+  const pickFiles = (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
     if (activeProject === "all" || !activeProject) { toast(tf.chooseProject); return; }
     const arr = [...files].filter(f => f.type.startsWith("image/"));
@@ -176,20 +179,32 @@ export default function ProjectPhotos({
             <option value="all">{tf.allProjects}</option>
           </select>
         )}
-        {/* labels nativos sin `capture` — el intent directo de cámara falla en silencio en varios Android;
-            el picker nativo (single-select) siempre abre e incluye "Cámara" en su hoja */}
+        {/* Cámara in-app (getUserMedia) — el picker/intent del sistema está roto en varios Android (MIUI) */}
         <div className="flex gap-2.5">
-          <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#B0492F] px-3 py-3.5 text-[15px] font-bold text-white shadow-md transition hover:bg-[#983C25] active:scale-[0.98]">
-            <input type="file" accept="image/*" className="sr-only"
-              onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
+          <button
+            onClick={() => {
+              if (activeProject === "all" || !activeProject) { toast(tf.chooseProject); return; }
+              if (typeof navigator.mediaDevices?.getUserMedia === "function") setCamOpen(true);
+              else camFallbackRef.current?.click();
+            }}
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#B0492F] px-3 py-3.5 text-[15px] font-bold text-white shadow-md transition hover:bg-[#983C25] active:scale-[0.98]"
+          >
             {tf.takePhoto}
-          </label>
+          </button>
           <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[#16323D] transition hover:bg-[#ECE3D1] active:scale-[0.98]">
             <input type="file" accept="image/*" multiple className="sr-only"
               onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
             {tf.fromGallery}
           </label>
         </div>
+        <input ref={camFallbackRef} type="file" accept="image/*" className="sr-only"
+          onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
+        <CameraCapture
+          open={camOpen}
+          onClose={() => setCamOpen(false)}
+          onCapture={file => pickFiles([file])}
+          toast={toast}
+        />
       </div>
 
       {/* ── Compositor ── */}

@@ -871,6 +871,11 @@ export const translations = {
         next: "Next ›",
         of: "of",
         needsMigration: "The project_photos table doesn't exist yet — run the migration in Supabase (see AGENTS.md)",
+        shutter: "Capture",
+        flipCam: "Flip camera",
+        camDenied: "Camera permission denied — allow it for this site in your browser settings",
+        camUnavailable: "No camera available on this device",
+        camError: "Could not open the camera",
       },
       globalContacts: {
         title: "Contacts",
@@ -1820,6 +1825,11 @@ export const translations = {
         next: "Siguiente ›",
         of: "de",
         needsMigration: "La tabla project_photos no existe aún — corre la migración en Supabase (ver AGENTS.md)",
+        shutter: "Capturar",
+        flipCam: "Girar cámara",
+        camDenied: "Permiso de cámara denegado — actívalo para este sitio en la configuración del navegador",
+        camUnavailable: "No hay cámara disponible en este dispositivo",
+        camError: "No se pudo abrir la cámara",
       },
       globalContacts: {
         title: "Contactos",

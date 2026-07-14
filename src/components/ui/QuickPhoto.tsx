@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Camera, Images } from "lucide-react";
 import { logActivity } from "@/src/lib/activity";
 import { PHOTO_TAG_ORDER, PHOTO_TAG_COLORS, uploadProjectPhoto } from "@/src/lib/photos";
+import CameraCapture from "@/src/components/ui/CameraCapture";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import type { PhotoTag } from "@/src/types/project";
@@ -30,8 +31,10 @@ export default function QuickPhoto({
   const [caption, setCaption] = useState("");
   const [tag, setTag] = useState<PhotoTag>("avance");
   const [uploadStep, setUploadStep] = useState(0);
+  const [camOpen, setCamOpen] = useState(false);
+  const fallbackRef = useRef<HTMLInputElement>(null);
 
-  const pick = (files: FileList | null) => {
+  const pick = (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
     const arr = [...files].filter(f => f.type.startsWith("image/"));
     previews.forEach(URL.revokeObjectURL);
@@ -74,16 +77,25 @@ export default function QuickPhoto({
 
   return (
     <>
-      {/* label nativo sin `capture` — el intent directo de cámara falla en silencio en varios Android
-          (permiso de cámara del navegador denegado, quirks OEM); el picker nativo siempre abre e incluye "Cámara" */}
-      <label
+      {/* Cámara in-app (getUserMedia) — el picker/intent del sistema está roto en varios Android (MIUI) */}
+      <button
+        onClick={() => {
+          if (typeof navigator.mediaDevices?.getUserMedia === "function") setCamOpen(true);
+          else fallbackRef.current?.click();
+        }}
         aria-label={`${tf.takePhoto} — ${projectTitle}`}
         className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#FDF0ED] active:scale-95"
       >
-        <input type="file" accept="image/*" className="sr-only"
-          onChange={e => { pick(e.target.files); e.target.value = ""; }} />
         <Camera size={16} />
-      </label>
+      </button>
+      <input ref={fallbackRef} type="file" accept="image/*" className="sr-only"
+        onChange={e => { pick(e.target.files); e.target.value = ""; }} />
+      <CameraCapture
+        open={camOpen}
+        onClose={() => setCamOpen(false)}
+        onCapture={file => pick([file])}
+        toast={toast}
+      />
 
       {pending.length > 0 && (
         <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[#16323D]/60 backdrop-blur-sm sm:items-center">
