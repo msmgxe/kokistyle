@@ -33,6 +33,18 @@ export default function QuickPhoto({
   const [uploadStep, setUploadStep] = useState(0);
   const [camOpen, setCamOpen] = useState(false);
   const fallbackRef = useRef<HTMLInputElement>(null);
+  const galRef = useRef<HTMLInputElement>(null);
+
+  // showPicker() lanza errores atrapables (los pickers rotos de algunos Android fallan mudos); click() como fallback
+  const openGallery = () => {
+    const el = galRef.current;
+    if (!el) return;
+    try {
+      el.showPicker();
+    } catch (e) {
+      try { el.click(); } catch { toast(`${tf.uploadError} (${(e as Error)?.name ?? "picker"})`); }
+    }
+  };
 
   const pick = (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
@@ -105,11 +117,14 @@ export default function QuickPhoto({
                 <div className="truncate text-[15px] font-bold text-[#16323D]">📷 {projectTitle}</div>
                 <div className="text-[12px] text-[#97A1A0]">{tf.title}</div>
               </div>
-              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-[12px] font-bold text-[#16323D]">
-                <input type="file" accept="image/*" multiple className="sr-only"
-                  onChange={e => { pick(e.target.files); e.target.value = ""; }} />
+              <button
+                onClick={openGallery}
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-[12px] font-bold text-[#16323D]"
+              >
                 <Images size={14} /> {tf.fromGallery}
-              </label>
+              </button>
+              <input ref={galRef} type="file" accept="image/*" multiple className="sr-only"
+                onChange={e => { pick(e.target.files); e.target.value = ""; }} />
             </div>
 
             <div className={`grid gap-2 ${previews.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>

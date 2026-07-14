@@ -52,8 +52,20 @@ export default function ProjectPhotos({
   const [confirmDel, setConfirmDel] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
   const camFallbackRef = useRef<HTMLInputElement>(null);
+  const galRef = useRef<HTMLInputElement>(null);
 
   const activeProject = projectId ?? selProject;
+
+  // showPicker() lanza errores atrapables (los pickers rotos de algunos Android fallan mudos); click() como fallback
+  const openGallery = () => {
+    const el = galRef.current;
+    if (!el) return;
+    try {
+      el.showPicker();
+    } catch (e) {
+      try { el.click(); } catch { toast(`${tf.uploadError} (${(e as Error)?.name ?? "picker"})`); }
+    }
+  };
   const projTitle = useCallback(
     (id: string) => projects?.find(p => p.id === id)?.title.split(" — ")[0] ?? "",
     [projects]
@@ -191,12 +203,15 @@ export default function ProjectPhotos({
           >
             {tf.takePhoto}
           </button>
-          <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[#16323D] transition hover:bg-[#ECE3D1] active:scale-[0.98]">
-            <input type="file" accept="image/*" multiple className="sr-only"
-              onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
+          <button
+            onClick={openGallery}
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[#16323D] transition hover:bg-[#ECE3D1] active:scale-[0.98]"
+          >
             {tf.fromGallery}
-          </label>
+          </button>
         </div>
+        <input ref={galRef} type="file" accept="image/*" multiple className="sr-only"
+          onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
         <input ref={camFallbackRef} type="file" accept="image/*" className="sr-only"
           onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
         <CameraCapture
