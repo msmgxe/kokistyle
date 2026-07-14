@@ -817,6 +817,7 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | `gantt-report-print.html` | Prototipo del **reporte diario de actividades** — implementado en producción como `src/components/ui/DailyReport.tsx` (vista "Reporte diario" del Gantt G, jul 2026) |
 | `vista-hoy-movil.html` | Prototipo de la **vista "Hoy" móvil** — implementado en producción como `/proyectos/hoy` (jul 2026) |
 | `fotos-obra-movil.html` | Prototipo de **Fotos de obra** — implementado en producción como `ProjectPhotos.tsx` (página `/proyectos/fotos` + tab Photos del proyecto, jul 2026) |
+| `voz-design-movil.html` | Prototipo de **Voz universal + Design AI** (pendiente de aprobación): dictado de notas/tareas por proyecto con MediaRecorder real (plan producción: audio → Whisper en Replicate → /api/voice con Claude → tarjeta de confirmación — reemplaza a Web Speech API, roto en varios Android) + flujo Design "foto actual → visión del después (Nano Banana / gemini-2.5-flash-image, tier gratuito) → alcance sugerido → crear secciones del Estimate" |
 | `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
 | `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
 
