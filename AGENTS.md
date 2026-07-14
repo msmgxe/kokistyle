@@ -54,7 +54,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase → Settings → API → anon/public
 SUPABASE_SERVICE_ROLE_KEY=      # Supabase → Settings → API → service_role (SOLO server)
 RESEND_API_KEY=                 # resend.com → API Keys
 ANTHROPIC_API_KEY=              # console.anthropic.com → API Keys (asistente de voz)
-REPLICATE_API_TOKEN=            # replicate.com → Account → API Tokens (Design tab img2img + AI Design público)
+REPLICATE_API_TOKEN=            # replicate.com → Account → API Tokens (Design tab img2img + AI Design público + Whisper de Katy)
+GEMINI_API_KEY=                 # aistudio.google.com → API key (Nano Banana / gemini-2.5-flash-image para el Design tab — tier gratuito; sin la clave se usa Replicate)
 FREE_RENDER_LIMIT=             # renders gratis por prospecto en el AI Design de la landing (default 3)
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=   # npx web-push generate-vapid-keys (avisos push de Agenda)
 VAPID_PRIVATE_KEY=              # par privado de la anterior (SOLO server)
@@ -90,6 +91,8 @@ src/
 │   ├── acceso/[token]/page.tsx       # Login automático por token de dispositivo → redirige a /proyectos
 │   └── api/
 │       ├── voice/route.ts            # Asistente de voz Katy (Claude API → intención → acción)
+│       ├── voice/transcribe/route.ts # Transcripción universal (audio MediaRecorder → Whisper en Replicate) — fallback de Katy donde SpeechRecognition no existe/falla (Android)
+│       ├── design-scope/route.ts     # Claude vision: foto del espacio + objetivo → secciones sugeridas para el Estimate (JSON name_en/es, description, amount)
 │       ├── agenda/remind/route.ts    # Motor de avisos push (cron cada 15 min, Bearer CRON_SECRET)
 │       └── auth/
 │           ├── login/route.ts        # Verificar PIN superadmin (server-side, no expone PIN) — retorna name
@@ -573,6 +576,7 @@ Componente compartido `src/components/ui/ProjectPhotos.tsx` (jul 2026):
 - **Storage**: `kokistyle-files/project-photos/<projectId>/<uuid>.jpg` (políticas anon existentes). Fila en `project_photos` con `taken_at` tomado de `file.lastModified` — las fotos viejas del carrete quedan ordenadas en su fecha real.
 - **Galería**: agrupada por `taken_at` desc, filtros por etiqueta con conteos, grid 3 col (6 en desktop), visor fullscreen con ‹ ›, comentario, etiqueta y eliminar (borra fila + archivo del Storage best-effort, confirmación de dos toques).
 - **Tres entradas**: página global `/proyectos/fotos` (selector de proyecto + opción "Todos" solo-ver con etiqueta del proyecto en cada miniatura), **tab `fotos`** en el detalle del proyecto (proyecto fijo), y **`QuickPhoto.tsx`** — botón 📷 en la cabecera de cada proyecto de la vista "Hoy" que abre la cámara y sube con modal (comentario+etiqueta) **siempre anclado a ese proyecto**. El tab se gatea con la sección de permisos `workflow` y está en `TAB_ACCESS_OPTIONS` (default coworker ✓, client ✓). Lógica compartida en `src/lib/photos.ts` (`compressImage`, `uploadProjectPhoto`, colores/orden de tags).
+- **Web Share Target (jul 2026)** — la vía a prueba de MIUI para fotos existentes: `manifest.json → share_target` (POST multipart, param `fotos`) + handler `fetch` en `public/sw.js` que guarda los archivos en Cache (`luxaris-shared-photos`) y redirige a **`/proyectos/compartir`**, donde se elige proyecto/etiqueta/comentario y se suben con `uploadProjectPhoto`. Flujo usuario: app Galería → seleccionar fotos → Compartir → Luxaris. Requiere la PWA instalada desde Chrome (WebAPK).
 - Migración SQL (Bloque 8 de `schema.sql`):
 
 ```sql
@@ -837,7 +841,7 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 ## Asistente de voz "Katy"
 
 - Componente: `VoiceFAB.tsx` — dos botones flotantes: 🎙 mic (`fixed bottom-6 right-6`) y ⌨ teclado (`fixed bottom-6 right-[5.5rem]`)
-- **Modo voz**: Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) — disponible en Chrome/Safari
+- **Modo voz**: Web Speech API (`SpeechRecognition`) cuando existe; **fallback universal (jul 2026)**: si no existe o falla (Android/MIUI), `recordOnce()` graba con **MediaRecorder** (auto-stop por silencio vía RMS, tope 20s) y transcribe server-side en `POST /api/voice/transcribe` (Whisper `vaibhavs10/incredibly-fast-whisper` en Replicate, ~US$0.005/nota). El FAB de mic se muestra si hay SR **o** `getUserMedia` (`voiceCapable`).
 - **Modo texto**: panel de texto que se abre al tocar ⌨ — funciona en todos los navegadores sin permisos
 - Síntesis: `SpeechSynthesis` (voz en español preferida)
 - Modelo: `anthropic("claude-sonnet-4-6")` via `@ai-sdk/anthropic` — lee `ANTHROPIC_API_KEY` del env automáticamente (sin Vercel AI Gateway)
@@ -899,8 +903,9 @@ Ya incluida en `src/lib/schema.sql`. Ejecutar en Supabase SQL Editor si la tabla
 
 - Componente: `src/components/ui/DesignTab.tsx`
 - API route: `src/app/api/design-render/route.ts` (GET + POST, `maxDuration = 60`)
-- Modelo: `adirik/interior-design` en Replicate — img2img, parte de la foto original
-- Variable de entorno requerida: `REPLICATE_API_TOKEN` (replicate.com → Account → API Tokens)
+- **Motores (jul 2026)**: si existe `GEMINI_API_KEY`, `/api/design-render` usa primero **Nano Banana** (`gemini-2.5-flash-image`, edición de la foto real conservando estructura; tier gratuito de Google AI Studio) — el resultado se sube a `kokistyle-files/design-renders/` y se responde `{status:"succeeded", output:<url>, engine:"gemini"}` (misma forma que Replicate, cero cambios de cliente). Cualquier fallo cae en silencio a `adirik/interior-design` en Replicate.
+- **Alcance a presupuestar (jul 2026)**: botón "💡 Sugerir alcance" en DesignTab → `POST /api/design-scope` (Claude Sonnet vision: foto + objetivo → JSON de secciones con montos) → checklist en el tab → "Crear N secciones en el Estimate" inserta `estimate_sections` (con `section_total = amount`, crea `project_estimates` si no existe).
+- Variables de entorno: `REPLICATE_API_TOKEN` (motor de respaldo) y `GEMINI_API_KEY` (motor preferido, gratuito)
 
 ### Flujo de generación
 

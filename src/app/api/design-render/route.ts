@@ -68,6 +68,65 @@ export async function POST(req: NextRequest) {
 
   const fullPrompt = `A photo of a ${roomType}, ${style} interior design style. ${prompt}. Photorealistic, luxury, 8k resolution, professionally staged, beautiful lighting, high-end residential Miami Florida, architectural photography quality.`;
 
+  // ── Motor preferido: Nano Banana (gemini-2.5-flash-image, tier gratuito de Google AI) ──
+  // Edita la foto real conservando estructura/ángulo. Si falla o no hay GEMINI_API_KEY,
+  // se cae en silencio al motor Replicate de siempre.
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    try {
+      const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) throw new Error(`source image HTTP ${imgRes.status}`);
+      const mime = imgRes.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+      const b64 = Buffer.from(await imgRes.arrayBuffer()).toString("base64");
+
+      const gRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: mime, data: b64 } },
+                { text: `Edit this photo of a ${roomType}. ${prompt}. Keep the room's structure, camera angle and dimensions exactly as in the original photo; render a photorealistic ${style} interior redesign, luxury residential quality, natural lighting, no people, no text or watermarks.` },
+              ],
+            }],
+          }),
+        }
+      );
+
+      if (gRes.ok) {
+        const gData = await gRes.json() as {
+          candidates?: { content?: { parts?: { inlineData?: { data?: string; mimeType?: string }; inline_data?: { data?: string; mime_type?: string } }[] } }[];
+        };
+        const parts = gData.candidates?.[0]?.content?.parts ?? [];
+        const imgPart = parts.find(p => p.inlineData?.data || p.inline_data?.data);
+        const outB64 = imgPart?.inlineData?.data ?? imgPart?.inline_data?.data;
+        if (outB64) {
+          const outMime = imgPart?.inlineData?.mimeType ?? imgPart?.inline_data?.mime_type ?? "image/png";
+          const path = `design-renders/${crypto.randomUUID()}.${outMime.includes("png") ? "png" : "jpg"}`;
+          const { error: upErr } = await admin.storage
+            .from("kokistyle-files")
+            .upload(path, Buffer.from(outB64, "base64"), { contentType: outMime });
+          if (!upErr) {
+            const { data: pub } = admin.storage.from("kokistyle-files").getPublicUrl(path);
+            if (prospectRow) {
+              await admin.from("prospects")
+                .update({ renders_used: prospectRow.renders_used + 1, last_used_at: new Date().toISOString() })
+                .eq("id", prospectRow.id);
+            }
+            return NextResponse.json({ status: "succeeded", output: pub.publicUrl, engine: "gemini" });
+          }
+        }
+      } else {
+        const detail = await gRes.text().catch(() => "");
+        console.error(JSON.stringify({ route: "/api/design-render", stage: "gemini", status: gRes.status, error: detail.slice(0, 300) }));
+      }
+    } catch (err) {
+      console.error(JSON.stringify({ route: "/api/design-render", stage: "gemini", error: err instanceof Error ? err.message : String(err) }));
+    }
+  }
+
   try {
     const res = await fetch(
       "https://api.replicate.com/v1/models/adirik/interior-design/predictions",

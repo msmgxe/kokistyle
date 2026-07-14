@@ -297,6 +297,89 @@ function listenOnce(recRef: { current: SR | null }, lang: "en" | "es"): Promise<
   });
 }
 
+// Fallback universal: graba con MediaRecorder (funciona en cualquier navegador) y
+// transcribe con Whisper server-side — para los Android donde SpeechRecognition no existe o falla.
+// Auto-stop por silencio (RMS) para conservar el flujo conversacional de Katy.
+async function recordOnce(
+  lang: "en" | "es",
+  activeRef: { current: boolean },
+  stopRef: { current: (() => void) | null },
+): Promise<string> {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    .catch(() => { throw new Error("mic-denied"); });
+  return new Promise<string>((resolve, reject) => {
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(stream);
+    } catch {
+      stream.getTracks().forEach(tr => tr.stop());
+      reject(new Error("recorder-unsupported"));
+      return;
+    }
+    const chunks: BlobPart[] = [];
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AC();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    const buf = new Uint8Array(analyser.fftSize);
+    let spoke = false;
+    let lastVoice = Date.now();
+    const t0 = Date.now();
+    let rafId = 0;
+
+    const cleanup = () => {
+      cancelAnimationFrame(rafId);
+      stopRef.current = null;
+      stream.getTracks().forEach(tr => tr.stop());
+      ctx.close().catch(() => {});
+    };
+    const finish = () => { if (recorder.state === "recording") recorder.stop(); };
+    stopRef.current = finish;
+
+    const tick = () => {
+      analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+      const rms = Math.sqrt(sum / buf.length);
+      const now = Date.now();
+      if (rms > 0.02) { spoke = true; lastVoice = now; }
+      if (!activeRef.current) { finish(); return; }
+      if (spoke && now - lastVoice > 1600) { finish(); return; }
+      if (!spoke && now - t0 > 6000) { finish(); return; }
+      if (now - t0 > 20000) { finish(); return; }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    recorder.onstop = async () => {
+      cleanup();
+      if (!spoke || !activeRef.current) { resolve(""); return; }
+      try {
+        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        const dataUrl = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = () => rej(new Error("read-failed"));
+          fr.readAsDataURL(blob);
+        });
+        const resp = await fetch("/api/voice/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audio: dataUrl, language: lang }),
+        });
+        if (!resp.ok) { reject(new Error("transcribe-failed")); return; }
+        const { text } = await resp.json();
+        resolve(String(text ?? ""));
+      } catch (e) {
+        reject(e as Error);
+      }
+    };
+    recorder.start();
+    tick();
+  });
+}
+
 function buildSummary(action: string, data: Record<string, unknown>): string {
   switch (action) {
     case "create_payment":     return `${data.type ?? ""} de ${fmt(Number(data.amount ?? 0))} por ${data.method ?? ""}`;
@@ -339,6 +422,12 @@ export default function VoiceFAB() {
   const supported =
     typeof window !== "undefined" &&
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  // Con el fallback MediaRecorder+Whisper, la voz está disponible aunque no exista SpeechRecognition
+  const voiceCapable =
+    supported ||
+    (typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function");
+  const preferRecRef    = useRef(false);
+  const recorderStopRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -360,21 +449,34 @@ export default function VoiceFAB() {
     if (!activeRef.current) return null;
     setPhase("listening");
     if (!activeRef.current) return null;
+    const useSR = supported && !preferRecRef.current;
     try {
-      return await listenOnce(recRef, language);
+      if (useSR) return await listenOnce(recRef, language);
+      return await recordOnce(language, activeRef, recorderStopRef);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       if (msg === "no-speech") return "";
+      // SpeechRecognition falló (red/servicio/permiso) — cambiar a grabación+Whisper y reintentar
+      if (useSR && msg !== "mic-denied") {
+        preferRecRef.current = true;
+        try {
+          return await recordOnce(language, activeRef, recorderStopRef);
+        } catch (e2) {
+          console.error("[Katy]", e2);
+          return null;
+        }
+      }
       console.error("[Katy]", msg);
       return null;
     }
-  }, [language]);
+  }, [language, supported]);
 
   const closeClean = useCallback(() => {
     activeRef.current   = false;
     startedRef.current  = false;
     textModeRef.current = false;
     transcriptRef.current = "";
+    recorderStopRef.current?.();
     apiHistRef.current  = [];
     converseRef.current = null;
     try { window.speechSynthesis?.cancel(); } catch { /* noop */ }
@@ -830,7 +932,7 @@ export default function VoiceFAB() {
             <div className="flex flex-col gap-2 border-t border-[#E6DDCB] p-3">
               <p className="rounded-lg bg-[#FFF0EE] px-3 py-2 text-sm text-[#B0492F]">{statusMsg}</p>
               <div className="flex gap-2">
-                {supported && (
+                {voiceCapable && (
                   <button onClick={() => { setPhase("idle"); startedRef.current = false; start(); }}
                     className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white">
                     🎤 Voz
@@ -859,7 +961,7 @@ export default function VoiceFAB() {
       )}
 
       {/* Main FAB: mic (or keyboard when voice not supported) */}
-      {supported ? (
+      {voiceCapable ? (
         <button
           type="button"
           onClick={phase === "idle" ? start : undefined}

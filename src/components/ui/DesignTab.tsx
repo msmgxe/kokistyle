@@ -37,6 +37,14 @@ type RenderEntry = {
   ts:     number;
 };
 
+type ScopeItem = {
+  name_en: string;
+  name_es: string;
+  description_en: string;
+  description_es: string;
+  amount: number;
+};
+
 type ModalState = { before: string; after: string } | null;
 
 interface Props {
@@ -62,6 +70,10 @@ export default function DesignTab({ project, toast }: Props) {
   const [uploading, setUploading]   = useState(false);
   const [listening, setListening]   = useState(false);
   const [sliderPos, setSliderPos]   = useState(50);   // comparison slider 0–100
+  const [scope, setScope]           = useState<ScopeItem[] | null>(null);
+  const [scopeBusy, setScopeBusy]   = useState(false);
+  const [scopeSel, setScopeSel]     = useState<Set<number>>(new Set());
+  const [creatingSections, setCreatingSections] = useState(false);
 
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -232,6 +244,70 @@ export default function DesignTab({ project, toast }: Props) {
       );
     }
   };
+
+  // ── Alcance a presupuestar: Claude mira la foto + objetivo → secciones del Estimate ──
+  const suggestScope = useCallback(async () => {
+    const before = photos[activePhoto]?.url;
+    if (!before) {
+      toast(isEN ? "Upload a photo of the space first" : "Sube primero una foto del espacio");
+      return;
+    }
+    setScopeBusy(true);
+    setScope(null);
+    try {
+      const res = await fetch("/api/design-scope", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: before, objective: prompt.trim(), language }),
+      });
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data.scope)) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setScope(data.scope as ScopeItem[]);
+      setScopeSel(new Set((data.scope as ScopeItem[]).map((_, i) => i)));
+    } catch (e) {
+      toast((isEN ? "Scope analysis failed: " : "Falló el análisis de alcance: ") + (e instanceof Error ? e.message : ""));
+    } finally {
+      setScopeBusy(false);
+    }
+  }, [photos, activePhoto, prompt, language, isEN, toast]);
+
+  const createSections = useCallback(async () => {
+    if (!scope) return;
+    const chosen = scope.filter((_, i) => scopeSel.has(i));
+    if (!chosen.length) return;
+    setCreatingSections(true);
+    try {
+      let { data: est } = await supabase
+        .from("project_estimates").select("id").eq("project_id", project.id).maybeSingle();
+      if (!est) {
+        const { data: created, error } = await supabase
+          .from("project_estimates").insert({ project_id: project.id }).select("id").single();
+        if (error || !created) throw error ?? new Error("estimate");
+        est = created;
+      }
+      const { count } = await supabase
+        .from("estimate_sections").select("id", { count: "exact", head: true }).eq("estimate_id", est.id);
+      const base = count ?? 0;
+      const rows = chosen.map((s, i) => ({
+        estimate_id: est!.id,
+        name_en: s.name_en,
+        name_es: s.name_es,
+        section_total: Number(s.amount) || 0,
+        sort_order: base + i,
+        is_material_type: false,
+      }));
+      const { error: insErr } = await supabase.from("estimate_sections").insert(rows);
+      if (insErr) throw insErr;
+      toast(isEN
+        ? `✓ ${rows.length} sections added to the Estimate`
+        : `✓ ${rows.length} secciones agregadas al Estimate`);
+      setScope(null);
+    } catch (e) {
+      toast("Error: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setCreatingSections(false);
+    }
+  }, [scope, scopeSel, project.id, isEN, toast]);
 
   // ── Voice input (same pattern as working prototypes) ────────────────────
   const toggleVoice = () => {
@@ -447,6 +523,54 @@ export default function DesignTab({ project, toast }: Props) {
                 "✨ " + (isEN ? "Generate Render" : "Generar Render")
               )}
             </button>
+
+            {/* Foto + objetivo → Claude propone secciones listas para el Estimate */}
+            <button
+              onClick={suggestScope} disabled={scopeBusy || uploading}
+              className="mt-2 w-full py-2.5 rounded-xl bg-[#B98A2F] text-white text-sm font-bold tracking-wide hover:bg-[#a3781f] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {scopeBusy ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  {isEN ? "Analyzing photo..." : "Analizando foto..."}
+                </>
+              ) : (
+                "💡 " + (isEN ? "Suggest scope to estimate" : "Sugerir alcance a presupuestar")
+              )}
+            </button>
+
+            {scope && (
+              <div className="mt-2.5 overflow-hidden rounded-xl border border-[#E6DDCB]">
+                {scope.map((s, i) => (
+                  <label key={i} className="flex items-start gap-2 border-b border-[#F0EBE0] bg-white px-3 py-2 last:border-0">
+                    <input
+                      type="checkbox"
+                      checked={scopeSel.has(i)}
+                      onChange={() => setScopeSel(prev => {
+                        const n = new Set(prev);
+                        if (n.has(i)) n.delete(i); else n.add(i);
+                        return n;
+                      })}
+                      className="mt-0.5 size-4 accent-[#4F8A63]"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[12px] font-bold text-[#16323D]">{isEN ? s.name_en : s.name_es}</span>
+                      <span className="block text-[11px] leading-snug text-[#5C6A6E]">{isEN ? s.description_en : s.description_es}</span>
+                    </span>
+                    <span className="font-mono text-[12px] font-bold text-[#16323D]">${Number(s.amount).toLocaleString()}</span>
+                  </label>
+                ))}
+                <button
+                  onClick={createSections}
+                  disabled={creatingSections || scopeSel.size === 0}
+                  className="w-full bg-[#4F8A63] py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#41724f] disabled:opacity-60"
+                >
+                  {creatingSections
+                    ? "…"
+                    : "➕ " + (isEN ? `Create ${scopeSel.size} sections in Estimate` : `Crear ${scopeSel.size} secciones en el Estimate`)}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

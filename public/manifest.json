@@ -51,5 +51,20 @@
         }
       ]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/proyectos/compartir",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "fotos",
+          "accept": [
+            "image/*"
+          ]
+        }
+      ]
+    }
+  }
 }

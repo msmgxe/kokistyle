@@ -877,7 +877,7 @@ export const translations = {
         camUnavailable: "No camera available on this device",
         camError: "Could not open the camera",
         pickerRetry: "📁 Didn't open? Try the file manager",
-        pickerBlocked: "Android blocked the picker — in Settings → Apps → your browser → Permissions, allow Photos/Files",
+        pickerBlocked: "Android blocked the picker — open your Gallery app, select photos → Share → Luxaris",
       },
       globalContacts: {
         title: "Contacts",
@@ -1833,7 +1833,7 @@ export const translations = {
         camUnavailable: "No hay cámara disponible en este dispositivo",
         camError: "No se pudo abrir la cámara",
         pickerRetry: "📁 ¿No se abrió? Probar con el gestor de archivos",
-        pickerBlocked: "Android bloqueó el selector — en Ajustes → Aplicaciones → tu navegador → Permisos, permite Fotos/Archivos",
+        pickerBlocked: "Android bloqueó el selector — abre tu app Galería, selecciona fotos → Compartir → Luxaris",
       },
       globalContacts: {
         title: "Contactos",
