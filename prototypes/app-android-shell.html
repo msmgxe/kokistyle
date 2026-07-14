@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Luxaris — App Android (APK) · prototipo de shell ligera</title>
+<style>
+  :root {
+    --desk: #E9E2D4; --desk-text: #5C6A6E;
+    --ink: #16323D; --soft: #5C6A6E; --faint: #97A1A0;
+    --cream: #F7F3EB; --card: #fff; --line: #E6DDCB;
+    --navy: #395886; --ok: #4F8A63; --bad: #B0492F; --amber: #B98A2F;
+  }
+  @media (prefers-color-scheme: dark) { :root { --desk: #1C2529; --desk-text: #9FB0B5; } }
+  :root[data-theme="dark"]  { --desk: #1C2529; --desk-text: #9FB0B5; }
+  :root[data-theme="light"] { --desk: #E9E2D4; --desk-text: #5C6A6E; }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--desk); color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 26px 14px 40px;
+  }
+  .intro { max-width: 620px; color: var(--desk-text); margin-bottom: 20px; }
+  .intro h1 { font-size: 16px; margin: 0 0 6px; letter-spacing: .04em; font-weight: 800; text-align: center; }
+  .intro p { font-size: 12.5px; margin: 0 0 12px; line-height: 1.55; text-align: center; }
+  .options { display: grid; gap: 8px; }
+  .opt {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--card); border: 2px solid var(--line);
+    border-radius: 16px; padding: 12px 14px; color: var(--ink);
+  }
+  .opt.reco { border-color: var(--ok); }
+  .opt .badge {
+    flex-shrink: 0; font-size: 9px; font-weight: 800; letter-spacing: .06em;
+    color: #fff; padding: 4px 9px; border-radius: 999px; margin-top: 2px;
+  }
+  .opt h3 { margin: 0 0 3px; font-size: 13.5px; }
+  .opt p { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--soft); text-align: left; }
+  .opt .meta { margin-top: 5px; font-size: 10px; font-weight: 700; color: var(--faint); }
+
+  .phone {
+    width: 100%; max-width: 400px; background: #10181C;
+    border-radius: 44px; padding: 12px; margin-top: 22px;
+    box-shadow: 0 30px 70px rgba(10,25,32,.45);
+  }
+  .screen {
+    background: var(--cream); border-radius: 34px; overflow: hidden;
+    height: 780px; max-height: 86vh; display: flex; flex-direction: column; position: relative;
+  }
+  @media (max-width: 480px) {
+    body { padding: 16px 10px 30px; }
+    .phone { max-width: none; border-radius: 0; padding: 0; box-shadow: none; }
+    .screen { border-radius: 0; height: 88vh; }
+  }
+
+  /* Splash */
+  .splash {
+    position: absolute; inset: 0; z-index: 20; display: grid; place-items: center;
+    background: var(--ink); color: #fff; transition: opacity .5s; cursor: pointer;
+  }
+  .splash.hide { opacity: 0; pointer-events: none; }
+  .splash .logo {
+    width: 84px; height: 84px; border-radius: 24px; background: #F5E9DA;
+    display: grid; place-items: center; font-size: 30px; font-weight: 800; color: var(--ink);
+    margin: 0 auto 14px;
+  }
+  .splash .nm { text-align: center; font-size: 17px; font-weight: 700; letter-spacing: .06em; }
+  .splash .sub { text-align: center; font-size: 10px; color: #A8C0BC; letter-spacing: .3em; margin-top: 4px; }
+  .splash .tip { position: absolute; bottom: 26px; left: 0; right: 0; text-align: center; font-size: 11px; color: #A8C0BC; }
+
+  .statusbar {
+    background: var(--ink); color: #fff; font-size: 11px; font-weight: 700;
+    display: flex; justify-content: space-between; padding: 7px 18px 6px;
+  }
+
+  .content { flex: 1; overflow-y: auto; }
+  .page { display: none; padding: 14px; }
+  .page.on { display: block; }
+
+  .apphead {
+    background: var(--ink); color: #fff; padding: 14px 16px;
+    border-radius: 0 0 20px 20px; margin: -14px -14px 14px;
+  }
+  .apphead .b { font-size: 8.5px; font-weight: 800; letter-spacing: .28em; color: #A8C0BC; }
+  .apphead h2 {
+    margin: 4px 0 0; font-size: 19px; font-weight: 600;
+    font-family: "Bookman Old Style", "Book Antiqua", Palatino, Georgia, serif;
+  }
+
+  .titem {
+    display: flex; align-items: center; gap: 11px; background: #fff;
+    border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 8px;
+  }
+  .titem .cb {
+    width: 24px; height: 24px; border-radius: 8px; border: 2px solid #C6BCA6;
+    flex-shrink: 0; display: grid; place-items: center; cursor: pointer; color: #fff; font-weight: 800;
+  }
+  .titem.done .cb { background: var(--ok); border-color: var(--ok); }
+  .titem .tx { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; }
+  .titem.done .tx { color: var(--faint); text-decoration: line-through; font-weight: 400; }
+  .titem .sec { font-size: 8px; font-weight: 800; color: #fff; border-radius: 999px; padding: 3px 8px; flex-shrink: 0; }
+
+  .pgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ph { aspect-ratio: 1; border-radius: 12px; display: grid; place-items: center; font-size: 26px; position: relative; overflow: hidden; }
+  .ph span { position: absolute; left: 6px; top: 6px; font-size: 7px; font-weight: 800; color: #fff; padding: 2px 6px; border-radius: 999px; }
+  .fabcam {
+    position: sticky; bottom: 8px; margin-left: auto; display: grid; place-items: center;
+    width: 54px; height: 54px; border-radius: 50%; background: var(--bad); color: #fff;
+    font-size: 21px; border: 0; box-shadow: 0 8px 22px rgba(176,73,47,.45); cursor: pointer;
+  }
+
+  .micwrap { text-align: center; padding: 26px 0 8px; }
+  .bigmic {
+    width: 110px; height: 110px; border-radius: 50%; border: 0; background: var(--bad);
+    color: #fff; font-size: 42px; cursor: pointer; box-shadow: 0 12px 34px rgba(176,73,47,.45);
+    transition: transform .15s;
+  }
+  .bigmic:active { transform: scale(.92); }
+  .michint { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--soft); }
+  .vcard {
+    margin-top: 16px; background: #fff; border: 2px solid var(--navy); border-radius: 16px;
+    padding: 13px; text-align: left; display: none;
+  }
+  .vcard.show { display: block; }
+  .vcard .k { font-size: 9px; font-weight: 800; color: var(--faint); letter-spacing: .1em; }
+  .vcard input, .vcard select {
+    width: 100%; font: inherit; font-size: 13.5px; border: 1px solid var(--line);
+    border-radius: 10px; padding: 8px 10px; background: var(--cream); margin: 4px 0 8px;
+  }
+  .vcard .go { width: 100%; border: 0; border-radius: 12px; background: var(--ok); color: #fff; font: inherit; font-size: 13px; font-weight: 800; padding: 12px; cursor: pointer; }
+
+  .aitem { display: flex; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 11px 13px; margin-bottom: 8px; align-items: center; }
+  .aitem .ic { font-size: 17px; }
+  .aitem .tt { flex: 1; font-size: 13px; font-weight: 600; }
+  .aitem .hh { font-size: 11px; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; }
+
+  .tabbar {
+    display: flex; background: #fff; border-top: 1px solid var(--line);
+    padding: 8px 4px calc(12px + env(safe-area-inset-bottom));
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: 0; font: inherit; font-size: 10px; font-weight: 800;
+    color: var(--faint); cursor: pointer; padding-top: 2px;
+  }
+  .tab.on { color: var(--navy); }
+  .tab .i { font-size: 19px; line-height: 1; }
+  .sync {
+    position: absolute; top: 46px; right: 12px; z-index: 5;
+    font-size: 9px; font-weight: 800; color: var(--ok);
+    background: #EAF5EC; border: 1px solid #CFE3D2; border-radius: 999px; padding: 3px 9px;
+  }
+  .toast {
+    position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-size: 12px; font-weight: 600;
+    padding: 9px 16px; border-radius: 12px; opacity: 0; transition: opacity .25s;
+    pointer-events: none; white-space: nowrap; z-index: 30;
+  }
+  .toast.show { opacity: 1; }
+</style>
+
+<div class="intro">
+  <h1>APP ANDROID (APK) — OPCIONES Y PROTOTIPO</h1>
+  <p>Tres formas de tener tu APK. Las tres <b>sincronizan solas</b> con la app web (misma base de datos Supabase). Abajo, el prototipo de cómo se sentiría la app ligera.</p>
+  <div class="options">
+    <div class="opt reco">
+      <span class="badge" style="background:var(--ok)">RECOMENDADA</span>
+      <div>
+        <h3>A · TWA (Bubblewrap) — tu PWA empaquetada como APK real</h3>
+        <p>Un APK instalable (sideload o Play Store) que envuelve tu app web actual. <b>Cero código duplicado</b>: cada mejora de la web llega sola al APK. Ícono, splash, pantalla completa sin barra de navegador.</p>
+        <div class="meta">Esfuerzo: 1 día · Mantenimiento: casi cero · Costo: $0 (+$25 única vez si va a Play Store)</div>
+      </div>
+    </div>
+    <div class="opt">
+      <span class="badge" style="background:var(--amber)">INTERMEDIA</span>
+      <div>
+        <h3>B · Capacitor — webview + plugins nativos</h3>
+        <p>Misma web dentro de un contenedor con acceso nativo extra (notificaciones locales, cámara nativa). Útil solo si algo web se queda corto.</p>
+        <div class="meta">Esfuerzo: 1-2 semanas · Mantenimiento: medio (dos builds) · Costo: $0</div>
+      </div>
+    </div>
+    <div class="opt">
+      <span class="badge" style="background:var(--bad)">NO RECOMENDADA HOY</span>
+      <div>
+        <h3>C · App nativa (Kotlin / React Native)</h3>
+        <p>Máxima fluidez, pero duplicas TODO (pantallas, lógica, bugs ×2). Contradice tu objetivo de "fácil de implementar y mantener".</p>
+        <div class="meta">Esfuerzo: 2-3 meses · Mantenimiento: alto · Costo: alto</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone"><div class="screen">
+  <div class="splash" id="splash" onclick="hideSplash()">
+    <div>
+      <div class="logo">LD</div>
+      <div class="nm">Luxaris Design</div>
+      <div class="sub">FIELD APP</div>
+    </div>
+    <div class="tip">Toca para abrir (splash del APK)</div>
+  </div>
+
+  <div class="statusbar"><span id="clk">7:42</span><span>📶 🔋 84%</span></div>
+  <span class="sync">● Sincronizado con la web</span>
+
+  <div class="content">
+    <!-- HOY -->
+    <div class="page on" id="pg-hoy">
+      <div class="apphead"><div class="b">LUXARIS · HOY</div><h2 id="hoyDate">Martes 14 de julio</h2></div>
+      <div class="titem done" onclick="tgl(this)"><span class="cb">✓</span><span class="tx">Demolición de shower walls</span><span class="sec" style="background:#B0492F">DEMO</span></div>
+      <div class="titem" onclick="tgl(this)"><span class="cb"></span><span class="tx">Reubicar válvula de ducha</span><span class="sec" style="background:#4E7A82">PLOMERÍA</span></div>
+      <div class="titem" onclick="tgl(this)"><span class="cb"></span><span class="tx">Someter permiso a la ciudad</span><span class="sec" style="background:#5C5C5C">ADMIN</span></div>
+      <div class="titem" onclick="tgl(this)"><span class="cb"></span><span class="tx">📌 Llamar a Sofiya — selección de tile</span><span class="sec" style="background:#B98A2F">NOTA</span></div>
+    </div>
+
+    <!-- FOTOS -->
+    <div class="page" id="pg-fotos">
+      <div class="apphead"><div class="b">LUXARIS · FOTOS DE OBRA</div><h2>Master Bathroom</h2></div>
+      <div class="pgrid">
+        <div class="ph" style="background:linear-gradient(135deg,#6b7f8a,#3d4f58)">🔨<span style="background:#395886">AVANCE</span></div>
+        <div class="ph" style="background:linear-gradient(135deg,#8a5a4a,#54382e)">💧<span style="background:#B0492F">PROBLEMA</span></div>
+        <div class="ph" style="background:linear-gradient(135deg,#a08a5c,#6e5c38)">📦<span style="background:#B98A2F">MATERIAL</span></div>
+        <div class="ph" style="background:linear-gradient(135deg,#8a9aa5,#5a6a75)">🚿<span style="background:#5C6A6E">ANTES</span></div>
+        <div class="ph" style="background:linear-gradient(135deg,#9a8a7a,#6a5c4e)">🪞<span style="background:#5C6A6E">ANTES</span></div>
+        <div class="ph" style="background:linear-gradient(135deg,#6a8a7a,#40584c)">🌴<span style="background:#4F8A63">DESPUÉS</span></div>
+      </div>
+      <button class="fabcam" onclick="toastMsg('Abriría la cámara in-app 📷')">📷</button>
+    </div>
+
+    <!-- VOZ -->
+    <div class="page" id="pg-voz">
+      <div class="apphead"><div class="b">LUXARIS · KATY</div><h2>Dicta una tarea o nota</h2></div>
+      <div class="micwrap">
+        <button class="bigmic" onclick="fakeDictation()">🎙</button>
+        <div class="michint" id="michint">Toca y habla — escucha al instante</div>
+        <div class="vcard" id="vcard">
+          <div class="k">TAREA DETECTADA</div>
+          <input value="Comprar tornillería y silicona en Home Depot">
+          <div class="k">PROYECTO</div>
+          <select><option>Master Bathroom</option><option>House Remodeling</option><option selected>— elige el proyecto —</option></select>
+          <div class="k">FECHA</div>
+          <input type="date" value="2026-07-15">
+          <button class="go" onclick="confirmV()">✓ Confirmar y guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENDA -->
+    <div class="page" id="pg-agenda">
+      <div class="apphead"><div class="b">LUXARIS · AGENDA</div><h2>Esta semana</h2></div>
+      <div class="aitem"><span class="ic">🤝</span><span class="tt">Reunión con Simon — avance de obra</span><span class="hh">MIÉ 9:00</span></div>
+      <div class="aitem"><span class="ic">📅</span><span class="tt">Inspección de plomería (ciudad)</span><span class="hh">JUE 14:00</span></div>
+      <div class="aitem"><span class="ic">✅</span><span class="tt">Enviar estimado a M. Fontaine</span><span class="hh">VIE 10:00</span></div>
+      <div class="aitem"><span class="ic">🔔</span><span class="tt">Aviso push: comprar tile (recordatorio)</span><span class="hh">1d antes</span></div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab on" data-pg="hoy" onclick="go('hoy',this)"><span class="i">✓</span>Hoy</button>
+    <button class="tab" data-pg="fotos" onclick="go('fotos',this)"><span class="i">📷</span>Fotos</button>
+    <button class="tab" data-pg="voz" onclick="go('voz',this)"><span class="i">🎙</span>Katy</button>
+    <button class="tab" data-pg="agenda" onclick="go('agenda',this)"><span class="i">🔔</span>Agenda</button>
+  </div>
+  <div class="toast" id="toast"></div>
+</div></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  function hideSplash() { $("splash").classList.add("hide"); }
+  setTimeout(hideSplash, 1600);
+  $("clk").textContent = new Date().toLocaleTimeString("es-US", { hour: "numeric", minute: "2-digit", hour12: false });
+  $("hoyDate").textContent = new Date().toLocaleDateString("es-US", { weekday: "long", day: "numeric", month: "long" })
+    .replace(/^./, c => c.toUpperCase());
+
+  function go(pg, btn) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("on"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("on"));
+    $("pg-" + pg).classList.add("on");
+    btn.classList.add("on");
+  }
+  function tgl(el) { el.classList.toggle("done"); toastMsg("✓ Sincronizado con la web"); }
+  function toastMsg(m) {
+    const t = $("toast");
+    t.textContent = m; t.classList.add("show");
+    clearTimeout(toastMsg._t); toastMsg._t = setTimeout(() => t.classList.remove("show"), 2000);
+  }
+  function fakeDictation() {
+    $("michint").textContent = "Escuchando…";
+    setTimeout(() => {
+      $("michint").textContent = "Listo — revisa y confirma:";
+      $("vcard").classList.add("show");
+    }, 1400);
+  }
+  function confirmV() {
+    $("vcard").classList.remove("show");
+    $("michint").textContent = "Toca y habla — escucha al instante";
+    toastMsg("✓ Guardado y sincronizado");
+  }
+</script>
+
+</body>
+</html>

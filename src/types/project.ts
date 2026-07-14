@@ -119,7 +119,8 @@ export interface ProjectNote {
   updated_at?: string;
 }
 
-export type PhotoTag = "antes" | "avance" | "despues" | "problema" | "material";
+// Tags conocidos con autocompletado + cualquier etiqueta custom del usuario
+export type PhotoTag = "antes" | "avance" | "despues" | "problema" | "material" | (string & {});
 
 export interface ProjectPhoto {
   id: string;
@@ -127,6 +128,7 @@ export interface ProjectPhoto {
   url: string;
   caption: string | null;
   tag: PhotoTag;
+  album: string | null;
   taken_at: string;
   created_at?: string;
 }

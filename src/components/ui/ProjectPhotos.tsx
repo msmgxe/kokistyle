@@ -7,13 +7,12 @@ import { useGalleryPicker } from "@/src/components/ui/useGalleryPicker";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
 import {
-  PHOTOS_BUCKET, PHOTO_TAG_ORDER, PHOTO_TAG_COLORS, uploadProjectPhoto,
+  PHOTOS_BUCKET, PHOTO_TAG_ORDER, photoTagColor, uploadProjectPhoto,
 } from "@/src/lib/photos";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import type { ProjectPhoto, PhotoTag } from "@/src/types/project";
 
-const TAG_COLORS = PHOTO_TAG_COLORS;
 const TAG_ORDER = PHOTO_TAG_ORDER;
 const BUCKET = PHOTOS_BUCKET;
 
@@ -33,10 +32,11 @@ export default function ProjectPhotos({
   const tf = t.panel.fotos;
   const EN = language === "en";
 
-  const TAG_LABELS: Record<PhotoTag, string> = {
+  const KNOWN_LABELS: Record<string, string> = {
     antes: tf.tagAntes, avance: tf.tagAvance, despues: tf.tagDespues,
     problema: tf.tagProblema, material: tf.tagMaterial,
   };
+  const tagLabel = (t: string) => KNOWN_LABELS[t] ?? t.toUpperCase();
 
   const [selProject, setSelProject] = useState<string>(projectId ?? projects?.[0]?.id ?? "");
   const [photos, setPhotos] = useState<ProjectPhoto[]>([]);
@@ -47,10 +47,16 @@ export default function ProjectPhotos({
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
   const [tag, setTag] = useState<PhotoTag>("avance");
+  const [customTag, setCustomTag] = useState<string | null>(null); // null = chip conocido activo
+  const [album, setAlbum] = useState("");
+  const [albumFilter, setAlbumFilter] = useState<string>("all");
+
   const [uploadStep, setUploadStep] = useState(0);
 
   const [viewIdx, setViewIdx] = useState<number | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({ caption: "", tag: "avance", customTag: null as string | null, album: "" });
   const [camOpen, setCamOpen] = useState(false);
   const camFallbackRef = useRef<HTMLInputElement>(null);
   const {
@@ -101,7 +107,11 @@ export default function ProjectPhotos({
     setPending([]);
     setPreviews([]);
     setUploadStep(0);
+    setCustomTag(null);
   };
+
+  const effectiveTag = (base: string, custom: string | null) =>
+    custom !== null && custom.trim() ? custom.trim().toLowerCase() : base;
 
   /* ── Subida (comprime + Storage + fila) ────────────────────────────────── */
   const upload = async () => {
@@ -111,7 +121,7 @@ export default function ProjectPhotos({
       setUploadStep(i + 1);
       const file = pending[i];
       try {
-        await uploadProjectPhoto({ projectId: activeProject, file, caption, tag });
+        await uploadProjectPhoto({ projectId: activeProject, file, caption, tag: effectiveTag(tag, customTag), album });
         okCount++;
       } catch {
         toast(tf.uploadError);
@@ -145,9 +155,45 @@ export default function ProjectPhotos({
   /* ── Derivados ─────────────────────────────────────────────────────────── */
   // Grilla continua: más reciente primero, fluye izq→der y arriba→abajo (la query ya ordena desc)
   const visible = useMemo(
-    () => photos.filter(p => filter === "all" || p.tag === filter),
-    [photos, filter]
+    () => photos
+      .filter(p => filter === "all" || p.tag === filter)
+      .filter(p => albumFilter === "all" || (albumFilter === "__none__" ? !p.album : p.album === albumFilter)),
+    [photos, filter, albumFilter]
   );
+  const albums = useMemo(
+    () => [...new Set(photos.map(p => p.album).filter((a): a is string => !!a))].sort(),
+    [photos]
+  );
+  const customTags = useMemo(
+    () => [...new Set(photos.map(p => p.tag).filter(t => !(PHOTO_TAG_ORDER as string[]).includes(t)))],
+    [photos]
+  );
+
+  /* ── Editar foto (tag / comentario / carpeta) ──────────────────────────── */
+  const openEdit = (p: ProjectPhoto) => {
+    const isKnown = (PHOTO_TAG_ORDER as string[]).includes(p.tag);
+    setEditData({
+      caption: p.caption ?? "",
+      tag: isKnown ? p.tag : "avance",
+      customTag: isKnown ? null : p.tag,
+      album: p.album ?? "",
+    });
+    setEditMode(true);
+  };
+
+  const saveEdit = async (p: ProjectPhoto) => {
+    const newTag = effectiveTag(editData.tag, editData.customTag);
+    const patch = {
+      caption: editData.caption.trim() || null,
+      tag: newTag,
+      album: editData.album.trim() || null,
+    };
+    const { error } = await supabase.from("project_photos").update(patch).eq("id", p.id);
+    if (error) { toast(tf.updateError); return; }
+    setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, ...patch } : x));
+    setEditMode(false);
+    toast(tf.updated);
+  };
 
   const fmtDate = (iso: string) => {
     const today = toIso(new Date());
@@ -236,16 +282,44 @@ export default function ProjectPhotos({
             {TAG_ORDER.map(tg => (
               <button
                 key={tg}
-                onClick={() => setTag(tg)}
+                onClick={() => { setTag(tg); setCustomTag(null); }}
                 className="rounded-full border-2 px-3.5 py-1.5 text-[12px] font-bold transition"
-                style={tag === tg
-                  ? { background: TAG_COLORS[tg], borderColor: TAG_COLORS[tg], color: "#fff" }
+                style={customTag === null && tag === tg
+                  ? { background: photoTagColor(tg), borderColor: photoTagColor(tg), color: "#fff" }
                   : { borderColor: "#E6DDCB", color: "#5C6A6E", background: "#fff" }}
               >
-                {TAG_LABELS[tg]}
+                {tagLabel(tg)}
               </button>
             ))}
+            <button
+              onClick={() => setCustomTag(prev => prev === null ? "" : null)}
+              className="rounded-full border-2 border-dashed px-3.5 py-1.5 text-[12px] font-bold transition"
+              style={customTag !== null
+                ? { borderColor: "#16323D", color: "#16323D", background: "#F7F3EA" }
+                : { borderColor: "#D7CBB3", color: "#97A1A0", background: "#fff" }}
+            >
+              {tf.tagCustom}
+            </button>
           </div>
+          {customTag !== null && (
+            <input
+              autoFocus
+              value={customTag}
+              onChange={e => setCustomTag(e.target.value)}
+              placeholder={tf.customTagPlaceholder}
+              className="mt-2 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-2.5 text-[14px] uppercase text-[#16323D] placeholder:normal-case placeholder:text-[#9CABB0] focus:border-[#395886] focus:outline-none"
+            />
+          )}
+          <input
+            value={album}
+            onChange={e => setAlbum(e.target.value)}
+            list="albums-list"
+            placeholder={tf.albumPlaceholder}
+            className="mt-2 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-2.5 text-[14px] text-[#16323D] placeholder:text-[#9CABB0] focus:border-[#395886] focus:outline-none"
+          />
+          <datalist id="albums-list">
+            {albums.map(a => <option key={a} value={a} />)}
+          </datalist>
           <div className="mt-4 flex gap-2.5">
             <button
               onClick={cancelComposer}
@@ -267,7 +341,7 @@ export default function ProjectPhotos({
         </div>
       )}
 
-      {/* ── Filtros ── */}
+      {/* ── Filtros por etiqueta (conocidas + custom) ── */}
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
         <button
           onClick={() => setFilter("all")}
@@ -277,7 +351,7 @@ export default function ProjectPhotos({
         >
           {tf.all} · {photos.length}
         </button>
-        {TAG_ORDER.map(tg => {
+        {[...TAG_ORDER, ...customTags].map(tg => {
           const n = photos.filter(p => p.tag === tg).length;
           if (n === 0) return null;
           return (
@@ -286,14 +360,35 @@ export default function ProjectPhotos({
               onClick={() => setFilter(tg)}
               className="shrink-0 rounded-full border px-4 py-2 text-[13px] font-bold transition"
               style={filter === tg
-                ? { background: TAG_COLORS[tg], borderColor: TAG_COLORS[tg], color: "#fff" }
+                ? { background: photoTagColor(tg), borderColor: photoTagColor(tg), color: "#fff" }
                 : { borderColor: "#E6DDCB", background: "#fff", color: "#5C6A6E" }}
             >
-              {TAG_LABELS[tg]} · {n}
+              {tagLabel(tg)} · {n}
             </button>
           );
         })}
       </div>
+
+      {/* ── Filtro por carpeta (solo si existen) ── */}
+      {albums.length > 0 && (
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {[
+            { id: "all", label: tf.allAlbums },
+            ...albums.map(a => ({ id: a, label: `📁 ${a}` })),
+            { id: "__none__", label: tf.noAlbum },
+          ].map(a => (
+            <button
+              key={a.id}
+              onClick={() => setAlbumFilter(a.id)}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[12px] font-bold transition ${
+                albumFilter === a.id ? "border-[#B98A2F] bg-[#FBF5E6] text-[#7A6230]" : "border-[#E6DDCB] bg-white text-[#97A1A0]"
+              }`}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Galería por fecha ── */}
       {loading ? (
@@ -307,18 +402,23 @@ export default function ProjectPhotos({
           {visible.map((p, idx) => (
             <button
               key={p.id}
-              onClick={() => { setViewIdx(idx); setConfirmDel(false); }}
+              onClick={() => { setViewIdx(idx); setConfirmDel(false); setEditMode(false); }}
               className="relative aspect-square overflow-hidden rounded-xl bg-[#ECE3D1] transition active:scale-[0.97]"
-              aria-label={p.caption ?? TAG_LABELS[p.tag]}
+              aria-label={p.caption ?? tagLabel(p.tag)}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.url} alt={p.caption ?? ""} loading="lazy" className="h-full w-full object-cover" />
               <span
                 className="absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white"
-                style={{ background: TAG_COLORS[p.tag] }}
+                style={{ background: photoTagColor(p.tag) }}
               >
-                {TAG_LABELS[p.tag]}
+                {tagLabel(p.tag)}
               </span>
+              {p.album && (
+                <span className="absolute right-1.5 top-1.5 rounded-full bg-[#FBF5E6]/95 px-1.5 py-0.5 text-[8.5px] font-bold text-[#7A6230]">
+                  📁
+                </span>
+              )}
               <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-2 pb-1 pt-4 text-left text-[9.5px] font-bold text-white">
                 {fmtDate(p.taken_at)}{activeProject === "all" ? ` · ${projTitle(p.project_id)}` : ""}
               </span>
@@ -330,17 +430,23 @@ export default function ProjectPhotos({
       {/* ── Visor ── */}
       {current && (
         <div className="fixed inset-0 z-[300] flex flex-col bg-[#0A161C]/97">
-          <div className="flex items-center gap-3 px-4 py-3.5" style={{ paddingTop: "calc(14px + env(safe-area-inset-top))" }}>
+          <div className="flex items-center gap-2.5 px-4 py-3.5" style={{ paddingTop: "calc(14px + env(safe-area-inset-top))" }}>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[15px] font-bold text-white">
-                {projTitle(current.project_id) || TAG_LABELS[current.tag]}
+                {projTitle(current.project_id) || tagLabel(current.tag)}
               </div>
-              <div className="text-[12px] text-[#A8C0BC]">
-                {fmtDate(current.taken_at)} · {(viewIdx ?? 0) + 1} {tf.of} {visible.length}
+              <div className="truncate text-[12px] text-[#A8C0BC]">
+                {fmtDate(current.taken_at)}{current.album ? ` · 📁 ${current.album}` : ""} · {(viewIdx ?? 0) + 1} {tf.of} {visible.length}
               </div>
             </div>
             <button
-              onClick={() => setViewIdx(null)}
+              onClick={() => (editMode ? setEditMode(false) : openEdit(current))}
+              className={`grid h-10 shrink-0 place-items-center rounded-xl px-3 text-[13px] font-bold ${editMode ? "bg-white text-[#16323D]" : "bg-white/12 text-white"}`}
+            >
+              {tf.edit}
+            </button>
+            <button
+              onClick={() => { setViewIdx(null); setEditMode(false); setConfirmDel(false); }}
               className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/12 text-white"
               aria-label="Close"
             >
@@ -351,35 +457,121 @@ export default function ProjectPhotos({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={current.url} alt={current.caption ?? ""} className="max-h-full max-w-full rounded-xl object-contain" />
           </div>
-          {current.caption && (
-            <p className="px-6 pt-3 text-center text-[14px] leading-snug text-[#E8EDEA]">{current.caption}</p>
+          {editMode ? (
+            /* ── Edición: comentario, etiqueta (con custom) y carpeta ── */
+            <div className="space-y-2 px-5 pt-3">
+              <input
+                value={editData.caption}
+                onChange={e => setEditData(d => ({ ...d, caption: e.target.value }))}
+                placeholder={tf.captionPlaceholder}
+                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[#16323D] placeholder:text-[#9CABB0] focus:outline-none"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {TAG_ORDER.map(tg => (
+                  <button
+                    key={tg}
+                    onClick={() => setEditData(d => ({ ...d, tag: tg, customTag: null }))}
+                    className="rounded-full border-2 px-3 py-1 text-[11px] font-bold transition"
+                    style={editData.customTag === null && editData.tag === tg
+                      ? { background: photoTagColor(tg), borderColor: photoTagColor(tg), color: "#fff" }
+                      : { borderColor: "rgba(255,255,255,.3)", color: "rgba(255,255,255,.75)", background: "transparent" }}
+                  >
+                    {tagLabel(tg)}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setEditData(d => ({ ...d, customTag: d.customTag === null ? "" : null }))}
+                  className="rounded-full border-2 border-dashed px-3 py-1 text-[11px] font-bold transition"
+                  style={editData.customTag !== null
+                    ? { borderColor: "#fff", color: "#fff" }
+                    : { borderColor: "rgba(255,255,255,.35)", color: "rgba(255,255,255,.6)" }}
+                >
+                  {tf.tagCustom}
+                </button>
+              </div>
+              {editData.customTag !== null && (
+                <input
+                  autoFocus
+                  value={editData.customTag}
+                  onChange={e => setEditData(d => ({ ...d, customTag: e.target.value }))}
+                  placeholder={tf.customTagPlaceholder}
+                  className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] uppercase text-[#16323D] placeholder:normal-case placeholder:text-[#9CABB0] focus:outline-none"
+                />
+              )}
+              <input
+                value={editData.album}
+                onChange={e => setEditData(d => ({ ...d, album: e.target.value }))}
+                list="albums-list-edit"
+                placeholder={tf.albumPlaceholder}
+                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[#16323D] placeholder:text-[#9CABB0] focus:outline-none"
+              />
+              <datalist id="albums-list-edit">
+                {albums.map(a => <option key={a} value={a} />)}
+              </datalist>
+              <button
+                onClick={() => saveEdit(current)}
+                className="w-full rounded-xl bg-[#4F8A63] py-3 text-[14px] font-bold text-white"
+              >
+                {tf.saveChanges}
+              </button>
+            </div>
+          ) : (
+            <>
+              {current.caption && (
+                <p className="px-6 pt-3 text-center text-[14px] leading-snug text-[#E8EDEA]">{current.caption}</p>
+              )}
+              <span
+                className="mx-auto mt-2 w-fit rounded-full px-3 py-1 text-[10px] font-extrabold tracking-wide text-white"
+                style={{ background: photoTagColor(current.tag) }}
+              >
+                {tagLabel(current.tag)}
+              </span>
+            </>
           )}
-          <span
-            className="mx-auto mt-2 w-fit rounded-full px-3 py-1 text-[10px] font-extrabold tracking-wide text-white"
-            style={{ background: TAG_COLORS[current.tag] }}
-          >
-            {TAG_LABELS[current.tag]}
-          </span>
           <div className="flex gap-2.5 px-4 py-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom))" }}>
             <button
-              onClick={() => { setViewIdx(((viewIdx ?? 0) - 1 + visible.length) % visible.length); setConfirmDel(false); }}
+              onClick={() => { setViewIdx(((viewIdx ?? 0) - 1 + visible.length) % visible.length); setConfirmDel(false); setEditMode(false); }}
               className="flex-1 rounded-xl bg-white/12 py-3.5 text-[14px] font-bold text-white"
             >
               {tf.prev}
             </button>
             <button
-              onClick={() => confirmDel ? deletePhoto(current) : setConfirmDel(true)}
-              className={`rounded-xl px-4 py-3.5 text-[13px] font-bold text-white transition ${confirmDel ? "bg-[#B0492F]" : "bg-[#B0492F]/60"}`}
+              onClick={() => setConfirmDel(true)}
+              aria-label={tf.deleteQuestion}
+              className="rounded-xl bg-[#B0492F]/70 px-4 py-3.5 text-white transition hover:bg-[#B0492F]"
             >
-              {confirmDel ? tf.confirmDelete : <Trash2 size={16} />}
+              <Trash2 size={16} />
             </button>
             <button
-              onClick={() => { setViewIdx(((viewIdx ?? 0) + 1) % visible.length); setConfirmDel(false); }}
+              onClick={() => { setViewIdx(((viewIdx ?? 0) + 1) % visible.length); setConfirmDel(false); setEditMode(false); }}
               className="flex-1 rounded-xl bg-white/12 py-3.5 text-[14px] font-bold text-white"
             >
               {tf.next}
             </button>
           </div>
+
+          {/* Pregunta de seguridad antes de eliminar */}
+          {confirmDel && (
+            <div className="absolute inset-0 z-10 grid place-items-center bg-black/70 px-6">
+              <div className="w-full max-w-[340px] rounded-2xl bg-white p-5 text-center">
+                <p className="text-[15px] font-bold leading-snug text-[#16323D]">{tf.deleteQuestion}</p>
+                <div className="mt-4 flex gap-2.5">
+                  <button
+                    onClick={() => setConfirmDel(false)}
+                    className="flex-1 rounded-xl bg-[#ECE3D1] py-3 text-[13px] font-bold text-[#5C6A6E]"
+                  >
+                    {tf.noKeep}
+                  </button>
+                  <button
+                    onClick={() => deletePhoto(current)}
+                    className="flex-1 rounded-xl bg-[#B0492F] py-3 text-[13px] font-bold text-white"
+                  >
+                    {tf.yesDelete}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

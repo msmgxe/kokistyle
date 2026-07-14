@@ -439,3 +439,6 @@ CREATE TABLE IF NOT EXISTS project_photos (
 CREATE INDEX IF NOT EXISTS project_photos_project_idx ON project_photos(project_id, taken_at DESC);
 ALTER TABLE project_photos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON project_photos FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Fotos: carpeta opcional para organizar (jul 2026)
+ALTER TABLE project_photos ADD COLUMN IF NOT EXISTS album TEXT;

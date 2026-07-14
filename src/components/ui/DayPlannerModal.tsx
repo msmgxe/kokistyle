@@ -1228,7 +1228,7 @@ export default function DayPlannerModal({
     }>
 
       {/* ── Top bar ────────────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 items-center gap-4 border-b border-[#D5DEEF] bg-white px-5 py-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[#D5DEEF] bg-white px-4 py-3">
         {!embedded && (
           <button
             onClick={onClose}
@@ -1276,10 +1276,11 @@ export default function DayPlannerModal({
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex min-h-0 flex-1 gap-4 overflow-y-hidden p-4" style={{ minHeight: embedded ? "520px" : undefined }}>
+          {/* En móvil se apila (pool arriba, días abajo) y la página hace el scroll; en lg vuelve al layout lado a lado */}
+          <div className="flex flex-col gap-4 p-3 lg:min-h-0 lg:flex-1 lg:flex-row lg:overflow-y-hidden lg:p-4" style={{ minHeight: embedded ? "520px" : undefined }}>
 
             {/* Left: Pool */}
-            <div className="flex w-[280px] shrink-0 flex-col gap-2">
+            <div className="flex w-full shrink-0 flex-col gap-2 lg:w-[280px]">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
                   {EN ? "Item Pool" : "Pool de Items"}
@@ -1302,7 +1303,7 @@ export default function DayPlannerModal({
                 />
               ) : null}
 
-              <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
+              <div className="max-h-[300px] overflow-y-auto pr-0.5 lg:max-h-none lg:min-h-0 lg:flex-1">
                 <ItemPool
                   items={poolItems}
                   EN={EN}
@@ -1318,7 +1319,7 @@ export default function DayPlannerModal({
             </div>
 
             {/* Right: Day columns */}
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-hidden">
+            <div className="flex min-h-0 flex-col gap-2 lg:flex-1 lg:overflow-y-hidden">
               <div className="flex shrink-0 items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
                   {EN ? "Schedule" : "Cronograma"} — {dayCapacity}h/{EN ? "day" : "día"} capacity
@@ -1366,7 +1367,7 @@ export default function DayPlannerModal({
       )}
 
       {/* ── Footer legend ───────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 items-center gap-5 border-t border-[#D5DEEF] bg-white px-5 py-2 text-[10px] text-[#5C6A6E]">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-[#D5DEEF] bg-white px-4 py-2 text-[10px] text-[#5C6A6E]">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-2 rounded-full bg-[#4F8A63]" />
           {EN ? "On track" : "Capacidad OK"}
