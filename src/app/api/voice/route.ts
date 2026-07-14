@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 
 // Hoy en hora de Florida — el servidor corre en UTC y por la tarde ya sería "mañana"
 const TODAY = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
@@ -148,8 +149,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ type: "question", text: language === "en" ? "How can I help?" : "¿En qué te ayudo?" });
     }
 
+    // Proveedor explícito → usa ANTHROPIC_API_KEY directo (el string "anthropic/..." iba
+    // por el AI Gateway de Vercel, nunca configurado — Katy fallaba en cada comando)
     const { text } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
+      model: anthropic("claude-haiku-4-5"),
       system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects),
       messages: messages.map(m => ({
         role:    m.role as "user" | "assistant",
@@ -174,6 +177,7 @@ export async function POST(req: NextRequest) {
       : isModel
       ? (language === "en" ? "AI model unavailable." : "Modelo no disponible.")
       : (language === "en" ? "Connection error. Try again." : "Error de conexión. Intenta de nuevo.");
-    return NextResponse.json({ type: "question", text: userMsg });
+    // type "error" → el cliente ofrece guardar el dictado como pendiente editable en vez de morir aquí
+    return NextResponse.json({ type: "error", text: userMsg });
   }
 }

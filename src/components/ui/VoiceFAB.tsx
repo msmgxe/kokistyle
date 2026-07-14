@@ -239,7 +239,7 @@ async function tts(text: string, lang: "en" | "es"): Promise<void> {
     utt.pitch  = 1.1;
     const voice = pickVoice(lang);
     if (voice) utt.voice = voice;
-    utt.onend   = () => { primeMic().then(() => setTimeout(resolve, IS_ANDROID() ? 1200 : 600)); };
+    utt.onend   = () => { primeMic().then(() => setTimeout(resolve, IS_ANDROID() ? 700 : 400)); };
     utt.onerror = () => setTimeout(resolve, 300);
     window.speechSynthesis.speak(utt);
   });
@@ -589,6 +589,19 @@ export default function VoiceFAB() {
         result = { type: "action", action: localDetect(lastUser, ctx), data: {} };
       }
 
+      if (result.type === "error") {
+        // La IA no respondió — el dictado no se pierde: pendiente editable en la agenda
+        const lastUser = [...apiHistRef.current].reverse().find(m => m.role === "user")?.content ?? "";
+        const data: Record<string, unknown> = { event_type: "task", title: lastUser, event_date: TODAY(), event_time: "09:00" };
+        setPendingAction({ action: "create_agenda_event", data });
+        setEditableData({ ...data });
+        push("assistant", language === "en"
+          ? "AI is unreachable — review and save your dictation as an editable to-do:"
+          : "No pude conectar con la IA — revisa y guarda tu dictado como pendiente editable:");
+        setPhase("confirm");
+        return;
+      }
+
       if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
         const action = result.action;
         const data: Record<string, unknown> = { ...result.data };
@@ -682,6 +695,20 @@ export default function VoiceFAB() {
         } catch {
           const lastUser = [...apiHist].reverse().find(m => m.role === "user")?.content ?? "";
           result = { type: "action", action: localDetect(lastUser, ctx), data: {} };
+        }
+
+        if (result.type === "error") {
+          // La IA no respondió — el dictado no se pierde: pendiente editable en la agenda
+          const lastUser = [...apiHist].reverse().find(m => m.role === "user")?.content ?? "";
+          const data: Record<string, unknown> = { event_type: "task", title: lastUser, event_date: TODAY(), event_time: "09:00" };
+          setPendingAction({ action: "create_agenda_event", data });
+          setEditableData({ ...data });
+          await say(language === "en"
+            ? "AI is unreachable. Review and save your dictation:"
+            : "No pude conectar con la IA. Revisa y guarda tu dictado:");
+          if (!activeRef.current) return;
+          setPhase("confirm");
+          return;
         }
 
         if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {

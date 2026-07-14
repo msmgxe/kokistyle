@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 
 export const maxDuration = 60;
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     const bytes = new Uint8Array(await imgRes.arrayBuffer());
 
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
+      model: anthropic("claude-sonnet-4-5"),
       messages: [
         {
           role: "user",

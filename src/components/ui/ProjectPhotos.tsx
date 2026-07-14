@@ -143,18 +143,11 @@ export default function ProjectPhotos({
   };
 
   /* ── Derivados ─────────────────────────────────────────────────────────── */
+  // Grilla continua: más reciente primero, fluye izq→der y arriba→abajo (la query ya ordena desc)
   const visible = useMemo(
     () => photos.filter(p => filter === "all" || p.tag === filter),
     [photos, filter]
   );
-  const byDate = useMemo(() => {
-    const m = new Map<string, ProjectPhoto[]>();
-    for (const p of visible) {
-      if (!m.has(p.taken_at)) m.set(p.taken_at, []);
-      m.get(p.taken_at)!.push(p);
-    }
-    return [...m.entries()];
-  }, [visible]);
 
   const fmtDate = (iso: string) => {
     const today = toIso(new Date());
@@ -310,38 +303,28 @@ export default function ProjectPhotos({
       ) : visible.length === 0 ? (
         <p className="py-12 text-center text-[14px] italic text-[#97A1A0]">{tf.empty}</p>
       ) : (
-        byDate.map(([iso, phs]) => (
-          <div key={iso} className="mt-4">
-            <div className="mb-2 flex items-baseline gap-2 px-0.5">
-              <span className="text-[14px] font-bold text-[#16323D]">{fmtDate(iso)}</span>
-              <span className="text-[12px] text-[#97A1A0]">· {phs.length} {tf.photosWord}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-6">
-              {phs.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => { setViewIdx(visible.indexOf(p)); setConfirmDel(false); }}
-                  className="relative aspect-square overflow-hidden rounded-xl bg-[#ECE3D1] transition active:scale-[0.97]"
-                  aria-label={p.caption ?? TAG_LABELS[p.tag]}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.url} alt={p.caption ?? ""} loading="lazy" className="h-full w-full object-cover" />
-                  <span
-                    className="absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white"
-                    style={{ background: TAG_COLORS[p.tag] }}
-                  >
-                    {TAG_LABELS[p.tag]}
-                  </span>
-                  {activeProject === "all" && (
-                    <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-2 pb-1.5 pt-4 text-left text-[10px] font-bold text-white">
-                      {projTitle(p.project_id)}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))
+        <div className="mt-4 grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-6">
+          {visible.map((p, idx) => (
+            <button
+              key={p.id}
+              onClick={() => { setViewIdx(idx); setConfirmDel(false); }}
+              className="relative aspect-square overflow-hidden rounded-xl bg-[#ECE3D1] transition active:scale-[0.97]"
+              aria-label={p.caption ?? TAG_LABELS[p.tag]}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.url} alt={p.caption ?? ""} loading="lazy" className="h-full w-full object-cover" />
+              <span
+                className="absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white"
+                style={{ background: TAG_COLORS[p.tag] }}
+              >
+                {TAG_LABELS[p.tag]}
+              </span>
+              <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-2 pb-1 pt-4 text-left text-[9.5px] font-bold text-white">
+                {fmtDate(p.taken_at)}{activeProject === "all" ? ` · ${projTitle(p.project_id)}` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
       )}
 
       {/* ── Visor ── */}
