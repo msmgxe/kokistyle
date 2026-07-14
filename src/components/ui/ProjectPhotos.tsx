@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { X, Trash2 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
@@ -49,9 +49,6 @@ export default function ProjectPhotos({
 
   const [viewIdx, setViewIdx] = useState<number | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
-
-  const camRef = useRef<HTMLInputElement>(null);
-  const galRef = useRef<HTMLInputElement>(null);
 
   const activeProject = projectId ?? selProject;
   const projTitle = useCallback(
@@ -164,11 +161,6 @@ export default function ProjectPhotos({
 
   return (
     <div>
-      <input ref={camRef} type="file" accept="image/*" capture="environment" hidden
-        onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
-      <input ref={galRef} type="file" accept="image/*" multiple hidden
-        onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
-
       {/* ── Barra de captura ── */}
       <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
         {!projectId && projects && (
@@ -184,19 +176,18 @@ export default function ProjectPhotos({
             <option value="all">{tf.allProjects}</option>
           </select>
         )}
+        {/* labels nativos — el click() programático sobre inputs display:none se ignora en varios Android */}
         <div className="flex gap-2.5">
-          <button
-            onClick={() => camRef.current?.click()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#B0492F] px-3 py-3.5 text-[15px] font-bold text-white shadow-md transition hover:bg-[#983C25] active:scale-[0.98]"
-          >
+          <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#B0492F] px-3 py-3.5 text-[15px] font-bold text-white shadow-md transition hover:bg-[#983C25] active:scale-[0.98]">
+            <input type="file" accept="image/*" capture="environment" className="sr-only"
+              onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
             {tf.takePhoto}
-          </button>
-          <button
-            onClick={() => galRef.current?.click()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[#16323D] transition hover:bg-[#ECE3D1] active:scale-[0.98]"
-          >
+          </label>
+          <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[#16323D] transition hover:bg-[#ECE3D1] active:scale-[0.98]">
+            <input type="file" accept="image/*" multiple className="sr-only"
+              onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
             {tf.fromGallery}
-          </button>
+          </label>
         </div>
       </div>
 

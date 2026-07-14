@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Camera, Images } from "lucide-react";
 import { logActivity } from "@/src/lib/activity";
 import { PHOTO_TAG_ORDER, PHOTO_TAG_COLORS, uploadProjectPhoto } from "@/src/lib/photos";
@@ -25,8 +25,6 @@ export default function QuickPhoto({
     problema: tf.tagProblema, material: tf.tagMaterial,
   };
 
-  const camRef = useRef<HTMLInputElement>(null);
-  const galRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
@@ -76,17 +74,15 @@ export default function QuickPhoto({
 
   return (
     <>
-      <button
-        onClick={() => camRef.current?.click()}
+      {/* label nativo — el click() programático sobre inputs display:none se ignora en varios Android */}
+      <label
         aria-label={`${tf.takePhoto} — ${projectTitle}`}
-        className="grid size-9 shrink-0 place-items-center rounded-xl border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#FDF0ED] active:scale-95"
+        className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#FDF0ED] active:scale-95"
       >
+        <input type="file" accept="image/*" capture="environment" className="sr-only"
+          onChange={e => { pick(e.target.files); e.target.value = ""; }} />
         <Camera size={16} />
-      </button>
-      <input ref={camRef} type="file" accept="image/*" capture="environment" hidden
-        onChange={e => { pick(e.target.files); e.target.value = ""; }} />
-      <input ref={galRef} type="file" accept="image/*" multiple hidden
-        onChange={e => { pick(e.target.files); e.target.value = ""; }} />
+      </label>
 
       {pending.length > 0 && (
         <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[#16323D]/60 backdrop-blur-sm sm:items-center">
@@ -96,12 +92,11 @@ export default function QuickPhoto({
                 <div className="truncate text-[15px] font-bold text-[#16323D]">📷 {projectTitle}</div>
                 <div className="text-[12px] text-[#97A1A0]">{tf.title}</div>
               </div>
-              <button
-                onClick={() => galRef.current?.click()}
-                className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-[12px] font-bold text-[#16323D]"
-              >
+              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-[12px] font-bold text-[#16323D]">
+                <input type="file" accept="image/*" multiple className="sr-only"
+                  onChange={e => { pick(e.target.files); e.target.value = ""; }} />
                 <Images size={14} /> {tf.fromGallery}
-              </button>
+              </label>
             </div>
 
             <div className={`grid gap-2 ${previews.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
