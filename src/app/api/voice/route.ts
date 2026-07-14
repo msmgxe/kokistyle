@@ -154,15 +154,25 @@ export async function POST(req: NextRequest) {
     const { text } = await generateText({
       model: anthropic("claude-haiku-4-5"),
       system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects),
+      temperature: 0,
       messages: messages.map(m => ({
-        role:    m.role as "user" | "assistant",
-        content: m.content,
+        role: m.role as "user" | "assistant",
+        // El historial del asistente va como JSON — si el modelo ve prosa en sus turnos
+        // previos, imita el formato y rompe el contrato de salida
+        content:
+          m.role === "assistant" && !m.content.trim().startsWith("{")
+            ? JSON.stringify({ type: "question", text: m.content })
+            : m.content,
       })),
     });
 
     const raw   = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
     const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return NextResponse.json({ type: "question", text: language === "en" ? "Can you repeat that?" : "¿Puedes repetirlo?" });
+    if (!match) {
+      // Llegó prosa sin JSON — úsala como pregunta en vez de caer en el bucle "¿Puedes repetirlo?"
+      const fallbackText = raw.slice(0, 220) || (language === "en" ? "Can you repeat that?" : "¿Puedes repetirlo?");
+      return NextResponse.json({ type: "question", text: fallbackText });
+    }
 
     const parsed = JSON.parse(match[0]);
     return NextResponse.json(parsed);
