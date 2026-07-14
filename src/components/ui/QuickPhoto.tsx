@@ -5,6 +5,7 @@ import { Camera, Images } from "lucide-react";
 import { logActivity } from "@/src/lib/activity";
 import { PHOTO_TAG_ORDER, PHOTO_TAG_COLORS, uploadProjectPhoto } from "@/src/lib/photos";
 import CameraCapture from "@/src/components/ui/CameraCapture";
+import { useGalleryPicker } from "@/src/components/ui/useGalleryPicker";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import type { PhotoTag } from "@/src/types/project";
@@ -33,18 +34,9 @@ export default function QuickPhoto({
   const [uploadStep, setUploadStep] = useState(0);
   const [camOpen, setCamOpen] = useState(false);
   const fallbackRef = useRef<HTMLInputElement>(null);
-  const galRef = useRef<HTMLInputElement>(null);
-
-  // showPicker() lanza errores atrapables (los pickers rotos de algunos Android fallan mudos); click() como fallback
-  const openGallery = () => {
-    const el = galRef.current;
-    if (!el) return;
-    try {
-      el.showPicker();
-    } catch (e) {
-      try { el.click(); } catch { toast(`${tf.uploadError} (${(e as Error)?.name ?? "picker"})`); }
-    }
-  };
+  const {
+    imgInputRef, anyInputRef, openGallery, openFileManager, fallbackVisible, dismissFallback,
+  } = useGalleryPicker(() => toast(tf.pickerBlocked));
 
   const pick = (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
@@ -123,9 +115,20 @@ export default function QuickPhoto({
               >
                 <Images size={14} /> {tf.fromGallery}
               </button>
-              <input ref={galRef} type="file" accept="image/*" multiple className="sr-only"
-                onChange={e => { pick(e.target.files); e.target.value = ""; }} />
+              <input ref={imgInputRef} type="file" accept="image/*" multiple className="sr-only"
+                onChange={e => { pick(e.target.files); e.target.value = ""; dismissFallback(); }} />
+              <input ref={anyInputRef} type="file" multiple className="sr-only"
+                onChange={e => { pick(e.target.files); e.target.value = ""; dismissFallback(); }} />
             </div>
+
+            {fallbackVisible && (
+              <button
+                onClick={openFileManager}
+                className="mb-2.5 w-full rounded-xl border-2 border-dashed border-[#B98A2F] bg-[#FBF5E6] px-3 py-2.5 text-[12px] font-bold text-[#7A6230] transition active:scale-[0.98]"
+              >
+                {tf.pickerRetry}
+              </button>
+            )}
 
             <div className={`grid gap-2 ${previews.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
               {previews.map((src, i) => (

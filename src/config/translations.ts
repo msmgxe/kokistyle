@@ -876,6 +876,8 @@ export const translations = {
         camDenied: "Camera permission denied — allow it for this site in your browser settings",
         camUnavailable: "No camera available on this device",
         camError: "Could not open the camera",
+        pickerRetry: "📁 Didn't open? Try the file manager",
+        pickerBlocked: "Android blocked the picker — in Settings → Apps → your browser → Permissions, allow Photos/Files",
       },
       globalContacts: {
         title: "Contacts",
@@ -1830,6 +1832,8 @@ export const translations = {
         camDenied: "Permiso de cámara denegado — actívalo para este sitio en la configuración del navegador",
         camUnavailable: "No hay cámara disponible en este dispositivo",
         camError: "No se pudo abrir la cámara",
+        pickerRetry: "📁 ¿No se abrió? Probar con el gestor de archivos",
+        pickerBlocked: "Android bloqueó el selector — en Ajustes → Aplicaciones → tu navegador → Permisos, permite Fotos/Archivos",
       },
       globalContacts: {
         title: "Contactos",

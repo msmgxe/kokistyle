@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X, Trash2 } from "lucide-react";
 import CameraCapture from "@/src/components/ui/CameraCapture";
+import { useGalleryPicker } from "@/src/components/ui/useGalleryPicker";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
 import {
@@ -52,20 +53,11 @@ export default function ProjectPhotos({
   const [confirmDel, setConfirmDel] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
   const camFallbackRef = useRef<HTMLInputElement>(null);
-  const galRef = useRef<HTMLInputElement>(null);
+  const {
+    imgInputRef, anyInputRef, openGallery, openFileManager, fallbackVisible, dismissFallback,
+  } = useGalleryPicker(() => toast(tf.pickerBlocked));
 
   const activeProject = projectId ?? selProject;
-
-  // showPicker() lanza errores atrapables (los pickers rotos de algunos Android fallan mudos); click() como fallback
-  const openGallery = () => {
-    const el = galRef.current;
-    if (!el) return;
-    try {
-      el.showPicker();
-    } catch (e) {
-      try { el.click(); } catch { toast(`${tf.uploadError} (${(e as Error)?.name ?? "picker"})`); }
-    }
-  };
   const projTitle = useCallback(
     (id: string) => projects?.find(p => p.id === id)?.title.split(" — ")[0] ?? "",
     [projects]
@@ -210,8 +202,18 @@ export default function ProjectPhotos({
             {tf.fromGallery}
           </button>
         </div>
-        <input ref={galRef} type="file" accept="image/*" multiple className="sr-only"
-          onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
+        {fallbackVisible && (
+          <button
+            onClick={openFileManager}
+            className="mt-2.5 w-full rounded-xl border-2 border-dashed border-[#B98A2F] bg-[#FBF5E6] px-3 py-3 text-[13px] font-bold text-[#7A6230] transition active:scale-[0.98]"
+          >
+            {tf.pickerRetry}
+          </button>
+        )}
+        <input ref={imgInputRef} type="file" accept="image/*" multiple className="sr-only"
+          onChange={e => { pickFiles(e.target.files); e.target.value = ""; dismissFallback(); }} />
+        <input ref={anyInputRef} type="file" multiple className="sr-only"
+          onChange={e => { pickFiles(e.target.files); e.target.value = ""; dismissFallback(); }} />
         <input ref={camFallbackRef} type="file" accept="image/*" className="sr-only"
           onChange={e => { pickFiles(e.target.files); e.target.value = ""; }} />
         <CameraCapture
