@@ -47,6 +47,9 @@
     cursor: pointer; box-shadow: 0 6px 18px rgba(176,73,47,.35);
   }
   .btn-print:hover { background: #983c25; }
+  .btn-print[disabled] { opacity: .6; cursor: default; }
+  .btn-alt { background: var(--navy); box-shadow: 0 6px 18px rgba(57,88,134,.3); }
+  .btn-alt:hover { background: #2c476e; }
   .toolbar .hint { align-self: center; font-size: 12px; color: var(--soft); }
 
   /* Portada */
@@ -198,8 +201,9 @@
 </style>
 
 <div class="toolbar">
-  <button class="btn-print" onclick="window.print()">🖨 Guardar como PDF</button>
-  <span class="hint">Imprimir → destino “Guardar como PDF”. Repártelo a tu equipo.</span>
+  <button class="btn-print" id="pdfBtn" onclick="savePdf()">🖨 Descargar PDF</button>
+  <button class="btn-print btn-alt" onclick="window.print()">🖨 Imprimir</button>
+  <span class="hint">Descarga el PDF con todos los colores — listo para repartir al equipo.</span>
 </div>
 
 <div class="sheet">
@@ -357,6 +361,57 @@
     </footer>
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  async function savePdf() {
+    // Sin las librerías (offline) → imprime con el pipeline nativo del navegador.
+    if (!window.html2canvas || !window.jspdf) { window.print(); return; }
+
+    const btn = document.getElementById("pdfBtn");
+    const label = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = "⏳ Generando…";
+
+    try {
+      const sheet = document.querySelector(".sheet");
+      // Renderiza la hoja tal cual se ve — conserva fondos oscuros y colores de marca.
+      const canvas = await html2canvas(sheet, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        windowWidth: 960,
+        width: sheet.offsetWidth,
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      const imgW = pageW;
+      const imgH = (canvas.height * pageW) / canvas.width;
+      const imgData = canvas.toDataURL("image/png");
+
+      let y = 0, remaining = imgH;
+      pdf.addImage(imgData, "PNG", 0, y, imgW, imgH, "guide", "FAST");
+      remaining -= pageH;
+      while (remaining > 0) {
+        y -= pageH;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, y, imgW, imgH, "guide", "FAST");
+        remaining -= pageH;
+      }
+
+      pdf.save("Guia-voz-Katy-Luxaris.pdf");
+    } catch (err) {
+      console.error(err);
+      window.print();
+    } finally {
+      btn.disabled = false; btn.innerHTML = label;
+    }
+  }
+</script>
 
 </body>
 </html>
