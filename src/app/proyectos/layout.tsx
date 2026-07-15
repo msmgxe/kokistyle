@@ -124,8 +124,13 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               </span>
             </Link>
 
-            <nav className="hidden flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] lg:flex">
-              {dailyLinks.map(l => <PanelTab key={l.href} href={l.href} label={l.label} />)}
+            {/* El scroll horizontal va solo en los links diarios; NavMore queda FUERA del
+                contenedor overflow para que su dropdown no se recorte (overflow-x:auto
+                fuerza overflow-y:auto y ocultaba el menú "Más"). */}
+            <nav className="hidden flex-1 items-center gap-0.5 lg:flex">
+              <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
+                {dailyLinks.map(l => <PanelTab key={l.href} href={l.href} label={l.label} />)}
+              </div>
               {moreLinks.length > 0 && <NavMore links={moreLinks} label={t.panel.nav.more} />}
             </nav>
 
