@@ -9,12 +9,10 @@ import {
   useEffect, useState, useCallback, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, CalendarDays, Camera } from "lucide-react";
+import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, Camera } from "lucide-react";
 import {
   DndContext,
   closestCenter,
-  pointerWithin,
-  rectIntersection,
   PointerSensor,
   TouchSensor,
   KeyboardSensor,
@@ -22,7 +20,6 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
-  DragOverEvent,
   DragOverlay,
   defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
@@ -38,7 +35,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
 import {
   money, dateFmt, totalIncome, totalExpense, balanceDue, cashFlow,
-  addDays, dShort, initials,
+  dShort, initials,
 } from "@/src/lib/utils";
 import { exportCotizacion, exportEstadoCuenta } from "@/src/lib/pdf";
 import {
@@ -2165,8 +2162,6 @@ export default function ProjectDetailPage() {
     );
   }
   if (!project) return null;
-
-  const tasks = [...(project.tasks ?? [])].sort((a, b) => a.sort_order - b.sort_order);
 
   return (
     <div className="animate-in fade-in duration-300">
