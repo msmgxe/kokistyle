@@ -64,7 +64,7 @@ Respond in English. Be very concise: max 12 words per reply.
 Active module: "${ctx}". Current project: "${project || "none"}". Today: ${today}.
 Available contacts: ${contacts.length ? contacts.join(", ") : "none"}.
 All active projects (use these to resolve references like "the Brickell one"): ${projectsList}.
-
+${mem}
 ACTIONS AND REQUIRED FIELDS:
 update_task_status → task_name, status ("pend"|"prog"|"done")
 create_task        → name
@@ -116,7 +116,7 @@ Hablas español. Sé muy concisa: máximo 12 palabras por respuesta.
 Módulo activo: "${ctx}". Proyecto actual: "${project || "ninguno"}". Hoy: ${today}.
 Contactos disponibles: ${contacts.length ? contacts.join(", ") : "ninguno"}.
 Todos los proyectos activos (úsalos para resolver referencias como "el de Brickell"): ${projectsList}.
-
+${mem}
 ACCIONES Y CAMPOS OBLIGATORIOS:
 update_task_status → task_name, status ("pend"|"prog"|"done")
 create_task        → name
