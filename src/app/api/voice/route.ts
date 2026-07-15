@@ -7,8 +7,42 @@ const TODAY = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_Yo
 
 type ApiMsg = { role: "user" | "assistant"; content: string };
 
+type VoiceMemory = {
+  userName?: string | null;
+  lastProjectTitle?: string | null;
+  lastPaymentMethod?: string | null;
+  defaultTaskHours?: number | null;
+  aliases?: Record<string, string>;
+  corrections?: { heard: string; meant: string }[];
+};
+
 const SPECIALTIES_EN = "Plumbing, Painting, Finisher, Electrical, Marble, Flooring, Bathroom, Handyman, Helper";
 const SPECIALTIES_ES = "Plomería, Pintura, Finishero, Electricidad, Mármol, Piso, Baño, Handyman, Ayudante";
+
+// Bloque "Katy aprende": memoria del usuario inyectada al prompt (Nivel 1 + 2)
+function memoryBlock(mem: VoiceMemory | undefined, lang: "en" | "es"): string {
+  if (!mem) return "";
+  const lines: string[] = [];
+  const aliasEntries = Object.entries(mem.aliases ?? {});
+  if (lang === "en") {
+    if (mem.userName) lines.push(`- User's name: ${mem.userName}. Greet them by name on your first reply.`);
+    if (mem.lastProjectTitle) lines.push(`- Last project used: "${mem.lastProjectTitle}". If no project is mentioned, you may assume this one (they can change it in the card).`);
+    if (mem.lastPaymentMethod) lines.push(`- Usual payment method: ${mem.lastPaymentMethod}. Use it as the default for payments unless another is said.`);
+    if (mem.defaultTaskHours) lines.push(`- Default task duration: ${mem.defaultTaskHours} hours.`);
+    if (aliasEntries.length) lines.push(`- User vocabulary (always expand left→right): ${aliasEntries.map(([k, v]) => `"${k}"→"${v}"`).join(", ")}.`);
+    if (mem.corrections?.length) lines.push(`- Recent corrections to avoid repeating: ${mem.corrections.map(c => `said "${c.heard}" meant "${c.meant}"`).join("; ")}.`);
+    if (!lines.length) return "";
+    return `\nUSER MEMORY (apply it naturally):\n${lines.join("\n")}\n`;
+  }
+  if (mem.userName) lines.push(`- Nombre del usuario: ${mem.userName}. Salúdalo por su nombre en tu primera respuesta.`);
+  if (mem.lastProjectTitle) lines.push(`- Último proyecto usado: "${mem.lastProjectTitle}". Si no menciona proyecto, puedes asumir ese (lo puede cambiar en la tarjeta).`);
+  if (mem.lastPaymentMethod) lines.push(`- Método de pago habitual: ${mem.lastPaymentMethod}. Úsalo como default en pagos salvo que diga otro.`);
+  if (mem.defaultTaskHours) lines.push(`- Duración default de tareas: ${mem.defaultTaskHours} horas.`);
+  if (aliasEntries.length) lines.push(`- Vocabulario del usuario (expande siempre izquierda→derecha): ${aliasEntries.map(([k, v]) => `"${k}"→"${v}"`).join(", ")}.`);
+  if (mem.corrections?.length) lines.push(`- Correcciones recientes a no repetir: ${mem.corrections.map(c => `dijo "${c.heard}" y era "${c.meant}"`).join("; ")}.`);
+  if (!lines.length) return "";
+  return `\nMEMORIA DEL USUARIO (aplícala con naturalidad):\n${lines.join("\n")}\n`;
+}
 
 const SYSTEM = (
   ctx: string,
@@ -17,10 +51,12 @@ const SYSTEM = (
   today: string,
   lang: "en" | "es",
   projects: { id: string; title: string }[] = [],
+  memory?: VoiceMemory,
 ) => {
   const projectsList = projects.length
     ? projects.map(p => `"${p.title}" (id:${p.id})`).join(", ")
     : "none";
+  const mem = memoryBlock(memory, lang);
 
   if (lang === "en") return `
 You are Katy, the voice assistant for KokiStyle (construction project management in Florida).
@@ -137,6 +173,7 @@ export async function POST(req: NextRequest) {
       projectTitle?: string;
       language?: "en" | "es";
       projects?: { id: string; title: string }[];
+      memory?: VoiceMemory;
     };
     const messages     = body.messages     ?? [];
     const context      = body.context      ?? "dashboard";
@@ -144,6 +181,7 @@ export async function POST(req: NextRequest) {
     const projectTitle = body.projectTitle ?? "";
     language           = body.language     ?? "es";
     const projects     = body.projects     ?? [];
+    const memory       = body.memory;
 
     if (!messages.length) {
       return NextResponse.json({ type: "question", text: language === "en" ? "How can I help?" : "¿En qué te ayudo?" });
@@ -153,7 +191,7 @@ export async function POST(req: NextRequest) {
     // por el AI Gateway de Vercel, nunca configurado — Katy fallaba en cada comando)
     const { text } = await generateText({
       model: anthropic("claude-haiku-4-5"),
-      system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects),
+      system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects, memory),
       temperature: 0,
       messages: messages.map(m => ({
         role: m.role as "user" | "assistant",

@@ -7,6 +7,10 @@ import type { VoiceMeta } from "@/src/context/VoiceContext";
 import { supabase } from "@/src/lib/supabase";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
+import {
+  loadVoicePrefs, toMemory, learnCorrections, saveVoiceLearning,
+  type VoicePrefs, type VoiceMemory,
+} from "@/src/lib/voicePrefs";
 
 type Phase  = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error" | "text";
 type ApiMsg = { role: "user" | "assistant"; content: string };
@@ -425,6 +429,9 @@ export default function VoiceFAB() {
   const transcriptRef = useRef("");
   const apiHistRef    = useRef<ApiMsg[]>([]);
   const converseRef   = useRef<(() => Promise<void>) | null>(null);
+  // Memoria de Katy ("Katy aprende"): prefs del usuario cargadas al iniciar la sesión
+  const prefsRef      = useRef<VoicePrefs | null>(null);
+  const memoryRef     = useRef<VoiceMemory | undefined>(undefined);
 
   const supported =
     typeof window !== "undefined" &&
@@ -463,6 +470,29 @@ export default function VoiceFAB() {
 
   const push = useCallback((role: Msg["role"], text: string) => {
     setMessages(prev => [...prev, { role, text }]);
+  }, []);
+
+  // Carga la memoria de Katy del usuario (una vez por usuario) y arma el bloque para el prompt
+  const prefsUserRef = useRef<string | null>(null);
+  const ensurePrefs = useCallback(async () => {
+    const name = currentUser?.name ?? null;
+    if (prefsUserRef.current !== name) {
+      prefsRef.current = await loadVoicePrefs(name);
+      prefsUserRef.current = name;
+    }
+    memoryRef.current = toMemory(prefsRef.current, name) ?? undefined;
+  }, [currentUser]);
+
+  // Nivel 1: pre-rellena la tarjeta con lo aprendido (proyecto, método de pago, duración de tarea)
+  const applyPrefsDefaults = useCallback((action: string, data: Record<string, unknown>) => {
+    const p = prefsRef.current;
+    if (!p) return data;
+    if (action === "create_task" && !data.hours && p.default_task_hours) data.hours = p.default_task_hours;
+    if (action === "create_payment" && !data.method && p.last_payment_method) data.method = p.last_payment_method;
+    if (PROJECT_ACTIONS.has(action) && !metaRef.current.projectId && !data.__project_id && p.last_project_id) {
+      data.__project_id = p.last_project_id;
+    }
+    return data;
   }, []);
 
   const say = useCallback(async (text: string): Promise<boolean> => {
@@ -544,12 +574,50 @@ export default function VoiceFAB() {
     });
   }, [currentUser]);
 
+  // Nivel 1 + 2: al confirmar, Katy "aprende" — guarda correcciones/alias del vocabulario y
+  // recuerda el último proyecto, método de pago y duración de tarea usados.
+  const learnFromConfirm = useCallback(async (
+    action: string,
+    originalData: Record<string, unknown>,
+    finalData: Record<string, unknown>,
+  ) => {
+    const userLabel = currentUser?.name;
+    if (!userLabel) return;
+
+    const textKeys = (EDIT_FIELDS[action] ?? []).filter(f => f.type === "text").map(f => f.key);
+    const { corrections, aliases } = learnCorrections(originalData, finalData, textKeys);
+
+    const pidUsed = finalData.__project_id ? String(finalData.__project_id) : metaRef.current.projectId;
+    let projTitle: string | null = null;
+    if (pidUsed && action !== "create_project") {
+      projTitle = pidUsed === metaRef.current.projectId
+        ? (metaRef.current.projectTitle ?? null)
+        : (projectOptions.find(p => p.id === pidUsed)?.title
+          ?? metaRef.current.projects?.find(p => p.id === pidUsed)?.title
+          ?? null);
+    }
+
+    const patch = {
+      lastProjectId:    action !== "create_project" ? (pidUsed ?? undefined) : undefined,
+      lastProjectTitle: projTitle ?? undefined,
+      lastPaymentMethod: action === "create_payment" ? String(finalData.method ?? "") || undefined : undefined,
+      defaultTaskHours: action === "create_task" ? Number(finalData.hours) || undefined : undefined,
+      corrections,
+      aliases,
+    };
+
+    const updated = await saveVoiceLearning(prefsRef.current, userLabel, patch);
+    prefsRef.current = updated;
+    memoryRef.current = toMemory(updated, userLabel) ?? undefined;
+  }, [currentUser, projectOptions]);
+
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
     setPhase("saving");
     try {
       const msg = await saveAction(pendingAction.action, editableData, metaRef.current);
       await auditLog("confirmed", pendingAction.action, editableData);
+      void learnFromConfirm(pendingAction.action, pendingAction.data, editableData);
       setStatusMsg(msg);
       setPhase("success");
       window.dispatchEvent(new CustomEvent("kokivoice_saved", {
@@ -561,7 +629,7 @@ export default function VoiceFAB() {
       await auditLog("error", pendingAction.action, editableData, errMsg);
       showError(errMsg);
     }
-  }, [pendingAction, editableData, closeClean, showError, t, auditLog]);
+  }, [pendingAction, editableData, closeClean, showError, t, auditLog, learnFromConfirm]);
 
   const handleCancel = useCallback(async () => {
     if (pendingAction) {
@@ -588,6 +656,7 @@ export default function VoiceFAB() {
     transcriptRef.current = "";
     apiHistRef.current  = [];
     setMessages([]); setPendingAction(null); setEditableData({}); setStatusMsg(""); setTextInput("");
+    void ensurePrefs();
 
     const ctx = metaRef.current.context;
 
@@ -607,6 +676,7 @@ export default function VoiceFAB() {
             projects:     metaRef.current.projects     ?? [],
             projectTitle: metaRef.current.projectTitle ?? "",
             language,
+            memory:       memoryRef.current,
           }),
           signal: ctrl.signal,
         });
@@ -633,6 +703,7 @@ export default function VoiceFAB() {
       if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
         const action = result.action;
         const data: Record<string, unknown> = { ...result.data };
+        applyPrefsDefaults(action, data);
         if (!data.date) data.date = TODAY();
         if (action === "create_task" && !data.hours) data.hours = 8;
         setPendingAction({ action, data });
@@ -648,7 +719,7 @@ export default function VoiceFAB() {
 
     converseRef.current = converse;
     setPhase("text");
-  }, [language, push]);
+  }, [language, push, ensurePrefs, applyPrefsDefaults]);
 
   const start = useCallback(() => {
     if (phase !== "idle" || startedRef.current) return;
@@ -667,6 +738,7 @@ export default function VoiceFAB() {
         return;
       }
 
+      await ensurePrefs();
       const ctx      = metaRef.current.context;
       const apiHist: ApiMsg[] = [];
 
@@ -679,7 +751,12 @@ export default function VoiceFAB() {
         "project.contactos":      tpVoice.openerContacts,
       };
 
-      const opener = OPENERS[ctx] ?? tpVoice.openerDefault;
+      // Nivel 1: saludo por nombre (personal y cercano)
+      const firstName = currentUser?.name?.trim().split(/\s+/)[0] ?? "";
+      const baseOpener = OPENERS[ctx] ?? tpVoice.openerDefault;
+      const opener = firstName
+        ? `${language === "en" ? "Hi" : "Hola"} ${firstName}. ${baseOpener}`
+        : baseOpener;
       apiHist.push({ role: "assistant", content: opener });
       // Sin TTS de apertura: el saludo se muestra como texto y se escucha DE INMEDIATO
       push("assistant", opener);
@@ -714,6 +791,7 @@ export default function VoiceFAB() {
               projects:     metaRef.current.projects     ?? [],
               projectTitle: metaRef.current.projectTitle ?? "",
               language,
+              memory:       memoryRef.current,
             }),
             signal: ctrl.signal,
           });
@@ -740,6 +818,7 @@ export default function VoiceFAB() {
         if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
           const action = result.action;
           const data: Record<string, unknown> = { ...result.data };
+          applyPrefsDefaults(action, data);
           if (!data.date) data.date = TODAY();
           if (action === "create_task" && !data.hours) data.hours = 8;
 
@@ -779,7 +858,7 @@ export default function VoiceFAB() {
       if (activeRef.current) showError("Error inesperado. Toca para reintentar.");
       else startedRef.current = false;
     });
-  }, [phase, say, listen, push, closeClean, showError, language, t]);
+  }, [phase, say, listen, push, closeClean, showError, language, t, currentUser, ensurePrefs, applyPrefsDefaults]);
 
   const headerLabel: Record<Phase, string> = {
     idle: "", listening: "Escuchando…", thinking: "Procesando…",

@@ -318,6 +318,24 @@ CREATE TABLE IF NOT EXISTS voice_actions (
 ALTER TABLE voice_actions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON voice_actions FOR ALL TO anon USING (true) WITH CHECK (true);
 
+-- ── Voice Prefs (memoria de Katy por usuario — "Katy aprende" Nivel 1 + 2) ────
+-- Nivel 1: saludo por nombre, último proyecto/método de pago, duración default de tareas.
+-- Nivel 2: alias de vocabulario ("depot"→"Home Depot") y correcciones de la tarjeta.
+CREATE TABLE IF NOT EXISTS voice_prefs (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_label          TEXT NOT NULL UNIQUE,
+  last_project_id     UUID REFERENCES projects(id) ON DELETE SET NULL,
+  last_project_title  TEXT,
+  last_payment_method TEXT,
+  default_task_hours  NUMERIC(6,2),
+  aliases             JSONB NOT NULL DEFAULT '{}'::jsonb,
+  corrections         JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE voice_prefs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON voice_prefs FOR ALL TO anon USING (true) WITH CHECK (true);
+
 -- ── Online Bookings ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS bookings (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),

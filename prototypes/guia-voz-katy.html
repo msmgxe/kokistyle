@@ -17,7 +17,12 @@
     --sans: "Segoe UI", "Avenir Next", system-ui, -apple-system, sans-serif;
     --mono: "SF Mono", "DejaVu Sans Mono", "Consolas", ui-monospace, monospace;
   }
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+    /* Conserva los fondos y colores de marca al imprimir / exportar a PDF */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   body {
     margin: 0; background: var(--panel); color: var(--ink);
     font-family: var(--sans); font-size: 14px; line-height: 1.6;
