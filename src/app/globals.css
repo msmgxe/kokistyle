@@ -5,17 +5,23 @@
   --foreground: #172033;
 }
 
-/* Chrome de marca (sidebar + drawer). El tema de color los cambia vía data-accent
-   en <html>. Default = Luxaris (teal). Migrar el resto de la app a estos tokens
-   es incremental — hoy solo pinta el chrome de navegación. */
+/* Tokens de marca. El tema de color los cambia vía data-accent en <html>
+   (default = Luxaris). Semánticos (verde éxito, rojo error) y neutros (cremas,
+   bordes, texto) NO cambian con el tema — solo la marca (--brand) y la acción
+   (--accent). Migración a estos tokens = incremental, pantalla por pantalla.
+   En el tema por defecto los valores son idénticos a los hex originales, así
+   que las pantallas migradas se ven igual hasta que se elige otro tema. */
 :root {
-  --brand: #16323D;
-  --brand-accent: #7FA8D9;
+  --brand: #16323D;          /* primario (headers, botones oscuros, nav) — era #16323D */
+  --accent: #395886;         /* acción/link/botón secundario — era #395886 */
+  --brand-accent: #7FA8D9;   /* acento claro para indicadores activos */
+  --brand-strong: color-mix(in srgb, var(--brand) 78%, #000);   /* hover del primario */
+  --accent-strong: color-mix(in srgb, var(--accent) 82%, #000); /* hover de la acción */
 }
-:root[data-accent="navy"]     { --brand: #1B2E4D; --brand-accent: #6FA0DE; }
-:root[data-accent="ocean"]    { --brand: #14213D; --brand-accent: #4F86E8; }
-:root[data-accent="emerald"]  { --brand: #0B2A22; --brand-accent: #34B98C; }
-:root[data-accent="graphite"] { --brand: #1E2530; --brand-accent: #8B90F5; }
+:root[data-accent="navy"]     { --brand: #1B2E4D; --accent: #3E6FB0; --brand-accent: #6FA0DE; }
+:root[data-accent="ocean"]    { --brand: #14213D; --accent: #2563EB; --brand-accent: #4F86E8; }
+:root[data-accent="emerald"]  { --brand: #0B2A22; --accent: #0F766E; --brand-accent: #34B98C; }
+:root[data-accent="graphite"] { --brand: #1E2530; --accent: #6366F1; --brand-accent: #8B90F5; }
 
 @theme inline {
   --color-background: var(--background);

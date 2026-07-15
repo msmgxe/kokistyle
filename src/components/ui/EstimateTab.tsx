@@ -117,7 +117,7 @@ interface SortableItemProps {
 
 function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const numCls = "w-16 sm:w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none";
+  const numCls = "w-16 sm:w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] hover:bg-[#F7F3EA] focus:border-b focus:border-[var(--accent)] focus:bg-white focus:outline-none";
   return (
     <div
       ref={setNodeRef}
@@ -138,7 +138,7 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
         value={item.description}
         onChange={e => onUpdateLocal(sectionId, item.id, "description", e.target.value)}
         onBlur={()  => onSaveField(item.id)}
-        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[#16323D] hover:bg-[#F7F3EA] focus:border-b focus:border-[#395886] focus:bg-white focus:outline-none"
+        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[var(--brand)] hover:bg-[#F7F3EA] focus:border-b focus:border-[var(--accent)] focus:bg-white focus:outline-none"
       />
       <input
         type="number"
@@ -147,7 +147,7 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
         onBlur={()  => onSaveField(item.id)}
         placeholder="0"
         title="Costo real (interno)"
-        className={`${numCls} text-[#16323D]`}
+        className={`${numCls} text-[var(--brand)]`}
       />
       <input
         type="number"
@@ -158,7 +158,7 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
         title="Ganancia — se recalcula al 30% cuando cambias el costo"
         className={`${numCls} text-[#4F8A63]`}
       />
-      <span className="w-16 sm:w-20 shrink-0 px-1 py-0.5 text-right font-mono text-[10px] font-bold text-[#395886]">
+      <span className="w-16 sm:w-20 shrink-0 px-1 py-0.5 text-right font-mono text-[10px] font-bold text-[var(--accent)]">
         {item.amount ? item.amount.toLocaleString("en-US") : "0"}
       </span>
       <button
@@ -298,11 +298,11 @@ function SortableSection({
                 }}
                 onClick={e => e.stopPropagation()}
                 placeholder={EN ? "Section name" : "Nombre de sección"}
-                className="w-full max-w-[220px] rounded-md border border-[#395886] bg-white px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide text-[#16323D] focus:outline-none"
+                className="w-full max-w-[220px] rounded-md border border-[var(--accent)] bg-white px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide text-[var(--brand)] focus:outline-none"
               />
             ) : (
               <div
-                className="truncate text-[12px] font-bold uppercase tracking-wide text-[#16323D] cursor-pointer hover:text-[#395886]"
+                className="truncate text-[12px] font-bold uppercase tracking-wide text-[var(--brand)] cursor-pointer hover:text-[var(--accent)]"
                 title={EN ? "Click to rename" : "Clic para renombrar"}
                 onClick={e => {
                   e.stopPropagation();
@@ -346,13 +346,13 @@ function SortableSection({
               type="checkbox"
               checked={!section.is_material_type}
               onChange={e => onUpdateField(section.id, "is_material_type", !e.target.checked)}
-              className="h-3.5 w-3.5 cursor-pointer accent-[#395886]"
+              className="h-3.5 w-3.5 cursor-pointer accent-[var(--accent)]"
             />
-            <span className={`text-[10px] font-bold uppercase tracking-wide ${!section.is_material_type ? "text-[#395886]" : "text-[#5C6A6E]"}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-wide ${!section.is_material_type ? "text-[var(--accent)]" : "text-[#5C6A6E]"}`}>
               {EN ? "Labor %" : "M. obra %"}
             </span>
           </label>
-          <div className={`font-mono text-[13px] font-bold ${section.is_material_type ? "text-[#B0492F]" : "text-[#16323D]"}`}>
+          <div className={`font-mono text-[13px] font-bold ${section.is_material_type ? "text-[#B0492F]" : "text-[var(--brand)]"}`}>
             {money(effectiveTotal)}
           </div>
           {isOpen ? <ChevronUp size={14} className="text-[#5C6A6E]" /> : <ChevronDown size={14} className="text-[#5C6A6E]" />}
@@ -370,7 +370,7 @@ function SortableSection({
               value={section.note}
               placeholder={EN ? "Note (e.g. Material included)" : "Nota (ej. Material incluido)"}
               onChange={e => onUpdateField(section.id, "note", e.target.value)}
-              className="w-44 rounded-lg border border-[#E6DDCB] bg-white px-2 py-1 text-[11px] text-[#5C6A6E] focus:border-[#395886] focus:outline-none"
+              className="w-44 rounded-lg border border-[#E6DDCB] bg-white px-2 py-1 text-[11px] text-[#5C6A6E] focus:border-[var(--accent)] focus:outline-none"
             />
             <button
               onClick={() => onDelete(section.id)}
@@ -392,7 +392,7 @@ function SortableSection({
               <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#4F8A63]">
                 {EN ? "Profit 30%" : "Ganancia 30%"}
               </span>
-              <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#395886]">
+              <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[var(--accent)]">
                 {EN ? "Client" : "Cliente"}
               </span>
               <span className="w-[22px] shrink-0" />
@@ -438,7 +438,7 @@ function SortableSection({
               className={`w-28 rounded-lg border px-3 py-1.5 text-right font-mono text-[13px] font-bold focus:outline-none ${
                 hasItemAmounts
                   ? "cursor-default border-transparent bg-transparent text-[#5C6A6E]"
-                  : "border-[#E6DDCB] bg-[#FDFAF6] text-[#16323D] focus:border-[#395886]"
+                  : "border-[#E6DDCB] bg-[#FDFAF6] text-[var(--brand)] focus:border-[var(--accent)]"
               }`}
             />
           </div>
@@ -456,7 +456,7 @@ function SortableSection({
                   if (e.key === "Enter")  onAddItem(section.id);
                   if (e.key === "Escape") { setAddingItemTo(null); setNewItemDesc(""); setNewItemAmt(""); }
                 }}
-                className="flex-1 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] focus:border-[#395886] focus:outline-none"
+                className="flex-1 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] focus:border-[var(--accent)] focus:outline-none"
               />
               <input
                 type="number"
@@ -465,16 +465,16 @@ function SortableSection({
                 onKeyDown={e => { if (e.key === "Enter") onAddItem(section.id); }}
                 placeholder={EN ? "$0 cost" : "$0 costo"}
                 title={EN ? "Real cost — profit (30%) and client amount are computed" : "Costo real — la ganancia (30%) y el monto cliente se calculan"}
-                className="w-24 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-right font-mono text-[12px] focus:border-[#395886] focus:outline-none"
+                className="w-24 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-right font-mono text-[12px] focus:border-[var(--accent)] focus:outline-none"
               />
               {(parseFloat(newItemAmt) || 0) > 0 && (
-                <span className="shrink-0 whitespace-nowrap font-mono text-[10px] font-bold text-[#395886]">
+                <span className="shrink-0 whitespace-nowrap font-mono text-[10px] font-bold text-[var(--accent)]">
                   → ${round2((parseFloat(newItemAmt) || 0) * (1 + DEFAULT_PROFIT_PCT)).toLocaleString("en-US")}
                 </span>
               )}
               <button
                 onClick={() => onAddItem(section.id)}
-                className="shrink-0 rounded-lg bg-[#16323D] px-3 py-1.5 text-[11px] font-bold text-white"
+                className="shrink-0 rounded-lg bg-[var(--brand)] px-3 py-1.5 text-[11px] font-bold text-white"
               >
                 {EN ? "Add" : "Agregar"}
               </button>
@@ -488,7 +488,7 @@ function SortableSection({
           ) : (
             <button
               onClick={() => { setAddingItemTo(section.id); setNewItemDesc(""); setNewItemAmt(""); }}
-              className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold text-[#395886] transition hover:bg-[#F7F3EA] hover:text-[#16323D]"
+              className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[#F7F3EA] hover:text-[var(--brand)]"
             >
               <Plus size={11} /> {EN ? "Add item" : "Agregar item"}
             </button>
@@ -1263,7 +1263,7 @@ export default function EstimateTab({
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
     </div>
   );
 
@@ -1272,7 +1272,7 @@ export default function EstimateTab({
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F3EA]">
         <FileText size={28} className="text-[#5C6A6E]" />
       </div>
-      <h3 className="mb-2 text-base font-bold text-[#16323D]">
+      <h3 className="mb-2 text-base font-bold text-[var(--brand)]">
         {EN ? "No estimate yet" : "Sin estimado todavía"}
       </h3>
       <p className="mb-6 max-w-xs text-sm text-[#5C6A6E]">
@@ -1283,7 +1283,7 @@ export default function EstimateTab({
       <button
         onClick={createEstimate}
         disabled={saving}
-        className="inline-flex items-center gap-2 rounded-xl bg-[#16323D] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0F2830] disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0F2830] disabled:opacity-50"
       >
         <Plus size={14} />
         {EN ? "Create Estimate" : "Crear Estimado"}
@@ -1345,16 +1345,16 @@ export default function EstimateTab({
                 style={{ background: color }}>
                 {Math.round(dep.pct)}%
               </button>
-              <span className="flex-shrink-0 px-3.5 font-mono text-[15px] font-black text-[#16323D]">
+              <span className="flex-shrink-0 px-3.5 font-mono text-[15px] font-black text-[var(--brand)]">
                 {money(target)}
               </span>
               <div className="w-px flex-shrink-0 self-stretch bg-[#EDE8DF]" />
               <button onClick={() => openDepositEdit(i)} title={EN ? "Click to edit" : "Clic para editar"}
                 className="group flex flex-1 items-center gap-1 overflow-hidden px-3 text-left">
-                <span className="truncate text-[11px] font-semibold text-[#5C6A6E] group-hover:text-[#395886]">
+                <span className="truncate text-[11px] font-semibold text-[#5C6A6E] group-hover:text-[var(--accent)]">
                   {EN ? dep.label_en : dep.label_es}
                 </span>
-                <Pencil size={8} className="flex-shrink-0 text-[#C4B89A] group-hover:text-[#395886]" />
+                <Pencil size={8} className="flex-shrink-0 text-[#C4B89A] group-hover:text-[var(--accent)]" />
               </button>
               <div className="flex flex-shrink-0 items-center gap-1.5 self-stretch border-l border-[#EDE8DF] px-2.5">
                 {isConfirmDelete ? (
@@ -1380,7 +1380,7 @@ export default function EstimateTab({
                 )}
                 <button
                   onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
-                  className="flex-shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#395886] transition hover:bg-[#EDF3FB]">
+                  className="flex-shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB]">
                   {EN ? "Detail" : "Detalle"}
                 </button>
               </div>
@@ -1419,7 +1419,7 @@ export default function EstimateTab({
     <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-md">
 
       {/* ── HEADER BAND ─────────────────────────────────────────────────────── */}
-      <div className="bg-[#16323D] px-5 pb-0 pt-4">
+      <div className="bg-[var(--brand)] px-5 pb-0 pt-4">
         {/* Top row: identity + actions */}
         <div className="flex items-center gap-3 pb-3">
           {/* Left: company · status · project title */}
@@ -1460,7 +1460,7 @@ export default function EstimateTab({
             <button
               onClick={openEmailModal}
               title={EN ? "Send PDF by email" : "Enviar PDF por correo"}
-              className="inline-flex items-center gap-1 rounded-lg bg-[#395886] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#2e4a70]"
+              className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent)] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#2e4a70]"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
               <span className="hidden sm:inline">Email</span>
@@ -1482,7 +1482,7 @@ export default function EstimateTab({
               disabled={saving}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold transition disabled:opacity-50 ${
                 estimateSubTab === "sections"
-                  ? "bg-white text-[#16323D] hover:bg-[#F5E9DA]"
+                  ? "bg-white text-[var(--brand)] hover:bg-[#F5E9DA]"
                   : "bg-[#F0A090] text-[#7B1838] hover:bg-[#FFB8A8]"
               }`}
             >
@@ -1506,7 +1506,7 @@ export default function EstimateTab({
             onClick={() => setEstimateSubTab("sections")}
             className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
               estimateSubTab === "sections"
-                ? "bg-white text-[#16323D]"
+                ? "bg-white text-[var(--brand)]"
                 : "text-white/40 hover:text-white/70"
             }`}
           >
@@ -1516,7 +1516,7 @@ export default function EstimateTab({
             onClick={() => setEstimateSubTab("schedule")}
             className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
               estimateSubTab === "schedule"
-                ? "bg-white text-[#16323D]"
+                ? "bg-white text-[var(--brand)]"
                 : "text-white/40 hover:text-white/70"
             }`}
           >
@@ -1536,7 +1536,7 @@ export default function EstimateTab({
               <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
                 {EN ? "Labor subtotal" : "Subtotal mano de obra"}
               </div>
-              <div className="text-[13px] font-black text-[#16323D]">{money(laborTotal)}</div>
+              <div className="text-[13px] font-black text-[var(--brand)]">{money(laborTotal)}</div>
             </div>
             {discountAmt > 0 && (
               <>
@@ -1545,7 +1545,7 @@ export default function EstimateTab({
                   <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
                     {EN ? "Grand Total" : "Total Final"}
                   </div>
-                  <div className="text-[13px] font-black text-[#16323D]">{money(grandTotal)}</div>
+                  <div className="text-[13px] font-black text-[var(--brand)]">{money(grandTotal)}</div>
                 </div>
               </>
             )}
@@ -1581,7 +1581,7 @@ export default function EstimateTab({
               >
                 <div className="flex items-center gap-3">
                   <Info size={14} className="shrink-0 text-[#5C6A6E]" />
-                  <span className="text-[12px] font-bold text-[#16323D]">
+                  <span className="text-[12px] font-bold text-[var(--brand)]">
                     {estimate.customer_name || (EN ? "Customer info" : "Info del cliente")}
                   </span>
                   {estimate.city && <span className="text-[11px] text-[#5C6A6E]">· {estimate.city}</span>}
@@ -1608,7 +1608,7 @@ export default function EstimateTab({
                         type={type}
                         value={(estimate as unknown as Record<string, string>)[key] ?? ""}
                         onChange={e => setEstimate(p => p ? ({ ...p, [key]: e.target.value }) : p)}
-                        className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1.5 text-[12px] text-[#16323D] focus:border-[#395886] focus:outline-none"
+                        className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1.5 text-[12px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                       />
                     </label>
                   ))}
@@ -1665,7 +1665,7 @@ export default function EstimateTab({
             {/* Add section */}
             <button
               onClick={() => setShowAddSection(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D7CBB3] py-3 text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[#395886] hover:text-[#395886]"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D7CBB3] py-3 text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               <Plus size={14} /> {EN ? "Add section" : "Agregar sección"}
             </button>
@@ -1679,7 +1679,7 @@ export default function EstimateTab({
                       <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
                         {EN ? "Labor subtotal" : "Subtotal M.O."}
                       </div>
-                      <div className="font-mono text-[12px] font-bold text-[#16323D]">{money(laborTotal)}</div>
+                      <div className="font-mono text-[12px] font-bold text-[var(--brand)]">{money(laborTotal)}</div>
                     </div>
                   )}
                   {discountAmt > 0 && (
@@ -1695,7 +1695,7 @@ export default function EstimateTab({
                   <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
                     {EN ? "Grand Total" : "Total Final"}
                   </div>
-                  <div className="font-mono text-[17px] font-black text-[#16323D]">{money(grandTotal)}</div>
+                  <div className="font-mono text-[17px] font-black text-[var(--brand)]">{money(grandTotal)}</div>
                 </div>
               </div>
             )}
@@ -1703,7 +1703,7 @@ export default function EstimateTab({
             {/* Generate Workflow Tasks */}
             <button
               onClick={() => setShowGenTasks(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#395886] bg-[#EDF3FB] py-2.5 text-[12px] font-bold text-[#395886] transition hover:bg-[#D5DEEF]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--accent)] bg-[#EDF3FB] py-2.5 text-[12px] font-bold text-[var(--accent)] transition hover:bg-[#D5DEEF]"
             >
               <Zap size={13} />
               {EN ? "Generate Workflow Tasks" : "Generar Tareas en Workflow"}
@@ -1723,7 +1723,7 @@ export default function EstimateTab({
               <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
                 {EN ? "Installments" : "Cuotas"}
               </div>
-              <div className="text-[13px] font-black text-[#16323D]">{deps.length}</div>
+              <div className="text-[13px] font-black text-[var(--brand)]">{deps.length}</div>
             </div>
             <div>
               <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
@@ -1752,7 +1752,7 @@ export default function EstimateTab({
                     {estimate.sections.length} {EN ? "sections" : "secciones"}
                   </span>
                 </span>
-                <span className="font-mono text-[13px] font-bold text-[#16323D]">{money(laborTotal)}</span>
+                <span className="font-mono text-[13px] font-bold text-[var(--brand)]">{money(laborTotal)}</span>
               </div>
               <div className="flex items-center justify-between border-b border-[#F0EAE0] bg-[#FDF5F3] px-4 py-2.5">
                 <span className="flex items-center gap-2 text-[11px] font-bold text-[#B0492F]">
@@ -1764,7 +1764,7 @@ export default function EstimateTab({
                 </span>
                 <span className="font-mono text-[13px] font-bold text-[#B0492F]">–{money(discountAmt)}</span>
               </div>
-              <div className="flex items-center justify-between bg-[#16323D] px-4 py-3">
+              <div className="flex items-center justify-between bg-[var(--brand)] px-4 py-3">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-white/65">
                   {EN ? "Grand Total" : "Total Final"}
                 </span>
@@ -1793,7 +1793,7 @@ export default function EstimateTab({
                 <div className="w-5 flex-shrink-0" />
                 <button
                   onClick={addInstallment}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] transition hover:border-[#395886] hover:text-[#395886]"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 >
                   <Plus size={11} /> {EN ? "Add payment" : "Agregar cuota"}
                 </button>
@@ -1815,7 +1815,7 @@ export default function EstimateTab({
             className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between bg-[#16323D] px-5 py-3.5">
+            <div className="flex items-center justify-between bg-[var(--brand)] px-5 py-3.5">
               <span className="text-sm font-bold text-white">
                 ✉️ {EN ? "Send estimate by email" : "Enviar estimado por correo"}
               </span>
@@ -1826,7 +1826,7 @@ export default function EstimateTab({
 
             <div className="flex-1 space-y-3 overflow-y-auto p-5">
               <p className="text-[11px] text-[#97A1A0]">
-                {EN ? "From" : "Desde"}: <span className="font-bold text-[#16323D]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span>
+                {EN ? "From" : "Desde"}: <span className="font-bold text-[var(--brand)]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span>
               </p>
 
               <div>
@@ -1835,7 +1835,7 @@ export default function EstimateTab({
                 </label>
                 <input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)}
                   placeholder="cliente@email.com"
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div>
@@ -1843,7 +1843,7 @@ export default function EstimateTab({
                   {EN ? "Subject" : "Asunto"}
                 </label>
                 <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div>
@@ -1851,7 +1851,7 @@ export default function EstimateTab({
                   {EN ? "Message" : "Mensaje"}
                 </label>
                 <textarea rows={5} value={emailMsg} onChange={e => setEmailMsg(e.target.value)}
-                  className="w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm leading-relaxed text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                  className="w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div className="flex items-center justify-between">
@@ -1863,7 +1863,7 @@ export default function EstimateTab({
                     <button key={m} type="button"
                       onClick={() => { setEmailMode(m); refreshEmailPreview(m); }}
                       className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition ${
-                        emailMode === m ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"
+                        emailMode === m ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"
                       }`}>
                       {m === "full" ? (EN ? "With detail" : "Con detalle") : (EN ? "Summary" : "Resumen")}
                     </button>
@@ -1885,7 +1885,7 @@ export default function EstimateTab({
                 {EN ? "Cancel" : "Cancelar"}
               </button>
               <button onClick={sendEmail} disabled={sendingEmail || !emailTo.includes("@")}
-                className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-40">
+                className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
                 {sendingEmail
                   ? (EN ? "Sending…" : "Enviando…")
                   : (EN ? "Send estimate" : "Enviar estimado")}
@@ -1906,7 +1906,7 @@ export default function EstimateTab({
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-[#E6DDCB] px-5 py-3.5">
-              <span className="text-sm font-bold text-[#16323D]">
+              <span className="text-sm font-bold text-[var(--brand)]">
                 {EN ? "Add Section" : "Agregar Sección"}
               </span>
               <button onClick={() => setShowAddSection(false)} className="text-[#5C6A6E] hover:text-[#B0492F]">
@@ -1921,11 +1921,11 @@ export default function EstimateTab({
                 <button
                   key={cat.id}
                   onClick={() => addSection(cat as EstimateSectionCatalog & { id: string })}
-                  className="w-full rounded-xl border border-[#E6DDCB] px-4 py-3 text-left transition hover:border-[#395886] hover:bg-[#EDF3FB]"
+                  className="w-full rounded-xl border border-[#E6DDCB] px-4 py-3 text-left transition hover:border-[var(--accent)] hover:bg-[#EDF3FB]"
                 >
                   <div className="flex items-center gap-2">
                     <span>{cat.is_material_type ? "📦" : sectionEmoji(cat.name_en)}</span>
-                    <span className="text-[12px] font-semibold text-[#16323D]">{EN ? cat.name_en : cat.name_es}</span>
+                    <span className="text-[12px] font-semibold text-[var(--brand)]">{EN ? cat.name_en : cat.name_es}</span>
                   </div>
                   {(EN ? cat.note_en : cat.note_es) && (
                     <div className="mt-0.5 pl-6 text-[10px] text-[#5C6A6E]">{EN ? cat.note_en : cat.note_es}</div>
@@ -1935,7 +1935,7 @@ export default function EstimateTab({
               <div className="border-t border-[#E6DDCB] pt-2">
                 <button
                   onClick={() => addSection()}
-                  className="w-full rounded-xl border-2 border-dashed border-[#D7CBB3] px-4 py-3 text-left text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[#395886] hover:bg-[#EDF3FB] hover:text-[#395886]"
+                  className="w-full rounded-xl border-2 border-dashed border-[#D7CBB3] px-4 py-3 text-left text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] hover:text-[var(--accent)]"
                 >
                   {EN ? "+ Custom section" : "+ Sección personalizada"}
                 </button>
@@ -1965,7 +1965,7 @@ export default function EstimateTab({
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#16323D] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[var(--brand)] px-5 py-4">
                 <div className="flex-1 min-w-0 pr-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
                     {EN ? "Payment Detail" : "Detalle de Pago"} · {money(target)}
@@ -1983,7 +1983,7 @@ export default function EstimateTab({
               {/* Summary */}
               <div className="grid grid-cols-3 gap-px bg-[#E6DDCB] border-b border-[#E6DDCB]">
                 {[
-                  { label: EN ? "Target" : "Total a cobrar", value: money(target), color: "text-[#16323D]" },
+                  { label: EN ? "Target" : "Total a cobrar", value: money(target), color: "text-[var(--brand)]" },
                   { label: EN ? "Received" : "Recibido",     value: money(received), color: "text-[#4F8A63]" },
                   { label: EN ? "Remaining" : "Pendiente",   value: money(remaining), color: remaining > 0 ? "text-[#B0492F]" : "text-[#4F8A63]" },
                 ].map(c => (
@@ -1995,7 +1995,7 @@ export default function EstimateTab({
               </div>
               {/* Progress bar */}
               <div className="h-1.5 bg-[#E6DDCB]">
-                <div className={`h-full transition-all ${pct >= 100 ? "bg-[#4F8A63]" : "bg-[#395886]"}`} style={{ width: `${pct}%` }} />
+                <div className={`h-full transition-all ${pct >= 100 ? "bg-[#4F8A63]" : "bg-[var(--accent)]"}`} style={{ width: `${pct}%` }} />
               </div>
 
               {/* Payments grid */}
@@ -2063,9 +2063,9 @@ export default function EstimateTab({
                             ) : (
                               <>
                                 <td className="px-4 py-2 text-[#5C6A6E]">{p.date}</td>
-                                <td className="px-4 py-2 text-[#16323D] max-w-[130px] truncate">{p.concept || "—"}</td>
+                                <td className="px-4 py-2 text-[var(--brand)] max-w-[130px] truncate">{p.concept || "—"}</td>
                                 <td className="px-4 py-2 text-[#5C6A6E]">{p.method}</td>
-                                <td className="px-4 py-2 text-right font-mono font-semibold text-[#16323D]">{money(p.amount)}</td>
+                                <td className="px-4 py-2 text-right font-mono font-semibold text-[var(--brand)]">{money(p.amount)}</td>
                                 <td className="px-2 py-2">
                                   {confirmDeletePayId === p.id ? (
                                     <div className="flex items-center gap-1">
@@ -2083,7 +2083,7 @@ export default function EstimateTab({
                                     <div className="flex gap-1">
                                       <button
                                         onClick={() => { setEditingPayId(p.id); setEditForm({ amount: String(p.amount), date: p.date, method: p.method, concept: p.concept ?? "" }); }}
-                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] hover:text-[#395886] transition"
+                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] hover:text-[var(--accent)] transition"
                                       ><Pencil size={10} /></button>
                                       <button
                                         onClick={() => setConfirmDeletePayId(p.id)}
@@ -2120,14 +2120,14 @@ export default function EstimateTab({
                     <>
                       <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">
                         {EN ? "Add partial payment" : "Agregar pago a cuenta"}
-                        {remaining > 0 && <span className="ml-2 font-normal normal-case text-[#395886]">({EN ? "pending" : "pendiente"}: {money(remaining)})</span>}
+                        {remaining > 0 && <span className="ml-2 font-normal normal-case text-[var(--accent)]">({EN ? "pending" : "pendiente"}: {money(remaining)})</span>}
                       </p>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <input
                             type="number" placeholder={EN ? "Amount" : "Monto"} value={depAmt}
                             onChange={e => setDepAmt(e.target.value)}
-                            className={`w-full rounded-lg border px-3 py-2 text-[12px] focus:outline-none ${wouldExceed ? "border-[#B0492F] bg-[#FDF0ED] focus:border-[#B0492F]" : "border-[#E6DDCB] bg-white focus:border-[#395886]"}`}
+                            className={`w-full rounded-lg border px-3 py-2 text-[12px] focus:outline-none ${wouldExceed ? "border-[#B0492F] bg-[#FDF0ED] focus:border-[#B0492F]" : "border-[#E6DDCB] bg-white focus:border-[var(--accent)]"}`}
                           />
                           {wouldExceed && (
                             <p className="mt-1 text-[10px] text-[#B0492F]">
@@ -2138,12 +2138,12 @@ export default function EstimateTab({
                         <input
                           type="date" value={depDate}
                           onChange={e => setDepDate(e.target.value)}
-                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         />
                         <select
                           value={depMethod}
                           onChange={e => setDepMethod(e.target.value as Payment["method"])}
-                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         >
                           {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => (
                             <option key={m} value={m}>{m}</option>
@@ -2152,7 +2152,7 @@ export default function EstimateTab({
                         <input
                           type="text" placeholder={EN ? "Comment (e.g. first deposit)" : "Comentario (ej. primer depósito)"}
                           value={depConcept} onChange={e => setDepConcept(e.target.value)}
-                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[#395886] focus:outline-none"
+                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         />
                       </div>
                       {wouldExceed && (
@@ -2165,7 +2165,7 @@ export default function EstimateTab({
                       <button
                         onClick={() => addDepositPayment(idx)}
                         disabled={depSaving || !depAmt || parseFloat(depAmt) <= 0 || wouldExceed}
-                        className="mt-2 w-full rounded-xl bg-[#16323D] py-2.5 text-[12px] font-bold text-white transition hover:bg-[#0F2830] disabled:opacity-40"
+                        className="mt-2 w-full rounded-xl bg-[var(--brand)] py-2.5 text-[12px] font-bold text-white transition hover:bg-[#0F2830] disabled:opacity-40"
                       >
                         {depSaving ? "…" : (EN ? "+ Register payment" : "+ Registrar pago")}
                       </button>
@@ -2192,15 +2192,15 @@ export default function EstimateTab({
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDF0ED] text-lg">
                 🗑
               </div>
-              <h3 className="font-bold text-[#16323D]">
+              <h3 className="font-bold text-[var(--brand)]">
                 {EN ? "Delete section?" : "¿Eliminar sección?"}
               </h3>
             </div>
             <div className="px-5 py-4">
               <p className="text-sm text-[#5C6A6E]">
                 {EN
-                  ? <>The section <strong className="text-[#16323D]">{confirmDeleteSection.name}</strong> and all its items will be permanently deleted. This cannot be undone.</>
-                  : <>La sección <strong className="text-[#16323D]">{confirmDeleteSection.name}</strong> y todos sus ítems serán eliminados permanentemente. Esta acción no se puede deshacer.</>}
+                  ? <>The section <strong className="text-[var(--brand)]">{confirmDeleteSection.name}</strong> and all its items will be permanently deleted. This cannot be undone.</>
+                  : <>La sección <strong className="text-[var(--brand)]">{confirmDeleteSection.name}</strong> y todos sus ítems serán eliminados permanentemente. Esta acción no se puede deshacer.</>}
               </p>
             </div>
             <div className="flex gap-2 border-t border-[#E6DDCB] px-5 py-4">
@@ -2263,7 +2263,7 @@ export default function EstimateTab({
                       value={editDepositPct}
                       onChange={e => onEditDepositPctChange(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
-                      className={`w-16 appearance-none bg-transparent text-center font-extrabold focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${editDepositLastChanged === "pct" ? "text-[28px] text-white" : "text-[22px] text-[#16323D]"}`}
+                      className={`w-16 appearance-none bg-transparent text-center font-extrabold focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${editDepositLastChanged === "pct" ? "text-[28px] text-white" : "text-[22px] text-[var(--brand)]"}`}
                     />
                     <span className={`font-bold ${editDepositLastChanged === "pct" ? "text-[20px] text-white/70" : "text-[16px] text-[#97A1A0]"}`}>%</span>
                   </div>
@@ -2284,7 +2284,7 @@ export default function EstimateTab({
                       value={editDepositAmt}
                       onChange={e => onEditDepositAmtChange(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); }}
-                      className={`w-24 appearance-none bg-transparent text-center font-extrabold focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${editDepositLastChanged === "amount" ? "text-[28px] text-white" : "text-[22px] text-[#16323D]"}`}
+                      className={`w-24 appearance-none bg-transparent text-center font-extrabold focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${editDepositLastChanged === "amount" ? "text-[28px] text-white" : "text-[22px] text-[var(--brand)]"}`}
                     />
                   </div>
                   {editDepositLastChanged === "amount" && (
@@ -2313,7 +2313,7 @@ export default function EstimateTab({
                   value={editDepositLabel}
                   onChange={e => setEditDepositLabel(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
-                  className="w-full rounded-xl border border-[#E6DDCB] px-3 py-2.5 text-sm font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E6DDCB] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                   placeholder={EN ? "e.g. At sign contract" : "Ej. Al firmar contrato"}
                 />
               </div>
@@ -2339,28 +2339,28 @@ export default function EstimateTab({
       {showPdfModal && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-md rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#16323D] px-5 py-4 rounded-t-2xl">
+            <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[var(--brand)] px-5 py-4 rounded-t-2xl">
               <p className="text-sm font-bold text-white">{EN ? "Choose PDF format" : "Elige el formato PDF"}</p>
               <button onClick={() => setShowPdfModal(false)} className="text-white/60 hover:text-white"><X size={18} /></button>
             </div>
             <div className="flex flex-col gap-3 p-5">
               <button
                 onClick={() => handleOpenPdf("full")}
-                className="flex items-start gap-4 rounded-xl border-2 border-[#16323D] bg-[#F7F3EA] p-4 text-left transition hover:bg-[#EDE8E0]"
+                className="flex items-start gap-4 rounded-xl border-2 border-[var(--brand)] bg-[#F7F3EA] p-4 text-left transition hover:bg-[#EDE8E0]"
               >
-                <FileText size={28} className="mt-0.5 flex-none text-[#16323D]" />
+                <FileText size={28} className="mt-0.5 flex-none text-[var(--brand)]" />
                 <div>
-                  <p className="font-bold text-[#16323D]">{EN ? "Estimate with detail" : "Estimado con detalle"}</p>
+                  <p className="font-bold text-[var(--brand)]">{EN ? "Estimate with detail" : "Estimado con detalle"}</p>
                   <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Shows all section totals and item amounts" : "Muestra totales de secciones y montos de items"}</p>
                 </div>
               </button>
               <button
                 onClick={() => handleOpenPdf("summary")}
-                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] bg-white p-4 text-left transition hover:border-[#395886] hover:bg-[#F0F3FA]"
+                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] bg-white p-4 text-left transition hover:border-[var(--accent)] hover:bg-[#F0F3FA]"
               >
-                <FileText size={28} className="mt-0.5 flex-none text-[#395886]" />
+                <FileText size={28} className="mt-0.5 flex-none text-[var(--accent)]" />
                 <div>
-                  <p className="font-bold text-[#16323D]">{EN ? "Estimate without detail" : "Estimado sin detalle"}</p>
+                  <p className="font-bold text-[var(--brand)]">{EN ? "Estimate without detail" : "Estimado sin detalle"}</p>
                   <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Scope of work only — no amounts shown, payment schedule included" : "Solo alcance de trabajo — sin montos, incluye plan de pagos"}</p>
                 </div>
               </button>
@@ -2391,7 +2391,7 @@ export default function EstimateTab({
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between bg-[#395886] px-5 py-4">
+            <div className="flex items-center justify-between bg-[var(--accent)] px-5 py-4">
               <div className="flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <p className="text-sm font-bold text-white">
@@ -2422,7 +2422,7 @@ export default function EstimateTab({
                   <select
                     value={copyTargetId}
                     onChange={e => onCopyTargetChange(e.target.value)}
-                    className="w-full rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-2.5 text-sm font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
+                    className="w-full rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                   >
                     {copyProjects.map(p => (
                       <option key={p.id} value={p.id}>
@@ -2456,7 +2456,7 @@ export default function EstimateTab({
               <button
                 onClick={doCopyEstimate}
                 disabled={copying || !copyTargetId}
-                className="flex-1 rounded-xl bg-[#395886] py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4a75] disabled:opacity-50"
+                className="flex-1 rounded-xl bg-[var(--accent)] py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4a75] disabled:opacity-50"
               >
                 {copying ? "…" : (EN ? "Copy estimate" : "Copiar estimado")}
               </button>

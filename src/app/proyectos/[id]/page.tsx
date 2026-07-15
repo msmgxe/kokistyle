@@ -107,11 +107,11 @@ function ConfirmModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-[440px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
-        <h3 className="mb-1 text-lg font-bold text-[#16323D]">{title}</h3>
+        <h3 className="mb-1 text-lg font-bold text-[var(--brand)]">{title}</h3>
         <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
-          <button onClick={onConfirm} className={`flex-1 rounded-xl py-3 font-bold text-white ${danger ? "bg-[#B0492F]" : "bg-[#16323D]"}`}>{label}</button>
+          <button onClick={onConfirm} className={`flex-1 rounded-xl py-3 font-bold text-white ${danger ? "bg-[#B0492F]" : "bg-[var(--brand)]"}`}>{label}</button>
         </div>
       </div>
     </div>
@@ -142,7 +142,7 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="w-full max-w-[460px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh] overflow-y-auto">
-          <h3 className="mb-1 text-xl font-bold text-[#16323D]">{opts.title}</h3>
+          <h3 className="mb-1 text-xl font-bold text-[var(--brand)]">{opts.title}</h3>
           {opts.sub && <p className="mb-4 text-sm text-[#5C6A6E]">{opts.sub}</p>}
           <div className="space-y-3">
             {opts.fields.map((f) => (
@@ -150,7 +150,7 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
                 <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{f.label}</label>
                 {f.type === "select" ? (
                   <select value={vals[f.key] as string} onChange={(e) => set(f.key, e.target.value)}
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
+                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
                     {f.options?.map((o) => <option key={o} value={o}>{f.optionLabels?.[o] ?? o}</option>)}
                   </select>
                 ) : f.type === "number" ? (
@@ -163,26 +163,26 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
                       set(f.key, raw === "" ? 0 : parseFloat(raw) || 0);
                     }}
                     placeholder="0"
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   />
                 ) : f.type === "textarea" ? (
                   <textarea
                     rows={3}
                     value={vals[f.key] as string}
                     onChange={(e) => set(f.key, e.target.value)}
-                    className="w-full resize-none rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    className="w-full resize-none rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   />
                 ) : (
                   <input type={f.type} value={vals[f.key] as string}
                     onChange={(e) => set(f.key, e.target.value)}
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
                 )}
               </div>
             ))}
           </div>
           <div className="mt-5 flex gap-3">
             <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
-            <button onClick={() => setConfirmSave(true)} className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white">Guardar</button>
+            <button onClick={() => setConfirmSave(true)} className="flex-1 rounded-xl bg-[var(--brand)] py-3 font-bold text-white">Guardar</button>
           </div>
           {opts.onDelete && (
             <button onClick={() => setConfirmDel(true)} className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-bold text-[#B0492F]">
@@ -489,7 +489,7 @@ function MaterialesTab({
       <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-[400px]">
         <div className="rounded-[13px] border border-[#E6DDCB] bg-white p-3">
           <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.materials.toBuy}</div>
-          <div className="mt-1 font-mono text-lg font-semibold text-[#16323D]">{money(por)}</div>
+          <div className="mt-1 font-mono text-lg font-semibold text-[var(--brand)]">{money(por)}</div>
         </div>
         <div className="rounded-[13px] border border-[#E6DDCB] bg-white p-3">
           <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.materials.bought}</div>
@@ -500,7 +500,7 @@ function MaterialesTab({
       {/* Import from Estimate */}
       <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#D5DEEF] bg-[#EDF3FB] px-4 py-3">
         <div className="flex-1">
-          <div className="text-[12px] font-bold text-[#395886]">
+          <div className="text-[12px] font-bold text-[var(--accent)]">
             {EN ? "Import from Estimate" : "Importar del Estimado"}
           </div>
           <div className="text-[10.5px] text-[#5C6A6E]">
@@ -512,7 +512,7 @@ function MaterialesTab({
         <button
           onClick={importFromEstimate}
           disabled={importing}
-          className="flex items-center gap-1.5 rounded-xl bg-[#395886] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#16323D] disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[var(--brand)] disabled:opacity-50"
         >
           {importing ? "…" : (EN ? "⬇ Import" : "⬇ Importar")}
         </button>
@@ -523,7 +523,7 @@ function MaterialesTab({
         {!selectMode ? (
           <button
             onClick={() => setSelectMode(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[#16323D] hover:text-[#16323D]"
+            className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
           >
             ☑ {EN ? "Select" : "Seleccionar"}
           </button>
@@ -531,7 +531,7 @@ function MaterialesTab({
           <>
             <button
               onClick={() => setSelectedIds(selectedIds.size === items.length ? new Set() : new Set(items.map(m => m.id)))}
-              className="rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[#16323D]"
+              className="rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[var(--brand)]"
             >
               {selectedIds.size === items.length ? (EN ? "Deselect all" : "Quitar todo") : (EN ? "Select all" : "Seleccionar todo")}
             </button>
@@ -554,7 +554,7 @@ function MaterialesTab({
                     onClick={() => selectMode ? toggleSelect(m.id) : openEdit(m)}
                     className={`flex cursor-pointer select-none items-start overflow-hidden rounded-[13px] border transition ${
                       isSelected ? "border-[#B0492F] bg-[#FDF3F1] ring-1 ring-[#B0492F]"
-                        : isDragging ? "border-[#E6DDCB] bg-white shadow-lg ring-1 ring-[#16323D]"
+                        : isDragging ? "border-[#E6DDCB] bg-white shadow-lg ring-1 ring-[var(--brand)]"
                         : "border-[#E6DDCB] bg-white"
                     } ${m.bought && !isSelected ? "opacity-65" : ""}`}
                   >
@@ -584,11 +584,11 @@ function MaterialesTab({
                       <span className="flex-1 min-w-0">
                         <span className="flex items-center gap-1.5 flex-wrap">
                           {m.estimate_item_id && (
-                            <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[#395886]">
+                            <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent)]">
                               {EN ? "FROM EST" : "DEL EST"}
                             </span>
                           )}
-                          <span className={`text-sm font-semibold ${m.bought ? "text-[#5C6A6E] line-through" : "text-[#16323D]"}`}>{m.name}</span>
+                          <span className={`text-sm font-semibold ${m.bought ? "text-[#5C6A6E] line-through" : "text-[var(--brand)]"}`}>{m.name}</span>
                         </span>
                         <span className="mt-0.5 flex flex-wrap items-center gap-2">
                           {((m.quantity && m.quantity !== 1) || m.unit) && (
@@ -607,7 +607,7 @@ function MaterialesTab({
                           <span className="mt-0.5 block truncate text-[10.5px] text-[#97A1A0]">{m.notes}</span>
                         )}
                       </span>
-                      <span className="mt-0.5 font-mono text-sm font-semibold text-[#16323D] whitespace-nowrap">{money(m.cost)}</span>
+                      <span className="mt-0.5 font-mono text-sm font-semibold text-[var(--brand)] whitespace-nowrap">{money(m.cost)}</span>
                       {!selectMode && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setConfirmDup(m); }}
@@ -628,9 +628,9 @@ function MaterialesTab({
 
         <DragOverlay dropAnimation={dropAnimation}>
           {activeMat && (
-            <div className="flex items-center gap-3 rounded-[13px] border border-[#16323D] bg-white px-3 py-3 shadow-2xl ring-1 ring-[#16323D]">
-              <span className="text-sm font-semibold text-[#16323D]">{activeMat.name}</span>
-              <span className="ml-auto font-mono text-sm font-semibold text-[#16323D]">{money(activeMat.cost)}</span>
+            <div className="flex items-center gap-3 rounded-[13px] border border-[var(--brand)] bg-white px-3 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
+              <span className="text-sm font-semibold text-[var(--brand)]">{activeMat.name}</span>
+              <span className="ml-auto font-mono text-sm font-semibold text-[var(--brand)]">{money(activeMat.cost)}</span>
             </div>
           )}
         </DragOverlay>
@@ -685,7 +685,7 @@ function MaterialesTab({
             onRefresh(); toast(tp.materials.materialAdded);
           },
         })}
-        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
       >
         + {tp.materials.addMaterial}
       </button>
@@ -756,7 +756,7 @@ function ContactosTab({
         <span className="text-sm font-semibold text-[#5C6A6E]">{tp.contacts.assigned}</span>
         <button
           onClick={() => setPickerOpen(true)}
-          className="rounded-xl bg-[#16323D] px-4 py-2 text-xs font-bold text-white hover:bg-[#1e4455]"
+          className="rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white hover:bg-[#1e4455]"
         >
           {tp.contacts.addSpecialist}
         </button>
@@ -767,7 +767,7 @@ function ContactosTab({
           <p className="text-sm text-[#5C6A6E]">{tp.contacts.noAssigned}</p>
           <button
             onClick={() => setPickerOpen(true)}
-            className="rounded-xl bg-[#16323D] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1e4455]"
+            className="rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1e4455]"
           >
             {tp.contacts.addSpecialist}
           </button>
@@ -779,11 +779,11 @@ function ContactosTab({
               key={c.id}
               className="flex items-center gap-3 rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3 shadow-sm"
             >
-              <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] text-sm font-bold text-white">
+              <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[var(--brand)] text-sm font-bold text-white">
                 {initials(c.name)}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-[#16323D]">{c.name}</div>
+                <div className="text-sm font-bold text-[var(--brand)]">{c.name}</div>
                 {c.specialty && (
                   <div className="text-xs text-[#5C6A6E]">
                     {c.specialty}{c.rate ? ` · ${c.rate} ${c.rate_type === "day" ? t.panel.globalContacts.rateDay : t.panel.globalContacts.rateHour}` : ""}
@@ -812,7 +812,7 @@ function ContactosTab({
       {pickerOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
           <div className="flex max-h-[80vh] w-full max-w-[460px] flex-col rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
-            <h3 className="mb-4 text-xl font-bold text-[#16323D]">
+            <h3 className="mb-4 text-xl font-bold text-[var(--brand)]">
               {tp.contacts.pickerTitle}
             </h3>
             <input
@@ -820,7 +820,7 @@ function ContactosTab({
               value={pickerSearch}
               onChange={(e) => setPickerSearch(e.target.value)}
               placeholder={tp.contacts.pickerSearch}
-              className="mb-3 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+              className="mb-3 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
             />
             <div className="flex-1 space-y-2 overflow-y-auto">
               {available.length === 0 ? (
@@ -835,11 +835,11 @@ function ContactosTab({
                     disabled={busy === c.id}
                     className="flex w-full items-center gap-3 rounded-xl border border-[#E6DDCB] bg-white p-3 text-left transition hover:bg-[#F7F3EA] disabled:opacity-50"
                   >
-                    <span className="grid size-10 flex-none place-items-center rounded-[12px] bg-[#16323D] text-sm font-bold text-white">
+                    <span className="grid size-10 flex-none place-items-center rounded-[12px] bg-[var(--brand)] text-sm font-bold text-white">
                       {initials(c.name)}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold text-[#16323D]">{c.name}</div>
+                      <div className="text-sm font-bold text-[var(--brand)]">{c.name}</div>
                       {c.specialty && (
                         <div className="text-xs text-[#5C6A6E]">{c.specialty}</div>
                       )}
@@ -943,9 +943,9 @@ function PresupuestoTab({
                         <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] ${b.type === "mano" ? "bg-[#DCE8E9] text-[#4E7A82]" : "bg-[#DCE6E6] text-[#0E2630]"}`}>
                           {b.type === "mano" ? tp.budget.labor : tp.budget.material}
                         </span>
-                        <span className="truncate text-sm font-medium text-[#16323D]">{b.description}</span>
+                        <span className="truncate text-sm font-medium text-[var(--brand)]">{b.description}</span>
                       </div>
-                      <span className="font-mono text-sm font-semibold text-[#16323D]">{money(b.amount)}</span>
+                      <span className="font-mono text-sm font-semibold text-[var(--brand)]">{money(b.amount)}</span>
                     </div>
                   </div>
                 )}
@@ -956,15 +956,15 @@ function PresupuestoTab({
 
         <DragOverlay dropAnimation={dropAnimation}>
           {activeBudget && (
-            <div className="flex items-center justify-between gap-2 rounded-2xl border border-[#16323D] bg-white px-4 py-3 shadow-2xl">
-              <span className="text-sm font-medium text-[#16323D]">{activeBudget.description}</span>
-              <span className="font-mono text-sm font-semibold text-[#16323D]">{money(activeBudget.amount)}</span>
+            <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl">
+              <span className="text-sm font-medium text-[var(--brand)]">{activeBudget.description}</span>
+              <span className="font-mono text-sm font-semibold text-[var(--brand)]">{money(activeBudget.amount)}</span>
             </div>
           )}
         </DragOverlay>
       </DndContext>
 
-      <div className="mt-3 flex items-center justify-between rounded-2xl bg-[#16323D] px-5 py-4">
+      <div className="mt-3 flex items-center justify-between rounded-2xl bg-[var(--brand)] px-5 py-4">
         <span className="text-sm font-semibold text-white/80">{tp.budget.total}</span>
         <span className="font-mono text-xl font-semibold text-white">{money(sum)}</span>
       </div>
@@ -991,13 +991,13 @@ function PresupuestoTab({
               onRefresh(); toast(tp.budget.lineAdded);
             },
           })}
-          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
         >
           + {tp.budget.addLine}
         </button>
         <button
           onClick={() => exportCotizacion(project, items)}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-3 text-sm font-bold text-[#16323D] transition hover:bg-[#F7F3EA]"
+          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA]"
         >
           ↓ {tp.budget.export}
         </button>
@@ -1130,8 +1130,8 @@ function PagosTab({
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.income}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
         <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.expenses}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#B0492F]">{money(egr)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.outstanding}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#16323D]">{money(due)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.cashFlow}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#16323D]">{money(caja)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.outstanding}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(due)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.cashFlow}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(caja)}</div></div>
       </div>
       {paid && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#DCEBDD] bg-[#E7F1E6] px-4 py-3 text-sm font-semibold text-[#4F8A63]">🎉 {tp.payments.paidFull}</div>}
 
@@ -1139,14 +1139,14 @@ function PagosTab({
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-xl border border-[#E6DDCB] bg-[#ECE3D1] p-1">
           {(["ingresos", "egresos"] as PaySubTab[]).map((sub) => (
-            <button key={sub} onClick={() => changeSubTab(sub)} className={`rounded-lg px-5 py-2 text-sm font-bold transition ${subTab === sub ? "bg-white text-[#16323D] shadow-sm" : "text-[#5C6A6E]"}`}>
+            <button key={sub} onClick={() => changeSubTab(sub)} className={`rounded-lg px-5 py-2 text-sm font-bold transition ${subTab === sub ? "bg-white text-[var(--brand)] shadow-sm" : "text-[#5C6A6E]"}`}>
               {sub === "ingresos" ? tp.payments.incomeTab : tp.payments.expensesTab}
             </button>
           ))}
         </div>
         <button
           onClick={() => exportEstadoCuenta(project, payments, expenses)}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-2 text-sm font-bold text-[#16323D] transition hover:bg-[#F7F3EA]"
+          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-2 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA]"
         >
           ↓ {tp.payments.exportStatement}
         </button>
@@ -1164,12 +1164,12 @@ function PagosTab({
                     <div
                       {...listeners} {...attributes}
                       onClick={() => openPayEdit(x)}
-                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}
+                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[var(--brand)]" : "hover:bg-[#F7F3EA]"}`}
                     >
                       <DragHandle />
                       <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                         <div>
-                          <div className="flex items-center gap-2 text-sm font-semibold text-[#16323D]">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--brand)]">
                             {x.method}
                             <span className="rounded bg-[#ECE3D1] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E]">{tp.paymentType[x.type as keyof typeof tp.paymentType] ?? x.type}</span>
                           </div>
@@ -1185,8 +1185,8 @@ function PagosTab({
           </SortableContext>
           <DragOverlay dropAnimation={dropAnimation}>
             {activePay && (
-              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[#16323D] bg-white px-4 py-3 shadow-2xl">
-                <span className="text-sm font-semibold text-[#16323D]">{activePay.method}</span>
+              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl">
+                <span className="text-sm font-semibold text-[var(--brand)]">{activePay.method}</span>
                 <span className="font-mono text-base font-semibold text-[#4F8A63]">+{money(activePay.amount)}</span>
               </div>
             )}
@@ -1207,7 +1207,7 @@ function PagosTab({
                 onRefresh(); toast(tp.payments.incomeRecorded);
               },
             })}
-            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
           >
             + {tp.payments.registerIncome}
           </button>
@@ -1226,14 +1226,14 @@ function PagosTab({
                     <div
                       {...listeners} {...attributes}
                       onClick={() => openExpEdit(x)}
-                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border transition ${x.material_id ? "border-[#D5DEEF] bg-[#F4F8FE]" : "border-[#E6DDCB] bg-white"} ${isDragging ? "shadow-lg ring-1 ring-[#16323D]" : "hover:bg-[#F7F3EA]"}`}
+                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border transition ${x.material_id ? "border-[#D5DEEF] bg-[#F4F8FE]" : "border-[#E6DDCB] bg-white"} ${isDragging ? "shadow-lg ring-1 ring-[var(--brand)]" : "hover:bg-[#F7F3EA]"}`}
                     >
                       <DragHandle />
                       <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-[#16323D]">
+                          <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-[var(--brand)]">
                             {x.material_id && (
-                              <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[#395886]">
+                              <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent)]">
                                 {EN ? "FROM MAT" : "DEL MAT"}
                               </span>
                             )}
@@ -1246,7 +1246,7 @@ function PagosTab({
                           {x.material_id && (
                             <button
                               onClick={(e) => { e.stopPropagation(); unmarkMaterial(x); }}
-                              className="rounded-lg border border-[#D5DEEF] bg-white px-2 py-1 text-[10px] font-bold text-[#395886] transition hover:bg-[#EDF3FB]"
+                              className="rounded-lg border border-[#D5DEEF] bg-white px-2 py-1 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB]"
                             >
                               ↩ {EN ? "Unmark" : "Desmarcar"}
                             </button>
@@ -1262,8 +1262,8 @@ function PagosTab({
           </SortableContext>
           <DragOverlay dropAnimation={dropAnimation}>
             {activeExp && (
-              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[#16323D] bg-white px-4 py-3 shadow-2xl">
-                <span className="text-sm font-semibold text-[#16323D]">{activeExp.payee_name}</span>
+              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl">
+                <span className="text-sm font-semibold text-[var(--brand)]">{activeExp.payee_name}</span>
                 <span className="font-mono text-base font-semibold text-[#B0492F]">−{money(activeExp.amount)}</span>
               </div>
             )}
@@ -1285,7 +1285,7 @@ function PagosTab({
                 onRefresh(); toast(tp.payments.expenseRecorded);
               },
             })}
-            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
           >
             + {tp.payments.registerExpense}
           </button>
@@ -1321,30 +1321,30 @@ function PlanTaskForm({
       <div>
         <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Activity</label>
         <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Start date</label>
           <input type="date" value={sDate} onChange={(e) => setSDate(e.target.value)}
-            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
         </div>
         <div>
           <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">End date</label>
           <input type="date" value={eDate} onChange={(e) => setEDate(e.target.value)}
-            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
         </div>
       </div>
       <div className="text-xs text-[#5C6A6E]">Duration: ~{Math.round(durationDays / 7)} weeks ({durationDays} days)</div>
       <div>
         <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Estimated hours</label>
         <input type="number" min={0} value={hours} onChange={(e) => setHours(Number(e.target.value))}
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
       </div>
       <div>
         <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Status</label>
         <select value={status} onChange={(e) => setStatus(e.target.value as "pend" | "prog" | "done")}
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
           <option value="pend">To do</option>
           <option value="prog">In progress</option>
           <option value="done">Done</option>
@@ -1352,7 +1352,7 @@ function PlanTaskForm({
       </div>
       <div className="mt-5 flex gap-3">
         <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancel</button>
-        <button onClick={() => onSave({ name, hours, durationDays, status, startDate: sDate, endDate: eDate })} className="flex-1 rounded-xl bg-[#395886] py-3 font-bold text-white">Save</button>
+        <button onClick={() => onSave({ name, hours, durationDays, status, startDate: sDate, endDate: eDate })} className="flex-1 rounded-xl bg-[var(--accent)] py-3 font-bold text-white">Save</button>
       </div>
     </div>
   );
@@ -1468,7 +1468,7 @@ function PlanTab({
   return (
     <div className="w-full">
       {/* Gantt header */}
-      <div className="mb-4 rounded-2xl bg-[#16323D] px-5 py-3 flex items-center justify-between">
+      <div className="mb-4 rounded-2xl bg-[var(--brand)] px-5 py-3 flex items-center justify-between">
         <div>
           <h2 className="font-bookman text-base font-semibold text-white">{tp.tabs.plan}</h2>
           <p className="text-[11px] text-white/50">{tp.plan.hint}</p>
@@ -1486,7 +1486,7 @@ function PlanTab({
             { key: "done", label: tp.workflow.colDone },
           ] as const).map(({ key, label }) => (
             <button key={key} onClick={() => setFilterStatus(key)}
-              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"}`}>
               {label}
             </button>
           ))}
@@ -1496,7 +1496,7 @@ function PlanTab({
           <select
             value={filterAssignee}
             onChange={e => setFilterAssignee(e.target.value)}
-            className="rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] font-semibold text-[#5C6A6E] focus:border-[#395886] focus:outline-none"
+            className="rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] font-semibold text-[#5C6A6E] focus:border-[var(--accent)] focus:outline-none"
           >
             {assigneeOptions.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -1507,7 +1507,7 @@ function PlanTab({
         <div className="ml-auto inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
           {(["week", "day"] as const).map((u) => (
             <button key={u} onClick={() => setGanttUnit(u)}
-              className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+              className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"}`}>
               {u === "week" ? "Weeks" : "Days"}
             </button>
           ))}
@@ -1541,7 +1541,7 @@ function PlanTab({
                 <SortableRow key={t.id} id={t.id}>
                   {({ listeners, attributes }, isDragging) => (
                     <div
-                      className={`flex items-stretch border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[#16323D]" : ""}`}
+                      className={`flex items-stretch border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[var(--brand)]" : ""}`}
                       style={{ width: 300 + scale.laneWidth }}
                     >
                       <div
@@ -1551,7 +1551,7 @@ function PlanTab({
                       >
                         <DragHandle />
                         <div className="min-w-0 flex-1 py-1.5">
-                          <div className="truncate text-[12px] font-semibold uppercase tracking-wide text-[#16323D]">{t.name}</div>
+                          <div className="truncate text-[12px] font-semibold uppercase tracking-wide text-[var(--brand)]">{t.name}</div>
                           <div className="truncate font-mono text-[10px] text-[#5C6A6E]">
                             {dShort(start)}–{dShort(end)} · {t.hours}h
                             {t.assigned_contact_id && (
@@ -1590,8 +1590,8 @@ function PlanTab({
 
         <DragOverlay dropAnimation={dropAnimation}>
           {activeTask && (
-            <div className="rounded-xl border border-[#16323D] bg-white px-4 py-3 shadow-2xl ring-1 ring-[#16323D]">
-              <div className="text-sm font-semibold text-[#16323D]">{activeTask.name}</div>
+            <div className="rounded-xl border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
+              <div className="text-sm font-semibold text-[var(--brand)]">{activeTask.name}</div>
               <div className="font-mono text-[11px] text-[#5C6A6E]">{activeTask.hours}h · {activeTask.duration_weeks}w</div>
             </div>
           )}
@@ -1625,7 +1625,7 @@ function PlanTab({
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
           onClick={(e) => { if (e.target === e.currentTarget) setEditTask(null); }}>
           <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[90vh]">
-            <h3 className="mb-4 text-xl font-bold text-[#16323D]">Edit task</h3>
+            <h3 className="mb-4 text-xl font-bold text-[var(--brand)]">Edit task</h3>
             <PlanTaskForm
               task={editTask.task.task}
               startDate={editTask.startDate}
@@ -1760,7 +1760,7 @@ function NotasTab({
       {!adding && (
         <button
           onClick={() => setAdding(true)}
-          className="flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]"
+          className="flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
         >
           <Plus size={14} /> {tp.notes.addNote}
         </button>
@@ -1774,7 +1774,7 @@ function NotasTab({
             onChange={(e) => setNewContent(e.target.value)}
             placeholder={tp.notes.placeholder}
             rows={3}
-            className="mb-3 w-full resize-none rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[#16323D] placeholder:text-[#97A1A0] focus:border-[#16323D] focus:outline-none"
+            className="mb-3 w-full resize-none rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[var(--brand)] placeholder:text-[#97A1A0] focus:border-[var(--brand)] focus:outline-none"
           />
           {/* File preview */}
           {newFiles.length > 0 && (
@@ -1812,7 +1812,7 @@ function NotasTab({
               <button
                 onClick={handleAdd}
                 disabled={uploading || (!newContent.trim() && newFiles.length === 0)}
-                className="rounded-xl bg-[#16323D] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                className="rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
               >
                 {uploading ? tp.notes.saving : tp.common.save}
               </button>
@@ -1837,7 +1837,7 @@ function NotasTab({
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={3}
-                className="mb-3 w-full resize-none rounded-xl border border-[#4E7A82] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[#16323D] focus:outline-none"
+                className="mb-3 w-full resize-none rounded-xl border border-[#4E7A82] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[var(--brand)] focus:outline-none"
               />
               {/* Existing attachments */}
               {note.attachments?.length > 0 && (
@@ -1876,7 +1876,7 @@ function NotasTab({
                   onChange={(e) => { if (e.target.files) setEditFiles(p => [...p, ...Array.from(e.target.files!)]); }} />
                 <div className="ml-auto flex gap-2">
                   <button onClick={() => setEditingNote(null)} className="rounded-xl bg-[#ECE3D1] px-3 py-2 text-sm font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
-                  <button onClick={handleSaveEdit} disabled={uploading} className="rounded-xl bg-[#16323D] px-3 py-2 text-sm font-bold text-white disabled:opacity-50">
+                  <button onClick={handleSaveEdit} disabled={uploading} className="rounded-xl bg-[var(--brand)] px-3 py-2 text-sm font-bold text-white disabled:opacity-50">
                     {uploading ? "…" : tp.common.save}
                   </button>
                 </div>
@@ -1885,7 +1885,7 @@ function NotasTab({
           ) : (
             <>
               {/* Note content */}
-              {note.content && <p className="mb-3 whitespace-pre-wrap text-sm text-[#16323D]">{note.content}</p>}
+              {note.content && <p className="mb-3 whitespace-pre-wrap text-sm text-[var(--brand)]">{note.content}</p>}
               {/* Attachments */}
               {note.attachments?.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -1928,13 +1928,13 @@ function NotasTab({
       {pinPrompt && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
           <div className="w-full max-w-[360px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
-            <h3 className="mb-1 text-base font-bold text-[#16323D]">
+            <h3 className="mb-1 text-base font-bold text-[var(--brand)]">
               {pinPrompt.action === "delete" ? tp.notes.deleteNote : tp.notes.confirmEdit}
             </h3>
             <p className="mb-4 text-sm text-[#5C6A6E]">{tp.notes.pinPrompt}</p>
             <div className="mb-1 flex justify-center gap-3">
               {[0,1,2,3].map(i => (
-                <div key={i} className={`size-3 rounded-full transition ${pinValue.length > i ? "bg-[#16323D]" : "bg-[#D7CBB3]"}`} />
+                <div key={i} className={`size-3 rounded-full transition ${pinValue.length > i ? "bg-[var(--brand)]" : "bg-[#D7CBB3]"}`} />
               ))}
             </div>
             <input
@@ -1945,7 +1945,7 @@ function NotasTab({
               value={pinValue}
               onChange={(e) => { setPinValue(e.target.value.replace(/\D/g,"").slice(0,4)); setPinError(""); }}
               onKeyDown={(e) => e.key === "Enter" && pinValue.length === 4 && verifyPin()}
-              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-white text-center font-mono text-xl tracking-[1.5em] text-[#16323D] focus:border-[#16323D] focus:outline-none"
+              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-white text-center font-mono text-xl tracking-[1.5em] text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
               placeholder="••••"
             />
             {pinError && <p className="mb-2 text-center text-xs font-semibold text-[#B0492F]">{pinError}</p>}
@@ -1953,7 +1953,7 @@ function NotasTab({
               <button onClick={() => { setPinPrompt(null); setPinValue(""); setPinError(""); }}
                 className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
               <button onClick={verifyPin} disabled={pinValue.length < 4}
-                className={`flex-1 rounded-xl py-3 font-bold text-white disabled:opacity-40 ${pinPrompt.action === "delete" ? "bg-[#B0492F]" : "bg-[#16323D]"}`}>
+                className={`flex-1 rounded-xl py-3 font-bold text-white disabled:opacity-40 ${pinPrompt.action === "delete" ? "bg-[#B0492F]" : "bg-[var(--brand)]"}`}>
                 {pinPrompt.action === "delete" ? tp.common.delete : tp.notes.confirm}
               </button>
             </div>
@@ -2004,7 +2004,7 @@ function PlannerTab({
 
   if (loading) return (
     <div className="flex h-64 items-center justify-center">
-      <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+      <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
     </div>
   );
   if (!estimate) return (
@@ -2157,7 +2157,7 @@ export default function ProjectDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
       </div>
     );
   }
@@ -2166,12 +2166,12 @@ export default function ProjectDetailPage() {
   return (
     <div className="animate-in fade-in duration-300">
       {/* Back button */}
-      <button onClick={() => router.push("/proyectos")} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C6A6E] transition hover:text-[#16323D]">
+      <button onClick={() => router.push("/proyectos")} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C6A6E] transition hover:text-[var(--brand)]">
         <ArrowLeft size={15} /> {tp.nav.dashboard}
       </button>
 
       {/* Blue header */}
-      <div className="relative mb-2 overflow-hidden rounded-2xl bg-[#395886]">
+      <div className="relative mb-2 overflow-hidden rounded-2xl bg-[var(--accent)]">
         {/* Cover photo strip */}
         {project.photo_url && (
           <button
@@ -2235,14 +2235,14 @@ export default function ProjectDetailPage() {
       {sections.length > 0 && (
         <div className="mb-6 space-y-2">
           {/* Secciones */}
-          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[#16323D] px-3 py-2 [scrollbar-width:none]">
+          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[var(--brand)] px-3 py-2 [scrollbar-width:none]">
             {sections.map((s) => {
               const active = activeSection?.id === s.id;
               return (
                 <button key={s.id}
                   onClick={() => { if (!s.tabs.includes(activeTab)) setActiveTab(s.tabs[0]); }}
                   className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-                    active ? "bg-white text-[#16323D] shadow-sm" : "text-[#A8C0BC] hover:text-white"
+                    active ? "bg-white text-[var(--brand)] shadow-sm" : "text-[#A8C0BC] hover:text-white"
                   }`}>
                   <span className="mr-1">{s.emoji}</span>{tp.sections[s.id]}
                 </button>
@@ -2255,8 +2255,8 @@ export default function ProjectDetailPage() {
               <button key={p.key} onClick={p.onClick}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
                   p.active
-                    ? "bg-[#395886] text-white shadow-sm"
-                    : "text-[#628ECB] hover:text-[#395886]"
+                    ? "bg-[var(--accent)] text-white shadow-sm"
+                    : "text-[#628ECB] hover:text-[var(--accent)]"
                 }`}>
                 {p.label}
               </button>
@@ -2271,7 +2271,7 @@ export default function ProjectDetailPage() {
           {cronoTargets.map((id) => (
             <button key={id} onClick={() => setActiveTab(id)}
               className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
-                activeTab === id ? "bg-white text-[#16323D] shadow-sm" : "text-[#628ECB] hover:text-[#395886]"
+                activeTab === id ? "bg-white text-[var(--brand)] shadow-sm" : "text-[#628ECB] hover:text-[var(--accent)]"
               }`}>
               {id === "planner" ? "📋 " : "📊 "}{tabLabel[id]}
             </button>
@@ -2331,7 +2331,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Toast */}
-      <div className={`fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 max-w-sm w-full rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}>
+      <div className={`fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 max-w-sm w-full rounded-2xl bg-[var(--brand)] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}>
         {toastMsg}
       </div>
     </div>
