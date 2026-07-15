@@ -101,13 +101,13 @@ export default function ReservasAdminPage() {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-bookman text-2xl font-semibold text-[#16323D]">{tb.title}</h1>
+          <h1 className="font-bookman text-2xl font-semibold text-[var(--brand)]">{tb.title}</h1>
           <p className="mt-0.5 text-xs text-[#5C6A6E]">{tb.subtitle}</p>
         </div>
         <a
           href="/reservas"
           target="_blank"
-          className="flex-none rounded-xl bg-[#16323D] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#1E4B5A]">
+          className="flex-none rounded-xl bg-[var(--brand)] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#1E4B5A]">
           View booking page ↗
         </a>
       </div>
@@ -115,10 +115,10 @@ export default function ReservasAdminPage() {
       {/* KPI cards */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { val: kpiThisWeek,  lab: tb.kpiThisWeek,  color: "text-[#16323D]"  },
+          { val: kpiThisWeek,  lab: tb.kpiThisWeek,  color: "text-[var(--brand)]"  },
           { val: kpiPending,   lab: tb.kpiPending,   color: "text-[#B8921A]"  },
           { val: kpiConfirmed, lab: tb.kpiConfirmed, color: "text-[#4F8A63]"  },
-          { val: kpiTotal,     lab: tb.kpiTotal,     color: "text-[#395886]"  },
+          { val: kpiTotal,     lab: tb.kpiTotal,     color: "text-[var(--accent)]"  },
         ].map((k, i) => (
           <div key={i} className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
             <p className={`text-2xl font-extrabold ${k.color}`}>{k.val}</p>
@@ -137,7 +137,7 @@ export default function ReservasAdminPage() {
             <button key={f} onClick={() => setFilter(f)}
               className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
                 filter === f
-                  ? "bg-[#395886] text-white"
+                  ? "bg-[var(--accent)] text-white"
                   : "bg-white text-[#628ECB] hover:bg-[#EDF3FB]"
               }`}>
               {labels[f]}
@@ -179,14 +179,14 @@ export default function ReservasAdminPage() {
                       <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full text-xs font-bold text-white"
                         style={{ background: color }}>{initials}</div>
                       <div>
-                        <p className="text-sm font-bold text-[#16323D]">{b.first_name} {b.last_name}</p>
+                        <p className="text-sm font-bold text-[var(--brand)]">{b.first_name} {b.last_name}</p>
                         <p className="text-xs text-[#5C6A6E]">{b.service_icon} {b.service}</p>
                       </div>
                     </div>
 
                     {/* Date & time */}
                     <div className="sm:pl-0 pl-12">
-                      <p className="text-sm font-semibold text-[#16323D]">{formatDate(b.booking_date)}</p>
+                      <p className="text-sm font-semibold text-[var(--brand)]">{formatDate(b.booking_date)}</p>
                       <p className="text-xs text-[#5C6A6E]">{b.booking_time} · {b.duration_min} {tb.durationLabel}{b.duration_min === 45 && b.service.toLowerCase().includes("virtual") ? ` · ${tb.onlineLabel}` : ""}</p>
                     </div>
 
@@ -211,7 +211,7 @@ export default function ReservasAdminPage() {
                         <button
                           disabled={updating === b.id}
                           onClick={() => updateStatus(b.id, "done")}
-                          className="rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[10px] font-bold text-[#5C6A6E] transition hover:border-[#16323D] hover:text-[#16323D] disabled:opacity-50">
+                          className="rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[10px] font-bold text-[#5C6A6E] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:opacity-50">
                           {tb.actionDone}
                         </button>
                       )}
@@ -233,15 +233,15 @@ export default function ReservasAdminPage() {
                       <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs sm:grid-cols-4">
                         <div>
                           <p className="font-bold uppercase tracking-wider text-[#97A1A0]">{tb.phoneLabel}</p>
-                          <a href={`tel:${b.phone}`} className="text-[#395886] underline">{b.phone}</a>
+                          <a href={`tel:${b.phone}`} className="text-[var(--accent)] underline">{b.phone}</a>
                         </div>
                         <div>
                           <p className="font-bold uppercase tracking-wider text-[#97A1A0]">{tb.emailLabel}</p>
-                          <a href={`mailto:${b.email}`} className="text-[#395886] underline">{b.email}</a>
+                          <a href={`mailto:${b.email}`} className="text-[var(--accent)] underline">{b.email}</a>
                         </div>
                         <div className="col-span-2">
                           <p className="font-bold uppercase tracking-wider text-[#97A1A0]">{tb.addressLabel}</p>
-                          <p className="text-[#16323D]">{b.address}</p>
+                          <p className="text-[var(--brand)]">{b.address}</p>
                         </div>
                         {b.notes && (
                           <div className="col-span-full mt-1">

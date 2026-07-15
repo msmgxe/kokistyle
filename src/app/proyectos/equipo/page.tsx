@@ -9,7 +9,7 @@ export default function EquipoRedirect() {
   useEffect(() => { router.replace("/proyectos/contactos?tab=equipo"); }, [router]);
   return (
     <div className="flex min-h-[40vh] items-center justify-center">
-      <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+      <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
     </div>
   );
 }

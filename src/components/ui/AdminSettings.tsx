@@ -31,7 +31,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function SaveBtn({ loading, disabled, save, saving }: { loading: boolean; disabled?: boolean; save: string; saving: string }) {
   return (
     <button type="submit" disabled={loading || disabled}
-      className="w-full rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-40">
+      className="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
       {loading ? saving : save}
     </button>
   );
@@ -212,8 +212,8 @@ export default function AdminSettings() {
 
       {/* ── Section header ───────────────────────────────────────────────────── */}
       <div className="mb-4 flex items-center gap-2">
-        <div className="h-4 w-1 rounded-full bg-[#16323D]" />
-        <h2 className="text-sm font-bold uppercase tracking-widest text-[#16323D]">{ts.sectionTitle}</h2>
+        <div className="h-4 w-1 rounded-full bg-[var(--brand)]" />
+        <h2 className="text-sm font-bold uppercase tracking-widest text-[var(--brand)]">{ts.sectionTitle}</h2>
       </div>
 
       {/* ── Tab panel ────────────────────────────────────────────────────────── */}
@@ -228,11 +228,11 @@ export default function AdminSettings() {
               onClick={() => setSecTab(tab.id)}
               className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-[12px] font-bold transition-colors ${
                 secTab === tab.id
-                  ? "border-b-2 border-[#16323D] bg-white text-[#16323D]"
-                  : "text-[#5C6A6E] hover:text-[#16323D]"
+                  ? "border-b-2 border-[var(--brand)] bg-white text-[var(--brand)]"
+                  : "text-[#5C6A6E] hover:text-[var(--brand)]"
               }`}
             >
-              <span className={secTab === tab.id ? "text-[#16323D]" : "text-[#97A1A0]"}>
+              <span className={secTab === tab.id ? "text-[var(--brand)]" : "text-[#97A1A0]"}>
                 {tab.icon}
               </span>
               <span className="hidden sm:inline">{tab.label}</span>
@@ -250,14 +250,14 @@ export default function AdminSettings() {
               <Field label={ts.yourName}>
                 <input type="text" value={displayName}
                   onChange={e => { setDisplayNameVal(e.target.value); setNameMsg(null); }}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   placeholder={ts.namePlaceholder}
                 />
               </Field>
               <Field label={ts.confirmCurrentPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={namePin} onChange={e => setNamePin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   placeholder="••••••••"
                 />
               </Field>
@@ -281,7 +281,7 @@ export default function AdminSettings() {
                   <input
                     type={showCur ? "text" : "password"} inputMode="numeric" maxLength={8}
                     value={curPin} onChange={e => setCurPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 pr-9 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 pr-9 font-mono text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                     placeholder="••••••••"
                   />
                   <button type="button" onClick={() => setShowCur(s => !s)}
@@ -293,14 +293,14 @@ export default function AdminSettings() {
               <Field label={ts.newPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={np1} onChange={e => setNp1(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   placeholder={ts.minDigits}
                 />
               </Field>
               <Field label={ts.confirmNewPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={np2} onChange={e => setNp2(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   placeholder="••••••••"
                 />
               </Field>
@@ -326,7 +326,7 @@ export default function AdminSettings() {
                 ) : (
                   <input type="email" value={email}
                     onChange={e => { setEmail(e.target.value); setEmailMsg(null); }}
-                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                     placeholder={ts.emailPlaceholder}
                   />
                 )}
@@ -334,7 +334,7 @@ export default function AdminSettings() {
               <Field label={ts.confirmCurrentPin}>
                 <input type="password" inputMode="numeric" maxLength={8}
                   value={emailPin} onChange={e => setEmailPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   placeholder="••••••••"
                 />
               </Field>
@@ -359,9 +359,9 @@ export default function AdminSettings() {
               <div className="rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-start gap-2.5">
-                    <Fingerprint size={18} className="mt-0.5 flex-none text-[#16323D]" />
+                    <Fingerprint size={18} className="mt-0.5 flex-none text-[var(--brand)]" />
                     <div>
-                      <p className="text-xs font-bold text-[#16323D]">{ts.bioTitle}</p>
+                      <p className="text-xs font-bold text-[var(--brand)]">{ts.bioTitle}</p>
                       <p className="mt-0.5 text-[10px] leading-relaxed text-[#5C6A6E]">{ts.bioDesc}</p>
                       {biometricEnabled && (
                         <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-[#4F8A63]">
@@ -378,7 +378,7 @@ export default function AdminSettings() {
                     </button>
                   ) : (
                     <button type="button" onClick={handleEnableBio} disabled={bioLoad}
-                      className="flex-none rounded-lg bg-[#16323D] px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#0e2630] disabled:opacity-50">
+                      className="flex-none rounded-lg bg-[var(--brand)] px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-50">
                       {bioLoad ? ts.saving : ts.bioEnable}
                     </button>
                   )}
@@ -389,14 +389,14 @@ export default function AdminSettings() {
                 <Field label={ts.deviceLabel}>
                   <input type="text" value={devLabel}
                     onChange={e => { setDevLabel(e.target.value); setDevMsg(null); }}
-                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                     placeholder={ts.deviceLabelPlaceholder}
                   />
                 </Field>
                 <Field label={ts.confirmCurrentPin}>
                   <input type="password" inputMode="numeric" maxLength={8}
                     value={devPin} onChange={e => { setDevPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setDevMsg(null); }}
-                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 font-mono text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                     placeholder="••••••••"
                   />
                 </Field>
@@ -410,7 +410,7 @@ export default function AdminSettings() {
                 )}
                 <div className="flex gap-2">
                   <button type="submit" disabled={devLoad || devPin.length < 4}
-                    className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-40">
+                    className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
                     {devLoad ? ts.saving : ts.deviceCreate}
                   </button>
                   {!devListed && (
@@ -432,7 +432,7 @@ export default function AdminSettings() {
                         className={`rounded-xl border border-[#E6DDCB] p-3 ${d.revoked ? "opacity-50" : "bg-[#F7F3EA]"}`}>
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-bold text-[#16323D]">
+                            <p className="truncate text-xs font-bold text-[var(--brand)]">
                               {d.label || "—"}
                               {d.revoked && (
                                 <span className="ml-2 rounded-full bg-[#FDE8E3] px-2 py-0.5 text-[9px] font-bold text-[#B0492F]">
@@ -449,7 +449,7 @@ export default function AdminSettings() {
                           {!d.revoked && (
                             <div className="flex flex-none gap-1.5">
                               <button type="button" onClick={() => copyLink(d)}
-                                className="inline-flex items-center gap-1 rounded-lg border border-[#16323D] px-2.5 py-1.5 text-[10px] font-bold text-[#16323D] hover:bg-white">
+                                className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand)] px-2.5 py-1.5 text-[10px] font-bold text-[var(--brand)] hover:bg-white">
                                 <Copy size={11} /> {copiedId === d.id ? ts.deviceCopied : ts.deviceCopy}
                               </button>
                               <button type="button" onClick={() => revokeDevice(d.id)}

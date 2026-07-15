@@ -13,7 +13,7 @@ function MockupDashboard({ EN }: { EN: boolean }) {
         {[
           { label: EN?"Income":"Ingresos",  val:"$12,500", c:"text-[#4F8A63] bg-[#DCEBDD]" },
           { label: EN?"Expenses":"Egresos", val:"$8,200",  c:"text-[#B0492F] bg-[#F0DBD2]" },
-          { label: "Balance",               val:"$4,300",  c:"text-[#395886] bg-[#EDF3FB]" },
+          { label: "Balance",               val:"$4,300",  c:"text-[var(--accent)] bg-[#EDF3FB]" },
           { label: "Estimate",              val:"$65,000", c:"text-[#7A6230] bg-[#EDE3CF]" },
         ].map(k => (
           <div key={k.label} className={`rounded-xl px-2 py-1.5 ${k.c.split(" ")[1]}`}>
@@ -29,14 +29,14 @@ function MockupDashboard({ EN }: { EN: boolean }) {
       ].map(p => (
         <div key={p.name} className="flex items-center justify-between border-b border-[#F0EBE0] px-3 py-2.5 last:border-0">
           <div>
-            <div className="text-[10px] font-bold text-[#16323D]">{p.name}</div>
+            <div className="text-[10px] font-bold text-[var(--brand)]">{p.name}</div>
             <div className="text-[9px] text-[#5C6A6E]">{p.client}</div>
           </div>
           <span className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${p.sc}`}>{p.status}</span>
         </div>
       ))}
       <div className="flex items-center justify-center py-2">
-        <div className="rounded-full bg-[#16323D] px-3 py-1 text-[9px] font-bold text-white">+ {EN?"New Project":"Nuevo Proyecto"}</div>
+        <div className="rounded-full bg-[var(--brand)] px-3 py-1 text-[9px] font-bold text-white">+ {EN?"New Project":"Nuevo Proyecto"}</div>
       </div>
     </div>
   );
@@ -46,13 +46,13 @@ function MockupEstimate({ EN }: { EN: boolean }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between rounded-xl border border-[#E6DDCB] bg-white px-3 py-2">
-        <div className="text-[9px] font-bold text-[#16323D]">DEMOLITION {EN?"· Dumping included":"· Acarreo incluido"}</div>
-        <div className="font-mono text-[10px] font-bold text-[#16323D]">$1,800</div>
+        <div className="text-[9px] font-bold text-[var(--brand)]">DEMOLITION {EN?"· Dumping included":"· Acarreo incluido"}</div>
+        <div className="font-mono text-[10px] font-bold text-[var(--brand)]">$1,800</div>
       </div>
-      <div className="overflow-hidden rounded-xl border border-[#395886] bg-white">
+      <div className="overflow-hidden rounded-xl border border-[var(--accent)] bg-white">
         <div className="flex items-center justify-between bg-[#EDF3FB] px-3 py-2">
-          <div className="text-[9px] font-bold text-[#395886]">PLUMBING</div>
-          <div className="font-mono text-[10px] font-bold text-[#395886]">$3,200</div>
+          <div className="text-[9px] font-bold text-[var(--accent)]">PLUMBING</div>
+          <div className="font-mono text-[10px] font-bold text-[var(--accent)]">$3,200</div>
         </div>
         {[
           { d:EN?"Replace Jacuzzi valves":"Reemplazar válvulas jacuzzi", a:"$800" },
@@ -60,12 +60,12 @@ function MockupEstimate({ EN }: { EN: boolean }) {
           { d:EN?"Hot water heater":"Calentador de agua",                 a:"$1,800" },
         ].map(i => (
           <div key={i.d} className="flex items-center justify-between border-t border-[#F0EBE0] px-4 py-1.5">
-            <div className="text-[9px] text-[#16323D]">• {i.d}</div>
+            <div className="text-[9px] text-[var(--brand)]">• {i.d}</div>
             <div className="font-mono text-[9px] text-[#5C6A6E]">{i.a}</div>
           </div>
         ))}
       </div>
-      <div className="rounded-xl border border-[#E6DDCB] bg-[#16323D] px-3 py-2 flex items-center justify-between">
+      <div className="rounded-xl border border-[#E6DDCB] bg-[var(--brand)] px-3 py-2 flex items-center justify-between">
         <div className="text-[9px] font-bold text-white">{EN?"GRAND TOTAL":"TOTAL FINAL"}</div>
         <div className="font-mono text-[11px] font-black text-white">$5,000</div>
       </div>
@@ -86,8 +86,8 @@ function MockupPayments({ EN }: { EN: boolean }) {
           <div className="font-mono text-[11px] font-black text-[#B0492F]">$5,200</div>
         </div>
         <div className="rounded-lg bg-[#EDF3FB] p-2 text-center">
-          <div className="text-[7px] font-bold uppercase text-[#395886]">Balance</div>
-          <div className="font-mono text-[11px] font-black text-[#395886]">$2,800</div>
+          <div className="text-[7px] font-bold uppercase text-[var(--accent)]">Balance</div>
+          <div className="font-mono text-[11px] font-black text-[var(--accent)]">$2,800</div>
         </div>
       </div>
       {[
@@ -97,7 +97,7 @@ function MockupPayments({ EN }: { EN: boolean }) {
       ].map(r => (
         <div key={r.label} className="flex items-center justify-between border-t border-[#F0EBE0] px-3 py-2">
           <div>
-            <div className="text-[9px] font-semibold text-[#16323D]">{r.label}</div>
+            <div className="text-[9px] font-semibold text-[var(--brand)]">{r.label}</div>
             <div className="text-[8px] text-[#5C6A6E]">{r.method}</div>
           </div>
           <div className={`font-mono text-[11px] font-bold ${r.c}`}>{r.amt}</div>
@@ -110,9 +110,9 @@ function MockupPayments({ EN }: { EN: boolean }) {
 function MockupMaterials({ EN }: { EN: boolean }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 rounded-xl border border-[#395886] bg-[#EDF3FB] px-3 py-2">
-        <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#395886] text-[8px] font-bold text-white">↓</div>
-        <span className="text-[9px] font-bold text-[#395886]">
+      <div className="flex items-center gap-2 rounded-xl border border-[var(--accent)] bg-[#EDF3FB] px-3 py-2">
+        <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[8px] font-bold text-white">↓</div>
+        <span className="text-[9px] font-bold text-[var(--accent)]">
           {EN ? "Import from Estimate" : "Importar del Estimado"}
         </span>
       </div>
@@ -128,14 +128,14 @@ function MockupMaterials({ EN }: { EN: boolean }) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <span className={`text-[9px] font-semibold ${i.bought ? "line-through text-[#5C6A6E]" : "text-[#16323D]"}`}>{i.n}</span>
+                <span className={`text-[9px] font-semibold ${i.bought ? "line-through text-[#5C6A6E]" : "text-[var(--brand)]"}`}>{i.n}</span>
                 {i.badge && (
-                  <span className="rounded bg-[#EDF3FB] px-1 py-px text-[7px] font-bold text-[#395886]">{i.badge}</span>
+                  <span className="rounded bg-[#EDF3FB] px-1 py-px text-[7px] font-bold text-[var(--accent)]">{i.badge}</span>
                 )}
               </div>
               {i.qty && <div className="text-[8px] text-[#5C6A6E]">{i.qty}</div>}
             </div>
-            <div className="font-mono text-[9px] font-bold text-[#16323D]">{i.cost}</div>
+            <div className="font-mono text-[9px] font-bold text-[var(--brand)]">{i.cost}</div>
           </div>
         ))}
       </div>
@@ -145,19 +145,19 @@ function MockupMaterials({ EN }: { EN: boolean }) {
 
 function MockupContacts({ EN }: { EN: boolean }) {
   const contacts = [
-    { name:"Jorge Saldarriaga", spec:EN?"Tile & Flooring":"Tile y Pisos", rate:"$45/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] text-[#395886]" },
+    { name:"Jorge Saldarriaga", spec:EN?"Tile & Flooring":"Tile y Pisos", rate:"$45/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] text-[var(--accent)]" },
     { name:"Miami Plumbing Co", spec:EN?"Plumbing":"Plomería",             rate:"$1,800 job", type:EN?"Supplier":"Proveedor", c:"bg-[#EDE3CF] text-[#7A6230]" },
-    { name:"Carlos Pinto",      spec:EN?"Electrical":"Eléctrico",          rate:"$55/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] text-[#395886]" },
+    { name:"Carlos Pinto",      spec:EN?"Electrical":"Eléctrico",          rate:"$55/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] text-[var(--accent)]" },
   ];
   return (
     <div className="space-y-2">
       {contacts.map(c => (
         <div key={c.name} className="flex items-center gap-3 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[10px] font-bold text-white">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">
             {c.name.split(" ").map(w => w[0]).join("").slice(0,2)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-bold text-[#16323D]">{c.name}</div>
+            <div className="text-[10px] font-bold text-[var(--brand)]">{c.name}</div>
             <div className="text-[8px] text-[#5C6A6E]">{c.spec} · {c.rate}</div>
           </div>
           <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${c.c}`}>{c.type}</span>
@@ -172,7 +172,7 @@ function MockupNotes({ EN }: { EN: boolean }) {
     <div className="space-y-2">
       <div className="overflow-hidden rounded-xl border border-[#E6DDCB] bg-white">
         <div className="px-3 py-2.5">
-          <div className="mb-1 text-[9px] font-bold text-[#16323D]">{EN?"Client wants white subway tile on accent wall":"Cliente quiere tile subway blanco en pared de acento"}</div>
+          <div className="mb-1 text-[9px] font-bold text-[var(--brand)]">{EN?"Client wants white subway tile on accent wall":"Cliente quiere tile subway blanco en pared de acento"}</div>
           <div className="text-[8px] leading-relaxed text-[#5C6A6E]">{EN?"Also requested heated floors in the master bath area. Confirm with supplier before ordering.":"También solicita piso con calefacción en el baño principal. Confirmar con proveedor antes de ordenar."}</div>
         </div>
         <div className="flex items-center gap-2 border-t border-[#F0EBE0] bg-[#FDFAF6] px-3 py-1.5">
@@ -187,7 +187,7 @@ function MockupNotes({ EN }: { EN: boolean }) {
         </div>
       </div>
       <div className="rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5">
-        <div className="text-[9px] font-bold text-[#16323D]">{EN?"Inspection passed - June 14":"Inspección aprobada - 14 junio"}</div>
+        <div className="text-[9px] font-bold text-[var(--brand)]">{EN?"Inspection passed - June 14":"Inspección aprobada - 14 junio"}</div>
         <div className="mt-0.5 text-[8px] text-[#5C6A6E]">{EN?"Inspector signed off on rough plumbing.":"Inspector aprobó la plomería preliminar."}</div>
       </div>
       <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-[#D7CBB3] py-2">
@@ -218,12 +218,12 @@ function MockupPlan({ EN }: { EN: boolean }) {
       <div className="flex items-center justify-between border-b border-[#F0EBE0] bg-[#F7F3EA] px-3 py-2">
         <div className="flex gap-1">
           {[EN?"All":"Todo", EN?"To do":"Por hacer", EN?"In progress":"En proceso", EN?"Done":"Listo"].map((f,i) => (
-            <span key={f} className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${i===0 ? "bg-[#16323D] text-white" : "text-[#5C6A6E]"}`}>{f}</span>
+            <span key={f} className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${i===0 ? "bg-[var(--brand)] text-white" : "text-[#5C6A6E]"}`}>{f}</span>
           ))}
         </div>
         <div className="flex gap-1">
           {[EN?"Weeks":"Semanas", EN?"Days":"Días"].map((v,i) => (
-            <span key={v} className={`rounded-lg px-2 py-0.5 text-[8px] font-semibold ${i===0 ? "bg-[#395886] text-white" : "text-[#5C6A6E]"}`}>{v}</span>
+            <span key={v} className={`rounded-lg px-2 py-0.5 text-[8px] font-semibold ${i===0 ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E]"}`}>{v}</span>
           ))}
         </div>
       </div>
@@ -241,7 +241,7 @@ function MockupPlan({ EN }: { EN: boolean }) {
         {/* Task rows */}
         {tasks.map(task => (
           <div key={task.name} className="mb-1.5 flex items-center">
-            <div className="w-28 shrink-0 truncate pr-2 text-[9px] font-semibold text-[#16323D]">{task.name}</div>
+            <div className="w-28 shrink-0 truncate pr-2 text-[9px] font-semibold text-[var(--brand)]">{task.name}</div>
             <div className="relative flex flex-1 gap-0">
               {weeks.map(w => (
                 <div key={w} className="flex-1 border-l border-[#F0EBE0] px-px py-px first:border-l-0">
@@ -292,12 +292,12 @@ function MockupDayPlanner({ EN }: { EN: boolean }) {
       <div className="w-36 shrink-0">
         <div className="mb-1.5 flex items-center justify-between">
           <span className="text-[8px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN ? "Item Pool" : "Items"}</span>
-          <span className="rounded-full bg-[#16323D] px-1.5 py-0.5 text-[7px] font-bold text-white">+ {EN?"Custom":"Custom"}</span>
+          <span className="rounded-full bg-[var(--brand)] px-1.5 py-0.5 text-[7px] font-bold text-white">+ {EN?"Custom":"Custom"}</span>
         </div>
         <div className="space-y-1.5">
           {pool.map(item => (
             <div key={item.label} className="rounded-lg border border-[#E6DDCB] bg-white px-2 py-1.5">
-              <div className="mb-0.5 truncate text-[8px] font-semibold text-[#16323D]">{item.label}</div>
+              <div className="mb-0.5 truncate text-[8px] font-semibold text-[var(--brand)]">{item.label}</div>
               <div className="flex items-center gap-1">
                 <span className="rounded-full px-1 py-0.5 text-[6px] font-bold text-white" style={{ background: item.c }}>{item.sec}</span>
                 <span className="text-[7px] text-[#5C6A6E]">{item.hrs}h</span>
@@ -312,7 +312,7 @@ function MockupDayPlanner({ EN }: { EN: boolean }) {
           const pct = Math.round((day.used / day.cap) * 100);
           return (
             <div key={day.label} className="flex-1 rounded-xl bg-[#F7F3EA] p-1.5">
-              <div className="mb-1 text-[8px] font-bold text-[#16323D]">{day.label}</div>
+              <div className="mb-1 text-[8px] font-bold text-[var(--brand)]">{day.label}</div>
               <div className="mb-1 text-[7px] text-[#5C6A6E]">{day.date}</div>
               {/* Capacity bar */}
               <div className="mb-1.5 h-1 w-full overflow-hidden rounded-full bg-[#E6DDCB]">
@@ -321,7 +321,7 @@ function MockupDayPlanner({ EN }: { EN: boolean }) {
               <div className="mb-1.5 text-[6px] text-[#5C6A6E]">{day.used}/{day.cap}h</div>
               {day.items.map(item => (
                 <div key={item.label} className="mb-1 rounded-lg border border-[#E6DDCB] bg-white px-1.5 py-1">
-                  <div className="truncate text-[7px] font-semibold text-[#16323D]">{item.label}</div>
+                  <div className="truncate text-[7px] font-semibold text-[var(--brand)]">{item.label}</div>
                   <span className="rounded px-0.5 py-px text-[6px] font-bold text-white" style={{ background: item.c }}>{item.sec}</span>
                 </div>
               ))}
@@ -345,7 +345,7 @@ function MockupVoice({ EN }: { EN: boolean }) {
   return (
     <div className="flex gap-3">
       <div className="flex shrink-0 flex-col items-center gap-2">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#16323D] shadow-lg">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand)] shadow-lg">
           <span className="text-2xl">🎙</span>
         </div>
         <div className="text-[8px] text-center font-semibold text-[#5C6A6E]">Katy</div>
@@ -359,7 +359,7 @@ function MockupVoice({ EN }: { EN: boolean }) {
         {cmds.map(c => (
           <div key={c} className="flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-2.5 py-1.5">
             <span className="text-[9px]">🗣</span>
-            <span className="font-mono text-[9px] text-[#395886]">"{c}"</span>
+            <span className="font-mono text-[9px] text-[var(--accent)]">"{c}"</span>
           </div>
         ))}
       </div>
@@ -381,7 +381,7 @@ function MockupTeam({ EN }: { EN: boolean }) {
     <div className="space-y-2">
       {/* New user button */}
       <div className="flex justify-end mb-1">
-        <div className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-3 py-1.5 text-[9px] font-bold text-[#16323D]">
+        <div className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-3 py-1.5 text-[9px] font-bold text-[var(--brand)]">
           + {EN ? "New user" : "Nuevo usuario"}
         </div>
       </div>
@@ -393,7 +393,7 @@ function MockupTeam({ EN }: { EN: boolean }) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-1">
-                <span className="text-[10px] font-bold text-[#16323D]">{u.name}</span>
+                <span className="text-[10px] font-bold text-[var(--brand)]">{u.name}</span>
                 <span className="rounded-full border border-[#B8DEC9] bg-[#EBF5F0] px-1.5 py-px text-[7px] font-bold text-[#2E6B50]">
                   {u.badge}
                 </span>
@@ -418,7 +418,7 @@ function MockupTeam({ EN }: { EN: boolean }) {
           <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN?"Co-worker sees:":"Co-worker ve:"}</div>
           <div className="flex flex-wrap gap-1">
             {["Workflow","Day Planner","Notes"].map(t => (
-              <span key={t} className="rounded bg-[#16323D] px-1 py-px text-[6px] font-bold text-white">{t}</span>
+              <span key={t} className="rounded bg-[var(--brand)] px-1 py-px text-[6px] font-bold text-white">{t}</span>
             ))}
           </div>
         </div>
@@ -426,7 +426,7 @@ function MockupTeam({ EN }: { EN: boolean }) {
           <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN?"Client sees:":"Cliente ve:"}</div>
           <div className="flex flex-wrap gap-1">
             {["Estimate","Workflow","Gantt","Notes","Design"].map(t => (
-              <span key={t} className="rounded bg-[#395886] px-1 py-px text-[6px] font-bold text-white">{t}</span>
+              <span key={t} className="rounded bg-[var(--accent)] px-1 py-px text-[6px] font-bold text-white">{t}</span>
             ))}
           </div>
         </div>
@@ -718,9 +718,9 @@ function useFeatures(EN: boolean) {
         <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-sm">
           {/* 3-col header */}
           <div className="grid grid-cols-3 text-[9px] font-bold uppercase tracking-wider">
-            <div className="bg-[#16323D] text-white/60 px-2 py-1.5">📸 {EN ? "References" : "Referencias"}</div>
-            <div className="bg-[#16323D] text-white/60 px-2 py-1.5 border-x border-white/10">Brief</div>
-            <div className="bg-[#16323D] text-white/60 px-2 py-1.5">AI Render</div>
+            <div className="bg-[var(--brand)] text-white/60 px-2 py-1.5">📸 {EN ? "References" : "Referencias"}</div>
+            <div className="bg-[var(--brand)] text-white/60 px-2 py-1.5 border-x border-white/10">Brief</div>
+            <div className="bg-[var(--brand)] text-white/60 px-2 py-1.5">AI Render</div>
           </div>
           <div className="grid grid-cols-3 gap-0" style={{ height: 110 }}>
             {/* Col 1 */}
@@ -733,11 +733,11 @@ function useFeatures(EN: boolean) {
             <div className="border-r border-[#E6DDCB] p-1.5 flex flex-col gap-1.5">
               <div className="rounded bg-[#F7F3EA] h-5 text-[8px] text-[#5C6A6E] flex items-center px-2">{EN ? "Kitchen" : "Cocina"}</div>
               <div className="grid grid-cols-2 gap-0.5">
-                <div className="rounded bg-[#16323D] h-4 text-[7px] text-white flex items-center justify-center">{EN ? "Modern" : "Moderno"}</div>
+                <div className="rounded bg-[var(--brand)] h-4 text-[7px] text-white flex items-center justify-center">{EN ? "Modern" : "Moderno"}</div>
                 <div className="rounded border border-[#E6DDCB] h-4 text-[7px] text-[#5C6A6E] flex items-center justify-center">{EN ? "Luxury" : "Lujo"}</div>
               </div>
               <div className="h-1.5 rounded-full bg-[#E6DDCB] overflow-hidden"><div className="h-full bg-[#C9A96E]" style={{ width: "75%" }} /></div>
-              <div className="mt-auto rounded bg-[#16323D] h-5 text-[8px] text-white flex items-center justify-center">✨ {EN ? "Generate" : "Generar"}</div>
+              <div className="mt-auto rounded bg-[var(--brand)] h-5 text-[8px] text-white flex items-center justify-center">✨ {EN ? "Generate" : "Generar"}</div>
             </div>
             {/* Col 3 — comparison slider */}
             <div className="relative overflow-hidden bg-[#0d1f27]">
@@ -747,7 +747,7 @@ function useFeatures(EN: boolean) {
               </div>
               <div className="absolute inset-0 flex items-center justify-center" style={{ left: "50%" }}>
                 <div className="absolute top-0 bottom-0 w-0.5 bg-[#C9A96E]" />
-                <div className="w-6 h-6 rounded-full bg-[#C9A96E] border-2 border-white flex items-center justify-center text-[9px] text-[#16323D] font-bold">⟺</div>
+                <div className="w-6 h-6 rounded-full bg-[#C9A96E] border-2 border-white flex items-center justify-center text-[9px] text-[var(--brand)] font-bold">⟺</div>
               </div>
               <div className="absolute top-1.5 left-1.5 text-[7px] font-bold text-white/70 bg-black/40 rounded px-1">{EN ? "BEFORE" : "ANTES"}</div>
               <div className="absolute top-1.5 right-1.5 text-[7px] font-bold text-white/70 bg-[#4F8A63]/60 rounded px-1">{EN ? "AFTER" : "DESPUÉS"}</div>
@@ -1100,12 +1100,12 @@ export default function HelpPage() {
             onClick={() => setActiveId(f.id)}
             className={`flex items-center gap-2.5 px-3 py-2 mx-2 rounded-xl text-left transition ${
               activeId === f.id
-                ? "bg-[#EDF3FB] text-[#395886]"
-                : "text-[#16323D] hover:bg-[#F7F3EA]"
+                ? "bg-[#EDF3FB] text-[var(--accent)]"
+                : "text-[var(--brand)] hover:bg-[#F7F3EA]"
             }`}
           >
             <span className="text-base">{f.icon}</span>
-            <span className={`text-[12px] font-semibold ${activeId === f.id ? "text-[#395886]" : "text-[#16323D]"}`}>
+            <span className={`text-[12px] font-semibold ${activeId === f.id ? "text-[var(--accent)]" : "text-[var(--brand)]"}`}>
               {f.title}
             </span>
           </button>
@@ -1121,12 +1121,12 @@ export default function HelpPage() {
             onClick={() => setActiveId(f.id)}
             className={`flex items-center gap-2.5 px-3 py-2 mx-2 rounded-xl text-left transition ${
               activeId === f.id
-                ? "bg-[#EDF3FB] text-[#395886]"
-                : "text-[#16323D] hover:bg-[#F7F3EA]"
+                ? "bg-[#EDF3FB] text-[var(--accent)]"
+                : "text-[var(--brand)] hover:bg-[#F7F3EA]"
             }`}
           >
             <span className="text-base">{f.icon}</span>
-            <span className={`text-[12px] font-semibold ${activeId === f.id ? "text-[#395886]" : "text-[#16323D]"}`}>
+            <span className={`text-[12px] font-semibold ${activeId === f.id ? "text-[var(--accent)]" : "text-[var(--brand)]"}`}>
               {f.title}
             </span>
           </button>
@@ -1145,7 +1145,7 @@ export default function HelpPage() {
             href={g.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="mx-2 flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#16323D] transition hover:bg-[#F7F3EA]"
+            className="mx-2 flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[var(--brand)] transition hover:bg-[#F7F3EA]"
           >
             <span className="text-base">{g.icon}</span>
             <span className="text-[12px] font-semibold">{g.label}</span>
@@ -1169,7 +1169,7 @@ export default function HelpPage() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">{active.icon}</span>
             <div>
-              <h1 className="font-display text-2xl font-medium text-[#16323D]">{active.title}</h1>
+              <h1 className="font-display text-2xl font-medium text-[var(--brand)]">{active.title}</h1>
               <p className="text-[13px] text-[#5C6A6E]">{active.desc}</p>
             </div>
           </div>
@@ -1195,11 +1195,11 @@ export default function HelpPage() {
             <div className="space-y-0">
               {active.steps.map((step, i) => (
                 <div key={i} className="flex gap-4 border-b border-[#F0EBE0] py-4 last:border-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EDF3FB] text-[13px] font-black text-[#395886]">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EDF3FB] text-[13px] font-black text-[var(--accent)]">
                     {i + 1}
                   </div>
                   <div>
-                    <div className="mb-1 text-[13px] font-bold text-[#16323D]">{step.t}</div>
+                    <div className="mb-1 text-[13px] font-bold text-[var(--brand)]">{step.t}</div>
                     <div
                       className="text-[12px] leading-relaxed text-[#5C6A6E]"
                       dangerouslySetInnerHTML={{ __html: step.d }}

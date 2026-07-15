@@ -39,7 +39,7 @@ export default function DayNoteModal({
             <Pin size={15} />
           </span>
           <div className="min-w-0">
-            <div className="truncate text-[15px] font-bold text-[#16323D]">
+            <div className="truncate text-[15px] font-bold text-[var(--brand)]">
               {mode === "edit" ? tr.noteEdit : tr.noteNew}
             </div>
             {contextLabel && <div className="text-[12px] text-[#97A1A0]">{contextLabel}</div>}
@@ -52,7 +52,7 @@ export default function DayNoteModal({
           onChange={e => setTitle(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onCancel(); }}
           placeholder={tr.notePlaceholder}
-          className="w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[#16323D] placeholder:text-[#9CABB0] focus:border-[#B98A2F] focus:outline-none"
+          className="w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:border-[#B98A2F] focus:outline-none"
         />
 
         <label className="mt-3 block text-[11px] font-bold uppercase tracking-wide text-[#97A1A0]">
@@ -61,7 +61,7 @@ export default function DayNoteModal({
         <select
           value={projectId}
           onChange={e => setProjectId(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[#16323D] focus:border-[#B98A2F] focus:outline-none"
+          className="mt-1 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[var(--brand)] focus:border-[#B98A2F] focus:outline-none"
         >
           <option value="">{tr.noteNoProject}</option>
           {projects.map(p => (

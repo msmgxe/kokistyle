@@ -98,14 +98,14 @@ export default function ProspectosPage() {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="font-bookman text-2xl text-[#16323D]">🎯 {tp.title}</h1>
+        <h1 className="font-bookman text-2xl text-[var(--brand)]">🎯 {tp.title}</h1>
         <p className="text-sm text-[#5C6A6E]">{tp.subtitle}</p>
       </div>
 
       <div className="mb-5 grid grid-cols-3 gap-3">
         {[{ v: kpi.total, l: tp.kpiTotal }, { v: kpi.nw, l: tp.kpiNew }, { v: kpi.conv, l: tp.kpiConverted }].map(k => (
           <div key={k.l} className="rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3">
-            <p className="text-2xl font-bold tabular-nums text-[#16323D]">{k.v}</p>
+            <p className="text-2xl font-bold tabular-nums text-[var(--brand)]">{k.v}</p>
             <p className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{k.l}</p>
           </div>
         ))}
@@ -115,12 +115,12 @@ export default function ProspectosPage() {
         <div className="relative flex-1 min-w-[200px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#97A1A0]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tp.search}
-            className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-white pl-9 pr-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+            className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-white pl-9 pr-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
         </div>
         <div className="inline-flex rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
           {(["all", ...STATUSES] as const).map(s => (
             <button key={s} onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${filter === s ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+              className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${filter === s ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"}`}>
               {s === "all" ? tp.filterAll : statusLabel(s)}
             </button>
           ))}
@@ -136,9 +136,9 @@ export default function ProspectosPage() {
           {filtered.map(p => (
             <div key={p.id} className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
               <div className="flex flex-wrap items-center gap-3 bg-[#F2EFE7] px-4 py-3">
-                <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#16323D] text-[12px] font-bold text-[#F5E9DA]">{initials(p.name)}</span>
+                <span className="grid size-10 flex-none place-items-center rounded-lg bg-[var(--brand)] text-[12px] font-bold text-[#F5E9DA]">{initials(p.name)}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-bold text-[#16323D]">{p.name}</div>
+                  <div className="truncate text-[14px] font-bold text-[var(--brand)]">{p.name}</div>
                   <div className="truncate text-[11px] text-[#5C6A6E]">
                     {p.email} · {p.phone}
                     {(p.room_type || p.style) && <> · {tp.interestedIn}: {[p.style, p.room_type].filter(Boolean).join(" ")}</>}
@@ -152,7 +152,7 @@ export default function ProspectosPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-                <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#16323D] px-3 py-1.5 text-[11px] font-bold text-[#16323D] hover:bg-[#F7F3EA]"><Phone size={12} /> {tp.call}</a>
+                <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brand)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)] hover:bg-[#F7F3EA]"><Phone size={12} /> {tp.call}</a>
                 <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] hover:bg-[#F7F3EA]"><Mail size={12} /> {tp.email}</a>
                 <a href={waLink(p.phone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-[#4F8A63] px-3 py-1.5 text-[11px] font-bold text-[#4F8A63] hover:bg-[#EEF6F0]"><MessageCircle size={12} /> {tp.whatsapp}</a>
                 <button onClick={() => remove(p.id)} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[#B0492F] hover:bg-[#FFF0EE]"><Trash2 size={12} /> {tp.delete}</button>
@@ -173,7 +173,7 @@ export default function ProspectosPage() {
                       <a href={p.last_render_url} target="_blank" rel="noopener noreferrer" className="group relative block" title={tp.openFull}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={p.last_render_url} alt={tp.afterLbl} className="h-28 w-40 rounded-lg object-cover ring-1 ring-[#C9A227]" />
-                        <span className="absolute left-1.5 top-1.5 rounded bg-[#C9A227] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#16323D]">{tp.afterLbl}</span>
+                        <span className="absolute left-1.5 top-1.5 rounded bg-[#C9A227] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--brand)]">{tp.afterLbl}</span>
                         <span className="absolute bottom-1.5 right-1.5 rounded bg-black/45 p-1 text-white opacity-0 transition group-hover:opacity-100"><ExternalLink size={11} /></span>
                       </a>
                     )}
@@ -186,8 +186,8 @@ export default function ProspectosPage() {
                   value={noteDraft[p.id] ?? p.notes ?? ""}
                   onChange={e => setNoteDraft(d => ({ ...d, [p.id]: e.target.value }))}
                   placeholder={tp.notesPh}
-                  className="h-9 flex-1 rounded-lg border border-[#E6DDCB] bg-[#FBF8F2] px-3 text-[12px] text-[#16323D] focus:border-[#16323D] focus:outline-none" />
-                <button onClick={() => saveNote(p.id)} className="rounded-lg bg-[#16323D] px-3 py-2 text-[11px] font-bold text-white hover:bg-[#0e2630]">{tp.saveNote}</button>
+                  className="h-9 flex-1 rounded-lg border border-[#E6DDCB] bg-[#FBF8F2] px-3 text-[12px] text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                <button onClick={() => saveNote(p.id)} className="rounded-lg bg-[var(--brand)] px-3 py-2 text-[11px] font-bold text-white hover:bg-[var(--brand-strong)]">{tp.saveNote}</button>
               </div>
             </div>
           ))}
@@ -195,7 +195,7 @@ export default function ProspectosPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[#16323D] px-5 py-3 text-sm font-semibold text-[#F5E9DA] shadow-xl">{toast}</div>
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-semibold text-[#F5E9DA] shadow-xl">{toast}</div>
       )}
     </div>
   );

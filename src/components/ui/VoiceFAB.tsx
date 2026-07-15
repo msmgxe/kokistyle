@@ -871,18 +871,18 @@ export default function VoiceFAB() {
     listening: "animate-ping bg-[#B0492F]",
     thinking:  "animate-pulse bg-[#4E7A82]",
     speaking:  "animate-pulse bg-[#4F8A63]",
-    confirm:   "bg-[#16323D]",
+    confirm:   "bg-[var(--brand)]",
     saving:    "animate-pulse bg-[#4E7A82]",
     success:   "bg-[#4F8A63]",
     error:     "bg-[#B0492F]",
-    text:      "bg-[#395886]",
+    text:      "bg-[var(--accent)]",
   };
   const fabBg =
     phase === "listening"                                            ? "animate-pulse bg-[#B0492F]" :
     phase === "success"                                             ? "bg-[#4F8A63]"               :
     phase === "thinking" || phase === "speaking" || phase === "saving" ? "bg-[#4E7A82]"            :
-    phase === "text"                                                ? "bg-[#395886]"               :
-                                                                      "bg-[#16323D] hover:bg-[#0e2630]";
+    phase === "text"                                                ? "bg-[var(--accent)]"               :
+                                                                      "bg-[var(--brand)] hover:bg-[var(--brand-strong)]";
 
   const panelOpen = phase !== "idle";
 
@@ -895,7 +895,7 @@ export default function VoiceFAB() {
           <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[#F7F3EA] px-4 py-3">
             <div className="flex items-center gap-2">
               <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotCls[phase]}`} />
-              <span className="text-xs font-bold text-[#16323D]">
+              <span className="text-xs font-bold text-[var(--brand)]">
                 {ASSISTANT} — {headerLabel[phase]}
               </span>
             </div>
@@ -912,14 +912,14 @@ export default function VoiceFAB() {
               {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   {m.role === "assistant" && (
-                    <span className="mr-1.5 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
+                    <span className="mr-1.5 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-bold text-white">
                       {ASSISTANT[0]}
                     </span>
                   )}
                   <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-snug ${
                     m.role === "user"
-                      ? "rounded-br-sm bg-[#16323D] text-white"
-                      : "rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] text-[#16323D]"
+                      ? "rounded-br-sm bg-[var(--brand)] text-white"
+                      : "rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] text-[var(--brand)]"
                   }`}>
                     {m.text}
                   </div>
@@ -927,7 +927,7 @@ export default function VoiceFAB() {
               ))}
               {(phase === "thinking" || phase === "saving") && (
                 <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-bold text-white">
                     {ASSISTANT[0]}
                   </span>
                   <div className="flex gap-1 rounded-2xl rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2">
@@ -943,7 +943,7 @@ export default function VoiceFAB() {
           )}
           {messages.length === 0 && (phase === "thinking" || phase === "saving") && (
             <div className="flex items-center gap-2 p-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-[9px] font-bold text-white">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-bold text-white">
                 {ASSISTANT[0]}
               </span>
               <div className="flex gap-1 rounded-2xl rounded-bl-sm border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2">
@@ -990,12 +990,12 @@ export default function VoiceFAB() {
                   onChange={e => setTextInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") handleTextSubmit(); }}
                   placeholder="Tu instrucción…"
-                  className="flex-1 rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  className="flex-1 rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                 />
                 <button
                   onClick={handleTextSubmit}
                   disabled={!textInput.trim()}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#16323D] text-white disabled:opacity-40 active:scale-95 transition"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-white disabled:opacity-40 active:scale-95 transition"
                 >
                   <Send size={18} />
                 </button>
@@ -1019,7 +1019,7 @@ export default function VoiceFAB() {
                     <select
                       value={String(editableData.__project_id ?? "")}
                       onChange={e => setEditableData(prev => ({ ...prev, __project_id: e.target.value }))}
-                      className="min-w-0 flex-1 rounded-lg border border-[#D7CBB3] bg-white px-2 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                      className="min-w-0 flex-1 rounded-lg border border-[#D7CBB3] bg-white px-2 py-2 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                     >
                       <option value="">
                         {pendingAction.action === "create_agenda_event" ? "Sin proyecto (agenda general)" : "Elige el proyecto…"}
@@ -1053,7 +1053,7 @@ export default function VoiceFAB() {
                         }));
                       }}
                       placeholder={f.type === "number" ? "0" : ""}
-                      className="flex-1 min-w-0 rounded-lg border border-[#D7CBB3] bg-white px-2 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                      className="flex-1 min-w-0 rounded-lg border border-[#D7CBB3] bg-white px-2 py-2 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                     />
                   </div>
                 ))}
@@ -1065,7 +1065,7 @@ export default function VoiceFAB() {
                 </button>
                 <button onClick={handleConfirm}
                   disabled={PROJECT_ACTIONS.has(pendingAction.action) && !metaRef.current.projectId && !editableData.__project_id}
-                  className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white transition hover:bg-[#0e2630] disabled:opacity-40">
+                  className="flex-1 rounded-xl bg-[var(--brand)] py-3 text-sm font-bold text-white transition hover:bg-[var(--brand-strong)] disabled:opacity-40">
                   ✓ Confirmar
                 </button>
               </div>
@@ -1087,12 +1087,12 @@ export default function VoiceFAB() {
               <div className="flex gap-2">
                 {voiceCapable && (
                   <button onClick={() => { setPhase("idle"); startedRef.current = false; start(); }}
-                    className="flex-1 rounded-xl bg-[#16323D] py-3 text-sm font-bold text-white">
+                    className="flex-1 rounded-xl bg-[var(--brand)] py-3 text-sm font-bold text-white">
                     🎤 Voz
                   </button>
                 )}
                 <button onClick={() => { setPhase("idle"); startedRef.current = false; startTextMode(); }}
-                  className="flex-1 rounded-xl bg-[#395886] py-3 text-sm font-bold text-white">
+                  className="flex-1 rounded-xl bg-[var(--accent)] py-3 text-sm font-bold text-white">
                   ⌨ Texto
                 </button>
               </div>
@@ -1107,7 +1107,7 @@ export default function VoiceFAB() {
           type="button"
           onClick={startTextMode}
           aria-label="Escribir instrucción a Katy"
-          className="fixed bottom-6 right-[5.5rem] z-[150] grid size-10 place-items-center rounded-full bg-[#395886] text-white shadow-xl transition-all duration-200 active:scale-95 hover:bg-[#2c4570]"
+          className="fixed bottom-6 right-[5.5rem] z-[150] grid size-10 place-items-center rounded-full bg-[var(--accent)] text-white shadow-xl transition-all duration-200 active:scale-95 hover:bg-[var(--accent-strong)]"
         >
           <Keyboard size={18} />
         </button>

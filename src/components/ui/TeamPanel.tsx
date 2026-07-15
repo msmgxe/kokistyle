@@ -128,7 +128,7 @@ export default function TeamPanel() {
           ] as const).map(x => (
             <button key={x.id} onClick={() => setSubTab(x.id)}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[12px] font-bold transition ${
-                subTab === x.id ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"
+                subTab === x.id ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"
               }`}>
               {x.icon} {x.label}
             </button>
@@ -158,7 +158,7 @@ export default function TeamPanel() {
       )}
 
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[#16323D] px-5 py-3 text-sm font-semibold text-[#F5E9DA] shadow-xl">
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-semibold text-[#F5E9DA] shadow-xl">
           {toast}
         </div>
       )}
@@ -195,11 +195,11 @@ function MatrixView({
         <table className="min-w-[760px] w-full border-collapse text-[11.5px]">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 bg-[#16323D] px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]">
+              <th className="sticky left-0 z-10 bg-[var(--brand)] px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]">
                 {tt.coworker}
               </th>
               {projects.map(p => (
-                <th key={p.id} className="min-w-[92px] bg-[#16323D] px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-[#F5E9DA]">
+                <th key={p.id} className="min-w-[92px] bg-[var(--brand)] px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-[#F5E9DA]">
                   {short(p.title)}
                 </th>
               ))}
@@ -220,11 +220,11 @@ function MatrixView({
                   <tr key={c.id} className="border-t border-[#F0EBE0]">
                     <td className="sticky left-0 z-10 bg-[#FBF8F2] px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <span className="grid size-7 flex-none place-items-center rounded-md bg-[#16323D] text-[9px] font-bold text-[#F5E9DA]">
+                        <span className="grid size-7 flex-none place-items-center rounded-md bg-[var(--brand)] text-[9px] font-bold text-[#F5E9DA]">
                           {initials(c.name)}
                         </span>
                         <div className="min-w-0">
-                          <div className="truncate font-bold text-[#16323D]">{c.name}</div>
+                          <div className="truncate font-bold text-[var(--brand)]">{c.name}</div>
                           {c.rate && <div className="text-[9.5px] text-[#5C6A6E]">{c.rate}{c.rate_type === "hour" ? "/h" : "/d"}</div>}
                         </div>
                       </div>
@@ -248,11 +248,11 @@ function MatrixView({
                                 value={a.amount || ""}
                                 onChange={e => onPatch(p.id, c.id, { amount: parseFloat(e.target.value) || 0 })}
                                 placeholder="0"
-                                className="w-16 bg-transparent text-center font-mono text-[11px] font-bold text-[#16323D] focus:outline-none"
+                                className="w-16 bg-transparent text-center font-mono text-[11px] font-bold text-[var(--brand)] focus:outline-none"
                               />
                               <button
                                 onClick={() => setEditing(isEditing ? null : { pid: p.id, cid: c.id })}
-                                className="text-[8.5px] font-semibold text-[#395886] hover:underline"
+                                className="text-[8.5px] font-semibold text-[var(--accent)] hover:underline"
                               >
                                 {a.start_date ? `${a.start_date.slice(5)}→${a.end_date?.slice(5) ?? "?"}` : "+ fechas"}
                               </button>
@@ -267,7 +267,7 @@ function MatrixView({
                                     onChange={e => onPatch(p.id, c.id, { end_date: e.target.value })}
                                     className="rounded border border-[#E6DDCB] px-2 py-1 text-[11px]" />
                                   <button onClick={() => setEditing(null)}
-                                    className="mt-1 rounded-lg bg-[#16323D] py-1 text-[10px] font-bold text-white">
+                                    className="mt-1 rounded-lg bg-[var(--brand)] py-1 text-[10px] font-bold text-white">
                                     {tt.save}
                                   </button>
                                 </div>
@@ -276,7 +276,7 @@ function MatrixView({
                           ) : (
                             <button
                               onClick={() => onAssign(p.id, c.id)}
-                              className="grid h-8 w-16 place-items-center rounded-lg border border-dashed border-[#D7CBB3] text-[#B7AB93] transition hover:border-[#395886] hover:text-[#395886]"
+                              className="grid h-8 w-16 place-items-center rounded-lg border border-dashed border-[#D7CBB3] text-[#B7AB93] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                               aria-label="assign"
                             >
                               +
@@ -285,7 +285,7 @@ function MatrixView({
                         </td>
                       );
                     })}
-                    <td className="bg-[#FBF8F2] px-3 py-2 text-right font-mono font-bold text-[#16323D]">
+                    <td className="bg-[#FBF8F2] px-3 py-2 text-right font-mono font-bold text-[var(--brand)]">
                       {money(rowTotal(c.id))}
                     </td>
                   </tr>
@@ -299,11 +299,11 @@ function MatrixView({
                 {tt.totalCol}
               </td>
               {projects.map(p => (
-                <td key={p.id} className="bg-[#F2EFE7] px-2 py-2 text-center font-mono font-bold text-[#16323D]">
+                <td key={p.id} className="bg-[#F2EFE7] px-2 py-2 text-center font-mono font-bold text-[var(--brand)]">
                   {money(colTotal(p.id))}
                 </td>
               ))}
-              <td className="bg-[#16323D] px-3 py-2 text-right font-mono font-bold text-[#F5E9DA]">
+              <td className="bg-[var(--brand)] px-3 py-2 text-right font-mono font-bold text-[#F5E9DA]">
                 {money(grandTotal)}
               </td>
             </tr>
@@ -366,20 +366,20 @@ function ReportsView({
           return (
             <button key={c.id} onClick={() => setSelId(c.id)}
               className={`flex w-full items-center gap-2.5 rounded-xl border bg-white p-2.5 text-left transition ${
-                selId === c.id ? "border-[#395886] ring-1 ring-[#395886]" : "border-[#E6DDCB] hover:border-[#B7AB93]"
+                selId === c.id ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[#E6DDCB] hover:border-[#B7AB93]"
               }`}>
-              <span className="grid size-9 flex-none place-items-center rounded-lg bg-[#16323D] text-[11px] font-bold text-[#F5E9DA]">
+              <span className="grid size-9 flex-none place-items-center rounded-lg bg-[var(--brand)] text-[11px] font-bold text-[#F5E9DA]">
                 {initials(c.name)}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[12.5px] font-bold text-[#16323D]">{c.name}</div>
+                <div className="truncate text-[12.5px] font-bold text-[var(--brand)]">{c.name}</div>
                 <div className="truncate text-[10.5px] text-[#5C6A6E]">{specialtyDisplay(c.specialty, language)}{c.rate ? ` · ${c.rate}` : ""}</div>
                 <div className="mt-1 h-1 overflow-hidden rounded-full bg-[#F0EBE0]">
-                  <div className="h-full bg-[#395886]" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-[var(--accent)]" style={{ width: `${pct}%` }} />
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-mono text-[12px] font-bold text-[#16323D]">{money(tot)}</div>
+                <div className="font-mono text-[12px] font-bold text-[var(--brand)]">{money(tot)}</div>
                 <div className="text-[9.5px] text-[#5C6A6E]">{pct}% {tt.share}</div>
               </div>
             </button>
@@ -390,8 +390,8 @@ function ReportsView({
       {/* Panel de reporte */}
       {sel && (
         <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
-          <div className="flex flex-wrap items-center gap-3 bg-[#16323D] px-4 py-3">
-            <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#F5E9DA] text-sm font-bold text-[#16323D]">
+          <div className="flex flex-wrap items-center gap-3 bg-[var(--brand)] px-4 py-3">
+            <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#F5E9DA] text-sm font-bold text-[var(--brand)]">
               {initials(sel.name)}
             </span>
             <div className="min-w-0 flex-1">
@@ -403,7 +403,7 @@ function ReportsView({
             <input type="date" value={to} onChange={e => setTo(e.target.value)}
               className="rounded-lg border-0 px-2 py-1 text-[11px]" aria-label={tt.rangeTo} />
             <button onClick={exportCsv}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#F5E9DA] px-3 py-1.5 text-[11px] font-bold text-[#16323D] hover:bg-white">
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#F5E9DA] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)] hover:bg-white">
               <Download size={12} /> {tt.exportCsv}
             </button>
           </div>
@@ -415,7 +415,7 @@ function ReportsView({
               { v: `${share}%`, l: tt.kpiShare },
             ].map(k => (
               <div key={k.l} className="border-r border-[#E6DDCB] px-4 py-3 last:border-r-0">
-                <div className="font-mono text-[17px] font-bold text-[#16323D]">{k.v}</div>
+                <div className="font-mono text-[17px] font-bold text-[var(--brand)]">{k.v}</div>
                 <div className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]">{k.l}</div>
               </div>
             ))}
@@ -430,7 +430,7 @@ function ReportsView({
               return (
                 <div key={`${a.project_id}-${a.contact_id}`} className="flex items-center gap-3 border-b border-[#F2EFE7] px-4 py-2.5 text-[12px] last:border-0">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-bold text-[#16323D]">{p?.title.split(" — ")[0] ?? "—"}</div>
+                    <div className="truncate font-bold text-[var(--brand)]">{p?.title.split(" — ")[0] ?? "—"}</div>
                     <div className="truncate text-[10.5px] text-[#5C6A6E]">
                       {p?.client}{a.start_date ? ` · ${a.start_date} → ${a.end_date ?? "?"}` : ""}
                     </div>
@@ -438,7 +438,7 @@ function ReportsView({
                   <span className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-[#F0EBE0] sm:block">
                     <span className="block h-full bg-[#4F8A63]" style={{ width: `${w}%` }} />
                   </span>
-                  <span className="w-20 text-right font-mono font-bold text-[#16323D]">{money(a.amount)}</span>
+                  <span className="w-20 text-right font-mono font-bold text-[var(--brand)]">{money(a.amount)}</span>
                 </div>
               );
             })}

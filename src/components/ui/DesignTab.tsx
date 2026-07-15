@@ -347,7 +347,7 @@ export default function DesignTab({ project, toast }: Props) {
       >
         {/* ── COL 1 · REFERENCIAS ──────────────────────────────── */}
         <div className="flex flex-col w-[200px] flex-none border-r border-[#E6DDCB]">
-          <div className="bg-[#16323D] px-3 py-2.5">
+          <div className="bg-[var(--brand)] px-3 py-2.5">
             <p className="text-[9px] font-bold tracking-widest text-white/40 uppercase">
               {isEN ? "References" : "Referencias"}
             </p>
@@ -375,7 +375,7 @@ export default function DesignTab({ project, toast }: Props) {
                   className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >✕</button>
                 {activePhoto === i && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-[#C9A96E]/90 text-[#16323D] text-[9px] font-bold text-center py-0.5 uppercase tracking-wider">
+                  <div className="absolute bottom-0 left-0 right-0 bg-[#C9A96E]/90 text-[var(--brand)] text-[9px] font-bold text-center py-0.5 uppercase tracking-wider">
                     {isEN ? "Active" : "Activa"}
                   </div>
                 )}
@@ -415,7 +415,7 @@ export default function DesignTab({ project, toast }: Props) {
 
         {/* ── COL 2 · DESIGN BRIEF ─────────────────────────────── */}
         <div className="flex flex-col w-[260px] flex-none border-r border-[#E6DDCB]">
-          <div className="bg-[#16323D] px-3 py-2.5">
+          <div className="bg-[var(--brand)] px-3 py-2.5">
             <p className="text-[9px] font-bold tracking-widest text-white/40 uppercase">Design Brief</p>
             <p className="text-[11px] font-semibold text-white mt-0.5">
               {isEN ? "Complete each section" : "Completa cada sección"}
@@ -430,7 +430,7 @@ export default function DesignTab({ project, toast }: Props) {
               </label>
               <select
                 value={room} onChange={e => setRoom(e.target.value)}
-                className="w-full text-xs border border-[#E6DDCB] rounded-lg px-2.5 py-2 bg-white text-[#16323D] focus:outline-none focus:ring-1 focus:ring-[#16323D]"
+                className="w-full text-xs border border-[#E6DDCB] rounded-lg px-2.5 py-2 bg-white text-[var(--brand)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
               >
                 {ROOMS.map(r => (
                   <option key={r.en} value={r.en}>{isEN ? r.en : r.es}</option>
@@ -449,8 +449,8 @@ export default function DesignTab({ project, toast }: Props) {
                     key={s.en} onClick={() => setStyle(s.en)}
                     className={`text-[10px] py-1.5 px-1 rounded-lg border font-semibold transition-all text-center ${
                       style === s.en
-                        ? "bg-[#16323D] text-white border-[#16323D]"
-                        : "border-[#E6DDCB] text-[#5C6A6E] hover:border-[#16323D] hover:text-[#16323D]"
+                        ? "bg-[var(--brand)] text-white border-[var(--brand)]"
+                        : "border-[#E6DDCB] text-[#5C6A6E] hover:border-[var(--brand)] hover:text-[var(--brand)]"
                     }`}
                   >
                     {isEN ? s.en : s.es}
@@ -488,7 +488,7 @@ export default function DesignTab({ project, toast }: Props) {
                   className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg font-semibold border transition-all ${
                     listening
                       ? "bg-red-50 text-red-600 border-red-200 animate-pulse"
-                      : "bg-[#F7F3EA] text-[#16323D] border-[#E6DDCB] hover:border-[#16323D]"
+                      : "bg-[#F7F3EA] text-[var(--brand)] border-[#E6DDCB] hover:border-[var(--brand)]"
                   }`}
                 >
                   🎙 {listening ? (isEN ? "Stop" : "Parar") : (isEN ? "Voice" : "Voz")}
@@ -501,7 +501,7 @@ export default function DesignTab({ project, toast }: Props) {
                     ? "Describe changes: marble floors, open concept kitchen, warm lighting, white cabinets..."
                     : "Describe cambios: piso de mármol, cocina abierta, iluminación cálida, gabinetes blancos..."
                 }
-                className="flex-1 w-full text-xs border border-[#E6DDCB] rounded-lg px-2.5 py-2 bg-white text-[#16323D] placeholder:text-[#5C6A6E]/50 focus:outline-none focus:ring-1 focus:ring-[#16323D] resize-none"
+                className="flex-1 w-full text-xs border border-[#E6DDCB] rounded-lg px-2.5 py-2 bg-white text-[var(--brand)] placeholder:text-[#5C6A6E]/50 focus:outline-none focus:ring-1 focus:ring-[var(--brand)] resize-none"
                 style={{ minHeight: 90 }}
               />
             </div>
@@ -510,7 +510,7 @@ export default function DesignTab({ project, toast }: Props) {
           <div className="p-3 border-t border-[#E6DDCB]">
             <button
               onClick={generate} disabled={generating || uploading}
-              className="w-full py-2.5 rounded-xl bg-[#16323D] text-white text-sm font-bold tracking-wide hover:bg-[#1a3e4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-2.5 rounded-xl bg-[var(--brand)] text-white text-sm font-bold tracking-wide hover:bg-[#1a3e4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {generating ? (
                 <>
@@ -554,10 +554,10 @@ export default function DesignTab({ project, toast }: Props) {
                       className="mt-0.5 size-4 accent-[#4F8A63]"
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[12px] font-bold text-[#16323D]">{isEN ? s.name_en : s.name_es}</span>
+                      <span className="block text-[12px] font-bold text-[var(--brand)]">{isEN ? s.name_en : s.name_es}</span>
                       <span className="block text-[11px] leading-snug text-[#5C6A6E]">{isEN ? s.description_en : s.description_es}</span>
                     </span>
-                    <span className="font-mono text-[12px] font-bold text-[#16323D]">${Number(s.amount).toLocaleString()}</span>
+                    <span className="font-mono text-[12px] font-bold text-[var(--brand)]">${Number(s.amount).toLocaleString()}</span>
                   </label>
                 ))}
                 <button
@@ -576,7 +576,7 @@ export default function DesignTab({ project, toast }: Props) {
 
         {/* ── COL 3 · AI RENDER ────────────────────────────────── */}
         <div className="flex flex-col flex-1 min-w-0">
-          <div className="bg-[#16323D] px-3 py-2.5 flex items-center justify-between">
+          <div className="bg-[var(--brand)] px-3 py-2.5 flex items-center justify-between">
             <div>
               <p className="text-[9px] font-bold tracking-widest text-white/40 uppercase">AI Render</p>
               <p className="text-[11px] font-semibold text-white mt-0.5">
@@ -723,7 +723,7 @@ export default function DesignTab({ project, toast }: Props) {
                 <>
                   <div className="w-14 h-14 border-4 border-[#16323D]/20 border-t-[#C9A96E] rounded-full animate-spin" />
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-[#16323D]">
+                    <p className="text-sm font-semibold text-[var(--brand)]">
                       {isEN ? "Generating your render..." : "Generando tu render..."}
                     </p>
                     <p className="text-xs text-[#5C6A6E] mt-1">
@@ -737,7 +737,7 @@ export default function DesignTab({ project, toast }: Props) {
                     ✨
                   </div>
                   <div className="text-center max-w-xs">
-                    <p className="text-sm font-semibold text-[#16323D]">
+                    <p className="text-sm font-semibold text-[var(--brand)]">
                       {isEN ? "Ready to generate" : "Listo para generar"}
                     </p>
                     <p className="text-xs text-[#5C6A6E] mt-1.5 leading-relaxed">
@@ -748,7 +748,7 @@ export default function DesignTab({ project, toast }: Props) {
                   </div>
                   <div className="flex items-center gap-2 mt-1 bg-white rounded-xl border border-[#E6DDCB] px-3 py-2">
                     <span className="w-2 h-2 rounded-full bg-[#4F8A63]" />
-                    <span className="text-[10px] font-semibold text-[#16323D]">Replicate · img2img · {isEN ? "transforms YOUR photo" : "transforma TU foto"}</span>
+                    <span className="text-[10px] font-semibold text-[var(--brand)]">Replicate · img2img · {isEN ? "transforms YOUR photo" : "transforma TU foto"}</span>
                   </div>
                 </>
               )}

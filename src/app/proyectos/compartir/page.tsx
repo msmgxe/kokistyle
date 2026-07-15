@@ -112,7 +112,7 @@ export default function CompartirPage() {
 
   return (
     <div className="mx-auto max-w-[560px] animate-in fade-in duration-300">
-      <div className="mb-4 rounded-2xl bg-[#16323D] px-5 py-4">
+      <div className="mb-4 rounded-2xl bg-[var(--brand)] px-5 py-4">
         <h1 className="font-bookman text-[20px] font-semibold text-white">📤 {EN ? "Shared photos" : "Fotos compartidas"}</h1>
         <p className="mt-0.5 text-[12.5px] text-[#A8C0BC]">
           {EN ? "Choose the project and upload what you shared from your gallery" : "Elige el proyecto y sube lo que compartiste desde tu galería"}
@@ -121,7 +121,7 @@ export default function CompartirPage() {
 
       {files === null ? (
         <div className="flex h-40 items-center justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
         </div>
       ) : done ? (
         <div className="rounded-2xl border border-[#CFE3D2] bg-[#F2F8F3] p-8 text-center">
@@ -129,7 +129,7 @@ export default function CompartirPage() {
           <p className="mt-2 text-[15px] font-bold text-[#35664A]">
             {files.length} {tf.uploaded} — {projTitle}
           </p>
-          <Link href="/proyectos/fotos" className="mt-4 inline-block rounded-xl bg-[#16323D] px-5 py-3 text-[13px] font-bold text-white">
+          <Link href="/proyectos/fotos" className="mt-4 inline-block rounded-xl bg-[var(--brand)] px-5 py-3 text-[13px] font-bold text-white">
             {EN ? "View photo history" : "Ver historial de fotos"}
           </Link>
         </div>
@@ -139,12 +139,12 @@ export default function CompartirPage() {
             ? "Nothing shared yet. Open your phone's Gallery, select photos → Share → Luxaris."
             : "Aún no hay nada compartido. Abre la Galería del teléfono, selecciona fotos → Compartir → Luxaris."}
           <br /><br />
-          <Link href="/proyectos/fotos" className="font-bold text-[#395886] underline">
+          <Link href="/proyectos/fotos" className="font-bold text-[var(--accent)] underline">
             {EN ? "Go to Photos" : "Ir a Fotos"}
           </Link>
         </div>
       ) : (
-        <div className="rounded-2xl border-2 border-[#395886] bg-white p-4">
+        <div className="rounded-2xl border-2 border-[var(--accent)] bg-white p-4">
           <div className={`grid gap-2 ${previews.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
             {previews.map((src, i) => (
               // eslint-disable-next-line @next/next/no-img-element
@@ -156,7 +156,7 @@ export default function CompartirPage() {
             value={projectId}
             onChange={e => setProjectId(e.target.value)}
             aria-label={tf.selectProject}
-            className="mt-3 w-full rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3 text-[15px] font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
+            className="mt-3 w-full rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3 text-[15px] font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.title.split(" — ")[0]}{p.client ? ` — ${p.client}` : ""}</option>
@@ -167,7 +167,7 @@ export default function CompartirPage() {
             value={caption}
             onChange={e => setCaption(e.target.value)}
             placeholder={tf.captionPlaceholder}
-            className="mt-3 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[#16323D] placeholder:text-[#9CABB0] focus:border-[#395886] focus:outline-none"
+            className="mt-3 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:border-[var(--accent)] focus:outline-none"
           />
           <div className="mt-3 flex flex-wrap gap-2">
             {PHOTO_TAG_ORDER.map(tg => (
@@ -195,7 +195,7 @@ export default function CompartirPage() {
         </div>
       )}
 
-      <div className={`fixed bottom-24 left-1/2 z-[400] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}>
+      <div className={`fixed bottom-24 left-1/2 z-[400] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[var(--brand)] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}>
         {toast}
       </div>
     </div>

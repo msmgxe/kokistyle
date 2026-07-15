@@ -52,7 +52,7 @@ interface EstimateForPlanner {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TAG_STYLES = [
-  "bg-[#EDF3FB] text-[#395886]",
+  "bg-[#EDF3FB] text-[var(--accent)]",
   "bg-[#DCEBDD] text-[#4F8A63]",
   "bg-[#EDE3CF] text-[#7A6230]",
   "bg-[#F0E8F7] text-[#6D3AAD]",
@@ -242,7 +242,7 @@ function ItemCard({
       ref={overlay ? undefined : setNodeRef}
       style={style}
       className={`touch-none select-none rounded-lg border bg-white transition
-        ${overlay ? "shadow-xl border-[#395886]" : "border-[#E6DDCB] hover:border-[#395886]/50 hover:shadow-sm"}
+        ${overlay ? "shadow-xl border-[var(--accent)]" : "border-[#E6DDCB] hover:border-[#395886]/50 hover:shadow-sm"}
         ${isDragging && !overlay ? "opacity-25" : ""}`}
     >
       {/* ── Fila compacta (una línea): grip arrastra · resto expande ── */}
@@ -250,7 +250,7 @@ function ItemCard({
         <span
           {...(overlay ? {} : attributes)}
           {...(overlay ? {} : listeners)}
-          className={`shrink-0 leading-none text-[#C6BCA6] ${overlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing hover:text-[#395886]"}`}
+          className={`shrink-0 leading-none text-[#C6BCA6] ${overlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing hover:text-[var(--accent)]"}`}
           aria-label={EN ? "Drag to reorder" : "Arrastrar para reordenar"}
         >
           ⋮⋮
@@ -275,7 +275,7 @@ function ItemCard({
           <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${item.done ? "opacity-50" : ""} ${item.tagStyle}`}>
             {item.sectionTag}
           </span>
-          <span className={`min-w-0 flex-1 truncate text-[11px] font-medium leading-tight ${item.done ? "text-[#8A9B8E] line-through" : "text-[#16323D]"}`}>
+          <span className={`min-w-0 flex-1 truncate text-[11px] font-medium leading-tight ${item.done ? "text-[#8A9B8E] line-through" : "text-[var(--brand)]"}`}>
             {item.description}
           </span>
           <span className="shrink-0 font-mono text-[9px] text-[#5C6A6E]">{item.hours}h</span>
@@ -310,7 +310,7 @@ function ItemCard({
                 value={item.description}
                 onChange={e => onEdit(item.id, { description: e.target.value })}
                 rows={2}
-                className="w-full resize-none rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] leading-tight text-[#16323D] outline-none focus:border-[#395886]"
+                className="w-full resize-none rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] leading-tight text-[var(--brand)] outline-none focus:border-[var(--accent)]"
               />
             </label>
           )}
@@ -326,7 +326,7 @@ function ItemCard({
                   type="number" min={0} step={0.5}
                   value={item.hours}
                   onChange={e => onEdit(item.id, { hours: Number(e.target.value) || 0 })}
-                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[#16323D] outline-none focus:border-[#395886]"
+                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
                 />
               </label>
               <label className="flex-1">
@@ -337,7 +337,7 @@ function ItemCard({
                   type="number" min={0} step={1}
                   value={item.amount}
                   onChange={e => onEdit(item.id, { amount: Number(e.target.value) || 0 })}
-                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[#16323D] outline-none focus:border-[#395886]"
+                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
                 />
               </label>
             </div>
@@ -356,7 +356,7 @@ function ItemCard({
                   catch { dateInputRef.current?.click(); }
                 }}
                 className={`flex w-full items-center gap-1 rounded-md border px-1.5 py-1 text-left text-[10px] font-semibold transition
-                  ${item.dayIndex !== null ? "border-[#CFE3D2] bg-[#F2F8F3] text-[#4F8A63]" : "border-[#F0D9D2] bg-[#FDF5F3] text-[#B0492F] hover:text-[#16323D]"}`}
+                  ${item.dayIndex !== null ? "border-[#CFE3D2] bg-[#F2F8F3] text-[#4F8A63]" : "border-[#F0D9D2] bg-[#FDF5F3] text-[#B0492F] hover:text-[var(--brand)]"}`}
               >
                 <span>{item.dayIndex !== null ? "✓" : "📅"}</span>
                 <span className="truncate">
@@ -384,7 +384,7 @@ function ItemCard({
               <select
                 value={item.assignedContactId ?? ""}
                 onChange={e => onAssign(item.id, e.target.value || null)}
-                className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] font-semibold text-[#395886] outline-none focus:border-[#395886]"
+                className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] font-semibold text-[var(--accent)] outline-none focus:border-[var(--accent)]"
               >
                 <option value="">{EN ? "Own team" : "Equipo propio"}</option>
                 {contacts.map(c => (
@@ -422,11 +422,11 @@ function ItemPool({
     <div
       ref={setNodeRef}
       className={`flex min-h-[100px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition
-        ${isOver ? "border-[#395886] bg-[#EDF3FB]" : "border-[#D7CBB3] bg-[#FDFAF6]"}`}
+        ${isOver ? "border-[var(--accent)] bg-[#EDF3FB]" : "border-[#D7CBB3] bg-[#FDFAF6]"}`}
     >
       <button
         onClick={onAddCustom}
-        className="flex items-center justify-center gap-1 rounded-xl border border-dashed border-[#D7CBB3] py-1.5 text-[10px] font-semibold text-[#5C6A6E] transition hover:border-[#395886] hover:text-[#395886]"
+        className="flex items-center justify-center gap-1 rounded-xl border border-dashed border-[#D7CBB3] py-1.5 text-[10px] font-semibold text-[#5C6A6E] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
         <Plus size={10} /> {EN ? "Add custom item" : "Agregar item"}
       </button>
@@ -486,7 +486,7 @@ function DayColumn({
     ? "border-[#F4B183] bg-[#FDF1E7]"
     : "border-[#E6DDCB] bg-white";
   const dropCls = isOver
-    ? "border-[#395886] bg-[#EDF3FB]"
+    ? "border-[var(--accent)] bg-[#EDF3FB]"
     : items.length
     ? wk === "sat"
       ? "border-[#9DC3E6]/70 bg-[#F0F2F4]"
@@ -504,7 +504,7 @@ function DayColumn({
       {/* Header */}
       <div className={`rounded-xl border px-3 py-2.5 ${headerCls}`}>
         <div className="flex items-center justify-between">
-          <span className="text-[12px] font-bold text-[#16323D]">
+          <span className="text-[12px] font-bold text-[var(--brand)]">
             {EN ? `Day ${day + 1}` : `Día ${day + 1}`}
             {wk && (
               <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase ${wk === "sat" ? "bg-[#9DC3E6]/40 text-[#2E5E8C]" : "bg-[#F4B183]/40 text-[#9C5221]"}`}>
@@ -521,7 +521,7 @@ function DayColumn({
         <div className="mt-1.5 flex items-center gap-1.5">
           <CalendarDays size={11} className="shrink-0 text-[#5C6A6E]" />
           <div className="relative flex-1">
-            <span className="pointer-events-none text-[10px] font-semibold text-[#395886]">
+            <span className="pointer-events-none text-[10px] font-semibold text-[var(--accent)]">
               {date ? formatDate(date, EN) : (EN ? "Pick date" : "Seleccionar fecha")}
             </span>
             <input
@@ -585,7 +585,7 @@ function Stepper({ label, value, min, max, onChange }: {
           onClick={() => onChange(Math.max(min, value - 1))}
           className="flex h-5 w-5 items-center justify-center rounded text-sm text-[#5C6A6E] hover:bg-[#F7F3EA]"
         >−</button>
-        <span className="w-6 text-center text-[12px] font-bold text-[#16323D]">{value}</span>
+        <span className="w-6 text-center text-[12px] font-bold text-[var(--brand)]">{value}</span>
         <button
           onClick={() => onChange(Math.min(max, value + 1))}
           className="flex h-5 w-5 items-center justify-center rounded text-sm text-[#5C6A6E] hover:bg-[#F7F3EA]"
@@ -630,12 +630,12 @@ function CustomItemForm({
     : sections.find(s => s.tag === section)?.style ?? TAG_STYLES[0];
   const canAdd = desc.trim().length > 0 && resolvedTag.length > 0;
 
-  const inputCls = "w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[#16323D] focus:border-[#395886] focus:outline-none";
+  const inputCls = "w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none";
   const labelCls = "mb-1 block text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]";
 
   return (
-    <div className="rounded-xl border border-[#395886] bg-white p-3 shadow-md">
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#395886]">
+    <div className="rounded-xl border border-[var(--accent)] bg-white p-3 shadow-md">
+      <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[var(--accent)]">
         {EN ? "New custom item" : "Nuevo item personalizado"}
       </div>
 
@@ -677,7 +677,7 @@ function CustomItemForm({
                 type="button"
                 onClick={() => setNewStyle(style)}
                 className={`rounded-full px-2 py-0.5 text-[9px] font-bold transition ${style}
-                  ${newStyle === style ? "ring-2 ring-[#395886] ring-offset-1" : "opacity-70 hover:opacity-100"}`}
+                  ${newStyle === style ? "ring-2 ring-[var(--accent)] ring-offset-1" : "opacity-70 hover:opacity-100"}`}
               >
                 {newTag.trim() || "Aa"}
               </button>
@@ -765,7 +765,7 @@ function CustomItemForm({
             });
           }}
           disabled={!canAdd}
-          className="flex-1 rounded-lg bg-[#395886] py-1.5 text-[10px] font-bold text-white disabled:opacity-40"
+          className="flex-1 rounded-lg bg-[var(--accent)] py-1.5 text-[10px] font-bold text-white disabled:opacity-40"
         >
           {EN ? "Add item" : "Agregar item"}
         </button>
@@ -1238,7 +1238,7 @@ export default function DayPlannerModal({
           </button>
         )}
         <div className="min-w-0">
-          <div className="text-sm font-bold text-[#16323D]">
+          <div className="text-sm font-bold text-[var(--brand)]">
             {EN ? "Day Planner" : "Planificador por Día"}
           </div>
           <div className="text-[10px] text-[#5C6A6E]">
@@ -1263,7 +1263,7 @@ export default function DayPlannerModal({
         <button
           onClick={autoAssign}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl bg-[#EDF3FB] px-3 py-2 text-[12px] font-semibold text-[#395886] transition hover:bg-[#D5DEEF] disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-xl bg-[#EDF3FB] px-3 py-2 text-[12px] font-semibold text-[var(--accent)] transition hover:bg-[#D5DEEF] disabled:opacity-40"
         >
           <Zap size={12} /> {EN ? "Auto-assign" : "Auto-asignar"}
         </button>
@@ -1272,7 +1272,7 @@ export default function DayPlannerModal({
       {/* ── Main canvas ────────────────────────────────────────────────────── */}
       {loading ? (
         <div className="flex flex-1 items-center justify-center" style={{ minHeight: embedded ? "520px" : undefined }}>
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>

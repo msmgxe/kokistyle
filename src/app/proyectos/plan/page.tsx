@@ -47,7 +47,7 @@ const TASK_PILL: Record<string, string> = {
 function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
   return (
     <button type="button" tabIndex={-1} aria-label="Arrastra para reordenar"
-      className="flex h-full cursor-grab touch-none items-center justify-center text-[#C4B89A] transition hover:text-[#16323D] active:cursor-grabbing"
+      className="flex h-full cursor-grab touch-none items-center justify-center text-[#C4B89A] transition hover:text-[var(--brand)] active:cursor-grabbing"
       {...(listeners ?? {})} {...(attributes ?? {})}>
       <GripVertical size={15} />
     </button>
@@ -70,7 +70,7 @@ function ConfirmModal({ title, body, label, onConfirm, onCancel }: { title: stri
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
       <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-        <h3 className="mb-2 text-lg font-bold text-[#16323D]">{title}</h3>
+        <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">{title}</h3>
         <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
@@ -196,7 +196,7 @@ export default function PlanPage() {
   const toggleAll = () => setOpenIds(prev => prev.size ? new Set() : new Set(projects.map(p => p.id)));
 
   if (loading) {
-    return <div className="flex min-h-[60vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" /></div>;
+    return <div className="flex min-h-[60vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" /></div>;
   }
 
   const STATUS_PILL_ACTIVE: Record<string, string> = {
@@ -206,7 +206,7 @@ export default function PlanPage() {
   };
 
   const DarkBar = ({ withControls }: { withControls: boolean }) => (
-    <div className={`mb-4 flex items-center gap-3 rounded-2xl bg-[#16323D] px-5 py-3 ${view === "report" ? "print:hidden" : ""}`}>
+    <div className={`mb-4 flex items-center gap-3 rounded-2xl bg-[var(--brand)] px-5 py-3 ${view === "report" ? "print:hidden" : ""}`}>
       <div className="flex shrink-0 items-center gap-2">
         <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block">{branding.companyName}</span>
         <span className="hidden text-white/20 sm:block">·</span>
@@ -219,7 +219,7 @@ export default function PlanPage() {
           <div className="flex shrink-0 items-center gap-1">
             {(["gantt", "report"] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
-                className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${view === v ? "bg-white text-[#16323D]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${view === v ? "bg-white text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
                 {v === "gantt" ? tp.dailyReport.viewGantt : tp.dailyReport.viewReport}
               </button>
             ))}
@@ -230,7 +230,7 @@ export default function PlanPage() {
         <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           <button onClick={() => { setFilterStatus("all"); setFilterProject("all"); }}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${filterStatus === "all" ? "bg-white text-[#16323D]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${filterStatus === "all" ? "bg-white text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
             {gp.tabAll}
             <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${filterStatus === "all" ? "bg-black/10" : "bg-white/10"}`}>{ganttProjects.length}</span>
           </button>
@@ -251,8 +251,8 @@ export default function PlanPage() {
             onChange={e => setFilterProject(e.target.value)}
             aria-label={gp.colProject}
             className={`max-w-[190px] shrink-0 cursor-pointer rounded-full border px-3 py-1 text-[10.5px] font-bold outline-none transition ${
-              filterProject === "all" ? "border-white/20 bg-transparent text-white/60 hover:bg-white/10" : "border-white bg-white text-[#16323D]"
-            } [&>option]:bg-white [&>option]:text-[#16323D]`}
+              filterProject === "all" ? "border-white/20 bg-transparent text-white/60 hover:bg-white/10" : "border-white bg-white text-[var(--brand)]"
+            } [&>option]:bg-white [&>option]:text-[var(--brand)]`}
           >
             <option value="all">{EN ? "All projects" : "Todos los proyectos"}</option>
             {ganttProjects
@@ -267,12 +267,12 @@ export default function PlanPage() {
         <div className="flex shrink-0 items-center gap-1">
           {(["week", "day"] as const).map(u => (
             <button key={u} onClick={() => setGanttUnit(u)}
-              className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${ganttUnit === u ? "bg-white text-[#16323D]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+              className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${ganttUnit === u ? "bg-white text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
               {u === "week" ? (EN ? "Weeks" : "Semanas") : (EN ? "Days" : "Días")}
             </button>
           ))}
         </div>
-        <button onClick={() => window.print()} title={gp.printPdf} className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-bold text-[#16323D]">
+        <button onClick={() => window.print()} title={gp.printPdf} className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-bold text-[var(--brand)]">
           <Printer size={12} /> {gp.printPdf}
         </button>
       </>)}
@@ -303,7 +303,7 @@ export default function PlanPage() {
 
       {view === "gantt" && (<>
       <div className="rpt-only mb-3 hidden">
-        <h2 className="text-lg font-bold text-[#16323D]">{gp.reportTitle}</h2>
+        <h2 className="text-lg font-bold text-[var(--brand)]">{gp.reportTitle}</h2>
         <p className="text-xs text-[#5C6A6E]">{gp.generatedOn} {new Date().toLocaleDateString(EN ? "en-US" : "es-US", { day: "numeric", month: "long", year: "numeric" })}</p>
       </div>
 
@@ -347,21 +347,21 @@ export default function PlanPage() {
                 return (
                   <SortableRow key={p.id} id={p.id}>
                     {({ listeners, attributes }, isDragging) => (
-                      <div className={`border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[#16323D]" : ""}`} style={{ width: LEFT + scale.laneWidth }}>
+                      <div className={`border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[var(--brand)]" : ""}`} style={{ width: LEFT + scale.laneWidth }}>
                         <div className="flex items-stretch">
                           <div className="sticky left-0 z-10 grid shrink-0 items-center border-r border-[#E6DDCB] bg-white" style={{ width: LEFT, gridTemplateColumns: LEFT_COLS }}>
                             <DragHandle listeners={listeners} attributes={attributes} />
 
-                            <div className="flex h-full items-center justify-center bg-[#F2EFE7] font-mono text-[13px] font-bold text-[#16323D]">{rank}</div>
+                            <div className="flex h-full items-center justify-center bg-[#F2EFE7] font-mono text-[13px] font-bold text-[var(--brand)]">{rank}</div>
 
                             {/* Proyecto (clic = acordeón) */}
                             <button onClick={() => toggleRow(p.id)} className="group flex h-full items-center gap-2 px-2 py-2 text-left hover:bg-[#F7F3EA]">
                               <ChevronRight size={13} className={`shrink-0 text-[#97A1A0] transition ${isOpen ? "rotate-90" : ""}`} />
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={30} rounded="rounded-md" />
-                              <span className="truncate text-[12.5px] font-semibold text-[#16323D] group-hover:text-[#395886]">{p.title.split(" — ")[0]}</span>
+                              <span className="truncate text-[12.5px] font-semibold text-[var(--brand)] group-hover:text-[var(--accent)]">{p.title.split(" — ")[0]}</span>
                             </button>
 
-                            <Link href={`/proyectos/${p.id}`} className="truncate px-2 text-[11.5px] text-[#5C6A6E] hover:text-[#395886]">{p.client}</Link>
+                            <Link href={`/proyectos/${p.id}`} className="truncate px-2 text-[11.5px] text-[#5C6A6E] hover:text-[var(--accent)]">{p.client}</Link>
                             <span className="truncate px-2 text-[11.5px] text-[#5C6A6E]">{p.address || "—"}</span>
                             <span className="px-1 text-center font-mono text-[11.5px] font-bold text-[#5C6A6E]">{days}</span>
 
@@ -412,7 +412,7 @@ export default function PlanPage() {
                                   <div className="space-y-1">
                                     {list.map(tk => (
                                       <div key={tk.id} className="flex items-center gap-2 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px]">
-                                        <span className="flex-1 truncate font-semibold text-[#16323D]">{tk.name}</span>
+                                        <span className="flex-1 truncate font-semibold text-[var(--brand)]">{tk.name}</span>
                                         <span className="hidden truncate text-[10.5px] text-[#5C6A6E] sm:inline">
                                           {tk.source_section ? tk.source_section + " · " : ""}{tk.hours ? tk.hours + "h" : ""}{tk.scheduled_date ? " · " + dShort(new Date(tk.scheduled_date + "T00:00:00")) : ""}
                                         </span>
@@ -434,8 +434,8 @@ export default function PlanPage() {
 
             <DragOverlay dropAnimation={dropAnimation}>
               {activeProject && (
-                <div className="rounded-xl border border-[#16323D] bg-white px-4 py-3 shadow-2xl ring-1 ring-[#16323D]">
-                  <div className="text-sm font-semibold text-[#16323D]">{activeProject.title.split(" — ")[0]}</div>
+                <div className="rounded-xl border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
+                  <div className="text-sm font-semibold text-[var(--brand)]">{activeProject.title.split(" — ")[0]}</div>
                   <div className="font-mono text-[11px] text-[#5C6A6E]">{activeProject.client}</div>
                 </div>
               )}
@@ -464,7 +464,7 @@ export default function PlanPage() {
           label={gp.delete} onConfirm={() => deleteProject(confirmDel)} onCancel={() => setConfirmDel(null)} />
       )}
 
-      <div className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}>{toast}</div>
+      <div className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[var(--brand)] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}>{toast}</div>
     </div>
   );
 }

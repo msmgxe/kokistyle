@@ -21,7 +21,7 @@ interface ActivityRow {
 }
 
 const ACTION_LABELS: Record<string, { emoji: string; en: string; es: string; color: string; bg: string }> = {
-  login:       { emoji: "🔑", en: "Login",        es: "Login",         color: "text-[#395886]",  bg: "bg-[#EDF3FB]" },
+  login:       { emoji: "🔑", en: "Login",        es: "Login",         color: "text-[var(--accent)]",  bg: "bg-[#EDF3FB]" },
   create:      { emoji: "✅", en: "Created",      es: "Creó",          color: "text-[#4F8A63]",  bg: "bg-[#EAF5EE]" },
   delete:      { emoji: "🗑", en: "Deleted",      es: "Eliminó",       color: "text-[#B0492F]",  bg: "bg-[#FDF0ED]" },
   update:      { emoji: "✏️", en: "Updated",      es: "Actualizó",     color: "text-[#5C6A6E]",  bg: "bg-[#F7F3EA]" },
@@ -56,7 +56,7 @@ function initials(name: string | null) {
   return name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
-const USER_COLORS = ["bg-[#16323D]", "bg-[#4F8A63]", "bg-[#7B1838]", "bg-[#395886]", "bg-[#B06020]"];
+const USER_COLORS = ["bg-[var(--brand)]", "bg-[#4F8A63]", "bg-[#7B1838]", "bg-[var(--accent)]", "bg-[#B06020]"];
 function userColor(userId: string | null) {
   if (!userId) return USER_COLORS[0];
   const n = userId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -116,7 +116,7 @@ export default function ActivityPage() {
   return (
     <div className="animate-in fade-in duration-300">
       {/* Header */}
-      <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
+      <div className="mb-6 rounded-2xl bg-[var(--accent)] px-6 py-5">
         <h1 className="font-bookman text-xl font-semibold text-white">
           {EN ? "Activity Log" : "Registro de Actividad"}
         </h1>
@@ -128,8 +128,8 @@ export default function ActivityPage() {
       {/* Stats */}
       <div className="mb-5 grid grid-cols-4 gap-3">
         {[
-          { label: EN ? "Today" : "Hoy", value: today.length, color: "text-[#16323D]" },
-          { label: EN ? "Logins" : "Logins", value: logins, color: "text-[#395886]" },
+          { label: EN ? "Today" : "Hoy", value: today.length, color: "text-[var(--brand)]" },
+          { label: EN ? "Logins" : "Logins", value: logins, color: "text-[var(--accent)]" },
           { label: EN ? "Created" : "Creados", value: creates, color: "text-[#4F8A63]" },
           { label: EN ? "Deleted" : "Eliminados", value: deletes, color: "text-[#B0492F]" },
         ].map(s => (
@@ -143,12 +143,12 @@ export default function ActivityPage() {
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3 rounded-2xl border border-[#E6DDCB] bg-white px-5 py-4">
         <select value={filterUser} onChange={e => setFilterUser(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[#16323D] focus:outline-none">
+          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none">
           <option value="">{EN ? "All users" : "Todos los usuarios"}</option>
           {users.map(u => <option key={u} value={u}>{u}</option>)}
         </select>
         <select value={filterAction} onChange={e => setFilterAction(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[#16323D] focus:outline-none">
+          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none">
           <option value="">{EN ? "All actions" : "Todas las acciones"}</option>
           <option value="login">🔑 Login</option>
           <option value="create">{EN ? "✅ Create" : "✅ Creó"}</option>
@@ -157,9 +157,9 @@ export default function ActivityPage() {
           <option value="mark_bought">{EN ? "🛒 Bought" : "🛒 Comprado"}</option>
         </select>
         <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[#16323D] focus:outline-none" />
+          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none" />
         <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[#16323D] focus:outline-none" />
+          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none" />
         <button onClick={() => { setFilterUser(""); setFilterAction(""); setFilterFrom(""); setFilterTo(""); }}
           className="rounded-lg border border-[#E6DDCB] px-4 py-2 text-sm text-[#5C6A6E] hover:bg-[#F7F3EA]">
           {EN ? "Clear" : "Limpiar"}
@@ -198,7 +198,7 @@ export default function ActivityPage() {
                           {initials(row.user_name)}
                         </div>
                         <div>
-                          <div className="font-semibold text-[#16323D]">{row.user_name ?? "—"}</div>
+                          <div className="font-semibold text-[var(--brand)]">{row.user_name ?? "—"}</div>
                           <div className="text-[10px] text-[#5C6A6E]">{row.user_role === "superadmin" ? "Superadmin" : (EN ? "Collaborator" : "Colaborador")}</div>
                         </div>
                       </div>
@@ -210,7 +210,7 @@ export default function ActivityPage() {
                     </td>
                     <td className="px-4 py-3">
                       {row.project_name
-                        ? <><span className="font-medium text-[#395886]">{row.project_name}</span></>
+                        ? <><span className="font-medium text-[var(--accent)]">{row.project_name}</span></>
                         : <span className="text-[#C4B89A]">—</span>}
                     </td>
                     <td className="max-w-[180px] truncate px-4 py-3 text-[#5C6A6E]">

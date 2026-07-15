@@ -104,7 +104,7 @@ export default function QuickPhoto({
             <>
               <button
                 onClick={openGallery}
-                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-[12px] font-bold text-[#16323D]"
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-[12px] font-bold text-[var(--brand)]"
               >
                 <Images size={14} /> {tf.fromGallery}
               </button>

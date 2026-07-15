@@ -208,7 +208,7 @@ export default function ProjectPhotos({
             value={selProject}
             onChange={e => setSelProject(e.target.value)}
             aria-label={tf.selectProject}
-            className="mb-3 w-full rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3 text-[15px] font-semibold text-[#16323D] focus:border-[#395886] focus:outline-none"
+            className="mb-3 w-full rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3 text-[15px] font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.title.split(" — ")[0]}{p.client ? ` — ${p.client}` : ""}</option>
@@ -230,7 +230,7 @@ export default function ProjectPhotos({
           </button>
           <button
             onClick={openGallery}
-            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[#16323D] transition hover:bg-[#ECE3D1] active:scale-[0.98]"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[var(--brand)] transition hover:bg-[#ECE3D1] active:scale-[0.98]"
           >
             {tf.fromGallery}
           </button>
@@ -275,7 +275,7 @@ export default function ProjectPhotos({
         <button
           onClick={() => setFilter("all")}
           className={`shrink-0 rounded-full border px-4 py-2 text-[13px] font-bold transition ${
-            filter === "all" ? "border-[#395886] bg-[#395886] text-white" : "border-[#E6DDCB] bg-white text-[#5C6A6E]"
+            filter === "all" ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#E6DDCB] bg-white text-[#5C6A6E]"
           }`}
         >
           {tf.all} · {photos.length}
@@ -322,7 +322,7 @@ export default function ProjectPhotos({
       {/* ── Galería por fecha ── */}
       {loading ? (
         <div className="flex h-40 items-center justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
         </div>
       ) : visible.length === 0 ? (
         <p className="py-12 text-center text-[14px] italic text-[#97A1A0]">{tf.empty}</p>
@@ -370,7 +370,7 @@ export default function ProjectPhotos({
             </div>
             <button
               onClick={() => (editMode ? setEditMode(false) : openEdit(current))}
-              className={`grid h-10 shrink-0 place-items-center rounded-xl px-3 text-[13px] font-bold ${editMode ? "bg-white text-[#16323D]" : "bg-white/12 text-white"}`}
+              className={`grid h-10 shrink-0 place-items-center rounded-xl px-3 text-[13px] font-bold ${editMode ? "bg-white text-[var(--brand)]" : "bg-white/12 text-white"}`}
             >
               {tf.edit}
             </button>
@@ -393,7 +393,7 @@ export default function ProjectPhotos({
                 value={editData.caption}
                 onChange={e => setEditData(d => ({ ...d, caption: e.target.value }))}
                 placeholder={tf.captionPlaceholder}
-                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[#16323D] placeholder:text-[#9CABB0] focus:outline-none"
+                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:outline-none"
               />
               <div className="flex flex-wrap gap-1.5">
                 {TAG_ORDER.map(tg => (
@@ -424,7 +424,7 @@ export default function ProjectPhotos({
                   value={editData.customTag}
                   onChange={e => setEditData(d => ({ ...d, customTag: e.target.value }))}
                   placeholder={tf.customTagPlaceholder}
-                  className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] uppercase text-[#16323D] placeholder:normal-case placeholder:text-[#9CABB0] focus:outline-none"
+                  className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] uppercase text-[var(--brand)] placeholder:normal-case placeholder:text-[#9CABB0] focus:outline-none"
                 />
               )}
               <input
@@ -432,7 +432,7 @@ export default function ProjectPhotos({
                 onChange={e => setEditData(d => ({ ...d, album: e.target.value }))}
                 list="albums-list-edit"
                 placeholder={tf.albumPlaceholder}
-                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[#16323D] placeholder:text-[#9CABB0] focus:outline-none"
+                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:outline-none"
               />
               <datalist id="albums-list-edit">
                 {albums.map(a => <option key={a} value={a} />)}
@@ -483,7 +483,7 @@ export default function ProjectPhotos({
           {confirmDel && (
             <div className="absolute inset-0 z-10 grid place-items-center bg-black/70 px-6">
               <div className="w-full max-w-[340px] rounded-2xl bg-white p-5 text-center">
-                <p className="text-[15px] font-bold leading-snug text-[#16323D]">{tf.deleteQuestion}</p>
+                <p className="text-[15px] font-bold leading-snug text-[var(--brand)]">{tf.deleteQuestion}</p>
                 <div className="mt-4 flex gap-2.5">
                   <button
                     onClick={() => setConfirmDel(false)}

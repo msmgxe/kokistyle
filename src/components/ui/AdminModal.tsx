@@ -105,7 +105,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
               <span className="grid size-6 place-items-center rounded-md bg-[#7B1838] text-white">
                 {step === "forgot_email" || step === "forgot_code" ? <Mail size={11} /> : <Lock size={11} />}
               </span>
-              <span className="text-[13px] font-bold text-[#16323D]">
+              <span className="text-[13px] font-bold text-[var(--brand)]">
                 {step === "pin"          && "Acceso admin"}
                 {step === "forgot_email" && "Recuperar PIN"}
                 {step === "forgot_code"  && "Código de verificación"}
@@ -125,7 +125,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
             {step === "pin" && (<>
               <div className="mb-3 flex justify-center gap-3">
                 {[0,1,2,3,4,5,6].map(i => (
-                  <div key={i} className={`size-2.5 rounded-full transition-all duration-100 ${pin.length > i ? "scale-110 bg-[#16323D]" : "bg-[#E6DDCB]"}`} />
+                  <div key={i} className={`size-2.5 rounded-full transition-all duration-100 ${pin.length > i ? "scale-110 bg-[var(--brand)]" : "bg-[#E6DDCB]"}`} />
                 ))}
               </div>
               <input
@@ -134,7 +134,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                 value={pin}
                 onChange={e => { setPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setError(""); }}
                 onKeyDown={e => e.key === "Enter" && pin.length >= 4 && handleLogin()}
-                className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] text-center font-mono text-xl tracking-[1em] text-[#16323D] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[#16323D] focus:outline-none"
+                className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] text-center font-mono text-xl tracking-[1em] text-[var(--brand)] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[var(--brand)] focus:outline-none"
                 placeholder="••••••••"
                 autoComplete="off"
               />
@@ -169,11 +169,11 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                 onChange={e => { setEmail(e.target.value); setError(""); }}
                 onKeyDown={e => e.key === "Enter" && handleSendCode()}
                 placeholder="tu@correo.com"
-                className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[#16323D] placeholder:text-[#C4B89A] focus:border-[#16323D] focus:outline-none"
+                className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] placeholder:text-[#C4B89A] focus:border-[var(--brand)] focus:outline-none"
               />
               {error && <p className="mb-2 text-[11px] font-semibold text-[#B0492F]">{error}</p>}
               <button onClick={handleSendCode} disabled={loading}
-                className="w-full rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-40">
+                className="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
                 {loading ? "Enviando…" : "Enviar código"}
               </button>
             </>)}
@@ -190,7 +190,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                 onChange={e => { setCode(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
                 onKeyDown={e => e.key === "Enter" && code.length === 6 && handleVerifyCode()}
                 placeholder="123456"
-                className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] text-center font-mono text-2xl tracking-[0.3em] text-[#16323D] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[#16323D] focus:outline-none"
+                className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] text-center font-mono text-2xl tracking-[0.3em] text-[var(--brand)] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[var(--brand)] focus:outline-none"
               />
               {error && <p className="mb-2 text-[11px] font-semibold text-[#B0492F]">{error}</p>}
               <div className="flex gap-2">
@@ -199,7 +199,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                   Reenviar
                 </button>
                 <button onClick={handleVerifyCode} disabled={loading || code.length !== 6}
-                  className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-40">
+                  className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white disabled:opacity-40">
                   {loading ? "…" : "Continuar"}
                 </button>
               </div>
@@ -214,7 +214,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                 value={newPin}
                 onChange={e => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setError(""); }}
                 placeholder="Nuevo PIN"
-                className="mb-2 h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-center font-mono text-lg tracking-[1em] text-[#16323D] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[#16323D] focus:outline-none"
+                className="mb-2 h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-center font-mono text-lg tracking-[1em] text-[var(--brand)] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[var(--brand)] focus:outline-none"
               />
               <input
                 type="password" inputMode="numeric" maxLength={8}
@@ -222,7 +222,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                 onChange={e => { setNewPin2(e.target.value.replace(/\D/g, "").slice(0, 8)); setError(""); }}
                 onKeyDown={e => e.key === "Enter" && handleResetPin()}
                 placeholder="Confirmar PIN"
-                className="mb-2 h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-center font-mono text-lg tracking-[1em] text-[#16323D] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[#16323D] focus:outline-none"
+                className="mb-2 h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-center font-mono text-lg tracking-[1em] text-[var(--brand)] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[var(--brand)] focus:outline-none"
               />
               {error && <p className="mb-2 text-[11px] font-semibold text-[#B0492F]">{error}</p>}
               <button onClick={handleResetPin} disabled={loading || newPin.length < 4}
@@ -235,14 +235,14 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
             {step === "forgot_done" && (
               <div className="flex flex-col items-center gap-3 py-2">
                 <CheckCircle size={36} className="text-[#4F8A63]" />
-                <p className="text-center text-sm font-semibold text-[#16323D]">
+                <p className="text-center text-sm font-semibold text-[var(--brand)]">
                   PIN actualizado correctamente
                 </p>
                 <p className="text-center text-[11px] text-[#97A1A0]">
                   Ya puedes ingresar con tu nuevo PIN.
                 </p>
                 <button onClick={() => { setStep("pin"); setCode(""); setNewPin(""); setNewPin2(""); }}
-                  className="w-full rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white">
+                  className="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white">
                   Ir al login
                 </button>
               </div>

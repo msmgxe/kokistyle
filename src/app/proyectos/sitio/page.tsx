@@ -15,7 +15,7 @@ type BiField = Partial<Bilingual> | undefined;
 const SECTIONS: SiteSectionKey[] = ["beforeAfter", "aiDesign", "process", "tours", "reviews", "faq"];
 
 const LBL = "mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]";
-const INP = "w-full rounded-xl border border-[#E6DDCB] bg-white px-3 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none";
+const INP = "w-full rounded-xl border border-[#E6DDCB] bg-white px-3 py-2 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none";
 
 /** Campo de texto bilingüe (EN/ES). A nivel de módulo para no perder el foco al escribir. */
 function BiText({ lbl, val, on, area, enPh = "EN", esPh = "ES" }: {
@@ -66,7 +66,7 @@ function ImageField({ lbl, keyName, url, onChange, fallback, urlPh = "Image URL"
           <input value={url ?? ""} onChange={e => onChange(e.target.value)} placeholder={urlPh} className={INP} />
           <input ref={ref} type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) doUpload(f); }} />
           <button onClick={() => ref.current?.click()} disabled={uploading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#16323D] px-3 py-1.5 text-[11px] font-bold text-[#16323D] hover:bg-[#F7F3EA] disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brand)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)] hover:bg-[#F7F3EA] disabled:opacity-50">
             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />} {uploadLbl}
           </button>
         </div>
@@ -131,10 +131,10 @@ export default function SitioPage() {
     <div className="pb-24">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-bookman text-2xl text-[#16323D]">🖥️ {ts.title}</h1>
+          <h1 className="font-bookman text-2xl text-[var(--brand)]">🖥️ {ts.title}</h1>
           <p className="text-sm text-[#5C6A6E]">{ts.subtitle}</p>
         </div>
-        <Link href="/" target="_blank" className="inline-flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-4 py-2.5 text-sm font-bold text-[#395886] hover:bg-[#F7F3EA]">
+        <Link href="/" target="_blank" className="inline-flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-4 py-2.5 text-sm font-bold text-[var(--accent)] hover:bg-[#F7F3EA]">
           <ExternalLink size={14} /> {ts.preview}
         </Link>
       </div>
@@ -144,7 +144,7 @@ export default function SitioPage() {
            ["before", <Images key="b" size={13} />, ts.tabBefore],
            ["visibility", <Eye key="c" size={13} />, ts.tabVisibility]] as const).map(([id, icon, lbl]) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[12px] font-bold transition ${tab === id ? "bg-[#395886] text-white" : "text-[#5C6A6E] hover:text-[#16323D]"}`}>
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[12px] font-bold transition ${tab === id ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"}`}>
             {icon} {lbl}
           </button>
         ))}
@@ -186,7 +186,7 @@ export default function SitioPage() {
             <BiText lbl={ts.description} val={ba.description} on={(lg, v) => setBA({ description: setBi(ba.description, lg, v) })} area enPh={ts.en} esPh={ts.es} />
             <div className="flex items-center justify-between pt-2">
               <span className={LBL}>{ts.baItems}</span>
-              <button onClick={() => setBA({ items: [...items, {}] })} className="inline-flex items-center gap-1 rounded-lg border border-[#16323D] px-2.5 py-1 text-[11px] font-bold text-[#16323D] hover:bg-[#F7F3EA]"><Plus size={12} /> {ts.addItem}</button>
+              <button onClick={() => setBA({ items: [...items, {}] })} className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand)] px-2.5 py-1 text-[11px] font-bold text-[var(--brand)] hover:bg-[#F7F3EA]"><Plus size={12} /> {ts.addItem}</button>
             </div>
             {items.map((it, i) => (
               <div key={i} className="rounded-xl border border-[#E6DDCB] bg-[#FBF8F2] p-3 space-y-3">
@@ -218,7 +218,7 @@ export default function SitioPage() {
                 return (
                   <button key={key} onClick={() => setContent(c => ({ ...c, visibility: { ...c.visibility, [key]: !on } }))}
                     className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${on ? "border-[#4F8A63] bg-[#EEF6F0]" : "border-[#E6DDCB] bg-white"}`}>
-                    <span className="text-sm font-bold text-[#16323D]">{lbl}</span>
+                    <span className="text-sm font-bold text-[var(--brand)]">{lbl}</span>
                     <span className={`inline-flex h-6 w-11 items-center rounded-full p-0.5 transition ${on ? "bg-[#4F8A63]" : "bg-[#D7CBB3]"}`}>
                       <span className={`size-5 rounded-full bg-white shadow transition ${on ? "translate-x-5" : ""}`} />
                     </span>
@@ -235,7 +235,7 @@ export default function SitioPage() {
         <div className="mx-auto flex max-w-[1180px] items-center justify-end gap-3 px-6 py-3">
           {toast && <span className="text-sm font-semibold text-[#4F8A63]">{toast}</span>}
           <button onClick={save} disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#16323D] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#0e2630] disabled:opacity-50">
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-6 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-50">
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} {saving ? ts.saving : ts.save}
           </button>
         </div>

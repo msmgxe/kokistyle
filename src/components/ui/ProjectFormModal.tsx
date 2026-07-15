@@ -187,10 +187,10 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
   };
 
   const field = (key: string) =>
-    `w-full rounded-xl border px-3 py-3 text-sm text-[#16323D] focus:outline-none transition ${
+    `w-full rounded-xl border px-3 py-3 text-sm text-[var(--brand)] focus:outline-none transition ${
       errors[key]
         ? "border-[#B0492F] bg-[#FDF0ED] focus:border-[#B0492F]"
-        : "border-[#D7CBB3] bg-white focus:border-[#16323D]"
+        : "border-[#D7CBB3] bg-white focus:border-[var(--brand)]"
     }`;
 
   const isBusy = saving || photoUploading;
@@ -248,7 +248,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
           </div>
 
           <div className="p-6 pt-5">
-            <h3 className="mb-5 text-xl font-bold text-[#16323D]">
+            <h3 className="mb-5 text-xl font-bold text-[var(--brand)]">
               {isEdit ? tp.project.editTitle : tp.project.name}
             </h3>
 
@@ -299,7 +299,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
                   placeholder={EN ? "e.g. García Family" : "ej. Familia García"}
                   value={form.client}
                   onChange={e => set("client", e.target.value)}
-                  className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                  className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                 />
               </div>
 
@@ -345,7 +345,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
                     min={0}
                     value={form.budget}
                     onChange={e => set("budget", parseFloat(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -359,7 +359,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
               <button
                 onClick={handleSave}
                 disabled={isBusy}
-                className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white disabled:opacity-50"
+                className="flex-1 rounded-xl bg-[var(--brand)] py-3 font-bold text-white disabled:opacity-50"
               >
                 {isBusy
                   ? (photoUploading ? tp.project.photoUploading : (EN ? "Saving…" : "Guardando…"))
@@ -382,7 +382,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
       {confirmDel && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 text-lg font-bold text-[#16323D]">{EN ? "Delete project" : "Eliminar proyecto"}</h3>
+            <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">{EN ? "Delete project" : "Eliminar proyecto"}</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">
               {EN
                 ? `"${project?.title}" will be deleted along with all its data. This cannot be undone.`

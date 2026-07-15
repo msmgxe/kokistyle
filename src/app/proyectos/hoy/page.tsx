@@ -20,13 +20,13 @@ type Filter = "all" | "pend" | "done";
 const STATUS_PILL: Record<string, string> = {
   prospecto:   "bg-[#EFEFEF] text-[#5C5C5C]",
   presupuesto: "bg-[#F5E6C3] text-[#7A6230]",
-  aprobado:    "bg-[#EDF3FB] text-[#395886]",
+  aprobado:    "bg-[#EDF3FB] text-[var(--accent)]",
   en_obra:     "bg-[#DCEBDD] text-[#35664A]",
-  terminado:   "bg-[#16323D] text-white",
+  terminado:   "bg-[var(--brand)] text-white",
 };
 
 const SECTION_STYLES = [
-  "bg-[#EDF3FB] text-[#395886]",
+  "bg-[#EDF3FB] text-[var(--accent)]",
   "bg-[#DCEBDD] text-[#4F8A63]",
   "bg-[#EDE3CF] text-[#7A6230]",
   "bg-[#F0E8F7] text-[#6D3AAD]",
@@ -206,7 +206,7 @@ export default function HoyPage() {
   return (
     <div className="mx-auto max-w-[640px] animate-in fade-in duration-300">
       {/* ── Cabecera del día ── */}
-      <div className="rounded-3xl bg-[#16323D] px-5 py-5 text-white">
+      <div className="rounded-3xl bg-[var(--brand)] px-5 py-5 text-white">
         <div className="text-[9px] font-extrabold tracking-[0.3em] text-[#A8C0BC]">
           {branding.companyName.toUpperCase()}
         </div>
@@ -224,7 +224,7 @@ export default function HoyPage() {
           >‹</button>
           <button
             onClick={() => setDate(toIso(new Date()))}
-            className={`h-10 rounded-xl px-3.5 text-[12px] font-bold transition ${isToday ? "bg-white text-[#16323D]" : "bg-white/15 text-white"}`}
+            className={`h-10 rounded-xl px-3.5 text-[12px] font-bold transition ${isToday ? "bg-white text-[var(--brand)]" : "bg-white/15 text-white"}`}
           >{th.todayBtn}</button>
           <button
             onClick={() => setDate(isoAddDays(date, 1))}
@@ -259,7 +259,7 @@ export default function HoyPage() {
             key={k}
             onClick={() => setFilter(k)}
             className={`rounded-full border px-3.5 py-1.5 text-[11.5px] font-bold transition ${
-              filter === k ? "border-[#395886] bg-[#395886] text-white" : "border-[#E6DDCB] bg-white text-[#5C6A6E]"
+              filter === k ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#E6DDCB] bg-white text-[#5C6A6E]"
             }`}
           >
             {l} · {filterCounts[k]}
@@ -269,7 +269,7 @@ export default function HoyPage() {
 
       {loading ? (
         <div className="flex h-48 items-center justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
         </div>
       ) : (
         <div className="mt-3 pb-6">
@@ -330,7 +330,7 @@ export default function HoyPage() {
             return (
               <div key={pid} className="mb-1">
                 <div className="mb-2 mt-4 flex flex-wrap items-center gap-2 px-0.5">
-                  <span className="font-bookman text-[15.5px] font-semibold text-[#16323D]">
+                  <span className="font-bookman text-[15.5px] font-semibold text-[var(--brand)]">
                     {p?.title.split(" — ")[0] ?? "—"}
                   </span>
                   {p && (
@@ -369,11 +369,11 @@ export default function HoyPage() {
                               {task.source_section}
                             </span>
                           )}
-                          <span className={`block text-[14px] leading-snug ${done ? "text-[#97A1A0] line-through" : "font-semibold text-[#16323D]"}`}>
+                          <span className={`block text-[14px] leading-snug ${done ? "text-[#97A1A0] line-through" : "font-semibold text-[var(--brand)]"}`}>
                             {task.name}
                           </span>
                           <span className="mt-1 flex items-center gap-1.5 text-[11px] text-[#5C6A6E]">
-                            <span className="grid size-[17px] place-items-center rounded-full bg-[#16323D] text-[7px] font-extrabold text-white">
+                            <span className="grid size-[17px] place-items-center rounded-full bg-[var(--brand)] text-[7px] font-extrabold text-white">
                               {initials(who)}
                             </span>
                             {who}
@@ -407,7 +407,7 @@ export default function HoyPage() {
         />
       )}
 
-      <div className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-xs -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}>
+      <div className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-xs -translate-x-1/2 rounded-2xl bg-[var(--brand)] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}>
         {toast}
       </div>
     </div>

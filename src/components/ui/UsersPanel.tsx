@@ -33,7 +33,7 @@ function Chk({
       onClick={onClick}
       disabled={disabled || !onClick}
       className={`mx-auto flex h-5 w-5 items-center justify-center rounded-md border transition ${
-        on ? "border-[#16323D] bg-[#16323D] text-white" : "border-[#D7CBB3] bg-white text-transparent"
+        on ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-[#D7CBB3] bg-white text-transparent"
       } ${disabled || !onClick ? "cursor-default" : "hover:opacity-80"}`}
     >
       <Check size={10} strokeWidth={3} />
@@ -68,7 +68,7 @@ function PermGrid({
         <tbody>
           {SECTIONS.map(sec => (
             <tr key={sec} className="border-t border-[#F0EAE0]">
-              <td className="py-1.5 pr-3 font-semibold text-[#16323D]">{SECTION_LABELS[sec]}</td>
+              <td className="py-1.5 pr-3 font-semibold text-[var(--brand)]">{SECTION_LABELS[sec]}</td>
               {ACTIONS.map(a => (
                 <td key={a.key} className="py-1.5 text-center">
                   <Chk on={perms[sec][a.key]} onClick={onChange ? () => toggle(sec, a.key) : undefined} />
@@ -106,13 +106,13 @@ function TabAccessGrid({
             disabled={!onChange}
             className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition ${
               on
-                ? "border-[#16323D] bg-[#16323D] text-white"
+                ? "border-[var(--brand)] bg-[var(--brand)] text-white"
                 : recommended
-                  ? "border-[#B8DEC9] bg-[#EBF5F0] text-[#16323D] hover:border-[#16323D]"
+                  ? "border-[#B8DEC9] bg-[#EBF5F0] text-[var(--brand)] hover:border-[var(--brand)]"
                   : "border-[#E6DDCB] bg-white text-[#97A1A0] hover:border-[#B0A08A]"
             } ${!onChange ? "cursor-default" : "cursor-pointer"}`}
           >
-            <span className={`text-[11px] font-bold leading-tight ${on ? "text-white" : "text-[#16323D]"}`}>{tab.label}</span>
+            <span className={`text-[11px] font-bold leading-tight ${on ? "text-white" : "text-[var(--brand)]"}`}>{tab.label}</span>
             {recommended && !on && (
               <span className="text-[9px] text-[#4F8A63] font-semibold">recommended</span>
             )}
@@ -137,7 +137,7 @@ function ProjectAssign({
         return (
           <button key={p.id} type="button" onClick={() => onToggle(p.id, !on)}
             className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition ${
-              on ? "border-[#16323D] bg-[#16323D] text-white" : "border-[#E6DDCB] bg-white text-[#16323D] hover:border-[#B0A08A]"
+              on ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-[#E6DDCB] bg-white text-[var(--brand)] hover:border-[#B0A08A]"
             }`}>
             <ProjectThumb photoUrl={p.photo_url} title={p.title} size={24} rounded="rounded-md" />
             <span className="truncate font-semibold">{p.title}</span>
@@ -253,12 +253,12 @@ function UserRow({
       <div className="rounded-2xl border border-[#E6DDCB] bg-white overflow-hidden">
         {/* Header row */}
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#16323D] text-sm font-bold text-white">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-sm font-bold text-white">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <p className="text-sm font-bold text-[#16323D]">{user.name}</p>
+              <p className="text-sm font-bold text-[var(--brand)]">{user.name}</p>
               <TypeBadge type={user.user_type ?? "coworker"} />
               {user.my_tasks_only && (
                 <span className="rounded-full border border-[#F0CFA0] bg-[#FEF6ED] px-2 py-0.5 text-[10px] font-bold text-[#9B6A2F]">
@@ -298,7 +298,7 @@ function UserRow({
               {SUB_TABS.map(t => (
                 <button key={t.id} onClick={() => setEditTab(t.id)}
                   className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
-                    editTab === t.id ? "bg-[#16323D] text-white" : "bg-[#F0EAE0] text-[#5C6A6E] hover:bg-[#E6DDCB]"
+                    editTab === t.id ? "bg-[var(--brand)] text-white" : "bg-[#F0EAE0] text-[#5C6A6E] hover:bg-[#E6DDCB]"
                   }`}>
                   {t.label}
                 </button>
@@ -334,14 +334,14 @@ function UserRow({
                       <div>
                         <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Name</label>
                         <input value={name} onChange={e => setName(e.target.value)}
-                          className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                          className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
                       </div>
                       <div>
                         <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">PIN</label>
                         <input type="password" value={pin}
                           onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
                           inputMode="numeric" maxLength={8}
-                          className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                          className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
                       </div>
                     </div>
 
@@ -353,7 +353,7 @@ function UserRow({
                             Linked contact <span className="font-normal normal-case text-[#97A1A0]">(filters their tasks)</span>
                           </label>
                           <select value={contactId} onChange={e => setContactId(e.target.value)}
-                            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
+                            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
                             <option value="">— No linked contact —</option>
                             {contacts.map(c => (
                               <option key={c.id} value={c.id}>{c.name}{c.specialty ? ` — ${c.specialty}` : ""}</option>
@@ -363,9 +363,9 @@ function UserRow({
                         </div>
                         <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
                           <input type="checkbox" checked={myTasksOnly} onChange={e => setMyTasksOnly(e.target.checked)}
-                            className="h-4 w-4 accent-[#16323D]" />
+                            className="h-4 w-4 accent-[var(--brand)]" />
                           <div>
-                            <p className="text-[12px] font-bold text-[#16323D]">My tasks only</p>
+                            <p className="text-[12px] font-bold text-[var(--brand)]">My tasks only</p>
                             <p className="text-[10px] text-[#5C6A6E]">Shows only tasks assigned to this user in Workflow & Day Planner</p>
                           </div>
                         </label>
@@ -378,7 +378,7 @@ function UserRow({
                         Cancel
                       </button>
                       <button onClick={save} disabled={saving}
-                        className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                        className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white disabled:opacity-50">
                         {saving ? "Saving…" : "Save changes"}
                       </button>
                     </div>
@@ -393,20 +393,20 @@ function UserRow({
                       </div>
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">PIN</p>
-                        <p className="text-sm font-semibold text-[#16323D]">••••</p>
+                        <p className="text-sm font-semibold text-[var(--brand)]">••••</p>
                       </div>
                     </div>
                     {linkedContact && (
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">Linked contact</p>
-                        <p className="text-sm font-semibold text-[#16323D]">{linkedContact.name} — {linkedContact.specialty}</p>
+                        <p className="text-sm font-semibold text-[var(--brand)]">{linkedContact.name} — {linkedContact.specialty}</p>
                       </div>
                     )}
                     {user.my_tasks_only && (
                       <p className="text-[11px] font-semibold text-[#9B6A2F]">✓ My tasks only is active</p>
                     )}
                     <button onClick={startEdit}
-                      className="mt-1 flex items-center gap-1.5 rounded-xl bg-[#F0EAE0] px-4 py-2 text-[12px] font-bold text-[#16323D] hover:bg-[#E6DDCB]">
+                      className="mt-1 flex items-center gap-1.5 rounded-xl bg-[#F0EAE0] px-4 py-2 text-[12px] font-bold text-[var(--brand)] hover:bg-[#E6DDCB]">
                       <Pencil size={12} /> Edit info
                     </button>
                   </div>
@@ -444,7 +444,7 @@ function UserRow({
                     <button onClick={cancelEdit}
                       className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E]">Cancel</button>
                     <button onClick={save} disabled={saving}
-                      className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                      className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white disabled:opacity-50">
                       {saving ? "Saving…" : "Save changes"}
                     </button>
                   </div>
@@ -464,7 +464,7 @@ function UserRow({
                     <button onClick={cancelEdit}
                       className="flex-1 rounded-xl bg-[#ECE3D1] py-2.5 text-sm font-bold text-[#5C6A6E]">Cancel</button>
                     <button onClick={save} disabled={saving}
-                      className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                      className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white disabled:opacity-50">
                       {saving ? "Saving…" : "Save changes"}
                     </button>
                   </div>
@@ -484,7 +484,7 @@ function UserRow({
       {confirmDel && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[400px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 text-lg font-bold text-[#16323D]">Remove user</h3>
+            <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">Remove user</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">
               Remove <strong>{user.name}</strong> from the team? They won&apos;t be able to log in.
             </p>
@@ -559,15 +559,15 @@ function CreateUserForm({
   ];
 
   return (
-    <div className="rounded-2xl border-2 border-[#16323D] bg-white p-5 shadow-md">
-      <h4 className="mb-4 text-[12px] font-bold uppercase tracking-widest text-[#16323D]">New team member</h4>
+    <div className="rounded-2xl border-2 border-[var(--brand)] bg-white p-5 shadow-md">
+      <h4 className="mb-4 text-[12px] font-bold uppercase tracking-widest text-[var(--brand)]">New team member</h4>
 
       {/* Form sub-tabs */}
       <div className="mb-4 flex gap-1">
         {FORM_TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
-              activeTab === t.id ? "bg-[#16323D] text-white" : "bg-[#F0EAE0] text-[#5C6A6E] hover:bg-[#E6DDCB]"
+              activeTab === t.id ? "bg-[var(--brand)] text-white" : "bg-[#F0EAE0] text-[#5C6A6E] hover:bg-[#E6DDCB]"
             }`}>
             {t.label}
           </button>
@@ -601,13 +601,13 @@ function CreateUserForm({
             <div>
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Name</label>
               <input value={name} onChange={e => setName(e.target.value)} placeholder="E.g. Ana López"
-                className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
             </div>
             <div>
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">Access PIN</label>
               <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 type="password" inputMode="numeric" maxLength={8} placeholder="Min. 4 digits"
-                className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none" />
+                className="w-full rounded-xl border border-[#D7CBB3] px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
             </div>
           </div>
 
@@ -619,7 +619,7 @@ function CreateUserForm({
                   Linked contact <span className="font-normal normal-case text-[#97A1A0]">(for task filtering)</span>
                 </label>
                 <select value={contactId} onChange={e => setContactId(e.target.value)}
-                  className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none">
+                  className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
                   <option value="">— No linked contact —</option>
                   {contacts.map(c => (
                     <option key={c.id} value={c.id}>{c.name}{c.specialty ? ` — ${c.specialty}` : ""}</option>
@@ -628,9 +628,9 @@ function CreateUserForm({
               </div>
               <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-3">
                 <input type="checkbox" checked={myTasksOnly} onChange={e => setMyTasksOnly(e.target.checked)}
-                  className="h-4 w-4 accent-[#16323D]" />
+                  className="h-4 w-4 accent-[var(--brand)]" />
                 <div>
-                  <p className="text-[12px] font-bold text-[#16323D]">My tasks only</p>
+                  <p className="text-[12px] font-bold text-[var(--brand)]">My tasks only</p>
                   <p className="text-[10px] text-[#5C6A6E]">Shows only tasks assigned to this user in Workflow & Day Planner</p>
                 </div>
               </label>
@@ -674,7 +674,7 @@ function CreateUserForm({
           Cancel
         </button>
         <button onClick={create} disabled={saving}
-          className="flex-1 rounded-xl bg-[#16323D] py-2.5 text-sm font-bold text-white disabled:opacity-40">
+          className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white disabled:opacity-40">
           {saving ? "Creating…" : "Create user"}
         </button>
       </div>
@@ -704,11 +704,11 @@ export default function UsersPanel({ projects, contacts }: { projects: Project[]
     <div className="mt-8">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-[#16323D]">Team</h2>
+          <h2 className="text-base font-bold text-[var(--brand)]">Team</h2>
           <p className="text-[11px] text-[#97A1A0]">Co-workers and clients — granular access by tab and section</p>
         </div>
         <button onClick={() => setShowCreate(s => !s)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#16323D] transition hover:border-[#16323D]">
+          className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]">
           {showCreate ? <X size={14} /> : <Plus size={14} />}
           {showCreate ? "Cancel" : "New user"}
         </button>
@@ -727,7 +727,7 @@ export default function UsersPanel({ projects, contacts }: { projects: Project[]
 
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
         </div>
       ) : users.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#D7CBB3] bg-white py-8 text-center text-sm text-[#97A1A0]">

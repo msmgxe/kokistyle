@@ -131,13 +131,13 @@ export function GanttHeader({
   return (
     <div className="flex" style={{ width: leftWidth + scale.laneWidth }}>
       <div
-        className="sticky left-0 z-20 shrink-0 self-stretch bg-[#16323D]"
+        className="sticky left-0 z-20 shrink-0 self-stretch bg-[var(--brand)]"
         style={{ width: leftWidth }}
       >
         {leftHeader}
       </div>
       <div style={{ width: scale.laneWidth }} className="shrink-0">
-        <div className="flex h-6 bg-[#395886]">
+        <div className="flex h-6 bg-[var(--accent)]">
           {monthSegs.map((m, i) => (
             <span
               key={`${m.label}-${i}`}
@@ -157,7 +157,7 @@ export function GanttHeader({
                   <span
                     key={iso}
                     className={`flex items-center justify-center text-[8px] font-extrabold ${
-                      wd === 6 ? "bg-[#9DC3E6] text-[#16323D]" : wd === 0 ? "bg-[#F4B183] text-[#7A3C12]" : "bg-[#EDF3FB] text-[#395886]"
+                      wd === 6 ? "bg-[#9DC3E6] text-[var(--brand)]" : wd === 0 ? "bg-[#F4B183] text-[#7A3C12]" : "bg-[#EDF3FB] text-[var(--accent)]"
                     }`}
                     style={{ width: scale.col }}
                   >
@@ -173,7 +173,7 @@ export function GanttHeader({
                   <span
                     key={iso}
                     className={`flex items-center justify-center border-r border-[#F0EBE0] font-mono text-[9px] ${
-                      wd === 6 ? "bg-[#DCEBF7] font-bold text-[#16323D]" : wd === 0 ? "bg-[#FBE5D3] font-bold text-[#7A3C12]" : "text-[#5C6A6E]"
+                      wd === 6 ? "bg-[#DCEBF7] font-bold text-[var(--brand)]" : wd === 0 ? "bg-[#FBE5D3] font-bold text-[#7A3C12]" : "text-[#5C6A6E]"
                     }`}
                     style={{ width: scale.col }}
                   >
@@ -188,7 +188,7 @@ export function GanttHeader({
             {weeks.map(({ iso, d }, i) => (
               <span
                 key={iso}
-                className="flex items-center justify-center gap-1 border-r border-[#D5DEEF] text-[8.5px] font-bold text-[#395886]"
+                className="flex items-center justify-center gap-1 border-r border-[#D5DEEF] text-[8.5px] font-bold text-[var(--accent)]"
                 style={{ width: scale.col }}
               >
                 W{i + 1}

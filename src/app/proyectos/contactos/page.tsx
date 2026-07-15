@@ -47,7 +47,7 @@ function ContactForm({
           type="text"
           value={contact.name ?? ""}
           onChange={(e) => onChange({ ...contact, name: e.target.value })}
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
         />
       </div>
 
@@ -60,7 +60,7 @@ function ContactForm({
           value={contact.phone ?? ""}
           onChange={(e) => onChange({ ...contact, phone: formatUSPhone(e.target.value) })}
           placeholder="(786) 563-2531"
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
         />
       </div>
 
@@ -78,8 +78,8 @@ function ContactForm({
                 onClick={() => onChange({ ...contact, type: ct })}
                 className={`flex-1 rounded-xl border py-2.5 text-xs font-bold transition ${
                   type === ct
-                    ? "border-[#16323D] bg-[#16323D] text-white"
-                    : "border-[#D7CBB3] bg-white text-[#5C6A6E] hover:border-[#16323D]"
+                    ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                    : "border-[#D7CBB3] bg-white text-[#5C6A6E] hover:border-[var(--brand)]"
                 }`}
               >
                 {label}
@@ -98,7 +98,7 @@ function ContactForm({
             <select
               value={contact.specialty ?? ""}
               onChange={(e) => onChange({ ...contact, specialty: e.target.value })}
-              className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+              className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
             >
               <option value="">—</option>
               {SPECIALTY_OPTIONS_EN.map((en, i) => (
@@ -117,7 +117,7 @@ function ContactForm({
               type="text"
               value={contact.rate ?? ""}
               onChange={(e) => onChange({ ...contact, rate: e.target.value })}
-              className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[#16323D] focus:border-[#16323D] focus:outline-none"
+              className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
               placeholder="e.g. 25"
             />
           </div>
@@ -134,8 +134,8 @@ function ContactForm({
                   onClick={() => onChange({ ...contact, rate_type: rt })}
                   className={`flex-1 rounded-xl border py-2.5 text-xs font-bold transition ${
                     (contact.rate_type ?? "hour") === rt
-                      ? "border-[#16323D] bg-[#16323D] text-white"
-                      : "border-[#D7CBB3] bg-white text-[#5C6A6E] hover:border-[#16323D]"
+                      ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                      : "border-[#D7CBB3] bg-white text-[#5C6A6E] hover:border-[var(--brand)]"
                   }`}
                 >
                   {rt === "hour" ? gc.rateHour : gc.rateDay}
@@ -180,7 +180,7 @@ function ContactModal({
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh]">
-          <h3 className="mb-5 text-xl font-bold text-[#16323D]">
+          <h3 className="mb-5 text-xl font-bold text-[var(--brand)]">
             {contact ? gc.editContact : gc.newContact}
           </h3>
           <ContactForm contact={form} language={language} tp={tp} onChange={setForm} />
@@ -188,7 +188,7 @@ function ContactModal({
             <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">
               {tp.common.cancel}
             </button>
-            <button onClick={() => setConfirmSave(true)} className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white">
+            <button onClick={() => setConfirmSave(true)} className="flex-1 rounded-xl bg-[var(--brand)] py-3 font-bold text-white">
               {tp.common.save}
             </button>
           </div>
@@ -203,11 +203,11 @@ function ContactModal({
       {confirmSave && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 text-lg font-bold text-[#16323D]">{tp.common.confirmChanges}</h3>
+            <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">{tp.common.confirmChanges}</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">{tp.common.confirmSaveQ}</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmSave(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
-              <button onClick={() => { setConfirmSave(false); onSave(form); onClose(); }} className="flex-1 rounded-xl bg-[#16323D] py-3 font-bold text-white">{tp.common.save}</button>
+              <button onClick={() => { setConfirmSave(false); onSave(form); onClose(); }} className="flex-1 rounded-xl bg-[var(--brand)] py-3 font-bold text-white">{tp.common.save}</button>
             </div>
           </div>
         </div>
@@ -216,7 +216,7 @@ function ContactModal({
       {confirmDel && onDelete && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
-            <h3 className="mb-2 text-lg font-bold text-[#16323D]">{gc.deleteContact}</h3>
+            <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">{gc.deleteContact}</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">{gc.deleteBody}</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
@@ -336,7 +336,7 @@ export default function ContactosPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
+      <div className="mb-6 rounded-2xl bg-[var(--accent)] px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-display text-[28px] font-semibold tracking-tight text-white">
@@ -352,7 +352,7 @@ export default function ContactosPage() {
               ] as const).map(s => (
                 <button key={s.id} onClick={() => setSection(s.id)}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-bold transition ${
-                    section === s.id ? "bg-white text-[#395886] shadow-sm" : "text-[#B1C9EF] hover:text-white"
+                    section === s.id ? "bg-white text-[var(--accent)] shadow-sm" : "text-[#B1C9EF] hover:text-white"
                   }`}>
                   {s.icon} {s.label}
                 </button>
@@ -378,12 +378,12 @@ export default function ContactosPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={gc.searchPlaceholder}
-            className="w-full rounded-xl border border-[#E6DDCB] bg-white py-2.5 pl-9 pr-3 text-sm text-[#16323D] placeholder:text-[#9CABB0] focus:border-[#16323D] focus:outline-none"
+            className="w-full rounded-xl border border-[#E6DDCB] bg-white py-2.5 pl-9 pr-3 text-sm text-[var(--brand)] placeholder:text-[#9CABB0] focus:border-[var(--brand)] focus:outline-none"
           />
         </div>
         <button
           onClick={() => setEditor({})}
-          className="flex-none rounded-xl bg-[#16323D] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1e4455]"
+          className="flex-none rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1e4455]"
         >
           {gc.add}
         </button>
@@ -396,7 +396,7 @@ export default function ContactosPage() {
             onClick={() => setActiveTab(tab.key)}
             className={`flex-none rounded-full px-4 py-1.5 text-xs font-bold transition ${
               activeTab === tab.key
-                ? "bg-[#16323D] text-white"
+                ? "bg-[var(--brand)] text-white"
                 : "border border-[#E6DDCB] bg-white text-[#5C6A6E] hover:border-[#D7CBB3]"
             }`}
           >
@@ -427,14 +427,14 @@ export default function ContactosPage() {
                 tabIndex={0}
                 onClick={() => setEditor({ contact: c })}
                 onKeyDown={(e) => { if (e.key === "Enter") setEditor({ contact: c }); }}
-                className="flex cursor-pointer items-start gap-4 rounded-2xl border border-[#E6DDCB] bg-white p-4 shadow-sm transition hover:border-[#16323D] hover:shadow-md"
+                className="flex cursor-pointer items-start gap-4 rounded-2xl border border-[#E6DDCB] bg-white p-4 shadow-sm transition hover:border-[var(--brand)] hover:shadow-md"
               >
-                <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[#16323D] text-sm font-bold text-white">
+                <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[var(--brand)] text-sm font-bold text-white">
                   {initials(c.name)}
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-[#16323D]">{c.name}</div>
+                  <div className="text-sm font-bold text-[var(--brand)]">{c.name}</div>
                   {(specialtyLabel || rateLabel) && (
                     <div className="mt-0.5 text-xs text-[#5C6A6E]">
                       {[specialtyLabel, rateLabel].filter(Boolean).join(" · ")}
@@ -495,7 +495,7 @@ export default function ContactosPage() {
       </>)}
 
       <div
-        className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}
+        className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-sm -translate-x-1/2 rounded-2xl bg-[var(--brand)] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"}`}
       >
         {toast}
       </div>

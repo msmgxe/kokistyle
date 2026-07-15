@@ -21,14 +21,14 @@ const STATUS_IDS = ["en_obra", "aprobado", "presupuesto", "prospecto", "terminad
 const STATUS_PILL: Record<string, string> = {
   prospecto:   "bg-[#EFEFEF] text-[#5C5C5C]",
   presupuesto: "bg-[#F5E6C3] text-[#7A6230]",
-  aprobado:    "bg-[#EDF3FB] text-[#395886]",
+  aprobado:    "bg-[#EDF3FB] text-[var(--accent)]",
   en_obra:     "bg-[#DCEBDD] text-[#35664A]",
-  terminado:   "bg-[#16323D] text-white",
+  terminado:   "bg-[var(--brand)] text-white",
 };
 
 // Mismos pares bg/texto que TAG_STYLES del Day Planner — misma sección, mismo color
 const SECTION_STYLES = [
-  "bg-[#EDF3FB] text-[#395886]",
+  "bg-[#EDF3FB] text-[var(--accent)]",
   "bg-[#DCEBDD] text-[#4F8A63]",
   "bg-[#EDE3CF] text-[#7A6230]",
   "bg-[#F0E8F7] text-[#6D3AAD]",
@@ -220,10 +220,10 @@ export default function DailyReport({
         <div className="flex items-center gap-2">
           <span className="text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">{tr.from}</span>
           <input type="date" value={from} onChange={e => setFrom(e.target.value)}
-            className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1.5 text-[12px] text-[#16323D] focus:border-[#395886] focus:outline-none" />
+            className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1.5 text-[12px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none" />
           <span className="text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">{tr.to}</span>
           <input type="date" value={to} onChange={e => setTo(e.target.value)}
-            className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1.5 text-[12px] text-[#16323D] focus:border-[#395886] focus:outline-none" />
+            className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1.5 text-[12px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none" />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">{tr.statuses}</span>
@@ -234,7 +234,7 @@ export default function DailyReport({
               return (
                 <button key={s} onClick={() => toggleStatus(s)}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold transition ${
-                    on ? "border-[#395886] bg-[#395886] text-white" : "border-[#E6DDCB] bg-[#F7F3EA] text-[#5C6A6E] hover:border-[#395886]"
+                    on ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#E6DDCB] bg-[#F7F3EA] text-[#5C6A6E] hover:border-[var(--accent)]"
                   }`}>
                   {tp.status[s as keyof typeof tp.status]}
                   <span className={`rounded-full px-1.5 font-mono text-[9px] ${on ? "bg-white/20" : "bg-[#E6DDCB]"}`}>{count}</span>
@@ -243,7 +243,7 @@ export default function DailyReport({
             })}
           </div>
         </div>
-        <label className="flex cursor-pointer items-center gap-1.5 text-[12px] font-semibold text-[#16323D]">
+        <label className="flex cursor-pointer items-center gap-1.5 text-[12px] font-semibold text-[var(--brand)]">
           <input type="checkbox" checked={onlyPending} onChange={e => setOnlyPending(e.target.checked)}
             className="size-3.5 accent-[#4F8A63]" />
           {tr.onlyPending}
@@ -256,7 +256,7 @@ export default function DailyReport({
 
       {/* ── Hoja del reporte ── */}
       <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-sm print:rounded-none print:border-0 print:shadow-none">
-        <div className="flex items-end justify-between gap-5 bg-[#16323D] px-7 py-5">
+        <div className="flex items-end justify-between gap-5 bg-[var(--brand)] px-7 py-5">
           <div>
             <div className="text-[10px] font-bold tracking-[0.28em] text-[#A8C0BC]">{branding.companyName.toUpperCase()}</div>
             <h2 className="font-bookman mt-1 text-[22px] font-semibold text-white">{tr.title}</h2>
@@ -280,7 +280,7 @@ export default function DailyReport({
             { v: `${pct}%`, l: tr.kpiDone, bar: true },
           ].map(k => (
             <div key={k.l} className="border-r border-[#E6DDCB] px-5 py-3 last:border-r-0">
-              <div className="font-mono text-[19px] font-bold text-[#16323D]">{k.v}</div>
+              <div className="font-mono text-[19px] font-bold text-[var(--brand)]">{k.v}</div>
               <div className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]">{k.l}</div>
               {k.bar && (
                 <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[#E6DDCB]">
@@ -312,7 +312,7 @@ export default function DailyReport({
                   wk === "sat" ? "bg-[#EAF3FA] pb-2" : wk === "sun" ? "bg-[#FDF1E7] pb-2" : ""
                 }`}>
                   <div className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#5C6A6E]">{WD[wd]}</div>
-                  <div className="font-bookman text-[26px] font-light leading-tight text-[#16323D]">{d.getDate()}</div>
+                  <div className="font-bookman text-[26px] font-light leading-tight text-[var(--brand)]">{d.getDate()}</div>
                   <div className="text-[9px] uppercase tracking-widest text-[#97A1A0]">{MO[d.getMonth()]}</div>
                   {wk && (
                     <span className={`mx-auto mt-1.5 block w-fit rounded-full px-2 py-0.5 text-[7.5px] font-extrabold tracking-wide ${
@@ -383,7 +383,7 @@ export default function DailyReport({
                           return (
                             <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
                               <div className="flex flex-wrap items-center gap-2.5 border-b border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-2">
-                                <span className="font-bookman text-[13.5px] font-semibold text-[#16323D]">{p.title.split(" — ")[0]}</span>
+                                <span className="font-bookman text-[13.5px] font-semibold text-[var(--brand)]">{p.title.split(" — ")[0]}</span>
                                 <span className={`rounded-full px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide ${STATUS_PILL[p.status] ?? "bg-gray-100 text-gray-600"}`}>{stLabel}</span>
                                 <span className="text-[10.5px] text-[#5C6A6E]">{p.client}{p.address ? ` · ${p.address}` : ""}</span>
                                 <span className="ml-auto font-mono text-[10.5px] text-[#5C6A6E]">
@@ -406,11 +406,11 @@ export default function DailyReport({
                                         {task.source_section}
                                       </span>
                                     )}
-                                    <span className={`min-w-0 flex-1 truncate text-[12px] ${done ? "text-[#97A1A0] line-through" : "font-medium text-[#16323D]"}`}>
+                                    <span className={`min-w-0 flex-1 truncate text-[12px] ${done ? "text-[#97A1A0] line-through" : "font-medium text-[var(--brand)]"}`}>
                                       {task.name}
                                     </span>
                                     <span className="hidden shrink-0 items-center gap-1.5 text-[10.5px] text-[#5C6A6E] sm:flex">
-                                      <span className="grid size-[18px] place-items-center rounded-full bg-[#16323D] text-[7px] font-extrabold text-white">
+                                      <span className="grid size-[18px] place-items-center rounded-full bg-[var(--brand)] text-[7px] font-extrabold text-white">
                                         {initials(assigneeName(task.assigned_contact_id ?? null))}
                                       </span>
                                       {assigneeName(task.assigned_contact_id ?? null)}
@@ -440,9 +440,9 @@ export default function DailyReport({
           })}
         </div>
 
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-7 border-t-2 border-[#16323D] px-7 py-5">
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-7 border-t-2 border-[var(--brand)] px-7 py-5">
           <div className="text-[9.5px] leading-relaxed text-[#5C6A6E]">
-            <span className="text-[10px] font-bold tracking-[0.18em] text-[#16323D]">{branding.companyName.toUpperCase()}</span><br />
+            <span className="text-[10px] font-bold tracking-[0.18em] text-[var(--brand)]">{branding.companyName.toUpperCase()}</span><br />
             Remodeling & Construction Management · South Florida
           </div>
           <div className="flex gap-8">

@@ -19,7 +19,7 @@ export default function ProjectThumb({ photoUrl, title, size = 36, rounded = "ro
   ) : (
     <span
       style={{ width: size, height: size, fontSize: Math.max(8, Math.round(size * 0.28)) }}
-      className={`grid flex-none place-items-center bg-[#16323D] font-bold tracking-wide text-[#F5E9DA] ${rounded}`}
+      className={`grid flex-none place-items-center bg-[var(--brand)] font-bold tracking-wide text-[#F5E9DA] ${rounded}`}
     >
       {initials(title)}
     </span>

@@ -37,7 +37,7 @@ function LangSwitch() {
     <div className="flex rounded-lg border border-[#D5DEEF] bg-[#F0F3FA] p-0.5">
       {(["en", "es"] as const).map((l) => (
         <button key={l} onClick={() => setLanguage(l)}
-          className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide transition ${language === l ? "bg-[#395886] text-white" : "text-[#628ECB] hover:text-[#395886]"}`}>
+          className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide transition ${language === l ? "bg-[var(--accent)] text-white" : "text-[#628ECB] hover:text-[var(--accent)]"}`}>
           {l}
         </button>
       ))}
@@ -89,9 +89,9 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
   if (locked) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#16323D] px-6">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--brand)] px-6">
         <div className="w-full max-w-sm text-center">
-          <span className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-[#F5E9DA] text-xl font-bold text-[#16323D]">
+          <span className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-[#F5E9DA] text-xl font-bold text-[var(--brand)]">
             {branding.initials}
           </span>
           <h1 className="text-lg font-bold text-white">{t.panel.lock.title}</h1>
@@ -103,7 +103,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           )}
           <button
             onClick={async () => { setUnlockError(false); const ok = await unlockBiometric(); if (!ok) setUnlockError(true); }}
-            className="mt-6 w-full rounded-xl bg-[#F5E9DA] py-3 text-sm font-bold text-[#16323D] hover:bg-white"
+            className="mt-6 w-full rounded-xl bg-[#F5E9DA] py-3 text-sm font-bold text-[var(--brand)] hover:bg-white"
           >
             {t.panel.lock.unlock}
           </button>
@@ -194,7 +194,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
             {/* Móvil: logo + marca */}
             <Link href="/proyectos" className="flex items-center gap-2.5 lg:hidden" aria-label={`${branding.companyShort} Panel`}>
               <span className="grid size-9 place-items-center rounded-lg bg-[var(--brand)] text-xs font-bold text-white">{branding.initials}</span>
-              <span className="text-sm font-bold text-[#16323D]">{branding.companyShort}</span>
+              <span className="text-sm font-bold text-[var(--brand)]">{branding.companyShort}</span>
             </Link>
             <div className="flex-1" />
             <div className="hidden lg:block"><LangSwitch /></div>
@@ -202,7 +202,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               id="panel-logout-btn"
               onClick={logout}
               aria-label={t.panel.nav.signOut}
-              className="hidden items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1] lg:inline-flex"
+              className="hidden items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[var(--brand)] transition hover:bg-[#ECE3D1] lg:inline-flex"
             >
               <LogOut size={14} />
               {t.panel.nav.signOut}
@@ -211,7 +211,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
             <button
               onClick={() => setMenuOpen(true)}
               aria-label="Menu"
-              className="grid size-10 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#16323D] transition hover:bg-[#ECE3D1] lg:hidden"
+              className="grid size-10 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[var(--brand)] transition hover:bg-[#ECE3D1] lg:hidden"
             >
               <Menu size={18} />
             </button>
@@ -227,7 +227,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
             <div className="absolute right-0 top-0 flex h-full w-72 flex-col bg-[#F7F3EB] shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between bg-[var(--brand)] px-4 py-4">
                 <span className="flex items-center gap-2.5">
-                  <span className="grid size-9 place-items-center rounded-lg bg-[#F5E9DA] text-xs font-bold text-[#16323D]">{branding.initials}</span>
+                  <span className="grid size-9 place-items-center rounded-lg bg-[#F5E9DA] text-xs font-bold text-[var(--brand)]">{branding.initials}</span>
                   <span className="text-sm font-bold text-white">{branding.companyShort}</span>
                 </span>
                 <button onClick={() => setMenuOpen(false)} className="text-white/60 hover:text-white" aria-label="Close menu">
@@ -248,7 +248,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               <div className="space-y-3 border-t border-[#E6DDCB] p-4">
                 <LangSwitch />
                 <button onClick={logout}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5 text-xs font-bold text-[#16323D] transition hover:bg-[#ECE3D1]">
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5 text-xs font-bold text-[var(--brand)] transition hover:bg-[#ECE3D1]">
                   <LogOut size={14} />
                   {t.panel.nav.signOut}
                 </button>
@@ -291,7 +291,7 @@ function MobileTab({ item }: { item: NavItem }) {
     <Link
       href={item.href}
       className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
-        active ? "bg-[#395886] text-white shadow-sm" : "text-[#16323D] hover:bg-[#F0F3FA] hover:text-[#395886]"
+        active ? "bg-[var(--accent)] text-white shadow-sm" : "text-[var(--brand)] hover:bg-[#F0F3FA] hover:text-[var(--accent)]"
       }`}
     >
       <Icon size={17} className="shrink-0" />
@@ -338,7 +338,7 @@ function ThemeGear({
                 title={a.label}
                 aria-label={a.label}
                 aria-pressed={accent === a.id}
-                className={`h-9 rounded-lg border-2 transition ${accent === a.id ? "border-[#16323D]" : "border-transparent hover:border-[#D5DEEF]"}`}
+                className={`h-9 rounded-lg border-2 transition ${accent === a.id ? "border-[var(--brand)]" : "border-transparent hover:border-[#D5DEEF]"}`}
                 style={{ background: a.dab }}
               />
             ))}
