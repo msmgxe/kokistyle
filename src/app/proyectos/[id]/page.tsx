@@ -69,6 +69,14 @@ interface ProjectFull extends Project {
 type TabId = "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "fotos" | "notas" | "design";
 type PaySubTab = "ingresos" | "egresos";
 
+// Menos tabs, más lógico: los 8 tabs se agrupan en 3 secciones (Finanzas · Obra · Info)
+type SectionId = "finance" | "work" | "info";
+const TAB_SECTIONS: { id: SectionId; emoji: string; tabs: TabId[] }[] = [
+  { id: "finance", emoji: "💰", tabs: ["presupuesto", "pagos"] },
+  { id: "work",    emoji: "🏗", tabs: ["planner", "plan", "materiales", "fotos"] },
+  { id: "info",    emoji: "📋", tabs: ["contactos", "notas", "design"] },
+];
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function StatusChipOnBlue({ status }: { status: string }) {
   const { t } = useLanguage();
@@ -2068,6 +2076,14 @@ export default function ProjectDetailPage() {
     }
   });
 
+  // Agrupa los tabs visibles en las 3 secciones (Finanzas · Obra · Info); oculta secciones vacías
+  const tabLabel = Object.fromEntries(TABS.map(tab => [tab.id, tab.label])) as Record<TabId, string>;
+  const visibleTabIds = new Set(visibleTabs.map(tab => tab.id));
+  const sections = TAB_SECTIONS
+    .map(s => ({ ...s, tabs: s.tabs.filter(id => visibleTabIds.has(id)) }))
+    .filter(s => s.tabs.length > 0);
+  const activeSection = sections.find(s => s.tabs.includes(activeTab)) ?? sections[0];
+
   // For co-workers with "my tasks only", filter tasks to their assigned ones
   const myContactId = currentUser?.my_tasks_only ? (currentUser.contact_id ?? null) : null;
   const filteredTasks = myContactId
@@ -2201,19 +2217,39 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {/* Pill tabs */}
-      <div className="mb-6 flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">
-        {visibleTabs.map((t) => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-              activeTab === t.id
-                ? "bg-[#395886] text-white shadow-sm"
-                : "text-[#628ECB] hover:text-[#395886]"
-            }`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Navegación en 2 niveles: sección (Finanzas · Obra · Info) → sub-tab */}
+      {sections.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {/* Secciones */}
+          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[#16323D] px-3 py-2 [scrollbar-width:none]">
+            {sections.map((s) => {
+              const active = activeSection?.id === s.id;
+              return (
+                <button key={s.id}
+                  onClick={() => { if (!s.tabs.includes(activeTab)) setActiveTab(s.tabs[0]); }}
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
+                    active ? "bg-white text-[#16323D] shadow-sm" : "text-[#A8C0BC] hover:text-white"
+                  }`}>
+                  <span className="mr-1">{s.emoji}</span>{tp.sections[s.id]}
+                </button>
+              );
+            })}
+          </div>
+          {/* Sub-tabs de la sección activa */}
+          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">
+            {(activeSection?.tabs ?? []).map((id) => (
+              <button key={id} onClick={() => setActiveTab(id)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
+                  activeTab === id
+                    ? "bg-[#395886] text-white shadow-sm"
+                    : "text-[#628ECB] hover:text-[#395886]"
+                }`}>
+                {tabLabel[id]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Contenido */}
       {activeTab === "materiales"  && <MaterialesTab  project={project} materials={project.materials} onRefresh={fetchProject} toast={showToast} />}

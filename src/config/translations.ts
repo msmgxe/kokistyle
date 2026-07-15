@@ -463,6 +463,11 @@ export const translations = {
         notes: "Notes 📎",
         design: "Design",
       },
+      sections: {
+        finance: "Finance",
+        work: "Work",
+        info: "Info",
+      },
       status: {
         prospecto: "Prospect",
         presupuesto: "Estimate",
@@ -1436,6 +1441,11 @@ export const translations = {
         contacts: "Contactos",
         notes: "Notas 📎",
         design: "Diseño",
+      },
+      sections: {
+        finance: "Finanzas",
+        work: "Obra",
+        info: "Info",
       },
       status: {
         prospecto: "Prospecto",
