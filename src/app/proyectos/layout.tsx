@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, MoreHorizontal, ChevronDown } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
 import VoiceFAB from "@/src/components/ui/VoiceFAB";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -87,6 +87,25 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
     );
   }
 
+  // Deja visibles solo los links "diarios"; el resto va al menú "Más" (top nav más limpio)
+  const dailyLinks = [
+    { href: "/proyectos",           label: t.panel.nav.dashboard },
+    { href: "/proyectos/hoy",       label: t.panel.nav.today },
+    { href: "/proyectos/fotos",     label: t.panel.nav.photos },
+    { href: "/proyectos/plan",      label: t.panel.nav.plan },
+    { href: "/proyectos/contactos", label: t.panel.nav.contacts },
+  ];
+  const moreLinks = [
+    ...(isSuperAdmin ? [
+      { href: "/proyectos/prospectos", label: t.panel.nav.prospects },
+      { href: "/proyectos/sitio",      label: t.panel.nav.site },
+      { href: "/proyectos/agenda",     label: t.panel.nav.agenda },
+      { href: "/proyectos/activity",   label: t.panel.nav.activity },
+      { href: "/proyectos/reservas",   label: t.panel.nav.bookings },
+    ] : []),
+    { href: "/proyectos/help", label: t.panel.nav.help },
+  ];
+
   return (
     <VoiceProvider>
       <div className="min-h-screen bg-[#F7F3EB]">
@@ -105,18 +124,9 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               </span>
             </Link>
 
-            <nav className="hidden flex-1 gap-0.5 overflow-x-auto [scrollbar-width:none] lg:flex">
-              <PanelTab href="/proyectos" label={t.panel.nav.dashboard} />
-              <PanelTab href="/proyectos/hoy" label={t.panel.nav.today} />
-              <PanelTab href="/proyectos/fotos" label={t.panel.nav.photos} />
-              <PanelTab href="/proyectos/plan" label={t.panel.nav.plan} />
-              <PanelTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
-              {isSuperAdmin && <PanelTab href="/proyectos/prospectos" label={t.panel.nav.prospects} />}
-              {isSuperAdmin && <PanelTab href="/proyectos/sitio" label={t.panel.nav.site} />}
-              {isSuperAdmin && <PanelTab href="/proyectos/agenda" label={t.panel.nav.agenda} />}
-              {isSuperAdmin && <PanelTab href="/proyectos/activity" label={t.panel.nav.activity} />}
-              {isSuperAdmin && <PanelTab href="/proyectos/reservas" label={t.panel.nav.bookings} />}
-              <PanelTab href="/proyectos/help" label={t.panel.nav.help} />
+            <nav className="hidden flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] lg:flex">
+              {dailyLinks.map(l => <PanelTab key={l.href} href={l.href} label={l.label} />)}
+              {moreLinks.length > 0 && <NavMore links={moreLinks} label={t.panel.nav.more} />}
             </nav>
 
             <div className="hidden lg:block">
@@ -165,17 +175,15 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               </div>
 
               <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-                <MobileTab href="/proyectos" label={t.panel.nav.dashboard} />
-                <MobileTab href="/proyectos/hoy" label={t.panel.nav.today} />
-                <MobileTab href="/proyectos/fotos" label={t.panel.nav.photos} />
-                <MobileTab href="/proyectos/plan" label={t.panel.nav.plan} />
-                <MobileTab href="/proyectos/contactos" label={t.panel.nav.contacts} />
-                {isSuperAdmin && <MobileTab href="/proyectos/prospectos" label={t.panel.nav.prospects} />}
-                {isSuperAdmin && <MobileTab href="/proyectos/sitio" label={t.panel.nav.site} />}
-                {isSuperAdmin && <MobileTab href="/proyectos/agenda" label={t.panel.nav.agenda} />}
-                {isSuperAdmin && <MobileTab href="/proyectos/activity" label={t.panel.nav.activity} />}
-                {isSuperAdmin && <MobileTab href="/proyectos/reservas" label={t.panel.nav.bookings} />}
-                <MobileTab href="/proyectos/help" label={t.panel.nav.help} />
+                {dailyLinks.map(l => <MobileTab key={l.href} href={l.href} label={l.label} />)}
+                {moreLinks.length > 0 && (
+                  <>
+                    <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#97A1A0]">
+                      {t.panel.nav.more}
+                    </p>
+                    {moreLinks.map(l => <MobileTab key={l.href} href={l.href} label={l.label} />)}
+                  </>
+                )}
               </nav>
 
               <div className="space-y-3 border-t border-[#E6DDCB] p-4">
@@ -233,5 +241,62 @@ function PanelTab({ href, label }: { href: string; label: string }) {
     >
       {label}
     </Link>
+  );
+}
+
+// Menú "Más" del top nav: agrupa los links secundarios (Prospects/Site/Agenda/Activity/Bookings/Help)
+function NavMore({ links, label }: { links: { href: string; label: string }[]; label: string }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isActive = links.some(l => l.href === pathname);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-bold transition ${
+          open || isActive
+            ? "bg-[#395886] text-white shadow-sm"
+            : "text-[#628ECB] hover:bg-[#F0F3FA] hover:text-[#395886]"
+        }`}
+      >
+        <MoreHorizontal size={15} />
+        {label}
+        <ChevronDown size={13} className={`transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-40 mt-1.5 w-52 overflow-hidden rounded-xl border border-[#D5DEEF] bg-white py-1 shadow-xl"
+        >
+          {links.map(l => {
+            const active = pathname === l.href;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                role="menuitem"
+                className={`block px-4 py-2.5 text-[13px] font-bold transition ${
+                  active ? "bg-[#F0F3FA] text-[#395886]" : "text-[#16323D] hover:bg-[#F0F3FA] hover:text-[#395886]"
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
