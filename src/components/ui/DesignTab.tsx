@@ -670,7 +670,7 @@ export default function DesignTab({ project, toast }: Props) {
                       transform: "translate(-50%, -50%)",
                       background: "#C9A96E",
                       border: "2.5px solid white",
-                      color: "#16323D",
+                      color: "var(--brand)",
                       fontSize: 14,
                       userSelect: "none",
                     }}
@@ -721,7 +721,7 @@ export default function DesignTab({ project, toast }: Props) {
             <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-[#F7F3EA] p-8">
               {generating ? (
                 <>
-                  <div className="w-14 h-14 border-4 border-[#16323D]/20 border-t-[#C9A96E] rounded-full animate-spin" />
+                  <div className="w-14 h-14 border-4 border-[var(--brand)]/20 border-t-[#C9A96E] rounded-full animate-spin" />
                   <div className="text-center">
                     <p className="text-sm font-semibold text-[var(--brand)]">
                       {isEN ? "Generating your render..." : "Generando tu render..."}

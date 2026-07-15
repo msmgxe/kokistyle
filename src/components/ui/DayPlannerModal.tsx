@@ -242,7 +242,7 @@ function ItemCard({
       ref={overlay ? undefined : setNodeRef}
       style={style}
       className={`touch-none select-none rounded-lg border bg-white transition
-        ${overlay ? "shadow-xl border-[var(--accent)]" : "border-[#E6DDCB] hover:border-[#395886]/50 hover:shadow-sm"}
+        ${overlay ? "shadow-xl border-[var(--accent)]" : "border-[#E6DDCB] hover:border-[var(--accent)]/50 hover:shadow-sm"}
         ${isDragging && !overlay ? "opacity-25" : ""}`}
     >
       {/* ── Fila compacta (una línea): grip arrastra · resto expande ── */}

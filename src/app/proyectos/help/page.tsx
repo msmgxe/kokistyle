@@ -201,13 +201,13 @@ function MockupPlan({ EN }: { EN: boolean }) {
   const tasks = EN
     ? [
         { name:"Demo walls",        weeks:1, col:"#B0492F", start:0, span:1, status:"Done ✓" },
-        { name:"Rough plumbing",    weeks:2, col:"#395886", start:1, span:2, status:"In Progress" },
+        { name:"Rough plumbing",    weeks:2, col:"var(--accent)", start:1, span:2, status:"In Progress" },
         { name:"Tile installation", weeks:2, col:"#7A6230", start:2, span:2, status:"Pending" },
         { name:"Painting",          weeks:1, col:"#4F8A63", start:4, span:1, status:"Pending" },
       ]
     : [
         { name:"Demoler paredes",   weeks:1, col:"#B0492F", start:0, span:1, status:"Listo ✓" },
-        { name:"Plomería inicial",  weeks:2, col:"#395886", start:1, span:2, status:"En Proceso" },
+        { name:"Plomería inicial",  weeks:2, col:"var(--accent)", start:1, span:2, status:"En Proceso" },
         { name:"Instalación tile",  weeks:2, col:"#7A6230", start:2, span:2, status:"Pendiente" },
         { name:"Pintura",           weeks:1, col:"#4F8A63", start:4, span:1, status:"Pendiente" },
       ];
@@ -271,19 +271,19 @@ function MockupPlan({ EN }: { EN: boolean }) {
 
 function MockupDayPlanner({ EN }: { EN: boolean }) {
   const pool = EN
-    ? [{ label:"Electrical rough-in", sec:"ELECTRICAL", hrs:8, c:"#395886" },
+    ? [{ label:"Electrical rough-in", sec:"ELECTRICAL", hrs:8, c:"var(--accent)" },
        { label:"Custom item: cleanup",  sec:"CUSTOM",    hrs:2, c:"#7A6230" }]
-    : [{ label:"Rough eléctrico",      sec:"ELÉCTRICO", hrs:8, c:"#395886" },
+    : [{ label:"Rough eléctrico",      sec:"ELÉCTRICO", hrs:8, c:"var(--accent)" },
        { label:"Item custom: limpieza", sec:"CUSTOM",   hrs:2, c:"#7A6230" }];
   const days = EN
     ? [
         { label:"Day 1", date:"Jun 30", items:[{ label:"Demo walls", sec:"DEMOLITION", hrs:6, c:"#B0492F" }], cap:8, used:6 },
-        { label:"Day 2", date:"Jul 1",  items:[{ label:"Rough plumbing", sec:"PLUMBING", hrs:8, c:"#395886" }], cap:8, used:8 },
+        { label:"Day 2", date:"Jul 1",  items:[{ label:"Rough plumbing", sec:"PLUMBING", hrs:8, c:"var(--accent)" }], cap:8, used:8 },
         { label:"Day 3", date:"Jul 2",  items:[], cap:8, used:0 },
       ]
     : [
         { label:"Día 1", date:"30 jun", items:[{ label:"Demoler paredes", sec:"DEMOLICIÓN", hrs:6, c:"#B0492F" }], cap:8, used:6 },
-        { label:"Día 2", date:"1 jul",  items:[{ label:"Plomería inicial", sec:"PLOMERÍA", hrs:8, c:"#395886" }], cap:8, used:8 },
+        { label:"Día 2", date:"1 jul",  items:[{ label:"Plomería inicial", sec:"PLOMERÍA", hrs:8, c:"var(--accent)" }], cap:8, used:8 },
         { label:"Día 3", date:"2 jul",  items:[], cap:8, used:0 },
       ];
   return (
@@ -370,11 +370,11 @@ function MockupVoice({ EN }: { EN: boolean }) {
 function MockupTeam({ EN }: { EN: boolean }) {
   const users = EN
     ? [
-        { initials:"L", bg:"#395886", name:"Lidette",       badge:"👷 Co-worker", tag:"My tasks only", tabs:"Workflow · Day Planner · Notes" },
+        { initials:"L", bg:"var(--accent)", name:"Lidette",       badge:"👷 Co-worker", tag:"My tasks only", tabs:"Workflow · Day Planner · Notes" },
         { initials:"G", bg:"#7B6A45", name:"García Family", badge:"👤 Client",    tag:"",              tabs:"Estimate · Workflow · Gantt · Notes · Design" },
       ]
     : [
-        { initials:"L", bg:"#395886", name:"Lidette",       badge:"👷 Co-worker", tag:"Solo sus tareas", tabs:"Workflow · Day Planner · Notas" },
+        { initials:"L", bg:"var(--accent)", name:"Lidette",       badge:"👷 Co-worker", tag:"Solo sus tareas", tabs:"Workflow · Day Planner · Notas" },
         { initials:"G", bg:"#7B6A45", name:"Familia García", badge:"👤 Cliente",  tag:"",               tabs:"Estimate · Workflow · Gantt · Notas · Design" },
       ];
   return (

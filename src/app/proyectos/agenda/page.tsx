@@ -15,7 +15,7 @@ import type { AgendaEvent, AgendaEventType, AgendaRemindFrom, AgendaRepeat } fro
 type SpeechRecognitionLike = any;
 
 const TYPE_META: Record<AgendaEventType, { emoji: string; color: string }> = {
-  cita:    { emoji: "📅", color: "#395886" },
+  cita:    { emoji: "📅", color: "var(--accent)" },
   task:    { emoji: "✅", color: "#4F8A63" },
   reunion: { emoji: "🤝", color: "#7B1838" },
 };

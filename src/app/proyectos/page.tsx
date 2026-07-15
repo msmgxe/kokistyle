@@ -94,7 +94,7 @@ function KpiCard({
   };
   return (
     <div
-      className={`rounded-2xl border border-[#E6DDCB] bg-white p-4 transition-all${onClick ? " cursor-pointer hover:border-[#395886]/40 hover:shadow-md active:scale-[0.98]" : ""}`}
+      className={`rounded-2xl border border-[#E6DDCB] bg-white p-4 transition-all${onClick ? " cursor-pointer hover:border-[var(--accent)]/40 hover:shadow-md active:scale-[0.98]" : ""}`}
       onClick={onClick}
     >
       <div className="text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">

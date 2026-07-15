@@ -198,7 +198,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
   return (
     <>
       <div
-        className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center"
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="w-full max-w-[480px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] shadow-2xl sm:rounded-[20px] max-h-[92vh]">
@@ -380,7 +380,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
       </div>
 
       {confirmDel && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--brand)]/55 backdrop-blur-sm">
           <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
             <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">{EN ? "Delete project" : "Eliminar proyecto"}</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">

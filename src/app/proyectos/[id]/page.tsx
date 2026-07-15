@@ -105,7 +105,7 @@ function ConfirmModal({
   onConfirm: () => void; onCancel: () => void; danger?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-[440px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
         <h3 className="mb-1 text-lg font-bold text-[var(--brand)]">{title}</h3>
         <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
@@ -138,7 +138,7 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
   return (
     <>
       <div
-        className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="w-full max-w-[460px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh] overflow-y-auto">
@@ -810,7 +810,7 @@ function ContactosTab({
       )}
 
       {pickerOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center">
           <div className="flex max-h-[80vh] w-full max-w-[460px] flex-col rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
             <h3 className="mb-4 text-xl font-bold text-[var(--brand)]">
               {tp.contacts.pickerTitle}
@@ -1622,7 +1622,7 @@ function PlanTab({
       )}
 
       {editTask && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center"
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center"
           onClick={(e) => { if (e.target === e.currentTarget) setEditTask(null); }}>
           <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[90vh]">
             <h3 className="mb-4 text-xl font-bold text-[var(--brand)]">Edit task</h3>
@@ -1926,7 +1926,7 @@ function NotasTab({
 
       {/* PIN confirmation modal */}
       {pinPrompt && (
-        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#16323D]/55 backdrop-blur-sm sm:items-center">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center">
           <div className="w-full max-w-[360px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
             <h3 className="mb-1 text-base font-bold text-[var(--brand)]">
               {pinPrompt.action === "delete" ? tp.notes.deleteNote : tp.notes.confirmEdit}
@@ -2181,7 +2181,7 @@ export default function ProjectDetailPage() {
             aria-label={tp.project.photoView}
           >
             <img src={project.photo_url} alt="" className="h-full w-full object-cover opacity-70" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#395886]/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--accent)]/80 to-transparent" />
             <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/30 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
               <Camera size={10} /> {tp.project.photoView}
             </div>

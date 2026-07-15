@@ -482,7 +482,7 @@ function UserRow({
 
       {/* Delete confirmation */}
       {confirmDel && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#16323D]/55 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--brand)]/55 backdrop-blur-sm">
           <div className="w-full max-w-[400px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
             <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">Remove user</h3>
             <p className="mb-5 text-sm text-[#5C6A6E]">

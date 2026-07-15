@@ -32,7 +32,7 @@ export default function DayNoteModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[#16323D]/60 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[var(--brand)]/60 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-[440px] rounded-t-[22px] bg-white p-4 sm:rounded-[20px]">
         <div className="mb-3 flex items-center gap-2">
           <span className="grid size-8 place-items-center rounded-lg bg-[#FBF5E6] text-[#B98A2F]">

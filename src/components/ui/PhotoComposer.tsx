@@ -41,7 +41,7 @@ export default function PhotoComposer({
   const effectiveTag = customTag !== null && customTag.trim() ? customTag.trim().toLowerCase() : tag;
 
   return (
-    <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[#16323D]/60 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[var(--brand)]/60 backdrop-blur-sm sm:items-center">
       <div className="max-h-[92vh] w-full max-w-[440px] overflow-y-auto rounded-t-[22px] bg-white p-4 sm:rounded-[20px]">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -84,7 +84,7 @@ export default function PhotoComposer({
             onClick={() => setCustomTag(prev => prev === null ? "" : null)}
             className="rounded-full border-2 border-dashed px-3.5 py-1.5 text-[12px] font-bold transition"
             style={customTag !== null
-              ? { borderColor: "#16323D", color: "#16323D", background: "#F7F3EA" }
+              ? { borderColor: "var(--brand)", color: "var(--brand)", background: "#F7F3EA" }
               : { borderColor: "#D7CBB3", color: "#97A1A0", background: "#fff" }}
           >
             {tf.tagCustom}
