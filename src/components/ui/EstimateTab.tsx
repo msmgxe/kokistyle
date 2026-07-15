@@ -2470,7 +2470,7 @@ export default function EstimateTab({
         onClick={saveHeader}
         disabled={saving}
         title={EN ? "Save estimate" : "Guardar estimado"}
-        className={`fixed bottom-[5.5rem] right-6 z-[200] flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.30)] transition hover:shadow-[0_6px_24px_rgba(0,0,0,0.40)] disabled:opacity-60 active:scale-95 ${
+        className={`fixed bottom-24 right-6 z-[140] flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.30)] transition hover:shadow-[0_6px_24px_rgba(0,0,0,0.40)] disabled:opacity-60 active:scale-95 ${
           estimateSubTab === "sections"
             ? "bg-[#7B1838] text-white hover:bg-[#6a1530]"
             : "bg-[#F0A090] text-[#7B1838] hover:bg-[#FFB8A8]"

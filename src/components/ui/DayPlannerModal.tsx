@@ -1402,7 +1402,7 @@ export default function DayPlannerModal({
         <button
           onClick={save}
           disabled={saving}
-          className="fixed bottom-6 right-6 z-[350] inline-flex items-center gap-2 rounded-full bg-[#B0492F] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_rgba(176,73,47,0.45)] transition hover:bg-[#983c25] disabled:opacity-60"
+          className="fixed bottom-24 right-6 z-[140] inline-flex items-center gap-2 rounded-full bg-[#B0492F] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_rgba(176,73,47,0.45)] transition hover:bg-[#983c25] disabled:opacity-60"
           aria-label={EN ? "Save" : "Guardar"}
         >
           <Save size={16} />
