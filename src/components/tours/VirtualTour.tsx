@@ -70,7 +70,7 @@ export default function VirtualTour() {
                 className="h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-[#0F3D56]/20" />
-              <button className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/92 text-[#0F3D56] shadow-2xl transition hover:scale-105">
+              <button className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/92 text-[#0F3D56] dark:text-[#e8edf7] shadow-2xl transition hover:scale-105">
                 <PlayCircle size={36} />
               </button>
             </div>

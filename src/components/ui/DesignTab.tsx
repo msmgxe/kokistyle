@@ -342,11 +342,11 @@ export default function DesignTab({ project, toast }: Props) {
   return (
     <>
       <div
-        className="flex rounded-xl border border-[#E6DDCB] bg-white overflow-hidden"
+        className="flex rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] overflow-hidden"
         style={{ height: "calc(100vh - 210px)" }}
       >
         {/* ── COL 1 · REFERENCIAS ──────────────────────────────── */}
-        <div className="flex flex-col w-[200px] flex-none border-r border-[#E6DDCB]">
+        <div className="flex flex-col w-[200px] flex-none border-r border-[#E6DDCB] dark:border-[#22304d]">
           <div className="bg-[var(--brand)] px-3 py-2.5">
             <p className="text-[9px] font-bold tracking-widest text-white/40 uppercase">
               {isEN ? "References" : "Referencias"}
@@ -362,7 +362,7 @@ export default function DesignTab({ project, toast }: Props) {
                 key={p.path}
                 onClick={() => setActivePhoto(i)}
                 className={`relative group rounded-lg overflow-hidden cursor-pointer border-2 transition-all flex-none ${
-                  activePhoto === i ? "border-[#C9A96E]" : "border-transparent hover:border-[#E6DDCB]"
+                  activePhoto === i ? "border-[#C9A96E]" : "border-transparent hover:border-[#E6DDCB] dark:hover:border-[#22304d]"
                 }`}
               >
                 <img
@@ -383,7 +383,7 @@ export default function DesignTab({ project, toast }: Props) {
             ))}
 
             {photos.length === 0 && !uploading && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-2 text-[#5C6A6E] py-8">
+              <div className="flex-1 flex flex-col items-center justify-center gap-2 text-[#5C6A6E] dark:text-[#9fb0cc] py-8">
                 <span className="text-3xl">📸</span>
                 <p className="text-[11px] text-center leading-tight px-2">
                   {isEN
@@ -399,7 +399,7 @@ export default function DesignTab({ project, toast }: Props) {
             )}
           </div>
 
-          <div className="p-2 border-t border-[#E6DDCB]">
+          <div className="p-2 border-t border-[#E6DDCB] dark:border-[#22304d]">
             <input
               ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
               onChange={e => e.target.files && uploadPhotos(e.target.files)}
@@ -414,7 +414,7 @@ export default function DesignTab({ project, toast }: Props) {
         </div>
 
         {/* ── COL 2 · DESIGN BRIEF ─────────────────────────────── */}
-        <div className="flex flex-col w-[260px] flex-none border-r border-[#E6DDCB]">
+        <div className="flex flex-col w-[260px] flex-none border-r border-[#E6DDCB] dark:border-[#22304d]">
           <div className="bg-[var(--brand)] px-3 py-2.5">
             <p className="text-[9px] font-bold tracking-widest text-white/40 uppercase">Design Brief</p>
             <p className="text-[11px] font-semibold text-white mt-0.5">
@@ -425,12 +425,12 @@ export default function DesignTab({ project, toast }: Props) {
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
             {/* Room Type */}
             <div>
-              <label className="block text-[9px] font-bold text-[#5C6A6E] uppercase tracking-wider mb-1.5">
+              <label className="block text-[9px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] uppercase tracking-wider mb-1.5">
                 {isEN ? "Room Type" : "Tipo de ambiente"}
               </label>
               <select
                 value={room} onChange={e => setRoom(e.target.value)}
-                className="w-full text-xs border border-[#E6DDCB] rounded-lg px-2.5 py-2 bg-white text-[var(--brand)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
+                className="w-full text-xs border border-[#E6DDCB] dark:border-[#22304d] rounded-lg px-2.5 py-2 bg-white dark:bg-[#111a2e] text-[var(--brand)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
               >
                 {ROOMS.map(r => (
                   <option key={r.en} value={r.en}>{isEN ? r.en : r.es}</option>
@@ -440,7 +440,7 @@ export default function DesignTab({ project, toast }: Props) {
 
             {/* Style */}
             <div>
-              <label className="block text-[9px] font-bold text-[#5C6A6E] uppercase tracking-wider mb-1.5">
+              <label className="block text-[9px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] uppercase tracking-wider mb-1.5">
                 {isEN ? "Design Style" : "Estilo de diseño"}
               </label>
               <div className="grid grid-cols-2 gap-1">
@@ -450,7 +450,7 @@ export default function DesignTab({ project, toast }: Props) {
                     className={`text-[10px] py-1.5 px-1 rounded-lg border font-semibold transition-all text-center ${
                       style === s.en
                         ? "bg-[var(--brand)] text-white border-[var(--brand)]"
-                        : "border-[#E6DDCB] text-[#5C6A6E] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                        : "border-[#E6DDCB] dark:border-[#22304d] text-[#5C6A6E] dark:text-[#9fb0cc] hover:border-[var(--brand)] hover:text-[var(--brand)]"
                     }`}
                   >
                     {isEN ? s.en : s.es}
@@ -461,7 +461,7 @@ export default function DesignTab({ project, toast }: Props) {
 
             {/* Strength */}
             <div>
-              <label className="flex justify-between text-[9px] font-bold text-[#5C6A6E] uppercase tracking-wider mb-1">
+              <label className="flex justify-between text-[9px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] uppercase tracking-wider mb-1">
                 <span>{isEN ? "Change Intensity" : "Intensidad del cambio"}</span>
                 <span className="text-[#C9A96E] font-bold">{Math.round(strength * 100)}%</span>
               </label>
@@ -470,7 +470,7 @@ export default function DesignTab({ project, toast }: Props) {
                 value={strength} onChange={e => setStrength(parseFloat(e.target.value))}
                 className="w-full h-1.5 accent-[#C9A96E]"
               />
-              <p className="text-[9px] text-[#5C6A6E] mt-0.5 leading-tight">{strengthLabel}</p>
+              <p className="text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc] mt-0.5 leading-tight">{strengthLabel}</p>
               <div className="flex justify-between text-[8px] text-[#5C6A6E]/60 mt-0.5">
                 <span>{isEN ? "Keep original" : "Conserva original"}</span>
                 <span>{isEN ? "Full creative" : "Total creativo"}</span>
@@ -480,7 +480,7 @@ export default function DesignTab({ project, toast }: Props) {
             {/* Prompt + Voice */}
             <div className="flex flex-col" style={{ flex: 1, minHeight: 90 }}>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[9px] font-bold text-[#5C6A6E] uppercase tracking-wider">
+                <label className="text-[9px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] uppercase tracking-wider">
                   {isEN ? "Description" : "Descripción"}
                 </label>
                 <button
@@ -488,7 +488,7 @@ export default function DesignTab({ project, toast }: Props) {
                   className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg font-semibold border transition-all ${
                     listening
                       ? "bg-red-50 text-red-600 border-red-200 animate-pulse"
-                      : "bg-[#F7F3EA] text-[var(--brand)] border-[#E6DDCB] hover:border-[var(--brand)]"
+                      : "bg-[#F7F3EA] dark:bg-[#0b1220] text-[var(--brand)] border-[#E6DDCB] dark:border-[#22304d] hover:border-[var(--brand)]"
                   }`}
                 >
                   🎙 {listening ? (isEN ? "Stop" : "Parar") : (isEN ? "Voice" : "Voz")}
@@ -501,13 +501,13 @@ export default function DesignTab({ project, toast }: Props) {
                     ? "Describe changes: marble floors, open concept kitchen, warm lighting, white cabinets..."
                     : "Describe cambios: piso de mármol, cocina abierta, iluminación cálida, gabinetes blancos..."
                 }
-                className="flex-1 w-full text-xs border border-[#E6DDCB] rounded-lg px-2.5 py-2 bg-white text-[var(--brand)] placeholder:text-[#5C6A6E]/50 focus:outline-none focus:ring-1 focus:ring-[var(--brand)] resize-none"
+                className="flex-1 w-full text-xs border border-[#E6DDCB] dark:border-[#22304d] rounded-lg px-2.5 py-2 bg-white dark:bg-[#111a2e] text-[var(--brand)] placeholder:text-[#5C6A6E]/50 focus:outline-none focus:ring-1 focus:ring-[var(--brand)] resize-none"
                 style={{ minHeight: 90 }}
               />
             </div>
           </div>
 
-          <div className="p-3 border-t border-[#E6DDCB]">
+          <div className="p-3 border-t border-[#E6DDCB] dark:border-[#22304d]">
             <button
               onClick={generate} disabled={generating || uploading}
               className="w-full py-2.5 rounded-xl bg-[var(--brand)] text-white text-sm font-bold tracking-wide hover:bg-[#1a3e4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -540,9 +540,9 @@ export default function DesignTab({ project, toast }: Props) {
             </button>
 
             {scope && (
-              <div className="mt-2.5 overflow-hidden rounded-xl border border-[#E6DDCB]">
+              <div className="mt-2.5 overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d]">
                 {scope.map((s, i) => (
-                  <label key={i} className="flex items-start gap-2 border-b border-[#F0EBE0] bg-white px-3 py-2 last:border-0">
+                  <label key={i} className="flex items-start gap-2 border-b border-[#F0EBE0] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 last:border-0">
                     <input
                       type="checkbox"
                       checked={scopeSel.has(i)}
@@ -555,7 +555,7 @@ export default function DesignTab({ project, toast }: Props) {
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[12px] font-bold text-[var(--brand)]">{isEN ? s.name_en : s.name_es}</span>
-                      <span className="block text-[11px] leading-snug text-[#5C6A6E]">{isEN ? s.description_en : s.description_es}</span>
+                      <span className="block text-[11px] leading-snug text-[#5C6A6E] dark:text-[#9fb0cc]">{isEN ? s.description_en : s.description_es}</span>
                     </span>
                     <span className="font-mono text-[12px] font-bold text-[var(--brand)]">${Number(s.amount).toLocaleString()}</span>
                   </label>
@@ -699,15 +699,15 @@ export default function DesignTab({ project, toast }: Props) {
 
               {/* History strip */}
               {history.length > 1 && (
-                <div className="border-t border-[#E6DDCB] px-2 py-1.5 flex gap-2 overflow-x-auto items-center">
-                  <span className="text-[9px] font-bold text-[#5C6A6E] uppercase tracking-wider flex-none">
+                <div className="border-t border-[#E6DDCB] dark:border-[#22304d] px-2 py-1.5 flex gap-2 overflow-x-auto items-center">
+                  <span className="text-[9px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] uppercase tracking-wider flex-none">
                     {isEN ? "History" : "Historial"}
                   </span>
                   {history.slice(1).map((r, i) => (
                     <button
                       key={r.ts}
                       onClick={() => setHistory(h => [r, ...h.filter((_, idx) => idx !== i + 1)])}
-                      className="flex-none w-10 h-10 rounded-lg overflow-hidden border border-[#E6DDCB] hover:border-[#C9A96E] transition-colors"
+                      className="flex-none w-10 h-10 rounded-lg overflow-hidden border border-[#E6DDCB] dark:border-[#22304d] hover:border-[#C9A96E] transition-colors"
                       title={`${r.room} · ${r.style}`}
                     >
                       <img src={r.after} alt="" className="w-full h-full object-cover" />
@@ -718,7 +718,7 @@ export default function DesignTab({ project, toast }: Props) {
             </>
           ) : (
             /* ── EMPTY STATE ── */
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-[#F7F3EA] p-8">
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-[#F7F3EA] dark:bg-[#0b1220] p-8">
               {generating ? (
                 <>
                   <div className="w-14 h-14 border-4 border-[var(--brand)]/20 border-t-[#C9A96E] rounded-full animate-spin" />
@@ -726,27 +726,27 @@ export default function DesignTab({ project, toast }: Props) {
                     <p className="text-sm font-semibold text-[var(--brand)]">
                       {isEN ? "Generating your render..." : "Generando tu render..."}
                     </p>
-                    <p className="text-xs text-[#5C6A6E] mt-1">
+                    <p className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc] mt-1">
                       {isEN ? "This may take 20–40 seconds" : "Puede tardar 20–40 segundos"}
                     </p>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="w-20 h-20 rounded-2xl bg-white border-2 border-dashed border-[#E6DDCB] flex items-center justify-center text-4xl shadow-sm">
+                  <div className="w-20 h-20 rounded-2xl bg-white dark:bg-[#111a2e] border-2 border-dashed border-[#E6DDCB] dark:border-[#22304d] flex items-center justify-center text-4xl shadow-sm">
                     ✨
                   </div>
                   <div className="text-center max-w-xs">
                     <p className="text-sm font-semibold text-[var(--brand)]">
                       {isEN ? "Ready to generate" : "Listo para generar"}
                     </p>
-                    <p className="text-xs text-[#5C6A6E] mt-1.5 leading-relaxed">
+                    <p className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc] mt-1.5 leading-relaxed">
                       {isEN
                         ? "Upload a reference photo, describe your vision and click Generate Render"
                         : "Sube una foto de referencia, describe tu visión y presiona Generar Render"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 mt-1 bg-white rounded-xl border border-[#E6DDCB] px-3 py-2">
+                  <div className="flex items-center gap-2 mt-1 bg-white dark:bg-[#111a2e] rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-3 py-2">
                     <span className="w-2 h-2 rounded-full bg-[#4F8A63]" />
                     <span className="text-[10px] font-semibold text-[var(--brand)]">Replicate · img2img · {isEN ? "transforms YOUR photo" : "transforma TU foto"}</span>
                   </div>

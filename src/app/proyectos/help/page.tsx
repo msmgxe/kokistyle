@@ -7,14 +7,14 @@ import { useLanguage } from "@/src/context/LanguageContext";
 
 function MockupDashboard({ EN }: { EN: boolean }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-sm">
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-2 bg-[#F7F3EA] p-3">
+      <div className="grid grid-cols-4 gap-2 bg-[#F7F3EA] dark:bg-[#0b1220] p-3">
         {[
-          { label: EN?"Income":"Ingresos",  val:"$12,500", c:"text-[#4F8A63] bg-[#DCEBDD]" },
-          { label: EN?"Expenses":"Egresos", val:"$8,200",  c:"text-[#B0492F] bg-[#F0DBD2]" },
-          { label: "Balance",               val:"$4,300",  c:"text-[var(--accent)] bg-[#EDF3FB]" },
-          { label: "Estimate",              val:"$65,000", c:"text-[#7A6230] bg-[#EDE3CF]" },
+          { label: EN?"Income":"Ingresos",  val:"$12,500", c:"text-[#4F8A63] bg-[#DCEBDD] dark:bg-[#14261c]" },
+          { label: EN?"Expenses":"Egresos", val:"$8,200",  c:"text-[#B0492F] bg-[#F0DBD2] dark:bg-[#2a1712]" },
+          { label: "Balance",               val:"$4,300",  c:"text-[var(--accent)] bg-[#EDF3FB] dark:bg-[#111a2e]" },
+          { label: "Estimate",              val:"$65,000", c:"text-[#7A6230] bg-[#EDE3CF] dark:bg-[#17233d]" },
         ].map(k => (
           <div key={k.label} className={`rounded-xl px-2 py-1.5 ${k.c.split(" ")[1]}`}>
             <div className={`text-[8px] font-bold uppercase ${k.c.split(" ")[0]}`}>{k.label}</div>
@@ -24,13 +24,13 @@ function MockupDashboard({ EN }: { EN: boolean }) {
       </div>
       {/* Project cards */}
       {[
-        { name:"KITCHEN REMODEL · MIAMI",  client:"Jennifer Walsh", status:EN?"Approved":"Aprobado", sc:"bg-[#DCEBDD] text-[#4F8A63]" },
-        { name:"BATH RENO · BRICKELL",     client:"Carlos Ruiz",    status:EN?"In Progress":"En Obra", sc:"bg-[#DCE8E9] text-[#4E7A82]" },
+        { name:"KITCHEN REMODEL · MIAMI",  client:"Jennifer Walsh", status:EN?"Approved":"Aprobado", sc:"bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]" },
+        { name:"BATH RENO · BRICKELL",     client:"Carlos Ruiz",    status:EN?"In Progress":"En Obra", sc:"bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]" },
       ].map(p => (
-        <div key={p.name} className="flex items-center justify-between border-b border-[#F0EBE0] px-3 py-2.5 last:border-0">
+        <div key={p.name} className="flex items-center justify-between border-b border-[#F0EBE0] dark:border-[#22304d] px-3 py-2.5 last:border-0">
           <div>
             <div className="text-[10px] font-bold text-[var(--brand)]">{p.name}</div>
-            <div className="text-[9px] text-[#5C6A6E]">{p.client}</div>
+            <div className="text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc]">{p.client}</div>
           </div>
           <span className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${p.sc}`}>{p.status}</span>
         </div>
@@ -45,12 +45,12 @@ function MockupDashboard({ EN }: { EN: boolean }) {
 function MockupEstimate({ EN }: { EN: boolean }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between rounded-xl border border-[#E6DDCB] bg-white px-3 py-2">
+      <div className="flex items-center justify-between rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2">
         <div className="text-[9px] font-bold text-[var(--brand)]">DEMOLITION {EN?"· Dumping included":"· Acarreo incluido"}</div>
         <div className="font-mono text-[10px] font-bold text-[var(--brand)]">$1,800</div>
       </div>
-      <div className="overflow-hidden rounded-xl border border-[var(--accent)] bg-white">
-        <div className="flex items-center justify-between bg-[#EDF3FB] px-3 py-2">
+      <div className="overflow-hidden rounded-xl border border-[var(--accent)] bg-white dark:bg-[#111a2e]">
+        <div className="flex items-center justify-between bg-[#EDF3FB] dark:bg-[#111a2e] px-3 py-2">
           <div className="text-[9px] font-bold text-[var(--accent)]">PLUMBING</div>
           <div className="font-mono text-[10px] font-bold text-[var(--accent)]">$3,200</div>
         </div>
@@ -59,13 +59,13 @@ function MockupEstimate({ EN }: { EN: boolean }) {
           { d:EN?"Shower drain":"Desagüe de ducha",                      a:"$600" },
           { d:EN?"Hot water heater":"Calentador de agua",                 a:"$1,800" },
         ].map(i => (
-          <div key={i.d} className="flex items-center justify-between border-t border-[#F0EBE0] px-4 py-1.5">
+          <div key={i.d} className="flex items-center justify-between border-t border-[#F0EBE0] dark:border-[#22304d] px-4 py-1.5">
             <div className="text-[9px] text-[var(--brand)]">• {i.d}</div>
-            <div className="font-mono text-[9px] text-[#5C6A6E]">{i.a}</div>
+            <div className="font-mono text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc]">{i.a}</div>
           </div>
         ))}
       </div>
-      <div className="rounded-xl border border-[#E6DDCB] bg-[var(--brand)] px-3 py-2 flex items-center justify-between">
+      <div className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[var(--brand)] px-3 py-2 flex items-center justify-between">
         <div className="text-[9px] font-bold text-white">{EN?"GRAND TOTAL":"TOTAL FINAL"}</div>
         <div className="font-mono text-[11px] font-black text-white">$5,000</div>
       </div>
@@ -75,17 +75,17 @@ function MockupEstimate({ EN }: { EN: boolean }) {
 
 function MockupPayments({ EN }: { EN: boolean }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
-      <div className="grid grid-cols-3 gap-2 bg-[#F7F3EA] p-2.5">
-        <div className="rounded-lg bg-[#DCEBDD] p-2 text-center">
+    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
+      <div className="grid grid-cols-3 gap-2 bg-[#F7F3EA] dark:bg-[#0b1220] p-2.5">
+        <div className="rounded-lg bg-[#DCEBDD] dark:bg-[#14261c] p-2 text-center">
           <div className="text-[7px] font-bold uppercase text-[#4F8A63]">{EN?"Income":"Ingresos"}</div>
           <div className="font-mono text-[11px] font-black text-[#4F8A63]">$8,000</div>
         </div>
-        <div className="rounded-lg bg-[#F0DBD2] p-2 text-center">
+        <div className="rounded-lg bg-[#F0DBD2] dark:bg-[#2a1712] p-2 text-center">
           <div className="text-[7px] font-bold uppercase text-[#B0492F]">{EN?"Expenses":"Egresos"}</div>
           <div className="font-mono text-[11px] font-black text-[#B0492F]">$5,200</div>
         </div>
-        <div className="rounded-lg bg-[#EDF3FB] p-2 text-center">
+        <div className="rounded-lg bg-[#EDF3FB] dark:bg-[#111a2e] p-2 text-center">
           <div className="text-[7px] font-bold uppercase text-[var(--accent)]">Balance</div>
           <div className="font-mono text-[11px] font-black text-[var(--accent)]">$2,800</div>
         </div>
@@ -95,10 +95,10 @@ function MockupPayments({ EN }: { EN: boolean }) {
         { label:EN?"Jorge - Plumbing":"Jorge - Plomería", amt:"-$1,200", c:"text-[#B0492F]", method:"Cash" },
         { label:EN?"Client deposit":"Depósito cliente",   amt:"+$4,000", c:"text-[#4F8A63]", method:"Transfer" },
       ].map(r => (
-        <div key={r.label} className="flex items-center justify-between border-t border-[#F0EBE0] px-3 py-2">
+        <div key={r.label} className="flex items-center justify-between border-t border-[#F0EBE0] dark:border-[#22304d] px-3 py-2">
           <div>
             <div className="text-[9px] font-semibold text-[var(--brand)]">{r.label}</div>
-            <div className="text-[8px] text-[#5C6A6E]">{r.method}</div>
+            <div className="text-[8px] text-[#5C6A6E] dark:text-[#9fb0cc]">{r.method}</div>
           </div>
           <div className={`font-mono text-[11px] font-bold ${r.c}`}>{r.amt}</div>
         </div>
@@ -110,30 +110,30 @@ function MockupPayments({ EN }: { EN: boolean }) {
 function MockupMaterials({ EN }: { EN: boolean }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 rounded-xl border border-[var(--accent)] bg-[#EDF3FB] px-3 py-2">
+      <div className="flex items-center gap-2 rounded-xl border border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#111a2e] px-3 py-2">
         <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[8px] font-bold text-white">↓</div>
         <span className="text-[9px] font-bold text-[var(--accent)]">
           {EN ? "Import from Estimate" : "Importar del Estimado"}
         </span>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
         {[
           { n: EN ? "Compra de PORCELAIN" : "Compra de PORCELAIN", badge: EN ? "FROM EST" : "DEL EST", qty: "50 sq.ft", cost: "$1,500", bought: false },
           { n: EN ? "Compra de GLASS DOOR" : "Compra de GLASS DOOR", badge: EN ? "FROM EST" : "DEL EST", qty: "1 unit",  cost: "$1,850", bought: true  },
           { n: "LED MIRROR",                                          badge: null,                        qty: "",        cost: "$650",   bought: false },
         ].map(i => (
-          <div key={i.n} className={`flex items-center gap-2.5 border-b border-[#F0EBE0] px-3 py-2 last:border-0 ${i.bought ? "opacity-50" : ""}`}>
-            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${i.bought ? "border-[#4F8A63] bg-[#4F8A63] text-white" : "border-[#D7CBB3]"} text-[8px] font-bold`}>
+          <div key={i.n} className={`flex items-center gap-2.5 border-b border-[#F0EBE0] dark:border-[#22304d] px-3 py-2 last:border-0 ${i.bought ? "opacity-50" : ""}`}>
+            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${i.bought ? "border-[#4F8A63] bg-[#4F8A63] text-white" : "border-[#D7CBB3] dark:border-[#2c3c5e]"} text-[8px] font-bold`}>
               {i.bought ? "✓" : ""}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <span className={`text-[9px] font-semibold ${i.bought ? "line-through text-[#5C6A6E]" : "text-[var(--brand)]"}`}>{i.n}</span>
+                <span className={`text-[9px] font-semibold ${i.bought ? "line-through text-[#5C6A6E] dark:text-[#9fb0cc]" : "text-[var(--brand)]"}`}>{i.n}</span>
                 {i.badge && (
-                  <span className="rounded bg-[#EDF3FB] px-1 py-px text-[7px] font-bold text-[var(--accent)]">{i.badge}</span>
+                  <span className="rounded bg-[#EDF3FB] dark:bg-[#111a2e] px-1 py-px text-[7px] font-bold text-[var(--accent)]">{i.badge}</span>
                 )}
               </div>
-              {i.qty && <div className="text-[8px] text-[#5C6A6E]">{i.qty}</div>}
+              {i.qty && <div className="text-[8px] text-[#5C6A6E] dark:text-[#9fb0cc]">{i.qty}</div>}
             </div>
             <div className="font-mono text-[9px] font-bold text-[var(--brand)]">{i.cost}</div>
           </div>
@@ -145,20 +145,20 @@ function MockupMaterials({ EN }: { EN: boolean }) {
 
 function MockupContacts({ EN }: { EN: boolean }) {
   const contacts = [
-    { name:"Jorge Saldarriaga", spec:EN?"Tile & Flooring":"Tile y Pisos", rate:"$45/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] text-[var(--accent)]" },
-    { name:"Miami Plumbing Co", spec:EN?"Plumbing":"Plomería",             rate:"$1,800 job", type:EN?"Supplier":"Proveedor", c:"bg-[#EDE3CF] text-[#7A6230]" },
-    { name:"Carlos Pinto",      spec:EN?"Electrical":"Eléctrico",          rate:"$55/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] text-[var(--accent)]" },
+    { name:"Jorge Saldarriaga", spec:EN?"Tile & Flooring":"Tile y Pisos", rate:"$45/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]" },
+    { name:"Miami Plumbing Co", spec:EN?"Plumbing":"Plomería",             rate:"$1,800 job", type:EN?"Supplier":"Proveedor", c:"bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]" },
+    { name:"Carlos Pinto",      spec:EN?"Electrical":"Eléctrico",          rate:"$55/hr", type:EN?"Specialist":"Especialista", c:"bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]" },
   ];
   return (
     <div className="space-y-2">
       {contacts.map(c => (
-        <div key={c.name} className="flex items-center gap-3 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5">
+        <div key={c.name} className="flex items-center gap-3 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">
             {c.name.split(" ").map(w => w[0]).join("").slice(0,2)}
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-bold text-[var(--brand)]">{c.name}</div>
-            <div className="text-[8px] text-[#5C6A6E]">{c.spec} · {c.rate}</div>
+            <div className="text-[8px] text-[#5C6A6E] dark:text-[#9fb0cc]">{c.spec} · {c.rate}</div>
           </div>
           <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${c.c}`}>{c.type}</span>
         </div>
@@ -170,28 +170,28 @@ function MockupContacts({ EN }: { EN: boolean }) {
 function MockupNotes({ EN }: { EN: boolean }) {
   return (
     <div className="space-y-2">
-      <div className="overflow-hidden rounded-xl border border-[#E6DDCB] bg-white">
+      <div className="overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
         <div className="px-3 py-2.5">
           <div className="mb-1 text-[9px] font-bold text-[var(--brand)]">{EN?"Client wants white subway tile on accent wall":"Cliente quiere tile subway blanco en pared de acento"}</div>
-          <div className="text-[8px] leading-relaxed text-[#5C6A6E]">{EN?"Also requested heated floors in the master bath area. Confirm with supplier before ordering.":"También solicita piso con calefacción en el baño principal. Confirmar con proveedor antes de ordenar."}</div>
+          <div className="text-[8px] leading-relaxed text-[#5C6A6E] dark:text-[#9fb0cc]">{EN?"Also requested heated floors in the master bath area. Confirm with supplier before ordering.":"También solicita piso con calefacción en el baño principal. Confirmar con proveedor antes de ordenar."}</div>
         </div>
-        <div className="flex items-center gap-2 border-t border-[#F0EBE0] bg-[#FDFAF6] px-3 py-1.5">
-          <div className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] px-1.5 py-0.5">
-            <div className="h-3 w-3 rounded bg-[#DCE8E9]" />
-            <span className="text-[7px] text-[#5C6A6E]">site_photo.jpg</span>
+        <div className="flex items-center gap-2 border-t border-[#F0EBE0] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3 py-1.5">
+          <div className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-1.5 py-0.5">
+            <div className="h-3 w-3 rounded bg-[#DCE8E9] dark:bg-[#122a2c]" />
+            <span className="text-[7px] text-[#5C6A6E] dark:text-[#9fb0cc]">site_photo.jpg</span>
           </div>
-          <div className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] px-1.5 py-0.5">
-            <div className="h-3 w-3 rounded bg-[#F0DBD2]" />
-            <span className="text-[7px] text-[#5C6A6E]">contract.pdf</span>
+          <div className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-1.5 py-0.5">
+            <div className="h-3 w-3 rounded bg-[#F0DBD2] dark:bg-[#2a1712]" />
+            <span className="text-[7px] text-[#5C6A6E] dark:text-[#9fb0cc]">contract.pdf</span>
           </div>
         </div>
       </div>
-      <div className="rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5">
+      <div className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2.5">
         <div className="text-[9px] font-bold text-[var(--brand)]">{EN?"Inspection passed - June 14":"Inspección aprobada - 14 junio"}</div>
-        <div className="mt-0.5 text-[8px] text-[#5C6A6E]">{EN?"Inspector signed off on rough plumbing.":"Inspector aprobó la plomería preliminar."}</div>
+        <div className="mt-0.5 text-[8px] text-[#5C6A6E] dark:text-[#9fb0cc]">{EN?"Inspector signed off on rough plumbing.":"Inspector aprobó la plomería preliminar."}</div>
       </div>
-      <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-[#D7CBB3] py-2">
-        <span className="text-[9px] font-semibold text-[#5C6A6E]">+ {EN?"New Note":"Nueva Nota"}</span>
+      <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] py-2">
+        <span className="text-[9px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">+ {EN?"New Note":"Nueva Nota"}</span>
       </div>
     </div>
   );
@@ -213,17 +213,17 @@ function MockupPlan({ EN }: { EN: boolean }) {
       ];
   const weeks = [1,2,3,4,5];
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b border-[#F0EBE0] bg-[#F7F3EA] px-3 py-2">
+      <div className="flex items-center justify-between border-b border-[#F0EBE0] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2">
         <div className="flex gap-1">
           {[EN?"All":"Todo", EN?"To do":"Por hacer", EN?"In progress":"En proceso", EN?"Done":"Listo"].map((f,i) => (
-            <span key={f} className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${i===0 ? "bg-[var(--brand)] text-white" : "text-[#5C6A6E]"}`}>{f}</span>
+            <span key={f} className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${i===0 ? "bg-[var(--brand)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>{f}</span>
           ))}
         </div>
         <div className="flex gap-1">
           {[EN?"Weeks":"Semanas", EN?"Days":"Días"].map((v,i) => (
-            <span key={v} className={`rounded-lg px-2 py-0.5 text-[8px] font-semibold ${i===0 ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E]"}`}>{v}</span>
+            <span key={v} className={`rounded-lg px-2 py-0.5 text-[8px] font-semibold ${i===0 ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>{v}</span>
           ))}
         </div>
       </div>
@@ -233,7 +233,7 @@ function MockupPlan({ EN }: { EN: boolean }) {
         <div className="mb-1.5 flex">
           <div className="w-28 shrink-0" />
           {weeks.map(w => (
-            <div key={w} className="flex-1 text-center text-[8px] font-bold text-[#5C6A6E]">
+            <div key={w} className="flex-1 text-center text-[8px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
               {EN ? `Wk ${w}` : `Sem ${w}`}
             </div>
           ))}
@@ -244,7 +244,7 @@ function MockupPlan({ EN }: { EN: boolean }) {
             <div className="w-28 shrink-0 truncate pr-2 text-[9px] font-semibold text-[var(--brand)]">{task.name}</div>
             <div className="relative flex flex-1 gap-0">
               {weeks.map(w => (
-                <div key={w} className="flex-1 border-l border-[#F0EBE0] px-px py-px first:border-l-0">
+                <div key={w} className="flex-1 border-l border-[#F0EBE0] dark:border-[#22304d] px-px py-px first:border-l-0">
                   {w === task.start + 1 && (
                     <div
                       className="h-4 rounded-full px-1.5 flex items-center"
@@ -291,16 +291,16 @@ function MockupDayPlanner({ EN }: { EN: boolean }) {
       {/* Pool */}
       <div className="w-36 shrink-0">
         <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-[8px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN ? "Item Pool" : "Items"}</span>
+          <span className="text-[8px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Item Pool" : "Items"}</span>
           <span className="rounded-full bg-[var(--brand)] px-1.5 py-0.5 text-[7px] font-bold text-white">+ {EN?"Custom":"Custom"}</span>
         </div>
         <div className="space-y-1.5">
           {pool.map(item => (
-            <div key={item.label} className="rounded-lg border border-[#E6DDCB] bg-white px-2 py-1.5">
+            <div key={item.label} className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-1.5">
               <div className="mb-0.5 truncate text-[8px] font-semibold text-[var(--brand)]">{item.label}</div>
               <div className="flex items-center gap-1">
                 <span className="rounded-full px-1 py-0.5 text-[6px] font-bold text-white" style={{ background: item.c }}>{item.sec}</span>
-                <span className="text-[7px] text-[#5C6A6E]">{item.hrs}h</span>
+                <span className="text-[7px] text-[#5C6A6E] dark:text-[#9fb0cc]">{item.hrs}h</span>
               </div>
             </div>
           ))}
@@ -311,22 +311,22 @@ function MockupDayPlanner({ EN }: { EN: boolean }) {
         {days.map(day => {
           const pct = Math.round((day.used / day.cap) * 100);
           return (
-            <div key={day.label} className="flex-1 rounded-xl bg-[#F7F3EA] p-1.5">
+            <div key={day.label} className="flex-1 rounded-xl bg-[#F7F3EA] dark:bg-[#0b1220] p-1.5">
               <div className="mb-1 text-[8px] font-bold text-[var(--brand)]">{day.label}</div>
-              <div className="mb-1 text-[7px] text-[#5C6A6E]">{day.date}</div>
+              <div className="mb-1 text-[7px] text-[#5C6A6E] dark:text-[#9fb0cc]">{day.date}</div>
               {/* Capacity bar */}
-              <div className="mb-1.5 h-1 w-full overflow-hidden rounded-full bg-[#E6DDCB]">
+              <div className="mb-1.5 h-1 w-full overflow-hidden rounded-full bg-[#E6DDCB] dark:bg-[#17233d]">
                 <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 100 ? "#B0492F" : "#4F8A63" }} />
               </div>
-              <div className="mb-1.5 text-[6px] text-[#5C6A6E]">{day.used}/{day.cap}h</div>
+              <div className="mb-1.5 text-[6px] text-[#5C6A6E] dark:text-[#9fb0cc]">{day.used}/{day.cap}h</div>
               {day.items.map(item => (
-                <div key={item.label} className="mb-1 rounded-lg border border-[#E6DDCB] bg-white px-1.5 py-1">
+                <div key={item.label} className="mb-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 py-1">
                   <div className="truncate text-[7px] font-semibold text-[var(--brand)]">{item.label}</div>
                   <span className="rounded px-0.5 py-px text-[6px] font-bold text-white" style={{ background: item.c }}>{item.sec}</span>
                 </div>
               ))}
               {day.items.length === 0 && (
-                <div className="rounded-lg border border-dashed border-[#D7CBB3] py-2 text-center text-[7px] text-[#C4B89A]">
+                <div className="rounded-lg border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] py-2 text-center text-[7px] text-[#C4B89A]">
                   {EN ? "Drop here" : "Soltar aquí"}
                 </div>
               )}
@@ -348,16 +348,16 @@ function MockupVoice({ EN }: { EN: boolean }) {
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand)] shadow-lg">
           <span className="text-2xl">🎙</span>
         </div>
-        <div className="text-[8px] text-center font-semibold text-[#5C6A6E]">Katy</div>
+        <div className="text-[8px] text-center font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">Katy</div>
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#4F8A63]">
-          <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />
+          <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-white dark:bg-[#111a2e]" />
         </div>
         <div className="text-[7px] text-[#4F8A63] font-bold">{EN?"Listening…":"Escuchando…"}</div>
       </div>
       <div className="flex-1 space-y-1.5">
-        <div className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E] mb-2">{EN?"Say commands like:":"Di comandos como:"}</div>
+        <div className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc] mb-2">{EN?"Say commands like:":"Di comandos como:"}</div>
         {cmds.map(c => (
-          <div key={c} className="flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-2.5 py-1.5">
+          <div key={c} className="flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-2.5 py-1.5">
             <span className="text-[9px]">🗣</span>
             <span className="font-mono text-[9px] text-[var(--accent)]">"{c}"</span>
           </div>
@@ -381,12 +381,12 @@ function MockupTeam({ EN }: { EN: boolean }) {
     <div className="space-y-2">
       {/* New user button */}
       <div className="flex justify-end mb-1">
-        <div className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-3 py-1.5 text-[9px] font-bold text-[var(--brand)]">
+        <div className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] px-3 py-1.5 text-[9px] font-bold text-[var(--brand)]">
           + {EN ? "New user" : "Nuevo usuario"}
         </div>
       </div>
       {users.map(u => (
-        <div key={u.name} className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+        <div key={u.name} className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
           <div className="flex items-center gap-2 px-3 py-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: u.bg }}>
               {u.initials}
@@ -394,28 +394,28 @@ function MockupTeam({ EN }: { EN: boolean }) {
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-1">
                 <span className="text-[10px] font-bold text-[var(--brand)]">{u.name}</span>
-                <span className="rounded-full border border-[#B8DEC9] bg-[#EBF5F0] px-1.5 py-px text-[7px] font-bold text-[#2E6B50]">
+                <span className="rounded-full border border-[#B8DEC9] bg-[#EBF5F0] dark:bg-[#14261c] px-1.5 py-px text-[7px] font-bold text-[#2E6B50]">
                   {u.badge}
                 </span>
                 {u.tag && (
-                  <span className="rounded-full border border-[#F0CFA0] bg-[#FEF6ED] px-1.5 py-px text-[7px] font-bold text-[#9B6A2F]">
+                  <span className="rounded-full border border-[#F0CFA0] bg-[#FEF6ED] dark:bg-[#17233d] px-1.5 py-px text-[7px] font-bold text-[#9B6A2F]">
                     {u.tag}
                   </span>
                 )}
               </div>
-              <div className="mt-0.5 text-[7px] text-[#97A1A0]">{u.tabs}</div>
+              <div className="mt-0.5 text-[7px] text-[#97A1A0] dark:text-[#728098]">{u.tabs}</div>
             </div>
             <div className="flex gap-1">
-              <div className="grid h-5 w-5 place-items-center rounded bg-[#F0EAE0] text-[9px]">✏️</div>
-              <div className="grid h-5 w-5 place-items-center rounded bg-[#F0EAE0] text-[9px]">▾</div>
+              <div className="grid h-5 w-5 place-items-center rounded bg-[#F0EAE0] dark:bg-[#17233d] text-[9px]">✏️</div>
+              <div className="grid h-5 w-5 place-items-center rounded bg-[#F0EAE0] dark:bg-[#17233d] text-[9px]">▾</div>
             </div>
           </div>
         </div>
       ))}
       {/* Inline preview strip */}
-      <div className="mt-1 grid grid-cols-2 gap-1.5 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] p-2">
+      <div className="mt-1 grid grid-cols-2 gap-1.5 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] p-2">
         <div>
-          <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN?"Co-worker sees:":"Co-worker ve:"}</div>
+          <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN?"Co-worker sees:":"Co-worker ve:"}</div>
           <div className="flex flex-wrap gap-1">
             {["Workflow","Day Planner","Notes"].map(t => (
               <span key={t} className="rounded bg-[var(--brand)] px-1 py-px text-[6px] font-bold text-white">{t}</span>
@@ -423,7 +423,7 @@ function MockupTeam({ EN }: { EN: boolean }) {
           </div>
         </div>
         <div>
-          <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E]">{EN?"Client sees:":"Cliente ve:"}</div>
+          <div className="mb-1 text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN?"Client sees:":"Cliente ve:"}</div>
           <div className="flex flex-wrap gap-1">
             {["Estimate","Workflow","Gantt","Notes","Design"].map(t => (
               <span key={t} className="rounded bg-[var(--accent)] px-1 py-px text-[6px] font-bold text-white">{t}</span>
@@ -507,7 +507,7 @@ function useFeatures(EN: boolean) {
       mockup: (
         <div className="space-y-4">
           <MockupEstimate EN={EN} />
-          <div className="text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E] pt-1">
+          <div className="text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc] pt-1">
             {EN ? "Day Planner — Schedule items into days" : "Planificador por Día — Programa items por día"}
           </div>
           <MockupDayPlanner EN={EN} />
@@ -715,7 +715,7 @@ function useFeatures(EN: boolean) {
       desc:  EN ? "Upload a reference photo of the room and generate a photorealistic AI render using your design brief. Drag the comparison slider to see Before vs After side by side."
                : "Sube una foto de referencia del ambiente y genera un render fotorrealista con IA usando tu brief de diseño. Arrastra el slider para comparar Antes vs Después.",
       mockup: (
-        <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-sm">
           {/* 3-col header */}
           <div className="grid grid-cols-3 text-[9px] font-bold uppercase tracking-wider">
             <div className="bg-[var(--brand)] text-white/60 px-2 py-1.5">📸 {EN ? "References" : "Referencias"}</div>
@@ -724,19 +724,19 @@ function useFeatures(EN: boolean) {
           </div>
           <div className="grid grid-cols-3 gap-0" style={{ height: 110 }}>
             {/* Col 1 */}
-            <div className="border-r border-[#E6DDCB] p-1.5 flex flex-col gap-1">
+            <div className="border-r border-[#E6DDCB] dark:border-[#22304d] p-1.5 flex flex-col gap-1">
               {[{ bg:"#D4C8B8", h: 48 }, { bg:"#C4B89A", h: 40 }].map((b, i) => (
                 <div key={i} className="rounded flex-none" style={{ height: b.h, background: b.bg }} />
               ))}
             </div>
             {/* Col 2 */}
-            <div className="border-r border-[#E6DDCB] p-1.5 flex flex-col gap-1.5">
-              <div className="rounded bg-[#F7F3EA] h-5 text-[8px] text-[#5C6A6E] flex items-center px-2">{EN ? "Kitchen" : "Cocina"}</div>
+            <div className="border-r border-[#E6DDCB] dark:border-[#22304d] p-1.5 flex flex-col gap-1.5">
+              <div className="rounded bg-[#F7F3EA] dark:bg-[#0b1220] h-5 text-[8px] text-[#5C6A6E] dark:text-[#9fb0cc] flex items-center px-2">{EN ? "Kitchen" : "Cocina"}</div>
               <div className="grid grid-cols-2 gap-0.5">
                 <div className="rounded bg-[var(--brand)] h-4 text-[7px] text-white flex items-center justify-center">{EN ? "Modern" : "Moderno"}</div>
-                <div className="rounded border border-[#E6DDCB] h-4 text-[7px] text-[#5C6A6E] flex items-center justify-center">{EN ? "Luxury" : "Lujo"}</div>
+                <div className="rounded border border-[#E6DDCB] dark:border-[#22304d] h-4 text-[7px] text-[#5C6A6E] dark:text-[#9fb0cc] flex items-center justify-center">{EN ? "Luxury" : "Lujo"}</div>
               </div>
-              <div className="h-1.5 rounded-full bg-[#E6DDCB] overflow-hidden"><div className="h-full bg-[#C9A96E]" style={{ width: "75%" }} /></div>
+              <div className="h-1.5 rounded-full bg-[#E6DDCB] dark:bg-[#17233d] overflow-hidden"><div className="h-full bg-[#C9A96E]" style={{ width: "75%" }} /></div>
               <div className="mt-auto rounded bg-[var(--brand)] h-5 text-[8px] text-white flex items-center justify-center">✨ {EN ? "Generate" : "Generar"}</div>
             </div>
             {/* Col 3 — comparison slider */}
@@ -1087,11 +1087,11 @@ export default function HelpPage() {
   const active = features.find(f => f.id === activeId) ?? features[0];
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] gap-0 overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-sm">
+    <div className="flex min-h-[calc(100vh-80px)] gap-0 overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-sm">
 
       {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
-      <aside className="flex w-52 shrink-0 flex-col border-r border-[#E6DDCB] py-4">
-        <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+      <aside className="flex w-52 shrink-0 flex-col border-r border-[#E6DDCB] dark:border-[#22304d] py-4">
+        <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
           {EN ? "Features" : "Funcionalidades"}
         </div>
         {features.slice(0, 8).map(f => (
@@ -1100,8 +1100,8 @@ export default function HelpPage() {
             onClick={() => setActiveId(f.id)}
             className={`flex items-center gap-2.5 px-3 py-2 mx-2 rounded-xl text-left transition ${
               activeId === f.id
-                ? "bg-[#EDF3FB] text-[var(--accent)]"
-                : "text-[var(--brand)] hover:bg-[#F7F3EA]"
+                ? "bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]"
+                : "text-[var(--brand)] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
             }`}
           >
             <span className="text-base">{f.icon}</span>
@@ -1111,8 +1111,8 @@ export default function HelpPage() {
           </button>
         ))}
 
-        <div className="mx-4 my-3 border-t border-[#E6DDCB]" />
-        <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+        <div className="mx-4 my-3 border-t border-[#E6DDCB] dark:border-[#22304d]" />
+        <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
           {EN ? "Tools & Admin" : "Herramientas"}
         </div>
         {features.slice(8).map(f => (
@@ -1121,8 +1121,8 @@ export default function HelpPage() {
             onClick={() => setActiveId(f.id)}
             className={`flex items-center gap-2.5 px-3 py-2 mx-2 rounded-xl text-left transition ${
               activeId === f.id
-                ? "bg-[#EDF3FB] text-[var(--accent)]"
-                : "text-[var(--brand)] hover:bg-[#F7F3EA]"
+                ? "bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]"
+                : "text-[var(--brand)] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
             }`}
           >
             <span className="text-base">{f.icon}</span>
@@ -1132,8 +1132,8 @@ export default function HelpPage() {
           </button>
         ))}
 
-        <div className="mx-4 my-3 border-t border-[#E6DDCB]" />
-        <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+        <div className="mx-4 my-3 border-t border-[#E6DDCB] dark:border-[#22304d]" />
+        <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
           {EN ? "Printable guides" : "Guías imprimibles"}
         </div>
         {[
@@ -1145,16 +1145,16 @@ export default function HelpPage() {
             href={g.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="mx-2 flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[var(--brand)] transition hover:bg-[#F7F3EA]"
+            className="mx-2 flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[var(--brand)] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
           >
             <span className="text-base">{g.icon}</span>
             <span className="text-[12px] font-semibold">{g.label}</span>
-            <span className="ml-auto text-[11px] text-[#97A1A0]">↗</span>
+            <span className="ml-auto text-[11px] text-[#97A1A0] dark:text-[#728098]">↗</span>
           </a>
         ))}
 
-        <div className="mt-auto mx-3 rounded-xl bg-[#F7F3EA] p-3">
-          <div className="text-[9px] leading-relaxed text-[#5C6A6E]">
+        <div className="mt-auto mx-3 rounded-xl bg-[#F7F3EA] dark:bg-[#0b1220] p-3">
+          <div className="text-[9px] leading-relaxed text-[#5C6A6E] dark:text-[#9fb0cc]">
             {EN ? "💡 Click a feature for a step-by-step guide, or open a printable guide (PDF) to share with your team."
                 : "💡 Clic en una función para la guía paso a paso, o abre una guía imprimible (PDF) para repartir al equipo."}
           </div>
@@ -1165,12 +1165,12 @@ export default function HelpPage() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
 
         {/* Header */}
-        <div className="sticky top-0 z-10 border-b border-[#E6DDCB] bg-white px-8 py-5">
+        <div className="sticky top-0 z-10 border-b border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-8 py-5">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{active.icon}</span>
             <div>
               <h1 className="font-display text-2xl font-medium text-[var(--brand)]">{active.title}</h1>
-              <p className="text-[13px] text-[#5C6A6E]">{active.desc}</p>
+              <p className="text-[13px] text-[#5C6A6E] dark:text-[#9fb0cc]">{active.desc}</p>
             </div>
           </div>
         </div>
@@ -1179,29 +1179,29 @@ export default function HelpPage() {
 
           {/* Visual mockup */}
           <section>
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
               {EN ? "Visual Preview" : "Vista Previa Visual"}
             </div>
-            <div className="rounded-2xl border border-[#E6DDCB] bg-[#FDFAF6] p-4">
+            <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] p-4">
               {active.mockup}
             </div>
           </section>
 
           {/* Steps */}
           <section>
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
               {EN ? "How to use it" : "Cómo usarlo"}
             </div>
             <div className="space-y-0">
               {active.steps.map((step, i) => (
-                <div key={i} className="flex gap-4 border-b border-[#F0EBE0] py-4 last:border-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EDF3FB] text-[13px] font-black text-[var(--accent)]">
+                <div key={i} className="flex gap-4 border-b border-[#F0EBE0] dark:border-[#22304d] py-4 last:border-0">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EDF3FB] dark:bg-[#111a2e] text-[13px] font-black text-[var(--accent)]">
                     {i + 1}
                   </div>
                   <div>
                     <div className="mb-1 text-[13px] font-bold text-[var(--brand)]">{step.t}</div>
                     <div
-                      className="text-[12px] leading-relaxed text-[#5C6A6E]"
+                      className="text-[12px] leading-relaxed text-[#5C6A6E] dark:text-[#9fb0cc]"
                       dangerouslySetInnerHTML={{ __html: step.d }}
                     />
                   </div>
@@ -1212,14 +1212,14 @@ export default function HelpPage() {
 
           {/* Tips */}
           <section>
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
               Tips
             </div>
-            <div className="rounded-2xl border border-[#E6DDCB] bg-[#F7F3EA] p-4 space-y-3">
+            <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] p-4 space-y-3">
               {active.tips.map((tip, i) => (
                 <div
                   key={i}
-                  className="text-[12px] leading-relaxed text-[#5C6A6E]"
+                  className="text-[12px] leading-relaxed text-[#5C6A6E] dark:text-[#9fb0cc]"
                   dangerouslySetInnerHTML={{ __html: tip }}
                 />
               ))}

@@ -157,7 +157,7 @@ export function GanttHeader({
                   <span
                     key={iso}
                     className={`flex items-center justify-center text-[8px] font-extrabold ${
-                      wd === 6 ? "bg-[#9DC3E6] text-[var(--brand)]" : wd === 0 ? "bg-[#F4B183] text-[#7A3C12]" : "bg-[#EDF3FB] text-[var(--accent)]"
+                      wd === 6 ? "bg-[#9DC3E6] text-[var(--brand)]" : wd === 0 ? "bg-[#F4B183] text-[#7A3C12]" : "bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]"
                     }`}
                     style={{ width: scale.col }}
                   >
@@ -166,14 +166,14 @@ export function GanttHeader({
                 );
               })}
             </div>
-            <div className="flex h-5 border-b border-[#E6DDCB] bg-white">
+            <div className="flex h-5 border-b border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
               {days.map(({ iso, d }) => {
                 const wd = d.getDay();
                 return (
                   <span
                     key={iso}
-                    className={`flex items-center justify-center border-r border-[#F0EBE0] font-mono text-[9px] ${
-                      wd === 6 ? "bg-[#DCEBF7] font-bold text-[var(--brand)]" : wd === 0 ? "bg-[#FBE5D3] font-bold text-[#7A3C12]" : "text-[#5C6A6E]"
+                    className={`flex items-center justify-center border-r border-[#F0EBE0] dark:border-[#22304d] font-mono text-[9px] ${
+                      wd === 6 ? "bg-[#DCEBF7] font-bold text-[var(--brand)]" : wd === 0 ? "bg-[#FBE5D3] font-bold text-[#7A3C12]" : "text-[#5C6A6E] dark:text-[#9fb0cc]"
                     }`}
                     style={{ width: scale.col }}
                   >
@@ -184,15 +184,15 @@ export function GanttHeader({
             </div>
           </>
         ) : (
-          <div className="flex h-6 border-b border-[#E6DDCB] bg-[#EDF3FB]">
+          <div className="flex h-6 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#EDF3FB] dark:bg-[#111a2e]">
             {weeks.map(({ iso, d }, i) => (
               <span
                 key={iso}
-                className="flex items-center justify-center gap-1 border-r border-[#D5DEEF] text-[8.5px] font-bold text-[var(--accent)]"
+                className="flex items-center justify-center gap-1 border-r border-[#D5DEEF] dark:border-[#22304d] text-[8.5px] font-bold text-[var(--accent)]"
                 style={{ width: scale.col }}
               >
                 W{i + 1}
-                <span className="font-mono font-normal text-[#5C6A6E]">{d.getDate()}/{d.getMonth() + 1}</span>
+                <span className="font-mono font-normal text-[#5C6A6E] dark:text-[#9fb0cc]">{d.getDate()}/{d.getMonth() + 1}</span>
               </span>
             ))}
           </div>

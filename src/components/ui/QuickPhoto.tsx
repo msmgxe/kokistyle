@@ -79,7 +79,7 @@ export default function QuickPhoto({
           else fallbackRef.current?.click();
         }}
         aria-label={`${tf.takePhoto} — ${projectTitle}`}
-        className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#FDF0ED] active:scale-95"
+        className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#B0492F] transition hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] active:scale-95"
       >
         <Camera size={16} />
       </button>
@@ -104,7 +104,7 @@ export default function QuickPhoto({
             <>
               <button
                 onClick={openGallery}
-                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-[12px] font-bold text-[var(--brand)]"
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-[12px] font-bold text-[var(--brand)]"
               >
                 <Images size={14} /> {tf.fromGallery}
               </button>
@@ -117,7 +117,7 @@ export default function QuickPhoto({
           topSlot={fallbackVisible && (
             <button
               onClick={openFileManager}
-              className="mb-2.5 w-full rounded-xl border-2 border-dashed border-[#B98A2F] bg-[#FBF5E6] px-3 py-2.5 text-[12px] font-bold text-[#7A6230] transition active:scale-[0.98]"
+              className="mb-2.5 w-full rounded-xl border-2 border-dashed border-[#B98A2F] bg-[#FBF5E6] dark:bg-[#17233d] px-3 py-2.5 text-[12px] font-bold text-[#7A6230] transition active:scale-[0.98]"
             >
               {tf.pickerRetry}
             </button>

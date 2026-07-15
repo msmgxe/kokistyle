@@ -112,7 +112,7 @@ export default function TeamPanel() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm font-semibold text-[#5C6A6E]">
+      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
         {tt.onlyAdmin}
       </div>
     );
@@ -121,14 +121,14 @@ export default function TeamPanel() {
   return (
     <div>
       <div className="mb-5 flex justify-end">
-        <div className="inline-flex rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+        <div className="inline-flex rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
           {([
             { id: "matrix",  icon: <Table2 size={13} />,   label: tt.tabMatrix },
             { id: "reports", icon: <BarChart3 size={13} />, label: tt.tabReports },
           ] as const).map(x => (
             <button key={x.id} onClick={() => setSubTab(x.id)}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[12px] font-bold transition ${
-                subTab === x.id ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"
+                subTab === x.id ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"
               }`}>
               {x.icon} {x.label}
             </button>
@@ -137,9 +137,9 @@ export default function TeamPanel() {
       </div>
 
       {loading ? (
-        <div className="h-64 animate-pulse rounded-2xl bg-[#F0EAE0]" />
+        <div className="h-64 animate-pulse rounded-2xl bg-[#F0EAE0] dark:bg-[#17233d]" />
       ) : coworkers.length === 0 ? (
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#5C6A6E]">
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
           {tt.noCoworkers}
         </div>
       ) : subTab === "matrix" ? (
@@ -183,15 +183,15 @@ function MatrixView({
   const [editing, setEditing] = useState<{ pid: string; cid: string } | null>(null);
 
   if (projects.length === 0) {
-    return <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#5C6A6E]">{tt.noProjects}</div>;
+    return <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tt.noProjects}</div>;
   }
 
   const short = (title: string) => title.split(" — ")[0].split("·")[0].trim();
 
   return (
     <>
-      <p className="mb-3 text-[12px] italic text-[#97A1A0]">{tt.matrixHint}</p>
-      <div className="overflow-x-auto rounded-2xl border border-[#E6DDCB] bg-white">
+      <p className="mb-3 text-[12px] italic text-[#97A1A0] dark:text-[#728098]">{tt.matrixHint}</p>
+      <div className="overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
         <table className="min-w-[760px] w-full border-collapse text-[11.5px]">
           <thead>
             <tr>
@@ -212,20 +212,20 @@ function MatrixView({
             {bySpecialty.map(([spec, people]) => (
               <Fragment key={`spec-${spec}`}>
                 <tr>
-                  <td colSpan={projects.length + 2} className="bg-[#F2EFE7] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+                  <td colSpan={projects.length + 2} className="bg-[#F2EFE7] dark:bg-[#17233d] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
                     {specialtyDisplay(spec, language)}
                   </td>
                 </tr>
                 {people.map(c => (
-                  <tr key={c.id} className="border-t border-[#F0EBE0]">
-                    <td className="sticky left-0 z-10 bg-[#FBF8F2] px-3 py-2">
+                  <tr key={c.id} className="border-t border-[#F0EBE0] dark:border-[#22304d]">
+                    <td className="sticky left-0 z-10 bg-[#FBF8F2] dark:bg-[#17233d] px-3 py-2">
                       <div className="flex items-center gap-2">
                         <span className="grid size-7 flex-none place-items-center rounded-md bg-[var(--brand)] text-[9px] font-bold text-[#F5E9DA]">
                           {initials(c.name)}
                         </span>
                         <div className="min-w-0">
                           <div className="truncate font-bold text-[var(--brand)]">{c.name}</div>
-                          {c.rate && <div className="text-[9.5px] text-[#5C6A6E]">{c.rate}{c.rate_type === "hour" ? "/h" : "/d"}</div>}
+                          {c.rate && <div className="text-[9.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">{c.rate}{c.rate_type === "hour" ? "/h" : "/d"}</div>}
                         </div>
                       </div>
                     </td>
@@ -235,10 +235,10 @@ function MatrixView({
                       return (
                         <td key={p.id} className="px-1.5 py-1.5 text-center align-middle">
                           {a ? (
-                            <div className="relative inline-flex flex-col items-center gap-0.5 rounded-lg border border-[#4F8A63] bg-[#EEF6F0] px-1.5 py-1">
+                            <div className="relative inline-flex flex-col items-center gap-0.5 rounded-lg border border-[#4F8A63] bg-[#EEF6F0] dark:bg-[#14261c] px-1.5 py-1">
                               <button
                                 onClick={() => onUnassign(p.id, c.id)}
-                                className="absolute -right-1.5 -top-1.5 grid size-4 place-items-center rounded-full bg-white text-[#B0492F] shadow-sm hover:bg-[#FFF0EE]"
+                                className="absolute -right-1.5 -top-1.5 grid size-4 place-items-center rounded-full bg-white dark:bg-[#111a2e] text-[#B0492F] shadow-sm hover:bg-[#FFF0EE] dark:hover:bg-[#2a1712]"
                                 aria-label="remove"
                               >
                                 <X size={9} />
@@ -257,15 +257,15 @@ function MatrixView({
                                 {a.start_date ? `${a.start_date.slice(5)}→${a.end_date?.slice(5) ?? "?"}` : "+ fechas"}
                               </button>
                               {isEditing && (
-                                <div className="absolute top-full z-20 mt-1 flex flex-col gap-1 rounded-xl border border-[#E6DDCB] bg-white p-2 shadow-xl">
-                                  <label className="text-[8px] font-bold uppercase text-[#97A1A0]">{tt.startDate}</label>
+                                <div className="absolute top-full z-20 mt-1 flex flex-col gap-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-2 shadow-xl">
+                                  <label className="text-[8px] font-bold uppercase text-[#97A1A0] dark:text-[#728098]">{tt.startDate}</label>
                                   <input type="date" value={a.start_date ?? ""}
                                     onChange={e => onPatch(p.id, c.id, { start_date: e.target.value })}
-                                    className="rounded border border-[#E6DDCB] px-2 py-1 text-[11px]" />
-                                  <label className="text-[8px] font-bold uppercase text-[#97A1A0]">{tt.endDate}</label>
+                                    className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-2 py-1 text-[11px]" />
+                                  <label className="text-[8px] font-bold uppercase text-[#97A1A0] dark:text-[#728098]">{tt.endDate}</label>
                                   <input type="date" value={a.end_date ?? ""}
                                     onChange={e => onPatch(p.id, c.id, { end_date: e.target.value })}
-                                    className="rounded border border-[#E6DDCB] px-2 py-1 text-[11px]" />
+                                    className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-2 py-1 text-[11px]" />
                                   <button onClick={() => setEditing(null)}
                                     className="mt-1 rounded-lg bg-[var(--brand)] py-1 text-[10px] font-bold text-white">
                                     {tt.save}
@@ -276,7 +276,7 @@ function MatrixView({
                           ) : (
                             <button
                               onClick={() => onAssign(p.id, c.id)}
-                              className="grid h-8 w-16 place-items-center rounded-lg border border-dashed border-[#D7CBB3] text-[#B7AB93] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                              className="grid h-8 w-16 place-items-center rounded-lg border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] text-[#B7AB93] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                               aria-label="assign"
                             >
                               +
@@ -285,7 +285,7 @@ function MatrixView({
                         </td>
                       );
                     })}
-                    <td className="bg-[#FBF8F2] px-3 py-2 text-right font-mono font-bold text-[var(--brand)]">
+                    <td className="bg-[#FBF8F2] dark:bg-[#17233d] px-3 py-2 text-right font-mono font-bold text-[var(--brand)]">
                       {money(rowTotal(c.id))}
                     </td>
                   </tr>
@@ -294,12 +294,12 @@ function MatrixView({
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-[#E6DDCB]">
-              <td className="sticky left-0 z-10 bg-[#F2EFE7] px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+            <tr className="border-t-2 border-[#E6DDCB] dark:border-[#22304d]">
+              <td className="sticky left-0 z-10 bg-[#F2EFE7] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {tt.totalCol}
               </td>
               {projects.map(p => (
-                <td key={p.id} className="bg-[#F2EFE7] px-2 py-2 text-center font-mono font-bold text-[var(--brand)]">
+                <td key={p.id} className="bg-[#F2EFE7] dark:bg-[#17233d] px-2 py-2 text-center font-mono font-bold text-[var(--brand)]">
                   {money(colTotal(p.id))}
                 </td>
               ))}
@@ -365,22 +365,22 @@ function ReportsView({
           const pct = grandTotal ? Math.round(tot / grandTotal * 100) : 0;
           return (
             <button key={c.id} onClick={() => setSelId(c.id)}
-              className={`flex w-full items-center gap-2.5 rounded-xl border bg-white p-2.5 text-left transition ${
-                selId === c.id ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[#E6DDCB] hover:border-[#B7AB93]"
+              className={`flex w-full items-center gap-2.5 rounded-xl border bg-white dark:bg-[#111a2e] p-2.5 text-left transition ${
+                selId === c.id ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[#E6DDCB] dark:border-[#22304d] hover:border-[#B7AB93]"
               }`}>
               <span className="grid size-9 flex-none place-items-center rounded-lg bg-[var(--brand)] text-[11px] font-bold text-[#F5E9DA]">
                 {initials(c.name)}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[12.5px] font-bold text-[var(--brand)]">{c.name}</div>
-                <div className="truncate text-[10.5px] text-[#5C6A6E]">{specialtyDisplay(c.specialty, language)}{c.rate ? ` · ${c.rate}` : ""}</div>
+                <div className="truncate text-[10.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">{specialtyDisplay(c.specialty, language)}{c.rate ? ` · ${c.rate}` : ""}</div>
                 <div className="mt-1 h-1 overflow-hidden rounded-full bg-[#F0EBE0]">
                   <div className="h-full bg-[var(--accent)]" style={{ width: `${pct}%` }} />
                 </div>
               </div>
               <div className="text-right">
                 <div className="font-mono text-[12px] font-bold text-[var(--brand)]">{money(tot)}</div>
-                <div className="text-[9.5px] text-[#5C6A6E]">{pct}% {tt.share}</div>
+                <div className="text-[9.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">{pct}% {tt.share}</div>
               </div>
             </button>
           );
@@ -389,9 +389,9 @@ function ReportsView({
 
       {/* Panel de reporte */}
       {sel && (
-        <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+        <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
           <div className="flex flex-wrap items-center gap-3 bg-[var(--brand)] px-4 py-3">
-            <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#F5E9DA] text-sm font-bold text-[var(--brand)]">
+            <span className="grid size-10 flex-none place-items-center rounded-lg bg-[#F5E9DA] dark:bg-[#17233d] text-sm font-bold text-[var(--brand)]">
               {initials(sel.name)}
             </span>
             <div className="min-w-0 flex-1">
@@ -403,35 +403,35 @@ function ReportsView({
             <input type="date" value={to} onChange={e => setTo(e.target.value)}
               className="rounded-lg border-0 px-2 py-1 text-[11px]" aria-label={tt.rangeTo} />
             <button onClick={exportCsv}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#F5E9DA] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)] hover:bg-white">
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#F5E9DA] dark:bg-[#17233d] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)] hover:bg-white dark:hover:bg-[#111a2e]">
               <Download size={12} /> {tt.exportCsv}
             </button>
           </div>
 
-          <div className="grid grid-cols-3 border-b border-[#E6DDCB] bg-[#F2EFE7]">
+          <div className="grid grid-cols-3 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F2EFE7] dark:bg-[#17233d]">
             {[
               { v: String(mine.length), l: tt.kpiProjects },
               { v: money(selTotal), l: tt.kpiAmount },
               { v: `${share}%`, l: tt.kpiShare },
             ].map(k => (
-              <div key={k.l} className="border-r border-[#E6DDCB] px-4 py-3 last:border-r-0">
+              <div key={k.l} className="border-r border-[#E6DDCB] dark:border-[#22304d] px-4 py-3 last:border-r-0">
                 <div className="font-mono text-[17px] font-bold text-[var(--brand)]">{k.v}</div>
-                <div className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]">{k.l}</div>
+                <div className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{k.l}</div>
               </div>
             ))}
           </div>
 
           <div>
             {mine.length === 0 ? (
-              <p className="px-4 py-8 text-center text-[12px] italic text-[#97A1A0]">{tt.noAssignments}</p>
+              <p className="px-4 py-8 text-center text-[12px] italic text-[#97A1A0] dark:text-[#728098]">{tt.noAssignments}</p>
             ) : mine.map(a => {
               const p = projById.get(a.project_id);
               const w = selTotal ? Math.round(a.amount / selTotal * 100) : 0;
               return (
-                <div key={`${a.project_id}-${a.contact_id}`} className="flex items-center gap-3 border-b border-[#F2EFE7] px-4 py-2.5 text-[12px] last:border-0">
+                <div key={`${a.project_id}-${a.contact_id}`} className="flex items-center gap-3 border-b border-[#F2EFE7] dark:border-[#22304d] px-4 py-2.5 text-[12px] last:border-0">
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-bold text-[var(--brand)]">{p?.title.split(" — ")[0] ?? "—"}</div>
-                    <div className="truncate text-[10.5px] text-[#5C6A6E]">
+                    <div className="truncate text-[10.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                       {p?.client}{a.start_date ? ` · ${a.start_date} → ${a.end_date ?? "?"}` : ""}
                     </div>
                   </div>

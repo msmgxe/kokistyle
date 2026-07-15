@@ -23,7 +23,7 @@ export default function Footer() {
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-lg bg-[#F5E9DA] text-sm font-bold text-[#0F3D56]">
+              <span className="grid size-11 place-items-center rounded-lg bg-[#F5E9DA] dark:bg-[#17233d] text-sm font-bold text-[#0F3D56] dark:text-[#e8edf7]">
                 KS
               </span>
               <div>

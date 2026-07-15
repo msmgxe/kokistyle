@@ -31,12 +31,12 @@ export default function BeforeAfter() {
       }));
 
   return (
-    <section id="before-after" className="bg-[#F5E9DA] py-20 sm:py-24">
+    <section id="before-after" className="bg-[#F5E9DA] dark:bg-[#17233d] py-20 sm:py-24">
       <Container>
         <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#0F3D56]/70">{eyebrow}</p>
-            <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] sm:text-5xl">{title}</h2>
+            <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] dark:text-[#e8edf7] sm:text-5xl">{title}</h2>
           </div>
           <p className="max-w-2xl text-base leading-8 text-slate-700 lg:justify-self-end">{description}</p>
         </div>
@@ -49,7 +49,7 @@ export default function BeforeAfter() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-70px" }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="overflow-hidden rounded-lg bg-white shadow-[0_22px_70px_rgba(15,61,86,0.13)]"
+              className="overflow-hidden rounded-lg bg-white dark:bg-[#111a2e] shadow-[0_22px_70px_rgba(15,61,86,0.13)]"
             >
               <div className="grid sm:grid-cols-2">
                 <figure className="relative aspect-[4/3] overflow-hidden">
@@ -68,7 +68,7 @@ export default function BeforeAfter() {
                 </figure>
               </div>
               <div className="flex flex-col gap-2 p-6 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-2xl font-bold text-[#0F3D56]">{project.space}</h3>
+                <h3 className="text-2xl font-bold text-[#0F3D56] dark:text-[#e8edf7]">{project.space}</h3>
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">{project.city}</p>
               </div>
             </motion.article>

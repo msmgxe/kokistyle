@@ -22,8 +22,8 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     "bg-[#0F3D56] text-white shadow-[0_18px_45px_rgba(15,61,86,0.24)] hover:bg-[#0a3045]",
   secondary:
-    "border border-[#0F3D56]/25 bg-white/85 text-[#0F3D56] hover:border-[#0F3D56] hover:bg-white",
-  ghost: "text-[#0F3D56] hover:bg-[#0F3D56]/8",
+    "border border-[#0F3D56]/25 bg-white/85 text-[#0F3D56] dark:text-[#e8edf7] hover:border-[#0F3D56] hover:bg-white dark:hover:bg-[#111a2e]",
+  ghost: "text-[#0F3D56] dark:text-[#e8edf7] hover:bg-[#0F3D56]/8",
 };
 
 export default function Button(props: ButtonProps | LinkButtonProps) {

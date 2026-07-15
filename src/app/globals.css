@@ -1,8 +1,29 @@
 @import "tailwindcss";
 
+/* Variante `dark:` controlada por atributo (no por prefers-color-scheme),
+   consistente con el patrón data-accent ya usado para el color de marca.
+   Se activa con data-theme="dark" en <html> (ver ThemeGear / toggle). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #ffffff;
   --foreground: #172033;
+}
+
+/* ── Modo oscuro — tokens base (paleta tomada del reporte de modularización) ──
+   Estos tokens alimentan el fondo/superficie/texto genéricos de la app.
+   El shell (sidebar/header/nav) ya está convertido a dark: en proyectos/layout.tsx.
+   Páginas individuales se migran de forma incremental — ver nota en README. */
+:root[data-theme="dark"] {
+  --background: #0b1220;
+  --foreground: #e8edf7;
+  --dm-surface:      #111a2e; /* tarjetas, paneles, bg-white → esto en oscuro */
+  --dm-surface-2:    #0e1626; /* superficie más profunda (headers internos) */
+  --dm-border:       #22304d; /* border-[#E6DDCB] → esto en oscuro */
+  --dm-border-strong:#2c3c5e;
+  --dm-text:         #e8edf7; /* texto principal */
+  --dm-muted:        #9fb0cc; /* text-[#5C6A6E] / text-[#97A1A0] → esto en oscuro */
+  --dm-muted-2:      #728098;
 }
 
 /* Tokens de marca. El tema de color los cambia vía data-accent en <html>

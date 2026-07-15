@@ -13,13 +13,13 @@ export default function Faq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="bg-white py-20 sm:py-24">
+    <section id="faq" className="bg-white dark:bg-[#111a2e] py-20 sm:py-24">
       <Container>
         <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
           {/* Left — heading */}
           <div className="lg:sticky lg:top-28 lg:self-start">
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#0F3D56]/70">{tf.eyebrow}</p>
-            <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] sm:text-5xl">{tf.title}</h2>
+            <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] dark:text-[#e8edf7] sm:text-5xl">{tf.title}</h2>
             <p className="mt-5 text-base leading-8 text-slate-600">{tf.description}</p>
             <Link
               href="/reservas"
@@ -30,7 +30,7 @@ export default function Faq() {
           </div>
 
           {/* Right — accordion */}
-          <div className="divide-y divide-[#E6DDCB] border-y border-[#E6DDCB]">
+          <div className="divide-y divide-[#E6DDCB] border-y border-[#E6DDCB] dark:border-[#22304d]">
             {tf.items.map((item, i) => {
               const isOpen = open === i;
               return (
@@ -40,8 +40,8 @@ export default function Faq() {
                     className="flex w-full items-center justify-between gap-4 py-5 text-left"
                     aria-expanded={isOpen}
                   >
-                    <span className="text-base font-bold text-[#0F3D56]">{item.q}</span>
-                    <span className={`grid size-7 flex-none place-items-center rounded-full transition ${isOpen ? "bg-[#16323D] text-white" : "bg-[#F5E9DA] text-[#0F3D56]"}`}>
+                    <span className="text-base font-bold text-[#0F3D56] dark:text-[#e8edf7]">{item.q}</span>
+                    <span className={`grid size-7 flex-none place-items-center rounded-full transition ${isOpen ? "bg-[#16323D] text-white" : "bg-[#F5E9DA] dark:bg-[#17233d] text-[#0F3D56] dark:text-[#e8edf7]"}`}>
                       {isOpen ? <Minus size={15} /> : <Plus size={15} />}
                     </span>
                   </button>

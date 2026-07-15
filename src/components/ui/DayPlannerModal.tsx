@@ -52,15 +52,15 @@ interface EstimateForPlanner {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TAG_STYLES = [
-  "bg-[#EDF3FB] text-[var(--accent)]",
-  "bg-[#DCEBDD] text-[#4F8A63]",
-  "bg-[#EDE3CF] text-[#7A6230]",
+  "bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]",
+  "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
+  "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
   "bg-[#F0E8F7] text-[#6D3AAD]",
-  "bg-[#DCE8E9] text-[#4E7A82]",
-  "bg-[#FDF0ED] text-[#B0492F]",
-  "bg-[#F7F0E8] text-[#A0582A]",
-  "bg-[#E8EEF7] text-[#3F6AB0]",
-  "bg-[#EFEFEF] text-[#5C5C5C]",
+  "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]",
+  "bg-[#FDF0ED] dark:bg-[#2a1712] text-[#B0492F]",
+  "bg-[#F7F0E8] dark:bg-[#17233d] text-[#A0582A]",
+  "bg-[#E8EEF7] dark:bg-[#111a2e] text-[#3F6AB0]",
+  "bg-[#EFEFEF] dark:bg-[#17233d] text-[#5C5C5C] dark:text-[#9fb0cc]",
 ];
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
@@ -241,8 +241,8 @@ function ItemCard({
     <div
       ref={overlay ? undefined : setNodeRef}
       style={style}
-      className={`touch-none select-none rounded-lg border bg-white transition
-        ${overlay ? "shadow-xl border-[var(--accent)]" : "border-[#E6DDCB] hover:border-[var(--accent)]/50 hover:shadow-sm"}
+      className={`touch-none select-none rounded-lg border bg-white dark:bg-[#111a2e] transition
+        ${overlay ? "shadow-xl border-[var(--accent)]" : "border-[#E6DDCB] dark:border-[#22304d] hover:border-[var(--accent)]/50 hover:shadow-sm"}
         ${isDragging && !overlay ? "opacity-25" : ""}`}
     >
       {/* ── Fila compacta (una línea): grip arrastra · resto expande ── */}
@@ -278,7 +278,7 @@ function ItemCard({
           <span className={`min-w-0 flex-1 truncate text-[11px] font-medium leading-tight ${item.done ? "text-[#8A9B8E] line-through" : "text-[var(--brand)]"}`}>
             {item.description}
           </span>
-          <span className="shrink-0 font-mono text-[9px] text-[#5C6A6E]">{item.hours}h</span>
+          <span className="shrink-0 font-mono text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc]">{item.hours}h</span>
           {item.taskId && (
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4F8A63]" aria-label="saved" />
           )}
@@ -291,11 +291,11 @@ function ItemCard({
       {/* ── Acordeón: detalle editable ── */}
       {canExpand && open && (
         <div
-          className="space-y-2 border-t border-[#F0EBE0] px-2 pb-2 pt-2"
+          className="space-y-2 border-t border-[#F0EBE0] dark:border-[#22304d] px-2 pb-2 pt-2"
           onPointerDown={e => e.stopPropagation()}
         >
           {item.isCustom && (
-            <span className="inline-block rounded-full bg-[#EDE3CF] px-1.5 py-0.5 text-[8px] font-bold text-[#7A6230]">
+            <span className="inline-block rounded-full bg-[#EDE3CF] dark:bg-[#17233d] px-1.5 py-0.5 text-[8px] font-bold text-[#7A6230]">
               custom
             </span>
           )}
@@ -310,7 +310,7 @@ function ItemCard({
                 value={item.description}
                 onChange={e => onEdit(item.id, { description: e.target.value })}
                 rows={2}
-                className="w-full resize-none rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] leading-tight text-[var(--brand)] outline-none focus:border-[var(--accent)]"
+                className="w-full resize-none rounded-md border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] leading-tight text-[var(--brand)] outline-none focus:border-[var(--accent)]"
               />
             </label>
           )}
@@ -326,7 +326,7 @@ function ItemCard({
                   type="number" min={0} step={0.5}
                   value={item.hours}
                   onChange={e => onEdit(item.id, { hours: Number(e.target.value) || 0 })}
-                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
+                  className="w-full rounded-md border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
                 />
               </label>
               <label className="flex-1">
@@ -337,7 +337,7 @@ function ItemCard({
                   type="number" min={0} step={1}
                   value={item.amount}
                   onChange={e => onEdit(item.id, { amount: Number(e.target.value) || 0 })}
-                  className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
+                  className="w-full rounded-md border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
                 />
               </label>
             </div>
@@ -356,7 +356,7 @@ function ItemCard({
                   catch { dateInputRef.current?.click(); }
                 }}
                 className={`flex w-full items-center gap-1 rounded-md border px-1.5 py-1 text-left text-[10px] font-semibold transition
-                  ${item.dayIndex !== null ? "border-[#CFE3D2] bg-[#F2F8F3] text-[#4F8A63]" : "border-[#F0D9D2] bg-[#FDF5F3] text-[#B0492F] hover:text-[var(--brand)]"}`}
+                  ${item.dayIndex !== null ? "border-[#CFE3D2] bg-[#F2F8F3] dark:bg-[#14261c] text-[#4F8A63]" : "border-[#F0D9D2] bg-[#FDF5F3] dark:bg-[#2a1712] text-[#B0492F] hover:text-[var(--brand)]"}`}
               >
                 <span>{item.dayIndex !== null ? "✓" : "📅"}</span>
                 <span className="truncate">
@@ -384,7 +384,7 @@ function ItemCard({
               <select
                 value={item.assignedContactId ?? ""}
                 onChange={e => onAssign(item.id, e.target.value || null)}
-                className="w-full rounded-md border border-[#E6DDCB] bg-white px-1.5 py-1 text-[11px] font-semibold text-[var(--accent)] outline-none focus:border-[var(--accent)]"
+                className="w-full rounded-md border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] font-semibold text-[var(--accent)] outline-none focus:border-[var(--accent)]"
               >
                 <option value="">{EN ? "Own team" : "Equipo propio"}</option>
                 {contacts.map(c => (
@@ -392,7 +392,7 @@ function ItemCard({
                 ))}
               </select>
               {assignedName && (
-                <span className="mt-0.5 block truncate text-[9px] text-[#5C6A6E]">{assignedName}</span>
+                <span className="mt-0.5 block truncate text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc]">{assignedName}</span>
               )}
             </div>
           )}
@@ -422,16 +422,16 @@ function ItemPool({
     <div
       ref={setNodeRef}
       className={`flex min-h-[100px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition
-        ${isOver ? "border-[var(--accent)] bg-[#EDF3FB]" : "border-[#D7CBB3] bg-[#FDFAF6]"}`}
+        ${isOver ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#111a2e]" : "border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#FDFAF6] dark:bg-[#111a2e]"}`}
     >
       <button
         onClick={onAddCustom}
-        className="flex items-center justify-center gap-1 rounded-xl border border-dashed border-[#D7CBB3] py-1.5 text-[10px] font-semibold text-[#5C6A6E] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        className="flex items-center justify-center gap-1 rounded-xl border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] py-1.5 text-[10px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
         <Plus size={10} /> {EN ? "Add custom item" : "Agregar item"}
       </button>
       {items.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center py-4 text-[11px] text-[#5C6A6E]">
+        <div className="flex flex-1 items-center justify-center py-4 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
           ✓ {EN ? "All items scheduled" : "Todos los items asignados"}
         </div>
       ) : (
@@ -481,23 +481,23 @@ function DayColumn({
   // Sáb/dom con color diferenciador (azul/naranja); con tareas el fondo baja a gris suave pero el acento persiste
   const wk = weekendKind(date);
   const headerCls = wk === "sat"
-    ? "border-[#9DC3E6] bg-[#EAF3FA]"
+    ? "border-[#9DC3E6] bg-[#EAF3FA] dark:bg-[#111a2e]"
     : wk === "sun"
     ? "border-[#F4B183] bg-[#FDF1E7]"
-    : "border-[#E6DDCB] bg-white";
+    : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]";
   const dropCls = isOver
-    ? "border-[var(--accent)] bg-[#EDF3FB]"
+    ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#111a2e]"
     : items.length
     ? wk === "sat"
       ? "border-[#9DC3E6]/70 bg-[#F0F2F4]"
       : wk === "sun"
       ? "border-[#F4B183]/70 bg-[#F4F1EE]"
-      : "border-transparent bg-[#F7F3EA]"
+      : "border-transparent bg-[#F7F3EA] dark:bg-[#0b1220]"
     : wk === "sat"
     ? "border-[#9DC3E6] bg-[#D9EAF7]"
     : wk === "sun"
     ? "border-[#F4B183] bg-[#FBE3D2]"
-    : "border-[#D7CBB3]";
+    : "border-[#D7CBB3] dark:border-[#2c3c5e]";
 
   return (
     <div className="flex w-[240px] shrink-0 flex-col gap-2">
@@ -512,14 +512,14 @@ function DayColumn({
               </span>
             )}
           </span>
-          <span className={`text-[10px] font-semibold ${over ? "text-[#B0492F]" : "text-[#5C6A6E]"}`}>
+          <span className={`text-[10px] font-semibold ${over ? "text-[#B0492F]" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>
             {used}h / {capacity}h
           </span>
         </div>
 
         {/* Date picker row */}
         <div className="mt-1.5 flex items-center gap-1.5">
-          <CalendarDays size={11} className="shrink-0 text-[#5C6A6E]" />
+          <CalendarDays size={11} className="shrink-0 text-[#5C6A6E] dark:text-[#9fb0cc]" />
           <div className="relative flex-1">
             <span className="pointer-events-none text-[10px] font-semibold text-[var(--accent)]">
               {date ? formatDate(date, EN) : (EN ? "Pick date" : "Seleccionar fecha")}
@@ -534,7 +534,7 @@ function DayColumn({
         </div>
 
         {/* Capacity bar */}
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#E6DDCB]">
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#E6DDCB] dark:bg-[#17233d]">
           <div
             className={`h-full rounded-full transition-all ${over ? "bg-[#B0492F]" : pct > 79 ? "bg-[#E8A44A]" : "bg-[#4F8A63]"}`}
             style={{ width: `${pct}%` }}
@@ -579,16 +579,16 @@ function Stepper({ label, value, min, max, onChange }: {
 }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="text-[9px] uppercase tracking-wide text-[#5C6A6E]">{label}</span>
+      <span className="text-[9px] uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{label}</span>
       <div className="flex items-center gap-1">
         <button
           onClick={() => onChange(Math.max(min, value - 1))}
-          className="flex h-5 w-5 items-center justify-center rounded text-sm text-[#5C6A6E] hover:bg-[#F7F3EA]"
+          className="flex h-5 w-5 items-center justify-center rounded text-sm text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
         >−</button>
         <span className="w-6 text-center text-[12px] font-bold text-[var(--brand)]">{value}</span>
         <button
           onClick={() => onChange(Math.min(max, value + 1))}
-          className="flex h-5 w-5 items-center justify-center rounded text-sm text-[#5C6A6E] hover:bg-[#F7F3EA]"
+          className="flex h-5 w-5 items-center justify-center rounded text-sm text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
         >+</button>
       </div>
     </div>
@@ -630,11 +630,11 @@ function CustomItemForm({
     : sections.find(s => s.tag === section)?.style ?? TAG_STYLES[0];
   const canAdd = desc.trim().length > 0 && resolvedTag.length > 0;
 
-  const inputCls = "w-full rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none";
-  const labelCls = "mb-1 block text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E]";
+  const inputCls = "w-full rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1.5 text-[11px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none";
+  const labelCls = "mb-1 block text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]";
 
   return (
-    <div className="rounded-xl border border-[var(--accent)] bg-white p-3 shadow-md">
+    <div className="rounded-xl border border-[var(--accent)] bg-white dark:bg-[#111a2e] p-3 shadow-md">
       <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[var(--accent)]">
         {EN ? "New custom item" : "Nuevo item personalizado"}
       </div>
@@ -662,7 +662,7 @@ function CustomItemForm({
       </label>
 
       {isNew ? (
-        <div className="mb-2 rounded-lg border border-dashed border-[#D7CBB3] p-2">
+        <div className="mb-2 rounded-lg border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] p-2">
           <input
             placeholder={EN ? "Section name (e.g. Permits)" : "Nombre de sección (ej. Permisos)"}
             value={newTag}
@@ -746,7 +746,7 @@ function CustomItemForm({
       <div className="flex gap-2">
         <button
           onClick={onCancel}
-          className="flex-1 rounded-lg bg-[#ECE3D1] py-1.5 text-[10px] font-bold text-[#5C6A6E]"
+          className="flex-1 rounded-lg bg-[#ECE3D1] dark:bg-[#17233d] py-1.5 text-[10px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]"
         >
           {EN ? "Cancel" : "Cancelar"}
         </button>
@@ -1223,16 +1223,16 @@ export default function DayPlannerModal({
 
   return (
     <div className={embedded
-      ? "flex flex-col overflow-hidden rounded-[20px] border border-[#E6DDCB] bg-[#F7F3EB]"
-      : "fixed inset-0 z-[300] flex flex-col bg-[#F7F3EB]"
+      ? "flex flex-col overflow-hidden rounded-[20px] border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EB] dark:bg-[#0b1220]"
+      : "fixed inset-0 z-[300] flex flex-col bg-[#F7F3EB] dark:bg-[#0b1220]"
     }>
 
       {/* ── Top bar ────────────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[#D5DEEF] bg-white px-4 py-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[#D5DEEF] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-3">
         {!embedded && (
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#5C6A6E] transition hover:bg-[#F7F3EA] hover:text-[#B0492F]"
+            className="rounded-lg p-1.5 text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] hover:text-[#B0492F]"
           >
             <X size={18} />
           </button>
@@ -1241,7 +1241,7 @@ export default function DayPlannerModal({
           <div className="text-sm font-bold text-[var(--brand)]">
             {EN ? "Day Planner" : "Planificador por Día"}
           </div>
-          <div className="text-[10px] text-[#5C6A6E]">
+          <div className="text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">
             {loading
               ? (EN ? "Loading…" : "Cargando…")
               : `${scheduledCount}/${items.length} ${EN ? "scheduled" : "asignados"} · ${savedCount} ${EN ? "saved" : "guardados"} · ${doneCount} ${EN ? "completed" : "completados"}`
@@ -1258,12 +1258,12 @@ export default function DayPlannerModal({
           <Stepper label={EN ? "Days" : "Días"}              value={numDays}        min={1} max={30} onChange={handleNumDaysChange} />
         </div>
 
-        <div className="h-7 border-l border-[#E6DDCB]" />
+        <div className="h-7 border-l border-[#E6DDCB] dark:border-[#22304d]" />
 
         <button
           onClick={autoAssign}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl bg-[#EDF3FB] px-3 py-2 text-[12px] font-semibold text-[var(--accent)] transition hover:bg-[#D5DEEF] disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-xl bg-[#EDF3FB] dark:bg-[#111a2e] px-3 py-2 text-[12px] font-semibold text-[var(--accent)] transition hover:bg-[#D5DEEF] dark:hover:bg-[#111a2e] disabled:opacity-40"
         >
           <Zap size={12} /> {EN ? "Auto-assign" : "Auto-asignar"}
         </button>
@@ -1282,11 +1282,11 @@ export default function DayPlannerModal({
             {/* Left: Pool */}
             <div className="flex w-full shrink-0 flex-col gap-2 lg:w-[280px]">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Item Pool" : "Pool de Items"}
                 </span>
                 {poolItems.length > 0 && (
-                  <span className="rounded-full bg-[#EDE3CF] px-2 py-0.5 text-[10px] font-bold text-[#7A6230]">
+                  <span className="rounded-full bg-[#EDE3CF] dark:bg-[#17233d] px-2 py-0.5 text-[10px] font-bold text-[#7A6230]">
                     {poolItems.length}
                   </span>
                 )}
@@ -1321,19 +1321,19 @@ export default function DayPlannerModal({
             {/* Right: Day columns */}
             <div className="flex min-h-0 flex-col gap-2 lg:flex-1 lg:overflow-y-hidden">
               <div className="flex shrink-0 items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Schedule" : "Cronograma"} — {dayCapacity}h/{EN ? "day" : "día"} capacity
                 </span>
                 {numDays > 3 && (
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => scrollCols(-1)}
-                      className="grid size-6 place-items-center rounded-lg border border-[#D7CBB3] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1] text-sm font-bold"
+                      className="grid size-6 place-items-center rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d] text-sm font-bold"
                     >‹</button>
-                    <span className="px-1 text-[10px] font-semibold text-[#5C6A6E]">{numDays} {EN ? "days" : "días"}</span>
+                    <span className="px-1 text-[10px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">{numDays} {EN ? "days" : "días"}</span>
                     <button
                       onClick={() => scrollCols(1)}
-                      className="grid size-6 place-items-center rounded-lg border border-[#D7CBB3] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1] text-sm font-bold"
+                      className="grid size-6 place-items-center rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d] text-sm font-bold"
                     >›</button>
                   </div>
                 )}
@@ -1367,7 +1367,7 @@ export default function DayPlannerModal({
       )}
 
       {/* ── Footer legend ───────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-[#D5DEEF] bg-white px-4 py-2 text-[10px] text-[#5C6A6E]">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-[#D5DEEF] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-2 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-2 rounded-full bg-[#4F8A63]" />
           {EN ? "On track" : "Capacidad OK"}

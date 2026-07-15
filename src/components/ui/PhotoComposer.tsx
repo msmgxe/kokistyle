@@ -42,11 +42,11 @@ export default function PhotoComposer({
 
   return (
     <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[var(--brand)]/60 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-[440px] overflow-y-auto rounded-t-[22px] bg-white p-4 sm:rounded-[20px]">
+      <div className="max-h-[92vh] w-full max-w-[440px] overflow-y-auto rounded-t-[22px] bg-white dark:bg-[#111a2e] p-4 sm:rounded-[20px]">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="truncate text-[15px] font-bold text-[var(--brand)]">📷 {title}</div>
-            <div className="text-[12px] text-[#97A1A0]">{subtitle ?? tf.title}</div>
+            <div className="text-[12px] text-[#97A1A0] dark:text-[#728098]">{subtitle ?? tf.title}</div>
           </div>
           {headerAction}
         </div>
@@ -64,7 +64,7 @@ export default function PhotoComposer({
           value={caption}
           onChange={e => setCaption(e.target.value)}
           placeholder={tf.captionPlaceholder}
-          className="mt-3 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:border-[var(--accent)] focus:outline-none"
+          className="mt-3 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
         />
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -96,7 +96,7 @@ export default function PhotoComposer({
             value={customTag}
             onChange={e => setCustomTag(e.target.value)}
             placeholder={tf.customTagPlaceholder}
-            className="mt-2 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-2.5 text-[14px] uppercase text-[var(--brand)] placeholder:normal-case placeholder:text-[#9CABB0] focus:border-[var(--accent)] focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-2.5 text-[14px] uppercase text-[var(--brand)] placeholder:normal-case placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
           />
         )}
 
@@ -105,7 +105,7 @@ export default function PhotoComposer({
           onChange={e => setAlbum(e.target.value)}
           list="photo-composer-albums"
           placeholder={tf.albumPlaceholder}
-          className="mt-2 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:border-[var(--accent)] focus:outline-none"
+          className="mt-2 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
         />
         <datalist id="photo-composer-albums">
           {albums.map(a => <option key={a} value={a} />)}
@@ -115,7 +115,7 @@ export default function PhotoComposer({
           <button
             onClick={onCancel}
             disabled={uploadStep > 0}
-            className="flex-1 rounded-xl bg-[#ECE3D1] py-3 text-[14px] font-bold text-[#5C6A6E] disabled:opacity-50"
+            className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 text-[14px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] disabled:opacity-50"
           >
             {tf.cancel}
           </button>

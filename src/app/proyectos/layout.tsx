@@ -8,6 +8,7 @@ import {
   LogOut, Menu, X, ChevronsLeft, Settings,
   LayoutDashboard, CalendarCheck2, Image as ImageIcon, BarChart3, Users,
   Sparkles, Globe, CalendarClock, Activity, CalendarDays, HelpCircle,
+  Sun, Moon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
@@ -18,6 +19,7 @@ import { branding } from "@/src/config/branding";
 type NavItem = { href: string; label: string; icon: LucideIcon };
 const COLLAPSE_KEY = "luxaris-nav-collapsed";
 const ACCENT_KEY = "luxaris-accent";
+const THEME_KEY = "luxaris-theme"; // "dark" | "light" (default)
 const ACCENTS = [
   { id: "luxaris",  label: "Luxaris",  dab: "#16323D" },
   { id: "navy",     label: "Navy",     dab: "#2A4A7F" },
@@ -31,13 +33,18 @@ function applyAccent(id: string) {
   else document.documentElement.setAttribute("data-accent", id);
 }
 
+function applyTheme(isDark: boolean) {
+  if (isDark) document.documentElement.setAttribute("data-theme", "dark");
+  else document.documentElement.removeAttribute("data-theme");
+}
+
 function LangSwitch() {
   const { language, setLanguage } = useLanguage();
   return (
-    <div className="flex rounded-lg border border-[#D5DEEF] bg-[#F0F3FA] p-0.5">
+    <div className="flex rounded-lg border border-[#D5DEEF] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#111a2e] p-0.5">
       {(["en", "es"] as const).map((l) => (
         <button key={l} onClick={() => setLanguage(l)}
-          className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide transition ${language === l ? "bg-[var(--accent)] text-white" : "text-[#628ECB] hover:text-[var(--accent)]"}`}>
+          className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide transition ${language === l ? "bg-[var(--accent)] text-white" : "text-[#628ECB] dark:text-[#9fb0cc] hover:text-[var(--accent)]"}`}>
           {l}
         </button>
       ))}
@@ -54,6 +61,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [accent, setAccent] = useState("luxaris");
+  const [dark, setDark] = useState(false);
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
   useEffect(() => { try { setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1"); } catch { /* noop */ } }, []);
@@ -62,6 +70,11 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
       const a = localStorage.getItem(ACCENT_KEY);
       if (a) { setAccent(a); applyAccent(a); }
     } catch { /* noop */ }
+  }, []);
+  useEffect(() => {
+    // El <script> anti-flash en el <head> raíz ya aplicó el atributo antes del
+    // primer paint; aquí solo sincronizamos el estado de React con lo que quedó.
+    try { setDark(document.documentElement.getAttribute("data-theme") === "dark"); } catch { /* noop */ }
   }, []);
   const toggleCollapse = () => setCollapsed(c => {
     const n = !c;
@@ -73,6 +86,12 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
     applyAccent(id);
     try { localStorage.setItem(ACCENT_KEY, id); } catch { /* noop */ }
   };
+  const toggleTheme = () => setDark(d => {
+    const n = !d;
+    applyTheme(n);
+    try { localStorage.setItem(THEME_KEY, n ? "dark" : "light"); } catch { /* noop */ }
+    return n;
+  });
 
   useEffect(() => { if (!isAdmin) router.replace("/"); }, [isAdmin, router]);
   useEffect(() => {
@@ -81,8 +100,8 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F7F3EB]">
-        <p className="text-sm font-semibold text-[#5C6A6E]">Verificando acceso…</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F3EB] dark:bg-[#0b1220]">
+        <p className="text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">Verificando acceso…</p>
       </div>
     );
   }
@@ -138,7 +157,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
   return (
     <VoiceProvider>
-      <div className="min-h-screen bg-[#F7F3EB] lg:flex">
+      <div className="min-h-screen bg-[#F7F3EB] dark:bg-[#0b1220] lg:flex">
 
         {/* ── Sidebar (desktop): opción 2 (expandida) ↔ opción 3 (icon rail) ── */}
         <aside
@@ -176,7 +195,11 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="space-y-1 border-t border-white/10 px-3 py-3">
-            <ThemeGear collapsed={collapsed} accent={accent} onPick={changeAccent} label={t.panel.nav.appearance} themeLabel={t.panel.nav.theme} />
+            <ThemeGear
+              collapsed={collapsed} accent={accent} onPick={changeAccent}
+              label={t.panel.nav.appearance} themeLabel={t.panel.nav.theme}
+              dark={dark} onToggleDark={toggleTheme}
+            />
             <button
               onClick={toggleCollapse}
               title={collapsed ? "Expandir" : "Colapsar"}
@@ -190,11 +213,11 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
         {/* ── Columna principal ── */}
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#D5DEEF] bg-[#F7F3EB]/90 px-4 py-2.5 backdrop-blur lg:px-6">
+          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#D5DEEF] dark:border-[#22304d] bg-[#F7F3EB]/90 dark:bg-[#0b1220]/90 px-4 py-2.5 backdrop-blur lg:px-6">
             {/* Móvil: logo + marca */}
             <Link href="/proyectos" className="flex items-center gap-2.5 lg:hidden" aria-label={`${branding.companyShort} Panel`}>
               <span className="grid size-9 place-items-center rounded-lg bg-[var(--brand)] text-xs font-bold text-white">{branding.initials}</span>
-              <span className="text-sm font-bold text-[var(--brand)]">{branding.companyShort}</span>
+              <span className="text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7]">{branding.companyShort}</span>
             </Link>
             <div className="flex-1" />
             <div className="hidden lg:block"><LangSwitch /></div>
@@ -202,7 +225,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               id="panel-logout-btn"
               onClick={logout}
               aria-label={t.panel.nav.signOut}
-              className="hidden items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-xs font-bold text-[var(--brand)] transition hover:bg-[#ECE3D1] lg:inline-flex"
+              className="hidden items-center gap-1.5 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d] lg:inline-flex"
             >
               <LogOut size={14} />
               {t.panel.nav.signOut}
@@ -211,7 +234,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
             <button
               onClick={() => setMenuOpen(true)}
               aria-label="Menu"
-              className="grid size-10 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[var(--brand)] transition hover:bg-[#ECE3D1] lg:hidden"
+              className="grid size-10 place-items-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d] lg:hidden"
             >
               <Menu size={18} />
             </button>
@@ -224,7 +247,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
         {menuOpen && (
           <div className="fixed inset-0 z-[400] lg:hidden" onClick={() => setMenuOpen(false)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <div className="absolute right-0 top-0 flex h-full w-72 flex-col bg-[#F7F3EB] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="absolute right-0 top-0 flex h-full w-72 flex-col bg-[#F7F3EB] dark:bg-[#0b1220] shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between bg-[var(--brand)] px-4 py-4">
                 <span className="flex items-center gap-2.5">
                   <span className="grid size-9 place-items-center rounded-lg bg-[#F5E9DA] text-xs font-bold text-[var(--brand)]">{branding.initials}</span>
@@ -239,16 +262,23 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
                 {dailyLinks.map(l => <MobileTab key={l.href} item={l} />)}
                 {moreLinks.length > 0 && (
                   <>
-                    <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#97A1A0]">{t.panel.nav.more}</p>
+                    <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#97A1A0] dark:text-[#728098]">{t.panel.nav.more}</p>
                     {moreLinks.map(l => <MobileTab key={l.href} item={l} />)}
                   </>
                 )}
               </nav>
 
-              <div className="space-y-3 border-t border-[#E6DDCB] p-4">
+              <div className="space-y-3 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
+                <button
+                  onClick={toggleTheme}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2.5 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"
+                >
+                  {dark ? <Sun size={14} /> : <Moon size={14} />}
+                  {dark ? "Modo claro" : "Modo oscuro"}
+                </button>
                 <LangSwitch />
                 <button onClick={logout}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-white px-3 py-2.5 text-xs font-bold text-[var(--brand)] transition hover:bg-[#ECE3D1]">
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2.5 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]">
                   <LogOut size={14} />
                   {t.panel.nav.signOut}
                 </button>
@@ -300,11 +330,13 @@ function MobileTab({ item }: { item: NavItem }) {
   );
 }
 
-// Tuerca de configuración: cambia el tema de color del chrome (sidebar/drawer) vía tokens CSS.
+// Tuerca de configuración: cambia el tema de color del chrome (sidebar/drawer) vía tokens CSS
+// y el modo claro/oscuro de toda la app (fondo/superficie/texto vía data-theme).
 function ThemeGear({
-  collapsed, accent, onPick, label, themeLabel,
+  collapsed, accent, onPick, label, themeLabel, dark, onToggleDark,
 }: {
   collapsed: boolean; accent: string; onPick: (id: string) => void; label: string; themeLabel: string;
+  dark: boolean; onToggleDark: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -328,8 +360,17 @@ function ThemeGear({
         {!collapsed && <span>{label}</span>}
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 w-56 rounded-xl border border-[#E6DDCB] bg-white p-3 shadow-xl">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#97A1A0]">{themeLabel}</div>
+        <div className="absolute bottom-full left-0 z-50 mb-2 w-56 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-3 shadow-xl">
+          <button
+            onClick={onToggleDark}
+            className="mb-3 flex w-full items-center justify-between rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-3 py-2 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#F0F3FA] dark:hover:bg-[#17233d]"
+          >
+            <span className="flex items-center gap-2">{dark ? <Moon size={14} /> : <Sun size={14} />} {dark ? "Oscuro" : "Claro"}</span>
+            <span className={`relative h-5 w-9 rounded-full transition ${dark ? "bg-[var(--accent)]" : "bg-[#D7CBB3]"}`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${dark ? "left-[18px]" : "left-0.5"}`} />
+            </span>
+          </button>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#97A1A0] dark:text-[#728098]">{themeLabel}</div>
           <div className="grid grid-cols-5 gap-2">
             {ACCENTS.map(a => (
               <button
@@ -338,12 +379,12 @@ function ThemeGear({
                 title={a.label}
                 aria-label={a.label}
                 aria-pressed={accent === a.id}
-                className={`h-9 rounded-lg border-2 transition ${accent === a.id ? "border-[var(--brand)]" : "border-transparent hover:border-[#D5DEEF]"}`}
+                className={`h-9 rounded-lg border-2 transition ${accent === a.id ? "border-[var(--brand)] dark:border-[#e8edf7]" : "border-transparent hover:border-[#D5DEEF] dark:hover:border-[#22304d]"}`}
                 style={{ background: a.dab }}
               />
             ))}
           </div>
-          <p className="mt-2.5 text-[10.5px] leading-snug text-[#97A1A0]">
+          <p className="mt-2.5 text-[10.5px] leading-snug text-[#97A1A0] dark:text-[#728098]">
             Cambia el color del menú. El resto de la app se irá migrando a estos colores.
           </p>
         </div>

@@ -32,16 +32,16 @@ const donePct = (tasks: Task[]) => tasks.length ? Math.round(tasks.filter(t => t
 
 // Barra de duración por estado (colores de la app)
 const BAR_BASE: Record<string, string> = {
-  prospecto:   "bg-[#D9DFE6]", presupuesto: "bg-[#D7CBB3]", aprobado: "bg-[#9DB6BC]",
+  prospecto:   "bg-[#D9DFE6]", presupuesto: "bg-[#D7CBB3] dark:bg-[#17233d]", aprobado: "bg-[#9DB6BC]",
   en_obra:     "bg-[#7FA0A8]", terminado:   "bg-[#8FBE9F]",
 };
 const STATUS_PILL: Record<string, string> = {
-  prospecto:   "bg-[#E3E8EE] text-[#44586B]", presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-  aprobado:    "bg-[#DCE8E9] text-[#4E7A82]", en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
-  terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
+  prospecto:   "bg-[#E3E8EE] dark:bg-[#111a2e] text-[#44586B] dark:text-[#9fb0cc]", presupuesto: "bg-[#DCE6E6] dark:bg-[#122a2c] text-[#0E2630] dark:text-[#e8edf7]",
+  aprobado:    "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]", en_obra:     "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
+  terminado:   "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
 };
 const TASK_PILL: Record<string, string> = {
-  pend: "bg-[#E3E8EE] text-[#44586B]", prog: "bg-[#F5E6C3] text-[#7A6230]", done: "bg-[#DCEBDD] text-[#4F8A63]",
+  pend: "bg-[#E3E8EE] dark:bg-[#111a2e] text-[#44586B] dark:text-[#9fb0cc]", prog: "bg-[#F5E6C3] text-[#7A6230]", done: "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
 };
 
 function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
@@ -69,11 +69,11 @@ function SortableRow({ id, children }: {
 function ConfirmModal({ title, body, label, onConfirm, onCancel }: { title: string; body: string; label: string; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--brand)]/55 backdrop-blur-sm">
-      <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
+      <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl">
         <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">{title}</h3>
-        <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
+        <p className="mb-5 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{body}</p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
+          <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">Cancelar</button>
           <button onClick={onConfirm} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">{label}</button>
         </div>
       </div>
@@ -200,9 +200,9 @@ export default function PlanPage() {
   }
 
   const STATUS_PILL_ACTIVE: Record<string, string> = {
-    prospecto:   "bg-[#E3E8EE] text-[#44586B]", presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-    aprobado:    "bg-[#DCE8E9] text-[#4E7A82]", en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
-    terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
+    prospecto:   "bg-[#E3E8EE] dark:bg-[#111a2e] text-[#44586B] dark:text-[#9fb0cc]", presupuesto: "bg-[#DCE6E6] dark:bg-[#122a2c] text-[#0E2630] dark:text-[#e8edf7]",
+    aprobado:    "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]", en_obra:     "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
+    terminado:   "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
   };
 
   const DarkBar = ({ withControls }: { withControls: boolean }) => (
@@ -219,7 +219,7 @@ export default function PlanPage() {
           <div className="flex shrink-0 items-center gap-1">
             {(["gantt", "report"] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
-                className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${view === v ? "bg-white text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${view === v ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
                 {v === "gantt" ? tp.dailyReport.viewGantt : tp.dailyReport.viewReport}
               </button>
             ))}
@@ -230,7 +230,7 @@ export default function PlanPage() {
         <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           <button onClick={() => { setFilterStatus("all"); setFilterProject("all"); }}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${filterStatus === "all" ? "bg-white text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${filterStatus === "all" ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
             {gp.tabAll}
             <span className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] ${filterStatus === "all" ? "bg-black/10" : "bg-white/10"}`}>{ganttProjects.length}</span>
           </button>
@@ -251,8 +251,8 @@ export default function PlanPage() {
             onChange={e => setFilterProject(e.target.value)}
             aria-label={gp.colProject}
             className={`max-w-[190px] shrink-0 cursor-pointer rounded-full border px-3 py-1 text-[10.5px] font-bold outline-none transition ${
-              filterProject === "all" ? "border-white/20 bg-transparent text-white/60 hover:bg-white/10" : "border-white bg-white text-[var(--brand)]"
-            } [&>option]:bg-white [&>option]:text-[var(--brand)]`}
+              filterProject === "all" ? "border-white/20 bg-transparent text-white/60 hover:bg-white/10" : "border-white bg-white dark:bg-[#111a2e] text-[var(--brand)]"
+            } [&>option]:bg-white dark:bg-[#111a2e] [&>option]:text-[var(--brand)]`}
           >
             <option value="all">{EN ? "All projects" : "Todos los proyectos"}</option>
             {ganttProjects
@@ -267,12 +267,12 @@ export default function PlanPage() {
         <div className="flex shrink-0 items-center gap-1">
           {(["week", "day"] as const).map(u => (
             <button key={u} onClick={() => setGanttUnit(u)}
-              className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${ganttUnit === u ? "bg-white text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+              className={`rounded-full px-3 py-1 text-[10.5px] font-bold transition ${ganttUnit === u ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]" : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"}`}>
               {u === "week" ? (EN ? "Weeks" : "Semanas") : (EN ? "Days" : "Días")}
             </button>
           ))}
         </div>
-        <button onClick={() => window.print()} title={gp.printPdf} className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-bold text-[var(--brand)]">
+        <button onClick={() => window.print()} title={gp.printPdf} className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-[#111a2e] px-3 py-1 text-[10.5px] font-bold text-[var(--brand)]">
           <Printer size={12} /> {gp.printPdf}
         </button>
       </>)}
@@ -280,7 +280,7 @@ export default function PlanPage() {
   );
 
   if (projects.length === 0) {
-    return <div><DarkBar withControls={false} /><div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">{gp.noProjects}</div></div>;
+    return <div><DarkBar withControls={false} /><div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-10 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{gp.noProjects}</div></div>;
   }
 
   // Cronológico ascendente dentro de cada estado; sin fecha al final
@@ -304,15 +304,15 @@ export default function PlanPage() {
       {view === "gantt" && (<>
       <div className="rpt-only mb-3 hidden">
         <h2 className="text-lg font-bold text-[var(--brand)]">{gp.reportTitle}</h2>
-        <p className="text-xs text-[#5C6A6E]">{gp.generatedOn} {new Date().toLocaleDateString(EN ? "en-US" : "es-US", { day: "numeric", month: "long", year: "numeric" })}</p>
+        <p className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{gp.generatedOn} {new Date().toLocaleDateString(EN ? "en-US" : "es-US", { day: "numeric", month: "long", year: "numeric" })}</p>
       </div>
 
       {visibleProjects.length === 0 ? (
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-10 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
           {EN ? "No projects with scheduled tasks for this filter." : "No hay proyectos con tareas creadas para este filtro."}
         </div>
       ) : (
-      <div ref={scrollRef} className="overflow-x-auto rounded-2xl border border-[#E6DDCB] bg-white [scrollbar-width:thin]">
+      <div ref={scrollRef} className="overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] [scrollbar-width:thin]">
         <div className="w-max min-w-full">
           <GanttHeader
             scale={scale}
@@ -347,29 +347,29 @@ export default function PlanPage() {
                 return (
                   <SortableRow key={p.id} id={p.id}>
                     {({ listeners, attributes }, isDragging) => (
-                      <div className={`border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[var(--brand)]" : ""}`} style={{ width: LEFT + scale.laneWidth }}>
+                      <div className={`border-b border-[#F0EBE0] dark:border-[#22304d] ${isDragging ? "bg-white dark:bg-[#111a2e] shadow-lg ring-1 ring-[var(--brand)]" : ""}`} style={{ width: LEFT + scale.laneWidth }}>
                         <div className="flex items-stretch">
-                          <div className="sticky left-0 z-10 grid shrink-0 items-center border-r border-[#E6DDCB] bg-white" style={{ width: LEFT, gridTemplateColumns: LEFT_COLS }}>
+                          <div className="sticky left-0 z-10 grid shrink-0 items-center border-r border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]" style={{ width: LEFT, gridTemplateColumns: LEFT_COLS }}>
                             <DragHandle listeners={listeners} attributes={attributes} />
 
-                            <div className="flex h-full items-center justify-center bg-[#F2EFE7] font-mono text-[13px] font-bold text-[var(--brand)]">{rank}</div>
+                            <div className="flex h-full items-center justify-center bg-[#F2EFE7] dark:bg-[#17233d] font-mono text-[13px] font-bold text-[var(--brand)]">{rank}</div>
 
                             {/* Proyecto (clic = acordeón) */}
-                            <button onClick={() => toggleRow(p.id)} className="group flex h-full items-center gap-2 px-2 py-2 text-left hover:bg-[#F7F3EA]">
-                              <ChevronRight size={13} className={`shrink-0 text-[#97A1A0] transition ${isOpen ? "rotate-90" : ""}`} />
+                            <button onClick={() => toggleRow(p.id)} className="group flex h-full items-center gap-2 px-2 py-2 text-left hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
+                              <ChevronRight size={13} className={`shrink-0 text-[#97A1A0] dark:text-[#728098] transition ${isOpen ? "rotate-90" : ""}`} />
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={30} rounded="rounded-md" />
                               <span className="truncate text-[12.5px] font-semibold text-[var(--brand)] group-hover:text-[var(--accent)]">{p.title.split(" — ")[0]}</span>
                             </button>
 
-                            <Link href={`/proyectos/${p.id}`} className="truncate px-2 text-[11.5px] text-[#5C6A6E] hover:text-[var(--accent)]">{p.client}</Link>
-                            <span className="truncate px-2 text-[11.5px] text-[#5C6A6E]">{p.address || "—"}</span>
-                            <span className="px-1 text-center font-mono text-[11.5px] font-bold text-[#5C6A6E]">{days}</span>
+                            <Link href={`/proyectos/${p.id}`} className="truncate px-2 text-[11.5px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--accent)]">{p.client}</Link>
+                            <span className="truncate px-2 text-[11.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">{p.address || "—"}</span>
+                            <span className="px-1 text-center font-mono text-[11.5px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">{days}</span>
 
                             <div className="flex flex-col gap-1 px-2 py-1.5">
                               <span className={`w-fit rounded-full px-2 py-0.5 text-[9px] font-bold ${STATUS_PILL[p.status] ?? "bg-gray-100 text-gray-600"}`}>{statusLabel}</span>
                               <span className="flex items-center gap-1.5">
                                 <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#F0EBE0]"><span className="block h-full rounded-full bg-[#4F8A63]" style={{ width: `${pc}%` }} /></span>
-                                <span className="font-mono text-[9px] font-bold text-[#5C6A6E]">{pc}%</span>
+                                <span className="font-mono text-[9px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">{pc}%</span>
                               </span>
                             </div>
                           </div>
@@ -382,7 +382,7 @@ export default function PlanPage() {
                             aria-label={p.title}
                           >
                             <TodayLine scale={scale} />
-                            <span className={`absolute top-1/2 flex h-[15px] -translate-y-1/2 items-center overflow-hidden rounded-[5px] shadow-sm ${BAR_BASE[p.status] ?? "bg-[#D7CBB3]"}`}
+                            <span className={`absolute top-1/2 flex h-[15px] -translate-y-1/2 items-center overflow-hidden rounded-[5px] shadow-sm ${BAR_BASE[p.status] ?? "bg-[#D7CBB3] dark:bg-[#17233d]"}`}
                               style={{ left: barLeft, width: barWidth }}>
                               <span className="h-full rounded-l-[5px] bg-[#4F8A63]/85" style={{ width: `${pc}%` }} />
                             </span>
@@ -391,29 +391,29 @@ export default function PlanPage() {
 
                         {/* Acordeón: actividades por estado (sticky para que se lea aunque hagas scroll horizontal) */}
                         {isOpen && (
-                          <div className="sticky left-0 max-w-[900px] bg-[#FBF8F2] px-4 py-3" style={{ paddingLeft: 54 }}>
-                            <div className="mb-2 flex items-center gap-3 text-[11px] text-[#5C6A6E]">
+                          <div className="sticky left-0 max-w-[900px] bg-[#FBF8F2] dark:bg-[#17233d] px-4 py-3" style={{ paddingLeft: 54 }}>
+                            <div className="mb-2 flex items-center gap-3 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                               <span className="font-mono">{dShort(sp!.start)}–{dShort(sp!.end)}</span>
                               <span>· {p.tasks.length} {gp.activities}</span>
                               <button onClick={() => setConfirmDel(p.id)} className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-[#B0492F] hover:underline"><Trash2 size={11} /> {gp.delete}</button>
                             </div>
                             {p.tasks.length === 0 ? (
-                              <p className="text-[12px] italic text-[#97A1A0]">{gp.noTasks}</p>
+                              <p className="text-[12px] italic text-[#97A1A0] dark:text-[#728098]">{gp.noTasks}</p>
                             ) : (["pend", "prog", "done"] as const).map(st => {
                               const list = stTasks(p, st);
                               if (!list.length) return null;
                               const stLabel = st === "pend" ? tp.workflow.colPend : st === "prog" ? tp.workflow.colProg : tp.workflow.colDone;
                               return (
                                 <div key={st} className="mt-2">
-                                  <h4 className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                                  <h4 className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
                                     <span className={`rounded-full px-2 py-0.5 ${TASK_PILL[st]}`}>{stLabel}</span>
-                                    <span className="rounded-full border border-[#E6DDCB] bg-white px-1.5 text-[10px]">{list.length}</span>
+                                    <span className="rounded-full border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 text-[10px]">{list.length}</span>
                                   </h4>
                                   <div className="space-y-1">
                                     {list.map(tk => (
-                                      <div key={tk.id} className="flex items-center gap-2 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px]">
+                                      <div key={tk.id} className="flex items-center gap-2 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[12px]">
                                         <span className="flex-1 truncate font-semibold text-[var(--brand)]">{tk.name}</span>
-                                        <span className="hidden truncate text-[10.5px] text-[#5C6A6E] sm:inline">
+                                        <span className="hidden truncate text-[10.5px] text-[#5C6A6E] dark:text-[#9fb0cc] sm:inline">
                                           {tk.source_section ? tk.source_section + " · " : ""}{tk.hours ? tk.hours + "h" : ""}{tk.scheduled_date ? " · " + dShort(new Date(tk.scheduled_date + "T00:00:00")) : ""}
                                         </span>
                                         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${TASK_PILL[st]}`}>{stLabel}</span>
@@ -434,9 +434,9 @@ export default function PlanPage() {
 
             <DragOverlay dropAnimation={dropAnimation}>
               {activeProject && (
-                <div className="rounded-xl border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
+                <div className="rounded-xl border border-[var(--brand)] bg-white dark:bg-[#111a2e] px-4 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
                   <div className="text-sm font-semibold text-[var(--brand)]">{activeProject.title.split(" — ")[0]}</div>
-                  <div className="font-mono text-[11px] text-[#5C6A6E]">{activeProject.client}</div>
+                  <div className="font-mono text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">{activeProject.client}</div>
                 </div>
               )}
             </DragOverlay>
@@ -445,16 +445,16 @@ export default function PlanPage() {
       </div>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E]">
+      <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded bg-[#7FA0A8]" /> {gp.colDays}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded bg-[#4F8A63]" /> {EN ? "Progress" : "Avance"}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded border border-[#9DC3E6] bg-[#DCEBF7]" /> {EN ? "Saturday" : "Sábado"}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded border border-[#F4B183] bg-[#FBE5D3]" /> {EN ? "Sunday" : "Domingo"}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-[2px] bg-[#B0492F]/70" /> {EN ? "Today" : "Hoy"}</span>
-        <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#E3E8EE] px-2 py-0.5 text-[9px] font-bold text-[#44586B]">{tp.workflow.colPend}</span></span>
+        <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#E3E8EE] dark:bg-[#111a2e] px-2 py-0.5 text-[9px] font-bold text-[#44586B] dark:text-[#9fb0cc]">{tp.workflow.colPend}</span></span>
         <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#F5E6C3] px-2 py-0.5 text-[9px] font-bold text-[#7A6230]">{tp.workflow.colProg}</span></span>
-        <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#DCEBDD] px-2 py-0.5 text-[9px] font-bold text-[#4F8A63]">{tp.workflow.colDone}</span></span>
-        <span className="text-[#97A1A0]">· {EN ? "Drag rows to set priority" : "Arrastra las filas para fijar la prioridad"}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-[#DCEBDD] dark:bg-[#14261c] px-2 py-0.5 text-[9px] font-bold text-[#4F8A63]">{tp.workflow.colDone}</span></span>
+        <span className="text-[#97A1A0] dark:text-[#728098]">· {EN ? "Drag rows to set priority" : "Arrastra las filas para fijar la prioridad"}</span>
       </div>
       </>)}
 

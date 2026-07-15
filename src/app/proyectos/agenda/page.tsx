@@ -156,8 +156,8 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 }
 
 const inputCls =
-  "h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none";
-const labelCls = "mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]";
+  "h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none";
+const labelCls = "mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]";
 
 export default function AgendaPage() {
   const { isSuperAdmin, currentUser } = useAuth();
@@ -415,7 +415,7 @@ export default function AgendaPage() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm font-semibold text-[#5C6A6E]">
+      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
         {ta.onlyAdmin}
       </div>
     );
@@ -428,12 +428,12 @@ export default function AgendaPage() {
         {(Object.keys(TYPE_META) as AgendaEventType[]).map(tp => (
           <button key={tp} type="button" onClick={() => set({ ...entry, event_type: tp })}
             className={`rounded-xl border-2 px-2 py-2.5 text-center transition ${
-              entry.event_type === tp ? "bg-white" : "border-[#E6DDCB] bg-[#F7F3EA] hover:bg-white"
+              entry.event_type === tp ? "bg-white dark:bg-[#111a2e]" : "border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] hover:bg-white dark:hover:bg-[#111a2e]"
             }`}
             style={entry.event_type === tp ? { borderColor: TYPE_META[tp].color } : undefined}>
             <span className="block text-lg">{TYPE_META[tp].emoji}</span>
             <span className="block text-[11px] font-bold text-[var(--brand)]">{TYPE_LABELS[tp]}</span>
-            <span className="block text-[9px] text-[#97A1A0]">
+            <span className="block text-[9px] text-[#97A1A0] dark:text-[#728098]">
               {tp === "cita" ? ta.typeCitaDesc : tp === "task" ? ta.typeTaskDesc : ta.typeReunionDesc}
             </span>
           </button>
@@ -488,14 +488,14 @@ export default function AgendaPage() {
   const eventCard = (ev: AgendaEvent) => {
     if (editing?.id === ev.id) {
       return (
-        <div key={ev.id} className="space-y-3 rounded-2xl border-2 border-[var(--accent)] bg-white p-4">
-          <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+        <div key={ev.id} className="space-y-3 rounded-2xl border-2 border-[var(--accent)] bg-white dark:bg-[#111a2e] p-4">
+          <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
             ✏️ {ta.editTitle}
           </h4>
           {entryFields(editForm, setEditForm)}
           <div className="flex justify-end gap-2">
             <button onClick={() => setEditing(null)}
-              className="inline-flex items-center gap-1 rounded-xl border border-[#E6DDCB] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+              className="inline-flex items-center gap-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-2 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
               <X size={13} /> {ta.cancel}
             </button>
             <button onClick={saveEdit} disabled={saving || !editForm.title.trim()}
@@ -511,12 +511,12 @@ export default function AgendaPage() {
     const pt = proj?.title ?? null;
     return (
       <div key={ev.id}
-        className={`flex items-start gap-3 rounded-2xl border border-[#E6DDCB] bg-white p-4 ${ev.done ? "opacity-55" : ""}`}
+        className={`flex items-start gap-3 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4 ${ev.done ? "opacity-55" : ""}`}
         style={{ borderLeftWidth: 4, borderLeftColor: meta.color }}>
         <span className="mt-0.5 text-xl">{meta.emoji}</span>
         <div className="min-w-0 flex-1">
           <p className={`text-sm font-bold text-[var(--brand)] ${ev.done ? "line-through" : ""}`}>{ev.title}</p>
-          <p className="mt-0.5 text-xs text-[#5C6A6E]">
+          <p className="mt-0.5 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
             {fmtDate(ev.event_date)} · {ev.event_time} ·{" "}
             <span className="font-bold" style={{ color: meta.color }}>{TYPE_LABELS[ev.event_type]}</span>
           </p>
@@ -527,39 +527,39 @@ export default function AgendaPage() {
                 {proj.title}
               </span>
             )}
-            <span className="rounded-full border border-[#E6DDCB] bg-[#F7F3EA] px-2.5 py-0.5 text-[10px] font-semibold text-[#5C6A6E]">
+            <span className="rounded-full border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 py-0.5 text-[10px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
               ⏰ {ta.chipFrom} {FROM_LABELS[ev.remind_from]}
             </span>
-            <span className="rounded-full border border-[#E6DDCB] bg-[#F7F3EA] px-2.5 py-0.5 text-[10px] font-semibold text-[#5C6A6E]">
+            <span className="rounded-full border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 py-0.5 text-[10px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
               🔁 {repLabel(ev.repeat_every)}
             </span>
           </div>
           <div className="mt-2.5 flex flex-wrap gap-2">
             <button onClick={() => { downloadIcs(ev, pt); showToast(ta.icsDownloaded); }}
-              className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand)] px-2.5 py-1 text-[11px] font-bold text-[var(--brand)] hover:bg-[#F7F3EA]">
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand)] px-2.5 py-1 text-[11px] font-bold text-[var(--brand)] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
               <CalendarPlus size={12} /> {ta.addToCalendar}
             </button>
             <a href={googleCalendarUrl(ev, pt)} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] px-2.5 py-1 text-[11px] font-bold text-[#5C6A6E] hover:bg-[#F7F3EA]">
+              className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-2.5 py-1 text-[11px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
               <ExternalLink size={12} /> {ta.googleCalendar}
             </a>
           </div>
         </div>
         <div className="flex flex-none flex-col items-end gap-1.5">
           <button onClick={() => startEdit(ev)}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] px-2.5 py-1 text-[11px] font-bold text-[var(--accent)] hover:bg-[#EDF3FB]">
+            className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-2.5 py-1 text-[11px] font-bold text-[var(--accent)] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]">
             <Pencil size={11} /> {ta.edit}
           </button>
           <button onClick={() => toggleDone(ev)}
             className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold ${
               ev.done
-                ? "border border-[#E6DDCB] text-[#5C6A6E] hover:bg-[#F7F3EA]"
+                ? "border border-[#E6DDCB] dark:border-[#22304d] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
                 : "bg-[#4F8A63] text-white hover:bg-[#3F7452]"
             }`}>
             {ev.done ? <><RotateCcw size={11} /> {ta.reopen}</> : <><Check size={11} /> {ta.markDone}</>}
           </button>
           <button onClick={() => removeEntry(ev)}
-            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-[#B0492F] hover:bg-[#FFF0EE]">
+            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-[#B0492F] hover:bg-[#FFF0EE] dark:hover:bg-[#2a1712]">
             <Trash2 size={11} /> {ta.remove}
           </button>
         </div>
@@ -573,16 +573,16 @@ export default function AgendaPage() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-bookman text-2xl text-[var(--brand)]">🗓️ {ta.title}</h1>
-          <p className="text-sm text-[#5C6A6E]">{ta.subtitle}</p>
-          <p className="mt-0.5 text-[11px] text-[#97A1A0]">⏰ {ta.pushSchedule}</p>
+          <p className="text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{ta.subtitle}</p>
+          <p className="mt-0.5 text-[11px] text-[#97A1A0] dark:text-[#728098]">⏰ {ta.pushSchedule}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={enablePush} disabled={pushBusy || pushOn}
             title={pushOn ? ta.pushEnabled : ta.pushEnable}
             className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
               pushOn
-                ? "border border-[#4F8A63] bg-[#EDF7F0] text-[#4F8A63]"
-                : "border border-[var(--brand)] text-[var(--brand)] hover:bg-[#F7F3EA]"
+                ? "border border-[#4F8A63] bg-[#EDF7F0] dark:bg-[#14261c] text-[#4F8A63]"
+                : "border border-[var(--brand)] text-[var(--brand)] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
             } disabled:opacity-60`}>
             {pushOn ? <BellRing size={15} /> : <Bell size={15} />}
             <span className="hidden sm:inline">{pushOn ? ta.pushEnabled : ta.pushEnable}</span>
@@ -595,7 +595,7 @@ export default function AgendaPage() {
       </div>
 
       {/* ── Captura por voz / texto ────────────────────────────────────────── */}
-      <div className="mb-5 rounded-2xl border border-[#E6DDCB] bg-white p-4">
+      <div className="mb-5 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4">
         <div className="flex items-center gap-3">
           <button onClick={micTap} title={ta.captureHint} aria-label={ta.captureHint}
             className={`grid size-11 flex-none place-items-center rounded-full text-white transition ${
@@ -605,26 +605,26 @@ export default function AgendaPage() {
           </button>
           <input value={capText} onChange={e => setCapText(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") runParse(); }}
-            className="h-11 min-w-0 flex-1 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
             placeholder={ta.captureVoicePlaceholder} />
           <button onClick={() => runParse()} disabled={parsing}
             className="flex-none rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-50">
             {parsing ? "…" : ta.captureCreate}
           </button>
         </div>
-        <p className="mt-2 text-[11px] italic text-[#97A1A0]">
+        <p className="mt-2 text-[11px] italic text-[#97A1A0] dark:text-[#728098]">
           {listening ? ta.captureListening : ta.captureHint}
         </p>
 
         {confirmData && (
-          <div className="mt-3 space-y-3 rounded-2xl border-2 border-[#C9A227] bg-[#F7F3EA] p-4">
-            <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+          <div className="mt-3 space-y-3 rounded-2xl border-2 border-[#C9A227] bg-[#F7F3EA] dark:bg-[#0b1220] p-4">
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
               🎙️ {ta.confirmTitle}
             </h4>
             {entryFields(confirmData, setConfirmData)}
             <div className="flex justify-end gap-2">
               <button onClick={() => setConfirmData(null)}
-                className="inline-flex items-center gap-1 rounded-xl border border-[#E6DDCB] bg-white px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+                className="inline-flex items-center gap-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-2 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
                 <X size={13} /> {ta.cancel}
               </button>
               <button onClick={() => saveEntry(confirmData, true)} disabled={saving}
@@ -643,20 +643,20 @@ export default function AgendaPage() {
           { v: kpiWeek, l: ta.kpiWeek },
           { v: kpiReminders, l: ta.kpiReminders },
         ].map(k => (
-          <div key={k.l} className="rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3">
+          <div key={k.l} className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-3">
             <p className="text-2xl font-bold tabular-nums text-[var(--brand)]">{k.v}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{k.l}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{k.l}</p>
           </div>
         ))}
       </div>
 
       {/* ── Formulario manual ──────────────────────────────────────────────── */}
       {showForm && (
-        <div className="mb-5 space-y-3 rounded-2xl border border-[#E6DDCB] bg-white p-4">
+        <div className="mb-5 space-y-3 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4">
           {entryFields(form, setForm)}
           <div className="flex justify-end gap-2">
             <button onClick={() => { setShowForm(false); setForm(emptyForm); }}
-              className="rounded-xl border border-[#E6DDCB] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+              className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-2 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
               {ta.cancel}
             </button>
             <button onClick={() => saveEntry(form, false)} disabled={saving}
@@ -670,25 +670,25 @@ export default function AgendaPage() {
       {/* ── Listas ─────────────────────────────────────────────────────────── */}
       {loading ? (
         <div className="space-y-3">
-          {[0, 1, 2].map(i => <div key={i} className="h-24 animate-pulse rounded-2xl bg-[#F0EAE0]" />)}
+          {[0, 1, 2].map(i => <div key={i} className="h-24 animate-pulse rounded-2xl bg-[#F0EAE0] dark:bg-[#17233d]" />)}
         </div>
       ) : (
         <div className="space-y-6">
           <section>
-            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">{ta.groupToday}</h2>
+            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">{ta.groupToday}</h2>
             {listToday.length
               ? <div className="space-y-2.5">{listToday.map(eventCard)}</div>
-              : <p className="text-sm italic text-[#97A1A0]">{ta.emptyToday}</p>}
+              : <p className="text-sm italic text-[#97A1A0] dark:text-[#728098]">{ta.emptyToday}</p>}
           </section>
           <section>
-            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">{ta.groupUpcoming}</h2>
+            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">{ta.groupUpcoming}</h2>
             {listUpcoming.length
               ? <div className="space-y-2.5">{listUpcoming.map(eventCard)}</div>
-              : <p className="text-sm italic text-[#97A1A0]">{ta.emptyUpcoming}</p>}
+              : <p className="text-sm italic text-[#97A1A0] dark:text-[#728098]">{ta.emptyUpcoming}</p>}
           </section>
           {listPast.length > 0 && (
             <section>
-              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">{ta.groupPast}</h2>
+              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">{ta.groupPast}</h2>
               <div className="space-y-2.5 opacity-70">{listPast.map(eventCard)}</div>
             </section>
           )}

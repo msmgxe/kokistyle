@@ -124,7 +124,7 @@ export default function CompartirPage() {
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
         </div>
       ) : done ? (
-        <div className="rounded-2xl border border-[#CFE3D2] bg-[#F2F8F3] p-8 text-center">
+        <div className="rounded-2xl border border-[#CFE3D2] bg-[#F2F8F3] dark:bg-[#14261c] p-8 text-center">
           <div className="text-[38px]">✅</div>
           <p className="mt-2 text-[15px] font-bold text-[#35664A]">
             {files.length} {tf.uploaded} — {projTitle}
@@ -134,7 +134,7 @@ export default function CompartirPage() {
           </Link>
         </div>
       ) : files.length === 0 ? (
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-[13.5px] leading-relaxed text-[#5C6A6E]">
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-[13.5px] leading-relaxed text-[#5C6A6E] dark:text-[#9fb0cc]">
           {EN
             ? "Nothing shared yet. Open your phone's Gallery, select photos → Share → Luxaris."
             : "Aún no hay nada compartido. Abre la Galería del teléfono, selecciona fotos → Compartir → Luxaris."}
@@ -144,7 +144,7 @@ export default function CompartirPage() {
           </Link>
         </div>
       ) : (
-        <div className="rounded-2xl border-2 border-[var(--accent)] bg-white p-4">
+        <div className="rounded-2xl border-2 border-[var(--accent)] bg-white dark:bg-[#111a2e] p-4">
           <div className={`grid gap-2 ${previews.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
             {previews.map((src, i) => (
               // eslint-disable-next-line @next/next/no-img-element
@@ -156,7 +156,7 @@ export default function CompartirPage() {
             value={projectId}
             onChange={e => setProjectId(e.target.value)}
             aria-label={tf.selectProject}
-            className="mt-3 w-full rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3 text-[15px] font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+            className="mt-3 w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-3 text-[15px] font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.title.split(" — ")[0]}{p.client ? ` — ${p.client}` : ""}</option>
@@ -167,7 +167,7 @@ export default function CompartirPage() {
             value={caption}
             onChange={e => setCaption(e.target.value)}
             placeholder={tf.captionPlaceholder}
-            className="mt-3 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:border-[var(--accent)] focus:outline-none"
+            className="mt-3 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
           />
           <div className="mt-3 flex flex-wrap gap-2">
             {PHOTO_TAG_ORDER.map(tg => (

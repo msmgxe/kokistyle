@@ -180,7 +180,7 @@ export default function AiDesignPreview() {
                   <input className={inputCls} placeholder={ta.phonePh} type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                   {gateErr && <p className="text-xs font-semibold text-[#F0A090]">{gateErr}</p>}
                   <button onClick={submitGate} disabled={gating}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A227] px-6 py-3.5 text-sm font-bold text-[#16323D] transition hover:bg-[#dab63f] disabled:opacity-60">
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A227] px-6 py-3.5 text-sm font-bold text-[#16323D] dark:text-[#e8edf7] transition hover:bg-[#dab63f] disabled:opacity-60">
                     {gating ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
                     {ta.gateCta}
                   </button>
@@ -199,7 +199,7 @@ export default function AiDesignPreview() {
                 {remaining <= 0 ? (
                   <div className="rounded-xl bg-white/5 p-4 text-center">
                     <p className="text-sm text-[#C6D4DA]">{ta.limitReached}</p>
-                    <Link href="/reservas" className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A227] px-5 py-2.5 text-sm font-bold text-[#16323D] hover:bg-[#dab63f]">
+                    <Link href="/reservas" className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A227] px-5 py-2.5 text-sm font-bold text-[#16323D] dark:text-[#e8edf7] hover:bg-[#dab63f]">
                       {ta.cta} <ArrowRight size={15} />
                     </Link>
                     <button onClick={resetGate} className="mt-3 block w-full text-[12px] font-semibold text-[#9FB9C4] underline-offset-2 hover:text-white hover:underline">
@@ -222,7 +222,7 @@ export default function AiDesignPreview() {
                       <Upload size={15} /> {beforeUrl ? ta.changePhoto : ta.uploadPhoto}
                     </button>
                     <button onClick={generate} disabled={busy || !beforeUrl}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A227] px-6 py-3.5 text-sm font-bold text-[#16323D] transition hover:bg-[#dab63f] disabled:opacity-50">
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A227] px-6 py-3.5 text-sm font-bold text-[#16323D] dark:text-[#e8edf7] transition hover:bg-[#dab63f] disabled:opacity-50">
                       {busy ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
                       {ta.generate}
                     </button>
@@ -255,7 +255,7 @@ export default function AiDesignPreview() {
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={afterUrl} alt={ta.after} className="absolute inset-0 h-full w-full object-cover" draggable={false} />
-                  <span className="absolute right-4 top-4 rounded-md bg-[#C9A227] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#16323D]">{ta.after}</span>
+                  <span className="absolute right-4 top-4 rounded-md bg-[#C9A227] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#16323D] dark:text-[#e8edf7]">{ta.after}</span>
                   <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={beforeUrl} alt={ta.before} className="absolute inset-0 h-full w-full object-cover" draggable={false} />
@@ -263,7 +263,7 @@ export default function AiDesignPreview() {
                   </div>
                   <div className="absolute inset-y-0" style={{ left: `${pos}%` }}>
                     <div className="absolute inset-y-0 -ml-px w-0.5 bg-white/90" />
-                    <div className="absolute top-1/2 -ml-4 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white text-[#16323D] shadow-lg"><ArrowRight size={14} /></div>
+                    <div className="absolute top-1/2 -ml-4 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white dark:bg-[#111a2e] text-[#16323D] dark:text-[#e8edf7] shadow-lg"><ArrowRight size={14} /></div>
                   </div>
                   <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">{ta.dragHint}</span>
                 </>

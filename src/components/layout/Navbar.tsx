@@ -30,7 +30,7 @@ function LanguageSwitch() {
 
   return (
     <div
-      className="flex rounded-lg border border-[#0F3D56]/15 bg-white p-1"
+      className="flex rounded-lg border border-[#0F3D56]/15 bg-white dark:bg-[#111a2e] p-1"
       aria-label="Language selector"
     >
       {languages.map((item) => (
@@ -41,7 +41,7 @@ function LanguageSwitch() {
           className={`min-h-9 rounded-md px-3 text-xs font-bold uppercase tracking-[0.14em] transition ${
             language === item
               ? "bg-[#0F3D56] text-white"
-              : "text-[#0F3D56] hover:bg-[#F5E9DA]"
+              : "text-[#0F3D56] dark:text-[#e8edf7] hover:bg-[#F5E9DA] dark:hover:bg-[#17233d]"
           }`}
           aria-pressed={language === item}
         >
@@ -87,7 +87,7 @@ export default function Navbar() {
             {branding.initials}
           </span>
           <span>
-            <span className="block text-lg font-bold leading-none text-[#0F3D56]">
+            <span className="block text-lg font-bold leading-none text-[#0F3D56] dark:text-[#e8edf7]">
               {branding.companyShort}
             </span>
             <span className="mt-1 block text-[11px] uppercase tracking-[0.24em] text-slate-500">
@@ -101,7 +101,7 @@ export default function Navbar() {
             <Link
               key={item.href}
               href={item.href}
-              className="whitespace-nowrap text-sm font-medium text-slate-700 transition hover:text-[#0F3D56]"
+              className="whitespace-nowrap text-sm font-medium text-slate-700 transition hover:text-[#0F3D56] dark:hover:text-[#e8edf7]"
             >
               {navLabels[item.labelKey]}
             </Link>
@@ -110,7 +110,7 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-3 md:flex">
           <LanguageSwitch />
-          <a className="text-sm font-semibold text-[#0F3D56]" href={`tel:${branding.phone}`}>
+          <a className="text-sm font-semibold text-[#0F3D56] dark:text-[#e8edf7]" href={`tel:${branding.phone}`}>
             {branding.phone}
           </a>
           <Link
@@ -123,7 +123,7 @@ export default function Navbar() {
             id="navbar-admin-btn"
             type="button"
             onClick={() => setAdminOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] px-4 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF] hover:text-[#395886]"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] dark:bg-[#111a2e] px-4 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF] dark:hover:bg-[#111a2e] hover:text-[#395886]"
             aria-label="Login"
           >
             Login
@@ -135,7 +135,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setAdminOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] px-3 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF]"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] dark:bg-[#111a2e] px-3 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF] dark:hover:bg-[#111a2e]"
             aria-label="Login"
           >
             Login
@@ -143,7 +143,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="grid size-11 place-items-center rounded-lg border border-[#0F3D56]/15 text-[#0F3D56]"
+            className="grid size-11 place-items-center rounded-lg border border-[#0F3D56]/15 text-[#0F3D56] dark:text-[#e8edf7]"
             aria-label={menuOpen ? t.nav.closeNavigation : t.nav.openNavigation}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
@@ -164,14 +164,14 @@ export default function Navbar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition hover:bg-[#F5E9DA] hover:text-[#0F3D56]"
+                className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition hover:bg-[#F5E9DA] dark:hover:bg-[#17233d] hover:text-[#0F3D56] dark:hover:text-[#e8edf7]"
               >
                 {navLabels[item.labelKey]}
               </Link>
             ))}
             <div className="mt-3 flex flex-col gap-3 border-t border-[#0F3D56]/10 pt-4 md:hidden">
               <a
-                className="px-3 text-base font-semibold text-[#0F3D56]"
+                className="px-3 text-base font-semibold text-[#0F3D56] dark:text-[#e8edf7]"
                 href={`tel:${branding.phone}`}
               >
                 {branding.phone}
@@ -186,7 +186,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); setAdminOpen(true); }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] px-4 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF] hover:text-[#395886]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#B1C9EF]/60 bg-[#EDF3FB] dark:bg-[#111a2e] px-4 py-2.5 text-sm font-semibold text-[#628ECB] transition hover:bg-[#D5DEEF] dark:hover:bg-[#111a2e] hover:text-[#395886]"
               >
                 Login
               </button>

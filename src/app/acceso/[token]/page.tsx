@@ -25,23 +25,23 @@ export default function AccesoTokenPage() {
   }, [token, loginWithToken, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F7F3EB] px-6">
-      <div className="w-full max-w-sm rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F3EB] dark:bg-[#0b1220] px-6">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center">
         <span className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-[#16323D] text-base font-bold text-white">
           {branding.initials}
         </span>
-        <p className="text-sm font-bold text-[#16323D]">{branding.companyShort}</p>
+        <p className="text-sm font-bold text-[#16323D] dark:text-[#e8edf7]">{branding.companyShort}</p>
         {failed ? (
           <>
             <p className="mt-3 text-sm font-semibold text-[#B0492F]">
               Enlace inválido, expirado o revocado.
             </p>
-            <p className="mt-1 text-xs text-[#5C6A6E]">
+            <p className="mt-1 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
               Invalid, expired or revoked link. Pide al administrador un enlace nuevo.
             </p>
           </>
         ) : (
-          <p className="mt-3 animate-pulse text-sm font-semibold text-[#5C6A6E]">
+          <p className="mt-3 animate-pulse text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
             Verificando acceso…
           </p>
         )}

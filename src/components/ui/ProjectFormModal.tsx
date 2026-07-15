@@ -189,8 +189,8 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
   const field = (key: string) =>
     `w-full rounded-xl border px-3 py-3 text-sm text-[var(--brand)] focus:outline-none transition ${
       errors[key]
-        ? "border-[#B0492F] bg-[#FDF0ED] focus:border-[#B0492F]"
-        : "border-[#D7CBB3] bg-white focus:border-[var(--brand)]"
+        ? "border-[#B0492F] bg-[#FDF0ED] dark:bg-[#2a1712] focus:border-[#B0492F]"
+        : "border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] focus:border-[var(--brand)]"
     }`;
 
   const isBusy = saving || photoUploading;
@@ -201,7 +201,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
         className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center"
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
-        <div className="w-full max-w-[480px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] shadow-2xl sm:rounded-[20px] max-h-[92vh]">
+        <div className="w-full max-w-[480px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] dark:bg-[#0b1220] shadow-2xl sm:rounded-[20px] max-h-[92vh]">
 
           {/* Photo zone */}
           <div className="relative">
@@ -232,7 +232,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex h-16 w-full items-center justify-center gap-2 rounded-t-[22px] border-b border-[#D7CBB3] bg-[#ECE3D1] text-[12px] font-semibold text-[#5C6A6E] transition hover:bg-[#E0D5BF] sm:rounded-t-[20px]"
+                className="flex h-16 w-full items-center justify-center gap-2 rounded-t-[22px] border-b border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#E0D5BF] sm:rounded-t-[20px]"
               >
                 <Camera size={16} className="opacity-60" />
                 {tp.project.photoAdd}
@@ -255,7 +255,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
             <div className="space-y-3">
               {/* Tipo de proyecto (status) */}
               <div>
-                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Project type" : "Tipo de proyecto"} <span className="text-[#B0492F]">*</span>
                 </label>
                 <select
@@ -274,7 +274,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
 
               {/* Nombre */}
               <div>
-                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {tp.project.name} <span className="text-[#B0492F]">*</span>
                 </label>
                 <input
@@ -291,7 +291,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
 
               {/* Cliente */}
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {tp.project.client}
                 </label>
                 <input
@@ -299,13 +299,13 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
                   placeholder={EN ? "e.g. García Family" : "ej. Familia García"}
                   value={form.client}
                   onChange={e => set("client", e.target.value)}
-                  className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+                  className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                 />
               </div>
 
               {/* Dirección */}
               <div>
-                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {tp.project.address} <span className="text-[#B0492F]">*</span>
                 </label>
                 <input
@@ -323,7 +323,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
               {/* Fecha inicio + Presupuesto */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                  <label className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
                     {tp.project.startDate} <span className="text-[#B0492F]">*</span>
                   </label>
                   <input
@@ -337,7 +337,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
                   )}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
                     {tp.project.budget}
                   </label>
                   <input
@@ -345,7 +345,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
                     min={0}
                     value={form.budget}
                     onChange={e => set("budget", parseFloat(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -353,7 +353,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
 
             {/* Acciones */}
             <div className="mt-5 flex gap-3">
-              <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">
+              <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {EN ? "Cancel" : "Cancelar"}
               </button>
               <button
@@ -381,15 +381,15 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
 
       {confirmDel && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--brand)]/55 backdrop-blur-sm">
-          <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] p-6 shadow-2xl">
+          <div className="w-full max-w-[420px] rounded-[20px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl">
             <h3 className="mb-2 text-lg font-bold text-[var(--brand)]">{EN ? "Delete project" : "Eliminar proyecto"}</h3>
-            <p className="mb-5 text-sm text-[#5C6A6E]">
+            <p className="mb-5 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
               {EN
                 ? `"${project?.title}" will be deleted along with all its data. This cannot be undone.`
                 : `Se eliminarán "${project?.title}" y todos sus datos. Esta acción no se puede deshacer.`}
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{EN ? "Cancel" : "Cancelar"}</button>
+              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Cancel" : "Cancelar"}</button>
               <button onClick={handleDelete} className="flex-1 rounded-xl bg-[#B0492F] py-3 font-bold text-white">{EN ? "Delete" : "Eliminar"}</button>
             </div>
           </div>

@@ -21,10 +21,10 @@ interface ActivityRow {
 }
 
 const ACTION_LABELS: Record<string, { emoji: string; en: string; es: string; color: string; bg: string }> = {
-  login:       { emoji: "🔑", en: "Login",        es: "Login",         color: "text-[var(--accent)]",  bg: "bg-[#EDF3FB]" },
+  login:       { emoji: "🔑", en: "Login",        es: "Login",         color: "text-[var(--accent)]",  bg: "bg-[#EDF3FB] dark:bg-[#111a2e]" },
   create:      { emoji: "✅", en: "Created",      es: "Creó",          color: "text-[#4F8A63]",  bg: "bg-[#EAF5EE]" },
-  delete:      { emoji: "🗑", en: "Deleted",      es: "Eliminó",       color: "text-[#B0492F]",  bg: "bg-[#FDF0ED]" },
-  update:      { emoji: "✏️", en: "Updated",      es: "Actualizó",     color: "text-[#5C6A6E]",  bg: "bg-[#F7F3EA]" },
+  delete:      { emoji: "🗑", en: "Deleted",      es: "Eliminó",       color: "text-[#B0492F]",  bg: "bg-[#FDF0ED] dark:bg-[#2a1712]" },
+  update:      { emoji: "✏️", en: "Updated",      es: "Actualizó",     color: "text-[#5C6A6E] dark:text-[#9fb0cc]",  bg: "bg-[#F7F3EA] dark:bg-[#0b1220]" },
   mark_bought: { emoji: "🛒", en: "Marked bought", es: "Marcó comprado", color: "text-[#6B46C1]", bg: "bg-[#F5F0FF]" },
 };
 
@@ -133,22 +133,22 @@ export default function ActivityPage() {
           { label: EN ? "Created" : "Creados", value: creates, color: "text-[#4F8A63]" },
           { label: EN ? "Deleted" : "Eliminados", value: deletes, color: "text-[#B0492F]" },
         ].map(s => (
-          <div key={s.label} className="rounded-xl border border-[#E6DDCB] bg-white px-4 py-3 text-center">
-            <div className="text-[10px] uppercase tracking-widest font-bold text-[#5C6A6E]">{s.label}</div>
+          <div key={s.label} className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-3 text-center">
+            <div className="text-[10px] uppercase tracking-widest font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">{s.label}</div>
             <div className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-3 rounded-2xl border border-[#E6DDCB] bg-white px-5 py-4">
+      <div className="mb-4 flex flex-wrap gap-3 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-5 py-4">
         <select value={filterUser} onChange={e => setFilterUser(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none">
+          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none">
           <option value="">{EN ? "All users" : "Todos los usuarios"}</option>
           {users.map(u => <option key={u} value={u}>{u}</option>)}
         </select>
         <select value={filterAction} onChange={e => setFilterAction(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none">
+          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none">
           <option value="">{EN ? "All actions" : "Todas las acciones"}</option>
           <option value="login">🔑 Login</option>
           <option value="create">{EN ? "✅ Create" : "✅ Creó"}</option>
@@ -157,31 +157,31 @@ export default function ActivityPage() {
           <option value="mark_bought">{EN ? "🛒 Bought" : "🛒 Comprado"}</option>
         </select>
         <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none" />
+          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none" />
         <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)}
-          className="rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none" />
+          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm text-[var(--brand)] focus:outline-none" />
         <button onClick={() => { setFilterUser(""); setFilterAction(""); setFilterFrom(""); setFilterTo(""); }}
-          className="rounded-lg border border-[#E6DDCB] px-4 py-2 text-sm text-[#5C6A6E] hover:bg-[#F7F3EA]">
+          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-4 py-2 text-sm text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
           {EN ? "Clear" : "Limpiar"}
         </button>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
         {loading ? (
-          <div className="py-12 text-center text-sm text-[#5C6A6E]">
+          <div className="py-12 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
             {EN ? "Loading…" : "Cargando…"}
           </div>
         ) : rows.length === 0 ? (
-          <div className="py-12 text-center text-sm text-[#5C6A6E]">
+          <div className="py-12 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
             {EN ? "No activity yet." : "Sin actividad registrada aún."}
           </div>
         ) : (
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-[#E6DDCB] bg-[#F7F3EA]">
+              <tr className="border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220]">
                 {[EN ? "User" : "Usuario", EN ? "Action" : "Acción", EN ? "Project" : "Proyecto", EN ? "Detail" : "Detalle", EN ? "Time" : "Hora"].map(h => (
-                  <th key={h} className={`px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] ${h === (EN ? "Time" : "Hora") ? "text-right" : "text-left"}`}>{h}</th>
+                  <th key={h} className={`px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc] ${h === (EN ? "Time" : "Hora") ? "text-right" : "text-left"}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -191,7 +191,7 @@ export default function ActivityPage() {
                 const ent = row.entity_type ? ENTITY_LABELS[row.entity_type] : null;
                 const actionLabel = `${act.emoji} ${EN ? act.en : act.es}${ent ? " " + (EN ? ent.en : ent.es) : ""}`;
                 return (
-                  <tr key={row.id} className="border-b border-[#F0EBE0] hover:bg-[#FDFAF6] last:border-0">
+                  <tr key={row.id} className="border-b border-[#F0EBE0] dark:border-[#22304d] hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e] last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${userColor(row.user_id)}`}>
@@ -199,7 +199,7 @@ export default function ActivityPage() {
                         </div>
                         <div>
                           <div className="font-semibold text-[var(--brand)]">{row.user_name ?? "—"}</div>
-                          <div className="text-[10px] text-[#5C6A6E]">{row.user_role === "superadmin" ? "Superadmin" : (EN ? "Collaborator" : "Colaborador")}</div>
+                          <div className="text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{row.user_role === "superadmin" ? "Superadmin" : (EN ? "Collaborator" : "Colaborador")}</div>
                         </div>
                       </div>
                     </td>
@@ -213,7 +213,7 @@ export default function ActivityPage() {
                         ? <><span className="font-medium text-[var(--accent)]">{row.project_name}</span></>
                         : <span className="text-[#C4B89A]">—</span>}
                     </td>
-                    <td className="max-w-[180px] truncate px-4 py-3 text-[#5C6A6E]">
+                    <td className="max-w-[180px] truncate px-4 py-3 text-[#5C6A6E] dark:text-[#9fb0cc]">
                       {row.entity_name ?? (row.action === "login" ? (EN ? "Web session" : "Sesión web") : "—")}
                     </td>
                     <td className="px-4 py-3 text-right text-[11px] text-[#C4B89A]">
@@ -227,7 +227,7 @@ export default function ActivityPage() {
         )}
       </div>
 
-      <p className="mt-4 text-[11px] text-[#97A1A0]">
+      <p className="mt-4 text-[11px] text-[#97A1A0] dark:text-[#728098]">
         {EN
           ? "Only logins, creates, updates, deletes and material purchases are tracked."
           : "Solo se registran logins, creaciones, actualizaciones, eliminaciones y compras de material."}

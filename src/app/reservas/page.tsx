@@ -114,7 +114,7 @@ export default function ReservasPage() {
       } else if (isPast || isSun) {
         cls += "text-[#BFC5C6] opacity-50";
       } else {
-        cls += "text-[#16323D] hover:bg-[#EDF3FB] hover:text-[#395886] cursor-pointer" + (isToday ? " ring-2 ring-[#16323D]/20" : "");
+        cls += "text-[#16323D] dark:text-[#e8edf7] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[#395886] cursor-pointer" + (isToday ? " ring-2 ring-[#16323D]/20" : "");
       }
 
       days.push(
@@ -132,17 +132,17 @@ export default function ReservasPage() {
     }
 
     return (
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-5">
+      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-5">
         <div className="mb-4 flex items-center justify-between">
           <button onClick={() => changeMonth(-1)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6DDCB] text-sm hover:border-[#16323D] transition">‹</button>
-          <span className="text-sm font-bold text-[#16323D]">{months[m]} {y}</span>
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] text-sm hover:border-[#16323D] transition">‹</button>
+          <span className="text-sm font-bold text-[#16323D] dark:text-[#e8edf7]">{months[m]} {y}</span>
           <button onClick={() => changeMonth(1)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6DDCB] text-sm hover:border-[#16323D] transition">›</button>
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] text-sm hover:border-[#16323D] transition">›</button>
         </div>
         <div className="mb-1 grid grid-cols-7">
           {dayAbbr.map(d => (
-            <div key={d} className="py-1 text-center text-[10px] font-bold uppercase tracking-wide text-[#97A1A0]">{d}</div>
+            <div key={d} className="py-1 text-center text-[10px] font-bold uppercase tracking-wide text-[#97A1A0] dark:text-[#728098]">{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1">
@@ -155,7 +155,7 @@ export default function ReservasPage() {
   const renderSlots = () => {
     if (!selectedDate) {
       return (
-        <div className="flex items-center justify-center rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#97A1A0]">
+        <div className="flex items-center justify-center rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-sm text-[#97A1A0] dark:text-[#728098]">
           ← {tb.noDateMsg}
         </div>
       );
@@ -163,7 +163,7 @@ export default function ReservasPage() {
     const slots = getSlotsForDow(selectedDate.dow);
     if (slots.length === 0) {
       return (
-        <div className="flex items-center justify-center rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#97A1A0]">
+        <div className="flex items-center justify-center rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-sm text-[#97A1A0] dark:text-[#728098]">
           {tb.sundayClosed}
         </div>
       );
@@ -173,14 +173,14 @@ export default function ReservasPage() {
 
     const renderSlotGroup = (label: string, group: string[]) => (
       <div className="mb-4">
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0]">{label}</p>
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098]">{label}</p>
         <div className="grid grid-cols-2 gap-2">
           {group.map(s => (
             <button key={s} onClick={() => setSelectedTime(s)}
               className={`rounded-xl border py-2.5 text-sm font-bold transition ${
                 selectedTime === s
                   ? "border-[#16323D] bg-[#16323D] text-white"
-                  : "border-[#E6DDCB] text-[#16323D] hover:border-[#395886] hover:bg-[#EDF3FB] hover:text-[#395886]"
+                  : "border-[#E6DDCB] dark:border-[#22304d] text-[#16323D] dark:text-[#e8edf7] hover:border-[#395886] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[#395886]"
               }`}>
               {s}
             </button>
@@ -190,7 +190,7 @@ export default function ReservasPage() {
     );
 
     return (
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-5">
+      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-5">
         {morning.length > 0 && renderSlotGroup(tb.morningLabel, morning)}
         {afternoon.length > 0 && renderSlotGroup(tb.afternoonLabel, afternoon)}
       </div>
@@ -247,20 +247,20 @@ export default function ReservasPage() {
           <div key={n} className="flex flex-1 flex-col items-center">
             <div className="relative flex w-full items-center">
               {i > 0 && (
-                <div className={`absolute left-0 right-1/2 top-4 h-0.5 -translate-y-1/2 ${done || active ? "bg-[#16323D]" : "bg-[#E6DDCB]"}`} />
+                <div className={`absolute left-0 right-1/2 top-4 h-0.5 -translate-y-1/2 ${done || active ? "bg-[#16323D]" : "bg-[#E6DDCB] dark:bg-[#17233d]"}`} />
               )}
               {i < 3 && (
-                <div className={`absolute left-1/2 right-0 top-4 h-0.5 -translate-y-1/2 ${done ? "bg-[#16323D]" : "bg-[#E6DDCB]"}`} />
+                <div className={`absolute left-1/2 right-0 top-4 h-0.5 -translate-y-1/2 ${done ? "bg-[#16323D]" : "bg-[#E6DDCB] dark:bg-[#17233d]"}`} />
               )}
               <div className={`relative z-10 mx-auto flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all ${
                 done   ? "border-[#16323D] bg-[#16323D] text-white"
                 : active ? "border-[#395886] bg-[#395886] text-white"
-                : "border-[#E6DDCB] bg-white text-[#97A1A0]"
+                : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#97A1A0] dark:text-[#728098]"
               }`}>
                 {done ? "✓" : n}
               </div>
             </div>
-            <span className={`mt-1.5 text-[10px] font-bold uppercase tracking-wider ${active ? "text-[#395886]" : done ? "text-[#16323D]" : "text-[#97A1A0]"}`}>
+            <span className={`mt-1.5 text-[10px] font-bold uppercase tracking-wider ${active ? "text-[#395886]" : done ? "text-[#16323D] dark:text-[#e8edf7]" : "text-[#97A1A0] dark:text-[#728098]"}`}>
               {label}
             </span>
           </div>
@@ -276,14 +276,14 @@ export default function ReservasPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#F5E9DA] pb-20 pt-24">
+      <main className="min-h-screen bg-[#F5E9DA] dark:bg-[#17233d] pb-20 pt-24">
         <div className="mx-auto max-w-3xl px-4">
 
           {/* Header */}
           <div className="mb-8 text-center">
-            <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#5C6A6E]">{branding.companyShort}</p>
-            <h1 className="font-bookman text-3xl font-semibold tracking-tight text-[#16323D]">{tb.pageTitle}</h1>
-            <p className="mt-2 text-sm text-[#5C6A6E]">{tb.pageSubtitle}</p>
+            <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#5C6A6E] dark:text-[#9fb0cc]">{branding.companyShort}</p>
+            <h1 className="font-bookman text-3xl font-semibold tracking-tight text-[#16323D] dark:text-[#e8edf7]">{tb.pageTitle}</h1>
+            <p className="mt-2 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.pageSubtitle}</p>
           </div>
 
           {/* Progress */}
@@ -293,8 +293,8 @@ export default function ReservasPage() {
           {step === 1 && (
             <div>
               <div className="mb-6 text-center">
-                <h2 className="font-bookman text-xl font-semibold text-[#16323D]">{tb.step1Title}</h2>
-                <p className="mt-1 text-sm text-[#5C6A6E]">{tb.step1Subtitle}</p>
+                <h2 className="font-bookman text-xl font-semibold text-[#16323D] dark:text-[#e8edf7]">{tb.step1Title}</h2>
+                <p className="mt-1 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.step1Subtitle}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -303,19 +303,19 @@ export default function ReservasPage() {
                     className={`relative rounded-2xl border-2 p-5 text-left transition-all hover:-translate-y-0.5 ${
                       serviceIdx === i
                         ? "border-[#16323D] bg-[#EDF6F8] shadow-md"
-                        : "border-[#E6DDCB] bg-white hover:border-[#395886] hover:shadow-sm"
+                        : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] hover:border-[#395886] hover:shadow-sm"
                     }`}>
                     {serviceIdx === i && (
                       <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#16323D] text-[10px] text-white">✓</span>
                     )}
                     <span className="mb-3 block text-2xl">{s.icon}</span>
-                    <h3 className="mb-1.5 text-sm font-extrabold text-[#16323D]">{s.title}</h3>
-                    <p className="mb-3 text-xs leading-relaxed text-[#5C6A6E]">{s.desc}</p>
+                    <h3 className="mb-1.5 text-sm font-extrabold text-[#16323D] dark:text-[#e8edf7]">{s.title}</h3>
+                    <p className="mb-3 text-xs leading-relaxed text-[#5C6A6E] dark:text-[#9fb0cc]">{s.desc}</p>
                     <div className="flex flex-wrap gap-1.5">
-                      <span className="rounded-full bg-[#F5E9DA] px-2.5 py-1 text-[10px] font-bold text-[#5C6A6E]">⏱ {s.duration} {tb.minLabel}</span>
-                      <span className="rounded-full bg-[#DCEBDD] px-2.5 py-1 text-[10px] font-bold text-[#4F8A63]">{tb.freeLabel}</span>
+                      <span className="rounded-full bg-[#F5E9DA] dark:bg-[#17233d] px-2.5 py-1 text-[10px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">⏱ {s.duration} {tb.minLabel}</span>
+                      <span className="rounded-full bg-[#DCEBDD] dark:bg-[#14261c] px-2.5 py-1 text-[10px] font-bold text-[#4F8A63]">{tb.freeLabel}</span>
                       {s.type === "virtual" && (
-                        <span className="rounded-full bg-[#EDF3FB] px-2.5 py-1 text-[10px] font-bold text-[#395886]">{tb.onlineLabel}</span>
+                        <span className="rounded-full bg-[#EDF3FB] dark:bg-[#111a2e] px-2.5 py-1 text-[10px] font-bold text-[#395886]">{tb.onlineLabel}</span>
                       )}
                     </div>
                   </button>
@@ -337,8 +337,8 @@ export default function ReservasPage() {
           {step === 2 && (
             <div>
               <div className="mb-6 text-center">
-                <h2 className="font-bookman text-xl font-semibold text-[#16323D]">{tb.step2Title}</h2>
-                <p className="mt-1 text-sm text-[#5C6A6E]">{tb.step2Subtitle}</p>
+                <h2 className="font-bookman text-xl font-semibold text-[#16323D] dark:text-[#e8edf7]">{tb.step2Title}</h2>
+                <p className="mt-1 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.step2Subtitle}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -347,16 +347,16 @@ export default function ReservasPage() {
               </div>
 
               {selectedDate && selectedTime && (
-                <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm text-[#5C6A6E]">
-                  📅 <strong className="text-[#16323D]">{formatDateDisplay(selectedDate.date, language)}</strong>
-                  &nbsp;·&nbsp; ⏰ <strong className="text-[#16323D]">{selectedTime}</strong>
+                <div className="mt-4 rounded-xl bg-white dark:bg-[#111a2e] px-4 py-3 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
+                  📅 <strong className="text-[#16323D] dark:text-[#e8edf7]">{formatDateDisplay(selectedDate.date, language)}</strong>
+                  &nbsp;·&nbsp; ⏰ <strong className="text-[#16323D] dark:text-[#e8edf7]">{selectedTime}</strong>
                   &nbsp;·&nbsp; {svc?.title}
                 </div>
               )}
 
               <div className="mt-8 flex justify-between gap-3">
                 <button onClick={() => setStep(1)}
-                  className="rounded-xl border border-[#E6DDCB] bg-white px-6 py-3 text-sm font-bold text-[#5C6A6E] transition hover:border-[#16323D] hover:text-[#16323D]">
+                  className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-6 py-3 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[#16323D] hover:text-[#16323D] dark:hover:text-[#e8edf7]">
                   ← {tb.backBtn}
                 </button>
                 <button
@@ -373,65 +373,65 @@ export default function ReservasPage() {
           {step === 3 && (
             <div>
               <div className="mb-6 text-center">
-                <h2 className="font-bookman text-xl font-semibold text-[#16323D]">{tb.step3Title}</h2>
-                <p className="mt-1 text-sm text-[#5C6A6E]">{tb.step3Subtitle}</p>
+                <h2 className="font-bookman text-xl font-semibold text-[#16323D] dark:text-[#e8edf7]">{tb.step3Title}</h2>
+                <p className="mt-1 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.step3Subtitle}</p>
               </div>
 
               {/* Booking summary */}
               {svc && selectedDate && selectedTime && (
-                <div className="mb-5 flex items-center gap-4 rounded-2xl bg-white px-5 py-4">
+                <div className="mb-5 flex items-center gap-4 rounded-2xl bg-white dark:bg-[#111a2e] px-5 py-4">
                   <span className="text-2xl">{svc.icon}</span>
                   <div>
-                    <p className="font-bold text-[#16323D]">{svc.title}</p>
-                    <p className="text-xs text-[#5C6A6E]">
+                    <p className="font-bold text-[#16323D] dark:text-[#e8edf7]">{svc.title}</p>
+                    <p className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
                       {formatDateDisplay(selectedDate.date, language)} · {selectedTime}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="rounded-2xl border border-[#E6DDCB] bg-white p-6">
+              <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-6">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">{tb.firstName} *</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.firstName} *</label>
                     <input value={firstName} onChange={e => setFirstName(e.target.value)}
                       placeholder={tb.firstNamePh}
-                      className="rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3.5 py-3 text-sm text-[#16323D] outline-none focus:border-[#16323D]" />
+                      className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3.5 py-3 text-sm text-[#16323D] dark:text-[#e8edf7] outline-none focus:border-[#16323D]" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">{tb.lastName} *</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.lastName} *</label>
                     <input value={lastName} onChange={e => setLastName(e.target.value)}
                       placeholder={tb.lastNamePh}
-                      className="rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3.5 py-3 text-sm text-[#16323D] outline-none focus:border-[#16323D]" />
+                      className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3.5 py-3 text-sm text-[#16323D] dark:text-[#e8edf7] outline-none focus:border-[#16323D]" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">{tb.emailLabel} *</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.emailLabel} *</label>
                     <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                       placeholder={tb.emailPh}
-                      className="rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3.5 py-3 text-sm text-[#16323D] outline-none focus:border-[#16323D]" />
+                      className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3.5 py-3 text-sm text-[#16323D] dark:text-[#e8edf7] outline-none focus:border-[#16323D]" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">{tb.phoneLabel} *</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.phoneLabel} *</label>
                     <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
                       placeholder={tb.phonePh}
-                      className="rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3.5 py-3 text-sm text-[#16323D] outline-none focus:border-[#16323D]" />
+                      className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3.5 py-3 text-sm text-[#16323D] dark:text-[#e8edf7] outline-none focus:border-[#16323D]" />
                   </div>
                   <div className="col-span-full flex flex-col gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">{tb.addressLabel} *</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.addressLabel} *</label>
                     <input value={address} onChange={e => setAddress(e.target.value)}
                       placeholder={tb.addressPh}
-                      className="rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3.5 py-3 text-sm text-[#16323D] outline-none focus:border-[#16323D]" />
+                      className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3.5 py-3 text-sm text-[#16323D] dark:text-[#e8edf7] outline-none focus:border-[#16323D]" />
                   </div>
                   <div className="col-span-full flex flex-col gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">
-                      {tb.notesLabel} <span className="normal-case font-normal text-[#97A1A0]">({tb.notesOptional})</span>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">
+                      {tb.notesLabel} <span className="normal-case font-normal text-[#97A1A0] dark:text-[#728098]">({tb.notesOptional})</span>
                     </label>
                     <textarea value={notes} onChange={e => setNotes(e.target.value)}
                       placeholder={tb.notesPh} rows={3}
-                      className="resize-none rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3.5 py-3 text-sm text-[#16323D] outline-none focus:border-[#16323D]" />
+                      className="resize-none rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3.5 py-3 text-sm text-[#16323D] dark:text-[#e8edf7] outline-none focus:border-[#16323D]" />
                   </div>
                   <div className="col-span-full">
-                    <label className="flex cursor-pointer items-start gap-2.5 text-xs text-[#5C6A6E]">
+                    <label className="flex cursor-pointer items-start gap-2.5 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
                       <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
                         className="mt-0.5 accent-[#16323D]" />
                       {tb.consentText}
@@ -446,7 +446,7 @@ export default function ReservasPage() {
 
               <div className="mt-8 flex justify-between gap-3">
                 <button onClick={() => setStep(2)}
-                  className="rounded-xl border border-[#E6DDCB] bg-white px-6 py-3 text-sm font-bold text-[#5C6A6E] transition hover:border-[#16323D] hover:text-[#16323D]">
+                  className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-6 py-3 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[#16323D] hover:text-[#16323D] dark:hover:text-[#e8edf7]">
                   ← {tb.backBtn}
                 </button>
                 <button
@@ -463,29 +463,29 @@ export default function ReservasPage() {
           {step === 4 && svc && selectedDate && selectedTime && (
             <div className="text-center">
               <div className="mb-4 text-5xl" style={{ animation: "bounceIn .5s ease" }}>🎉</div>
-              <h2 className="font-bookman text-2xl font-semibold text-[#16323D]">{tb.step4Title}</h2>
-              <p className="mt-2 text-sm text-[#5C6A6E]">{tb.step4Subtitle}</p>
+              <h2 className="font-bookman text-2xl font-semibold text-[#16323D] dark:text-[#e8edf7]">{tb.step4Title}</h2>
+              <p className="mt-2 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.step4Subtitle}</p>
 
-              <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-[#E6DDCB] bg-white p-6 text-left">
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0]">Booking Summary</p>
+              <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-6 text-left">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098]">Booking Summary</p>
                 {[
                   { icon: "📋", strong: svc.title, sub: tb.confirmServiceLabel },
                   { icon: "📅", strong: formatDateDisplay(selectedDate.date, language), sub: selectedTime },
                   { icon: "📍", strong: address, sub: tb.confirmAddressLabel },
                   { icon: "👤", strong: `${firstName} ${lastName}`, sub: email },
                 ].map((row, i) => (
-                  <div key={i} className={`flex gap-3 py-3 ${i < 3 ? "border-b border-[#E6DDCB]" : ""}`}>
+                  <div key={i} className={`flex gap-3 py-3 ${i < 3 ? "border-b border-[#E6DDCB] dark:border-[#22304d]" : ""}`}>
                     <span className="mt-0.5 text-base">{row.icon}</span>
                     <div>
-                      <strong className="block text-sm text-[#16323D]">{row.strong}</strong>
-                      <span className="text-xs text-[#5C6A6E]">{row.sub}</span>
+                      <strong className="block text-sm text-[#16323D] dark:text-[#e8edf7]">{row.strong}</strong>
+                      <span className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{row.sub}</span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mx-auto mt-4 max-w-sm rounded-xl bg-[#F5E9DA] p-4 text-left text-xs leading-7 text-[#5C6A6E]">
-                <strong className="block mb-1 text-[#16323D]">{tb.nextStepsTitle}</strong>
+              <div className="mx-auto mt-4 max-w-sm rounded-xl bg-[#F5E9DA] dark:bg-[#17233d] p-4 text-left text-xs leading-7 text-[#5C6A6E] dark:text-[#9fb0cc]">
+                <strong className="block mb-1 text-[#16323D] dark:text-[#e8edf7]">{tb.nextStepsTitle}</strong>
                 {tb.nextStep1}<br />{tb.nextStep2}<br />{tb.nextStep3}
               </div>
 
@@ -493,7 +493,7 @@ export default function ReservasPage() {
                 setStep(1); setServiceIdx(null); setSelectedDate(null); setSelectedTime(null);
                 setFirstName(""); setLastName(""); setEmail(""); setPhone(""); setAddress(""); setNotes(""); setConsent(false);
               }}
-                className="mt-6 rounded-xl border border-[#E6DDCB] bg-white px-5 py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:border-[#16323D] hover:text-[#16323D]">
+                className="mt-6 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-5 py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[#16323D] hover:text-[#16323D] dark:hover:text-[#e8edf7]">
                 {tb.bookAnother}
               </button>
             </div>

@@ -28,13 +28,13 @@ export default function Services() {
   const { t } = useLanguage();
 
   return (
-    <section id="services" className="bg-white py-20 sm:py-24">
+    <section id="services" className="bg-white dark:bg-[#111a2e] py-20 sm:py-24">
       <Container>
         <div className="max-w-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#0F3D56]/70">
             {t.services.eyebrow}
           </p>
-          <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] sm:text-5xl">
+          <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] dark:text-[#e8edf7] sm:text-5xl">
             {t.services.title}
           </h2>
         </div>
@@ -51,7 +51,7 @@ export default function Services() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.55, delay: index * 0.08 }}
-                className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(15,61,86,0.14)]"
+                className="group overflow-hidden rounded-lg border border-slate-200 bg-white dark:bg-[#111a2e] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(15,61,86,0.14)]"
               >
                 <div className="aspect-[4/3] overflow-hidden">
                   <img
@@ -61,10 +61,10 @@ export default function Services() {
                   />
                 </div>
                 <div className="p-6">
-                  <div className="mb-5 grid size-12 place-items-center rounded-lg bg-[#F5E9DA] text-[#0F3D56]">
+                  <div className="mb-5 grid size-12 place-items-center rounded-lg bg-[#F5E9DA] dark:bg-[#17233d] text-[#0F3D56] dark:text-[#e8edf7]">
                     <Icon size={23} />
                   </div>
-                  <h3 className="text-2xl font-bold text-[#0F3D56]">{content.title}</h3>
+                  <h3 className="text-2xl font-bold text-[#0F3D56] dark:text-[#e8edf7]">{content.title}</h3>
                   <p className="mt-4 leading-7 text-slate-600">{content.description}</p>
                 </div>
               </motion.article>

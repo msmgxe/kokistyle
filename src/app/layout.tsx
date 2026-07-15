@@ -43,6 +43,15 @@ export default function RootLayout({
       lang="en"
       className={`${dmSans.variable} ${cormorant.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Aplica el tema oscuro antes del primer paint (evita flash blanco→oscuro).
+            Misma clave/localStorage que el toggle en ThemeGear (proyectos/layout.tsx). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("luxaris-theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");}}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <LanguageProvider>
           <AuthProvider>

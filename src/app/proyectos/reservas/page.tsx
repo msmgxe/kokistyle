@@ -11,10 +11,10 @@ const MONTH_NAMES_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","O
 type Filter = "all" | "pending" | "confirmed" | "done";
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
-  pending:   "bg-[#FEF6ED] text-[#B8921A]",
-  confirmed: "bg-[#DCEBDD] text-[#4F8A63]",
-  done:      "bg-[#F5E9DA] text-[#5C6A6E]",
-  cancelled: "bg-[#FDE8E3] text-[#B0492F]",
+  pending:   "bg-[#FEF6ED] dark:bg-[#17233d] text-[#B8921A]",
+  confirmed: "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
+  done:      "bg-[#F5E9DA] dark:bg-[#17233d] text-[#5C6A6E] dark:text-[#9fb0cc]",
+  cancelled: "bg-[#FDE8E3] dark:bg-[#2a1712] text-[#B0492F]",
 };
 
 function avatarInitials(first: string, last: string) {
@@ -102,7 +102,7 @@ export default function ReservasAdminPage() {
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="font-bookman text-2xl font-semibold text-[var(--brand)]">{tb.title}</h1>
-          <p className="mt-0.5 text-xs text-[#5C6A6E]">{tb.subtitle}</p>
+          <p className="mt-0.5 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{tb.subtitle}</p>
         </div>
         <a
           href="/reservas"
@@ -120,9 +120,9 @@ export default function ReservasAdminPage() {
           { val: kpiConfirmed, lab: tb.kpiConfirmed, color: "text-[#4F8A63]"  },
           { val: kpiTotal,     lab: tb.kpiTotal,     color: "text-[var(--accent)]"  },
         ].map((k, i) => (
-          <div key={i} className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
+          <div key={i} className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4">
             <p className={`text-2xl font-extrabold ${k.color}`}>{k.val}</p>
-            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0]">{k.lab}</p>
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098]">{k.lab}</p>
           </div>
         ))}
       </div>
@@ -138,7 +138,7 @@ export default function ReservasAdminPage() {
               className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
                 filter === f
                   ? "bg-[var(--accent)] text-white"
-                  : "bg-white text-[#628ECB] hover:bg-[#EDF3FB]"
+                  : "bg-white dark:bg-[#111a2e] text-[#628ECB] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]"
               }`}>
               {labels[f]}
             </button>
@@ -147,15 +147,15 @@ export default function ReservasAdminPage() {
       </div>
 
       {/* Booking list */}
-      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+      <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
         {loading ? (
-          <p className="px-6 py-10 text-center text-sm text-[#97A1A0]">Loading…</p>
+          <p className="px-6 py-10 text-center text-sm text-[#97A1A0] dark:text-[#728098]">Loading…</p>
         ) : filtered.length === 0 ? (
-          <p className="px-6 py-10 text-center text-sm text-[#97A1A0]">{tb.noBookings}</p>
+          <p className="px-6 py-10 text-center text-sm text-[#97A1A0] dark:text-[#728098]">{tb.noBookings}</p>
         ) : (
           <>
             {/* Table header */}
-            <div className="hidden grid-cols-[2fr_1.4fr_1fr_1.2fr] gap-4 border-b border-[#E6DDCB] bg-[#F7F3EA] px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0] sm:grid">
+            <div className="hidden grid-cols-[2fr_1.4fr_1fr_1.2fr] gap-4 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098] sm:grid">
               <div>{tb.colClient}</div>
               <div>{tb.colDateTime}</div>
               <div>{tb.colStatus}</div>
@@ -168,10 +168,10 @@ export default function ReservasAdminPage() {
               const color = avatarColor(b.first_name + b.last_name);
 
               return (
-                <div key={b.id} className="border-b border-[#E6DDCB] last:border-0">
+                <div key={b.id} className="border-b border-[#E6DDCB] dark:border-[#22304d] last:border-0">
                   {/* Main row */}
                   <div
-                    className="grid cursor-pointer grid-cols-1 gap-3 px-5 py-4 transition hover:bg-[#FDFAF6] sm:grid-cols-[2fr_1.4fr_1fr_1.2fr] sm:items-center"
+                    className="grid cursor-pointer grid-cols-1 gap-3 px-5 py-4 transition hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e] sm:grid-cols-[2fr_1.4fr_1fr_1.2fr] sm:items-center"
                     onClick={() => setExpanded(isOpen ? null : b.id)}>
 
                     {/* Client + service */}
@@ -180,14 +180,14 @@ export default function ReservasAdminPage() {
                         style={{ background: color }}>{initials}</div>
                       <div>
                         <p className="text-sm font-bold text-[var(--brand)]">{b.first_name} {b.last_name}</p>
-                        <p className="text-xs text-[#5C6A6E]">{b.service_icon} {b.service}</p>
+                        <p className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{b.service_icon} {b.service}</p>
                       </div>
                     </div>
 
                     {/* Date & time */}
                     <div className="sm:pl-0 pl-12">
                       <p className="text-sm font-semibold text-[var(--brand)]">{formatDate(b.booking_date)}</p>
-                      <p className="text-xs text-[#5C6A6E]">{b.booking_time} · {b.duration_min} {tb.durationLabel}{b.duration_min === 45 && b.service.toLowerCase().includes("virtual") ? ` · ${tb.onlineLabel}` : ""}</p>
+                      <p className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{b.booking_time} · {b.duration_min} {tb.durationLabel}{b.duration_min === 45 && b.service.toLowerCase().includes("virtual") ? ` · ${tb.onlineLabel}` : ""}</p>
                     </div>
 
                     {/* Status */}
@@ -211,7 +211,7 @@ export default function ReservasAdminPage() {
                         <button
                           disabled={updating === b.id}
                           onClick={() => updateStatus(b.id, "done")}
-                          className="rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[10px] font-bold text-[#5C6A6E] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:opacity-50">
+                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-3 py-1.5 text-[10px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:opacity-50">
                           {tb.actionDone}
                         </button>
                       )}
@@ -219,7 +219,7 @@ export default function ReservasAdminPage() {
                         <button
                           disabled={updating === b.id}
                           onClick={() => updateStatus(b.id, "cancelled")}
-                          className="rounded-lg border border-[#E6DDCB] px-3 py-1.5 text-[10px] font-bold text-[#B0492F] transition hover:border-[#B0492F] disabled:opacity-50">
+                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-3 py-1.5 text-[10px] font-bold text-[#B0492F] transition hover:border-[#B0492F] disabled:opacity-50">
                           ✕
                         </button>
                       )}
@@ -229,24 +229,24 @@ export default function ReservasAdminPage() {
 
                   {/* Expanded details */}
                   {isOpen && (
-                    <div className="border-t border-[#E6DDCB] bg-[#FDFAF6] px-5 py-4">
+                    <div className="border-t border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-5 py-4">
                       <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs sm:grid-cols-4">
                         <div>
-                          <p className="font-bold uppercase tracking-wider text-[#97A1A0]">{tb.phoneLabel}</p>
+                          <p className="font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098]">{tb.phoneLabel}</p>
                           <a href={`tel:${b.phone}`} className="text-[var(--accent)] underline">{b.phone}</a>
                         </div>
                         <div>
-                          <p className="font-bold uppercase tracking-wider text-[#97A1A0]">{tb.emailLabel}</p>
+                          <p className="font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098]">{tb.emailLabel}</p>
                           <a href={`mailto:${b.email}`} className="text-[var(--accent)] underline">{b.email}</a>
                         </div>
                         <div className="col-span-2">
-                          <p className="font-bold uppercase tracking-wider text-[#97A1A0]">{tb.addressLabel}</p>
+                          <p className="font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098]">{tb.addressLabel}</p>
                           <p className="text-[var(--brand)]">{b.address}</p>
                         </div>
                         {b.notes && (
                           <div className="col-span-full mt-1">
-                            <p className="font-bold uppercase tracking-wider text-[#97A1A0]">{tb.notesLabel}</p>
-                            <p className="text-[#5C6A6E]">{b.notes}</p>
+                            <p className="font-bold uppercase tracking-wider text-[#97A1A0] dark:text-[#728098]">{tb.notesLabel}</p>
+                            <p className="text-[#5C6A6E] dark:text-[#9fb0cc]">{b.notes}</p>
                           </div>
                         )}
                       </div>

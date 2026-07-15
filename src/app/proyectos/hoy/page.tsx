@@ -18,23 +18,23 @@ interface ProjLite { id: string; title: string; client: string; address: string 
 type Filter = "all" | "pend" | "done";
 
 const STATUS_PILL: Record<string, string> = {
-  prospecto:   "bg-[#EFEFEF] text-[#5C5C5C]",
+  prospecto:   "bg-[#EFEFEF] dark:bg-[#17233d] text-[#5C5C5C] dark:text-[#9fb0cc]",
   presupuesto: "bg-[#F5E6C3] text-[#7A6230]",
-  aprobado:    "bg-[#EDF3FB] text-[var(--accent)]",
-  en_obra:     "bg-[#DCEBDD] text-[#35664A]",
+  aprobado:    "bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]",
+  en_obra:     "bg-[#DCEBDD] dark:bg-[#14261c] text-[#35664A]",
   terminado:   "bg-[var(--brand)] text-white",
 };
 
 const SECTION_STYLES = [
-  "bg-[#EDF3FB] text-[var(--accent)]",
-  "bg-[#DCEBDD] text-[#4F8A63]",
-  "bg-[#EDE3CF] text-[#7A6230]",
+  "bg-[#EDF3FB] dark:bg-[#111a2e] text-[var(--accent)]",
+  "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
+  "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
   "bg-[#F0E8F7] text-[#6D3AAD]",
-  "bg-[#DCE8E9] text-[#4E7A82]",
-  "bg-[#FDF0ED] text-[#B0492F]",
-  "bg-[#F7F0E8] text-[#A0582A]",
-  "bg-[#E8EEF7] text-[#3F6AB0]",
-  "bg-[#EFEFEF] text-[#5C5C5C]",
+  "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]",
+  "bg-[#FDF0ED] dark:bg-[#2a1712] text-[#B0492F]",
+  "bg-[#F7F0E8] dark:bg-[#17233d] text-[#A0582A]",
+  "bg-[#E8EEF7] dark:bg-[#111a2e] text-[#3F6AB0]",
+  "bg-[#EFEFEF] dark:bg-[#17233d] text-[#5C5C5C] dark:text-[#9fb0cc]",
 ];
 function sectionStyle(tag: string): string {
   let h = 0;
@@ -224,7 +224,7 @@ export default function HoyPage() {
           >‹</button>
           <button
             onClick={() => setDate(toIso(new Date()))}
-            className={`h-10 rounded-xl px-3.5 text-[12px] font-bold transition ${isToday ? "bg-white text-[var(--brand)]" : "bg-white/15 text-white"}`}
+            className={`h-10 rounded-xl px-3.5 text-[12px] font-bold transition ${isToday ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]" : "bg-white/15 text-white"}`}
           >{th.todayBtn}</button>
           <button
             onClick={() => setDate(isoAddDays(date, 1))}
@@ -259,7 +259,7 @@ export default function HoyPage() {
             key={k}
             onClick={() => setFilter(k)}
             className={`rounded-full border px-3.5 py-1.5 text-[11.5px] font-bold transition ${
-              filter === k ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#E6DDCB] bg-white text-[#5C6A6E]"
+              filter === k ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc]"
             }`}
           >
             {l} · {filterCounts[k]}
@@ -277,7 +277,7 @@ export default function HoyPage() {
           {isSuperAdmin && (
             <div className="mb-3 space-y-1.5">
               {notes.map(n => (
-                <div key={n.id} className="flex items-center gap-2.5 rounded-2xl border border-[#EAD9AC] bg-[#FBF5E6] px-3.5 py-2.5">
+                <div key={n.id} className="flex items-center gap-2.5 rounded-2xl border border-[#EAD9AC] bg-[#FBF5E6] dark:bg-[#17233d] px-3.5 py-2.5">
                   <Pin size={13} className="shrink-0 text-[#B98A2F]" />
                   <button
                     onClick={() => toggleNote(n)}
@@ -290,7 +290,7 @@ export default function HoyPage() {
                   </button>
                   <button
                     onClick={() => setNoteModal({ mode: "edit", id: n.id, title: n.title, projectId: n.project_id ?? "" })}
-                    className={`min-w-0 flex-1 text-left text-[13px] ${n.done ? "text-[#97A1A0] line-through" : "font-semibold text-[#7A6230]"}`}
+                    className={`min-w-0 flex-1 text-left text-[13px] ${n.done ? "text-[#97A1A0] dark:text-[#728098] line-through" : "font-semibold text-[#7A6230]"}`}
                   >
                     {n.title}
                     {n.project_id && projects.get(n.project_id) && (
@@ -318,7 +318,7 @@ export default function HoyPage() {
 
           {/* ── Tareas por proyecto ── */}
           {shown.length === 0 && (
-            <p className="py-10 text-center text-[13px] italic text-[#97A1A0]">
+            <p className="py-10 text-center text-[13px] italic text-[#97A1A0] dark:text-[#728098]">
               {dayTasks.length === 0 ? th.emptyDay : filter === "done" ? th.emptyDone : th.emptyPend}
             </p>
           )}
@@ -338,7 +338,7 @@ export default function HoyPage() {
                       {stLabel}
                     </span>
                   )}
-                  <span className="text-[11px] text-[#97A1A0]">{p?.client}{p?.address ? ` · ${p.address}` : ""}</span>
+                  <span className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{p?.client}{p?.address ? ` · ${p.address}` : ""}</span>
                   <span className="ml-auto font-mono text-[11px] font-bold text-[#4F8A63]">
                     {pAll.filter(tk => tk.status === "done").length}/{pAll.length} ✓
                   </span>
@@ -356,7 +356,7 @@ export default function HoyPage() {
                       <button
                         key={task.id}
                         onClick={() => toggleTask(task)}
-                        className="flex w-full items-center gap-3 rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3 text-left transition active:scale-[0.98]"
+                        className="flex w-full items-center gap-3 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-3 text-left transition active:scale-[0.98]"
                       >
                         <span className={`grid size-[26px] shrink-0 place-items-center rounded-[9px] border-2 transition ${
                           done ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#C6BCA6]"
@@ -369,17 +369,17 @@ export default function HoyPage() {
                               {task.source_section}
                             </span>
                           )}
-                          <span className={`block text-[14px] leading-snug ${done ? "text-[#97A1A0] line-through" : "font-semibold text-[var(--brand)]"}`}>
+                          <span className={`block text-[14px] leading-snug ${done ? "text-[#97A1A0] dark:text-[#728098] line-through" : "font-semibold text-[var(--brand)]"}`}>
                             {task.name}
                           </span>
-                          <span className="mt-1 flex items-center gap-1.5 text-[11px] text-[#5C6A6E]">
+                          <span className="mt-1 flex items-center gap-1.5 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                             <span className="grid size-[17px] place-items-center rounded-full bg-[var(--brand)] text-[7px] font-extrabold text-white">
                               {initials(who)}
                             </span>
                             {who}
                           </span>
                         </span>
-                        <span className="shrink-0 font-mono text-[12px] font-bold text-[#5C6A6E]">{task.hours || 0}h</span>
+                        <span className="shrink-0 font-mono text-[12px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">{task.hours || 0}h</span>
                       </button>
                     );
                   })}

@@ -12,12 +12,12 @@ export default function Testimonials() {
   const tt = t.testimonials;
 
   return (
-    <section id="reviews" className="bg-[#F5E9DA] py-20 sm:py-24">
+    <section id="reviews" className="bg-[#F5E9DA] dark:bg-[#17233d] py-20 sm:py-24">
       <Container>
         <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#0F3D56]/70">{tt.eyebrow}</p>
-            <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] sm:text-5xl">{tt.title}</h2>
+            <h2 className="mt-4 text-4xl font-bold tracking-tight text-[#0F3D56] dark:text-[#e8edf7] sm:text-5xl">{tt.title}</h2>
           </div>
           <p className="max-w-2xl text-base leading-8 text-slate-700 lg:justify-self-end">{tt.description}</p>
         </div>
@@ -30,7 +30,7 @@ export default function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="flex flex-col rounded-2xl bg-white p-6 shadow-[0_18px_50px_rgba(15,61,86,0.1)]"
+              className="flex flex-col rounded-2xl bg-white dark:bg-[#111a2e] p-6 shadow-[0_18px_50px_rgba(15,61,86,0.1)]"
             >
               <Quote size={22} className="text-[#C9A227]" />
               <div className="mt-3 flex gap-0.5">
@@ -41,12 +41,12 @@ export default function Testimonials() {
               <blockquote className="mt-4 flex-1 text-sm leading-6 text-slate-700">
                 “{item.quote}”
               </blockquote>
-              <figcaption className="mt-5 flex items-center gap-3 border-t border-[#F0EBE0] pt-4">
+              <figcaption className="mt-5 flex items-center gap-3 border-t border-[#F0EBE0] dark:border-[#22304d] pt-4">
                 <span className="grid size-9 flex-none place-items-center rounded-full bg-[#16323D] text-[11px] font-bold text-[#F5E9DA]">
                   {initials(item.name)}
                 </span>
                 <span>
-                  <span className="block text-sm font-bold text-[#0F3D56]">{item.name}</span>
+                  <span className="block text-sm font-bold text-[#0F3D56] dark:text-[#e8edf7]">{item.name}</span>
                   <span className="block text-[11px] uppercase tracking-wide text-slate-500">{item.city}</span>
                 </span>
               </figcaption>

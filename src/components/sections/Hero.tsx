@@ -30,7 +30,7 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative isolate overflow-hidden bg-[#F5E9DA] pt-28 text-[#0F3D56] sm:pt-32"
+      className="relative isolate overflow-hidden bg-[#F5E9DA] dark:bg-[#17233d] pt-28 text-[#0F3D56] dark:text-[#e8edf7] sm:pt-32"
     >
       <div className="absolute inset-x-0 top-0 -z-10 h-72 bg-white/70" />
       <Container className="grid min-h-[calc(100vh-5rem)] items-center gap-12 pb-12 lg:grid-cols-[1.02fr_0.98fr] lg:pb-16">
@@ -44,7 +44,7 @@ export default function Hero() {
             {eyebrow}
           </p>
 
-          <h1 className="font-display text-5xl font-semibold leading-[0.95] text-[#0F3D56] sm:text-6xl lg:text-7xl">
+          <h1 className="font-display text-5xl font-semibold leading-[0.95] text-[#0F3D56] dark:text-[#e8edf7] sm:text-6xl lg:text-7xl">
             {title}
           </h1>
 
@@ -73,7 +73,7 @@ export default function Hero() {
           <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-slate-700">
             {t.hero.proof.map((item) => (
                 <span key={item} className="inline-flex items-center gap-2">
-                  <CheckCircle2 size={17} className="text-[#0F3D56]" />
+                  <CheckCircle2 size={17} className="text-[#0F3D56] dark:text-[#e8edf7]" />
                   {item}
                 </span>
             ))}
@@ -90,7 +90,7 @@ export default function Hero() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imgMain} alt={title} className="h-full w-full object-cover object-center" />
           </div>
-          <div className="absolute bottom-0 left-0 h-[46%] w-[54%] overflow-hidden rounded-lg border-8 border-[#F5E9DA] shadow-[0_24px_70px_rgba(15,61,86,0.2)]">
+          <div className="absolute bottom-0 left-0 h-[46%] w-[54%] overflow-hidden rounded-lg border-8 border-[#F5E9DA] dark:border-[#2c3c5e] shadow-[0_24px_70px_rgba(15,61,86,0.2)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imgSecondary} alt={focusValue} className="h-full w-full object-cover" />
           </div>
@@ -98,7 +98,7 @@ export default function Hero() {
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
               {focusLabel}
             </p>
-            <p className="mt-2 text-xl font-bold leading-tight text-[#0F3D56]">
+            <p className="mt-2 text-xl font-bold leading-tight text-[#0F3D56] dark:text-[#e8edf7]">
               {focusValue}
             </p>
           </div>

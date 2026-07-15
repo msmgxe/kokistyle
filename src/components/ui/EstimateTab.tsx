@@ -79,10 +79,10 @@ interface EstimateRow {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_STYLE: Record<string, string> = {
-  draft:    "bg-[#EDE3CF] text-[#7A6230]",
-  sent:     "bg-[#DCE8E9] text-[#4E7A82]",
-  approved: "bg-[#DCEBDD] text-[#4F8A63]",
-  rejected: "bg-[#F0DBD2] text-[#B0492F]",
+  draft:    "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
+  sent:     "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]",
+  approved: "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
+  rejected: "bg-[#F0DBD2] dark:bg-[#2a1712] text-[#B0492F]",
 };
 
 const FALLBACK_CATALOG: EstimateSectionCatalog[] = [
@@ -117,18 +117,18 @@ interface SortableItemProps {
 
 function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const numCls = "w-16 sm:w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] hover:bg-[#F7F3EA] focus:border-b focus:border-[var(--accent)] focus:bg-white focus:outline-none";
+  const numCls = "w-16 sm:w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] focus:border-b focus:border-[var(--accent)] focus:bg-white dark:focus:bg-[#111a2e] focus:outline-none";
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className="group flex items-center gap-2 border-b border-[#F0EBE0] bg-white px-4 py-2 hover:bg-[#FDFAF6]"
+      className="group flex items-center gap-2 border-b border-[#F0EBE0] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-2 hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"
     >
       <button
         {...attributes} {...listeners}
         tabIndex={-1}
         aria-label="Drag to reorder"
-        className="shrink-0 cursor-grab touch-none p-0.5 text-[#D7CBB3] hover:text-[#5C6A6E] active:cursor-grabbing"
+        className="shrink-0 cursor-grab touch-none p-0.5 text-[#D7CBB3] hover:text-[#5C6A6E] dark:hover:text-[#9fb0cc] active:cursor-grabbing"
       >
         <GripVertical size={12} />
       </button>
@@ -138,7 +138,7 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
         value={item.description}
         onChange={e => onUpdateLocal(sectionId, item.id, "description", e.target.value)}
         onBlur={()  => onSaveField(item.id)}
-        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[var(--brand)] hover:bg-[#F7F3EA] focus:border-b focus:border-[var(--accent)] focus:bg-white focus:outline-none"
+        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[var(--brand)] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] focus:border-b focus:border-[var(--accent)] focus:bg-white dark:focus:bg-[#111a2e] focus:outline-none"
       />
       <input
         type="number"
@@ -265,11 +265,11 @@ function SortableSection({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white"
+      className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"
     >
       {/* ── Card header ── */}
       <div
-        className="flex cursor-pointer items-center justify-between px-4 py-3.5 transition hover:bg-[#FDFAF6]"
+        className="flex cursor-pointer items-center justify-between px-4 py-3.5 transition hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"
         onClick={onToggle}
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -278,11 +278,11 @@ function SortableSection({
             tabIndex={-1}
             aria-label="Drag to reorder section"
             onClick={e => e.stopPropagation()}
-            className="shrink-0 cursor-grab touch-none p-1 text-[#D7CBB3] hover:text-[#5C6A6E] active:cursor-grabbing"
+            className="shrink-0 cursor-grab touch-none p-1 text-[#D7CBB3] hover:text-[#5C6A6E] dark:hover:text-[#9fb0cc] active:cursor-grabbing"
           >
             <GripVertical size={14} />
           </button>
-          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm ${section.is_material_type ? "bg-[#FDF0ED]" : "bg-[#EDF3FB]"}`}>
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm ${section.is_material_type ? "bg-[#FDF0ED] dark:bg-[#2a1712]" : "bg-[#EDF3FB] dark:bg-[#111a2e]"}`}>
             {sectionEmoji(section.name_en)}
           </div>
           <div className="min-w-0 flex-1">
@@ -298,7 +298,7 @@ function SortableSection({
                 }}
                 onClick={e => e.stopPropagation()}
                 placeholder={EN ? "Section name" : "Nombre de sección"}
-                className="w-full max-w-[220px] rounded-md border border-[var(--accent)] bg-white px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide text-[var(--brand)] focus:outline-none"
+                className="w-full max-w-[220px] rounded-md border border-[var(--accent)] bg-white dark:bg-[#111a2e] px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide text-[var(--brand)] focus:outline-none"
               />
             ) : (
               <div
@@ -313,9 +313,9 @@ function SortableSection({
                 {name}
               </div>
             )}
-            {section.note && <div className="text-[10px] text-[#5C6A6E]">{section.note}</div>}
+            {section.note && <div className="text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{section.note}</div>}
             {section.items.length > 0 && (
-              <div className="text-[10px] text-[#5C6A6E]">{section.items.length} items</div>
+              <div className="text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{section.items.length} items</div>
             )}
           </div>
         </div>
@@ -332,7 +332,7 @@ function SortableSection({
               onChange={e => onUpdateField(section.id, "material_included", e.target.checked)}
               className="h-3.5 w-3.5 cursor-pointer accent-[#4F8A63]"
             />
-            <span className={`text-[10px] font-bold uppercase tracking-wide ${section.material_included ? "text-[#4F8A63]" : "text-[#5C6A6E]"}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-wide ${section.material_included ? "text-[#4F8A63]" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>
               {EN ? "Mat. incl." : "Mat. incl."}
             </span>
           </label>
@@ -348,33 +348,33 @@ function SortableSection({
               onChange={e => onUpdateField(section.id, "is_material_type", !e.target.checked)}
               className="h-3.5 w-3.5 cursor-pointer accent-[var(--accent)]"
             />
-            <span className={`text-[10px] font-bold uppercase tracking-wide ${!section.is_material_type ? "text-[var(--accent)]" : "text-[#5C6A6E]"}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-wide ${!section.is_material_type ? "text-[var(--accent)]" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>
               {EN ? "Labor %" : "M. obra %"}
             </span>
           </label>
           <div className={`font-mono text-[13px] font-bold ${section.is_material_type ? "text-[#B0492F]" : "text-[var(--brand)]"}`}>
             {money(effectiveTotal)}
           </div>
-          {isOpen ? <ChevronUp size={14} className="text-[#5C6A6E]" /> : <ChevronDown size={14} className="text-[#5C6A6E]" />}
+          {isOpen ? <ChevronUp size={14} className="text-[#5C6A6E] dark:text-[#9fb0cc]" /> : <ChevronDown size={14} className="text-[#5C6A6E] dark:text-[#9fb0cc]" />}
         </div>
       </div>
 
       {/* ── Card body ── */}
       {isOpen && (
-        <div className="border-t border-[#F0EBE0]">
+        <div className="border-t border-[#F0EBE0] dark:border-[#22304d]">
 
           {/* Settings row */}
-          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-[#F0EBE0] bg-[#FAFAF8] px-4 py-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-[#F0EBE0] dark:border-[#22304d] bg-[#FAFAF8] dark:bg-[#17233d] px-4 py-2">
             <input
               type="text"
               value={section.note}
               placeholder={EN ? "Note (e.g. Material included)" : "Nota (ej. Material incluido)"}
               onChange={e => onUpdateField(section.id, "note", e.target.value)}
-              className="w-44 rounded-lg border border-[#E6DDCB] bg-white px-2 py-1 text-[11px] text-[#5C6A6E] focus:border-[var(--accent)] focus:outline-none"
+              className="w-44 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
             />
             <button
               onClick={() => onDelete(section.id)}
-              className="rounded-lg p-1.5 text-[#5C6A6E] transition hover:bg-[#FDF0ED] hover:text-[#B0492F]"
+              className="rounded-lg p-1.5 text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] hover:text-[#B0492F]"
             >
               <Trash2 size={12} />
             </button>
@@ -382,11 +382,11 @@ function SortableSection({
 
           {/* Column headers: costo | ganancia | cliente */}
           {section.items.length > 0 && (
-            <div className="flex items-center gap-2 border-b border-[#E6DDCB] bg-[#FDFAF6] px-4 py-1">
+            <div className="flex items-center gap-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-4 py-1">
               <span className="w-[17px] shrink-0" />
               <span className="h-1.5 w-1.5 shrink-0" />
               <span className="min-w-0 flex-1" />
-              <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+              <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {EN ? "Cost" : "Costo"}
               </span>
               <span className="w-16 sm:w-20 shrink-0 px-1 text-right text-[8px] font-bold uppercase tracking-wider text-[#4F8A63]">
@@ -416,8 +416,8 @@ function SortableSection({
           </DndContext>
 
           {/* Section total — editable when no items have amounts */}
-          <div className="flex items-center gap-3 border-b border-[#F0EBE0] px-4 py-2.5">
-            <span className="flex-1 text-[11px] text-[#5C6A6E]">
+          <div className="flex items-center gap-3 border-b border-[#F0EBE0] dark:border-[#22304d] px-4 py-2.5">
+            <span className="flex-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
               {hasItemAmounts
                 ? (EN ? "Section total (sum of items):" : "Total de sección (suma de items):")
                 : (EN ? "Section total:" : "Total de sección:")}
@@ -437,15 +437,15 @@ function SortableSection({
               placeholder="0"
               className={`w-28 rounded-lg border px-3 py-1.5 text-right font-mono text-[13px] font-bold focus:outline-none ${
                 hasItemAmounts
-                  ? "cursor-default border-transparent bg-transparent text-[#5C6A6E]"
-                  : "border-[#E6DDCB] bg-[#FDFAF6] text-[var(--brand)] focus:border-[var(--accent)]"
+                  ? "cursor-default border-transparent bg-transparent text-[#5C6A6E] dark:text-[#9fb0cc]"
+                  : "border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] text-[var(--brand)] focus:border-[var(--accent)]"
               }`}
             />
           </div>
 
           {/* Add item form */}
           {addingItemTo === section.id ? (
-            <div className="flex items-center gap-2 border-b border-[#E6DDCB] bg-[#F7F3EA] px-4 py-2">
+            <div className="flex items-center gap-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-2">
               <input
                 autoFocus
                 type="text"
@@ -456,7 +456,7 @@ function SortableSection({
                   if (e.key === "Enter")  onAddItem(section.id);
                   if (e.key === "Escape") { setAddingItemTo(null); setNewItemDesc(""); setNewItemAmt(""); }
                 }}
-                className="flex-1 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                className="flex-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[12px] focus:border-[var(--accent)] focus:outline-none"
               />
               <input
                 type="number"
@@ -465,7 +465,7 @@ function SortableSection({
                 onKeyDown={e => { if (e.key === "Enter") onAddItem(section.id); }}
                 placeholder={EN ? "$0 cost" : "$0 costo"}
                 title={EN ? "Real cost — profit (30%) and client amount are computed" : "Costo real — la ganancia (30%) y el monto cliente se calculan"}
-                className="w-24 rounded-lg border border-[#E6DDCB] bg-white px-3 py-1.5 text-right font-mono text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                className="w-24 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-right font-mono text-[12px] focus:border-[var(--accent)] focus:outline-none"
               />
               {(parseFloat(newItemAmt) || 0) > 0 && (
                 <span className="shrink-0 whitespace-nowrap font-mono text-[10px] font-bold text-[var(--accent)]">
@@ -480,7 +480,7 @@ function SortableSection({
               </button>
               <button
                 onClick={() => { setAddingItemTo(null); setNewItemDesc(""); setNewItemAmt(""); }}
-                className="shrink-0 p-1.5 text-[#5C6A6E] hover:text-[#B0492F]"
+                className="shrink-0 p-1.5 text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[#B0492F]"
               >
                 <X size={14} />
               </button>
@@ -488,7 +488,7 @@ function SortableSection({
           ) : (
             <button
               onClick={() => { setAddingItemTo(section.id); setNewItemDesc(""); setNewItemAmt(""); }}
-              className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[#F7F3EA] hover:text-[var(--brand)]"
+              className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] hover:text-[var(--brand)]"
             >
               <Plus size={11} /> {EN ? "Add item" : "Agregar item"}
             </button>
@@ -1269,13 +1269,13 @@ export default function EstimateTab({
 
   if (!estimate) return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F3EA]">
-        <FileText size={28} className="text-[#5C6A6E]" />
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F3EA] dark:bg-[#0b1220]">
+        <FileText size={28} className="text-[#5C6A6E] dark:text-[#9fb0cc]" />
       </div>
       <h3 className="mb-2 text-base font-bold text-[var(--brand)]">
         {EN ? "No estimate yet" : "Sin estimado todavía"}
       </h3>
-      <p className="mb-6 max-w-xs text-sm text-[#5C6A6E]">
+      <p className="mb-6 max-w-xs text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
         {EN
           ? "Create a professional proposal for this project to share with your client."
           : "Crea una propuesta profesional para este proyecto y compártela con tu cliente."}
@@ -1329,11 +1329,11 @@ export default function EstimateTab({
           {/* Node column */}
           <div className="flex w-5 flex-shrink-0 flex-col items-center">
             <div className="w-0.5 bg-[#DDD6CC]" style={{ height: 46 }} />
-            <div className="relative z-10 h-3 w-3 flex-shrink-0 rounded-full border-2 bg-white" style={{ borderColor: color }} />
+            <div className="relative z-10 h-3 w-3 flex-shrink-0 rounded-full border-2 bg-white dark:bg-[#111a2e]" style={{ borderColor: color }} />
             {!isLast && <div className="w-0.5 flex-1 bg-[#DDD6CC]" />}
           </div>
           {/* Card */}
-          <div className="mb-0 flex-1 overflow-hidden rounded-xl border border-[#E6DDCB]">
+          <div className="mb-0 flex-1 overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d]">
             <div className="flex h-[26px] items-center bg-[#EEE9E0] px-3">
               <span className="text-[9px] font-black uppercase tracking-[.14em] text-[#7A8278]">
                 {EN ? `Deposit ${depNum}` : `Cuota ${depNum}`}
@@ -1351,12 +1351,12 @@ export default function EstimateTab({
               <div className="w-px flex-shrink-0 self-stretch bg-[#EDE8DF]" />
               <button onClick={() => openDepositEdit(i)} title={EN ? "Click to edit" : "Clic para editar"}
                 className="group flex flex-1 items-center gap-1 overflow-hidden px-3 text-left">
-                <span className="truncate text-[11px] font-semibold text-[#5C6A6E] group-hover:text-[var(--accent)]">
+                <span className="truncate text-[11px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] group-hover:text-[var(--accent)]">
                   {EN ? dep.label_en : dep.label_es}
                 </span>
                 <Pencil size={8} className="flex-shrink-0 text-[#C4B89A] group-hover:text-[var(--accent)]" />
               </button>
-              <div className="flex flex-shrink-0 items-center gap-1.5 self-stretch border-l border-[#EDE8DF] px-2.5">
+              <div className="flex flex-shrink-0 items-center gap-1.5 self-stretch border-l border-[#EDE8DF] dark:border-[#22304d] px-2.5">
                 {isConfirmDelete ? (
                   <div className="flex items-center gap-1">
                     <span className="whitespace-nowrap text-[9px] font-semibold text-[#B0492F]">
@@ -1367,25 +1367,25 @@ export default function EstimateTab({
                       {EN ? "Yes" : "Sí"}
                     </button>
                     <button onClick={() => setConfirmDeleteDepositIdx(null)}
-                      className="rounded border border-[#E6DDCB] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] hover:bg-[#F7F3EA]">
+                      className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
                       No
                     </button>
                   </div>
                 ) : (
                   <button onClick={() => setConfirmDeleteDepositIdx(i)}
-                    className="rounded p-1 text-[#C4B89A] transition hover:bg-[#FDE8E3] hover:text-[#B0492F]"
+                    className="rounded p-1 text-[#C4B89A] transition hover:bg-[#FDE8E3] dark:hover:bg-[#2a1712] hover:text-[#B0492F]"
                     title={EN ? "Remove installment" : "Eliminar cuota"}>
                     <Trash2 size={11} />
                   </button>
                 )}
                 <button
                   onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
-                  className="flex-shrink-0 rounded-lg border border-[#E6DDCB] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB]">
+                  className="flex-shrink-0 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2.5 py-1.5 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]">
                   {EN ? "Detail" : "Detalle"}
                 </button>
               </div>
             </div>
-            <div className="border-t border-[#EDE8DF] bg-[#FDFAF6] px-3 pb-2 pt-1.5">
+            <div className="border-t border-[#EDE8DF] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3 pb-2 pt-1.5">
               <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-[#EDE8DF]">
                 <div className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${receivedPct}%`, background: paid ? "#4F8A63" : color }} />
@@ -1416,7 +1416,7 @@ export default function EstimateTab({
     {/* ════════════════════════════════════════════════════════════════════════
         MAIN ESTIMATE CARD
     ════════════════════════════════════════════════════════════════════════ */}
-    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white shadow-md">
+    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-md">
 
       {/* ── HEADER BAND ─────────────────────────────────────────────────────── */}
       <div className="bg-[var(--brand)] px-5 pb-0 pt-4">
@@ -1482,7 +1482,7 @@ export default function EstimateTab({
               disabled={saving}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold transition disabled:opacity-50 ${
                 estimateSubTab === "sections"
-                  ? "bg-white text-[var(--brand)] hover:bg-[#F5E9DA]"
+                  ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] hover:bg-[#F5E9DA] dark:hover:bg-[#17233d]"
                   : "bg-[#F0A090] text-[#7B1838] hover:bg-[#FFB8A8]"
               }`}
             >
@@ -1506,7 +1506,7 @@ export default function EstimateTab({
             onClick={() => setEstimateSubTab("sections")}
             className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
               estimateSubTab === "sections"
-                ? "bg-white text-[var(--brand)]"
+                ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]"
                 : "text-white/40 hover:text-white/70"
             }`}
           >
@@ -1516,7 +1516,7 @@ export default function EstimateTab({
             onClick={() => setEstimateSubTab("schedule")}
             className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
               estimateSubTab === "schedule"
-                ? "bg-white text-[var(--brand)]"
+                ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]"
                 : "text-white/40 hover:text-white/70"
             }`}
           >
@@ -1531,9 +1531,9 @@ export default function EstimateTab({
       {estimateSubTab === "sections" && (
         <>
           {/* Sub-band: totals summary */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[#E6DDCB] bg-[#F7F3EA] px-5 py-2.5">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-5 py-2.5">
             <div>
-              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                 {EN ? "Labor subtotal" : "Subtotal mano de obra"}
               </div>
               <div className="text-[13px] font-black text-[var(--brand)]">{money(laborTotal)}</div>
@@ -1542,7 +1542,7 @@ export default function EstimateTab({
               <>
                 <div className="text-[#C4B89A]">·</div>
                 <div>
-                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                     {EN ? "Grand Total" : "Total Final"}
                   </div>
                   <div className="text-[13px] font-black text-[var(--brand)]">{money(grandTotal)}</div>
@@ -1550,7 +1550,7 @@ export default function EstimateTab({
               </>
             )}
             {/* Discount badge — right */}
-            <div className="ml-auto flex items-center gap-2 rounded-lg border border-[#F0C8BC] bg-[#FDF5F3] px-3 py-1.5">
+            <div className="ml-auto flex items-center gap-2 rounded-lg border border-[#F0C8BC] bg-[#FDF5F3] dark:bg-[#2a1712] px-3 py-1.5">
               <span className="text-[9px] font-bold uppercase tracking-wide text-[#B0492F]">
                 {EN ? "Discount" : "Descuento"}
               </span>
@@ -1574,26 +1574,26 @@ export default function EstimateTab({
 
           <div className="space-y-3 p-4">
             {/* Customer info (collapsible) */}
-            <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+            <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
               <button
-                className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-[#FDFAF6]"
+                className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"
                 onClick={() => setShowHeader(h => !h)}
               >
                 <div className="flex items-center gap-3">
-                  <Info size={14} className="shrink-0 text-[#5C6A6E]" />
+                  <Info size={14} className="shrink-0 text-[#5C6A6E] dark:text-[#9fb0cc]" />
                   <span className="text-[12px] font-bold text-[var(--brand)]">
                     {estimate.customer_name || (EN ? "Customer info" : "Info del cliente")}
                   </span>
-                  {estimate.city && <span className="text-[11px] text-[#5C6A6E]">· {estimate.city}</span>}
+                  {estimate.city && <span className="text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">· {estimate.city}</span>}
                 </div>
                 <div className="flex items-center gap-3">
                   {showHeader
-                    ? <ChevronUp size={14} className="shrink-0 text-[#5C6A6E]" />
-                    : <ChevronDown size={14} className="shrink-0 text-[#5C6A6E]" />}
+                    ? <ChevronUp size={14} className="shrink-0 text-[#5C6A6E] dark:text-[#9fb0cc]" />
+                    : <ChevronDown size={14} className="shrink-0 text-[#5C6A6E] dark:text-[#9fb0cc]" />}
                 </div>
               </button>
               {showHeader && (
-                <div className="grid grid-cols-2 gap-3 border-t border-[#F0EBE0] px-4 pb-4 pt-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 border-t border-[#F0EBE0] dark:border-[#22304d] px-4 pb-4 pt-3 sm:grid-cols-3">
                   {([
                     { key: "customer_name", label: EN ? "Customer" : "Cliente",  type: "text"  },
                     { key: "city",          label: EN ? "City" : "Ciudad",        type: "text"  },
@@ -1603,12 +1603,12 @@ export default function EstimateTab({
                     { key: "end_date",      label: EN ? "End" : "Fin",            type: "date"  },
                   ] as const).map(({ key, label, type }) => (
                     <label key={key} className="grid gap-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">{label}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{label}</span>
                       <input
                         type={type}
                         value={(estimate as unknown as Record<string, string>)[key] ?? ""}
                         onChange={e => setEstimate(p => p ? ({ ...p, [key]: e.target.value }) : p)}
-                        className="rounded-lg border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-1.5 text-[12px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+                        className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3 py-1.5 text-[12px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                       />
                     </label>
                   ))}
@@ -1665,18 +1665,18 @@ export default function EstimateTab({
             {/* Add section */}
             <button
               onClick={() => setShowAddSection(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D7CBB3] py-3 text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] py-3 text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               <Plus size={14} /> {EN ? "Add section" : "Agregar sección"}
             </button>
 
             {/* Totals footer row */}
             {estimate.sections.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-3">
                 <div className="flex items-center gap-6">
                   {discountAmt > 0 && (
                     <div>
-                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                         {EN ? "Labor subtotal" : "Subtotal M.O."}
                       </div>
                       <div className="font-mono text-[12px] font-bold text-[var(--brand)]">{money(laborTotal)}</div>
@@ -1684,7 +1684,7 @@ export default function EstimateTab({
                   )}
                   {discountAmt > 0 && (
                     <div>
-                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                         {EN ? "Discount" : "Descuento"} {estimate.discount_pct}%
                       </div>
                       <div className="font-mono text-[12px] font-bold text-[#B0492F]">–{money(discountAmt)}</div>
@@ -1692,7 +1692,7 @@ export default function EstimateTab({
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                     {EN ? "Grand Total" : "Total Final"}
                   </div>
                   <div className="font-mono text-[17px] font-black text-[var(--brand)]">{money(grandTotal)}</div>
@@ -1703,7 +1703,7 @@ export default function EstimateTab({
             {/* Generate Workflow Tasks */}
             <button
               onClick={() => setShowGenTasks(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--accent)] bg-[#EDF3FB] py-2.5 text-[12px] font-bold text-[var(--accent)] transition hover:bg-[#D5DEEF]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#111a2e] py-2.5 text-[12px] font-bold text-[var(--accent)] transition hover:bg-[#D5DEEF] dark:hover:bg-[#111a2e]"
             >
               <Zap size={13} />
               {EN ? "Generate Workflow Tasks" : "Generar Tareas en Workflow"}
@@ -1718,43 +1718,43 @@ export default function EstimateTab({
       {estimateSubTab === "schedule" && (
         <>
           {/* Sub-band: quick stats */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-[#E6DDCB] bg-[#F7F3EA] px-5 py-2.5">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-5 py-2.5">
             <div>
-              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                 {EN ? "Installments" : "Cuotas"}
               </div>
               <div className="text-[13px] font-black text-[var(--brand)]">{deps.length}</div>
             </div>
             <div>
-              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                 {EN ? "Received" : "Recibido"}
               </div>
               <div className="font-mono text-[13px] font-black text-[#4F8A63]">{money(totalRec)}</div>
             </div>
             <div>
-              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0]">
+              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                 {EN ? "Pending" : "Pendiente"}
               </div>
               <div className="font-mono text-[13px] font-black text-[#B0492F]">{money(pending)}</div>
             </div>
-            <span className={`ml-auto rounded-full px-2.5 py-1 text-[9px] font-black ${pctOk ? "bg-[#DCEBDD] text-[#4F8A63]" : "bg-[#FDE8E3] text-[#B0492F]"}`}>
+            <span className={`ml-auto rounded-full px-2.5 py-1 text-[9px] font-black ${pctOk ? "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]" : "bg-[#FDE8E3] dark:bg-[#2a1712] text-[#B0492F]"}`}>
               {Math.round(pctSum * 10) / 10}% {pctOk ? "✓" : `— ${EN ? "must be 100%" : "debe ser 100%"}`}
             </span>
           </div>
 
           <div className="space-y-4 p-4">
             {/* Totals card: Labor → Discount (red) → Grand Total → Progress */}
-            <div className="overflow-hidden rounded-xl border border-[#E6DDCB] shadow-sm">
-              <div className="flex items-center justify-between border-b border-[#F0EAE0] bg-white px-4 py-2.5">
-                <span className="flex items-center gap-2 text-[11px] text-[#5C6A6E]">
+            <div className="overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d] shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#F0EAE0] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-2.5">
+                <span className="flex items-center gap-2 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Labor subtotal" : "Subtotal mano de obra"}
-                  <span className="rounded bg-[#F0EAE0] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-[#97A1A0]">
+                  <span className="rounded bg-[#F0EAE0] dark:bg-[#17233d] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-[#97A1A0] dark:text-[#728098]">
                     {estimate.sections.length} {EN ? "sections" : "secciones"}
                   </span>
                 </span>
                 <span className="font-mono text-[13px] font-bold text-[var(--brand)]">{money(laborTotal)}</span>
               </div>
-              <div className="flex items-center justify-between border-b border-[#F0EAE0] bg-[#FDF5F3] px-4 py-2.5">
+              <div className="flex items-center justify-between border-b border-[#F0EAE0] dark:border-[#22304d] bg-[#FDF5F3] dark:bg-[#2a1712] px-4 py-2.5">
                 <span className="flex items-center gap-2 text-[11px] font-bold text-[#B0492F]">
                   <span className="text-[10px]">▼</span>
                   {EN ? "Discount" : "Descuento"}
@@ -1771,12 +1771,12 @@ export default function EstimateTab({
                 <span className="font-mono text-[18px] font-black text-white">{money(grandTotal)}</span>
               </div>
               {/* Received vs pending progress */}
-              <div className="border-t border-[#E6DDCB] bg-[#F7F3EA] px-4 py-2.5">
+              <div className="border-t border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-2.5">
                 <div className="mb-1.5 flex justify-between text-[9px] font-bold">
                   <span className="text-[#4F8A63]">{EN ? "Received" : "Recibido"} · {money(totalRec)} ({recvPct}%)</span>
                   <span className="text-[#B0492F]">{EN ? "Pending" : "Pendiente"} · {money(pending)}</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[#E6DDCB]">
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#E6DDCB] dark:bg-[#17233d]">
                   <div className="h-full rounded-full bg-[#4F8A63] transition-all duration-500" style={{ width: `${recvPct}%` }} />
                 </div>
               </div>
@@ -1784,7 +1784,7 @@ export default function EstimateTab({
 
             {/* Deposit rows */}
             <div>
-              <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {EN ? "Payment Schedule" : "Cuotas de Pago"}
               </div>
               <div className="flex flex-col">{depositRows}</div>
@@ -1793,7 +1793,7 @@ export default function EstimateTab({
                 <div className="w-5 flex-shrink-0" />
                 <button
                   onClick={addInstallment}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D5CBBA] py-2 text-[11px] font-semibold text-[#97A1A0] dark:text-[#728098] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 >
                   <Plus size={11} /> {EN ? "Add payment" : "Agregar cuota"}
                 </button>
@@ -1812,7 +1812,7 @@ export default function EstimateTab({
           onClick={closeEmailModal}
         >
           <div
-            className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between bg-[var(--brand)] px-5 py-3.5">
@@ -1825,45 +1825,45 @@ export default function EstimateTab({
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-5">
-              <p className="text-[11px] text-[#97A1A0]">
+              <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">
                 {EN ? "From" : "Desde"}: <span className="font-bold text-[var(--brand)]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span>
               </p>
 
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "To" : "Para"} *
                 </label>
                 <input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)}
                   placeholder="cliente@email.com"
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Subject" : "Asunto"}
                 </label>
                 <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                  className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Message" : "Mensaje"}
                 </label>
                 <textarea rows={5} value={emailMsg} onChange={e => setEmailMsg(e.target.value)}
-                  className="w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                  className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">
+                <label className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "PDF preview" : "Vista previa del PDF"}
                 </label>
-                <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+                <div className="inline-flex rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
                   {(["full", "summary"] as const).map(m => (
                     <button key={m} type="button"
                       onClick={() => { setEmailMode(m); refreshEmailPreview(m); }}
                       className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition ${
-                        emailMode === m ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"
+                        emailMode === m ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"
                       }`}>
                       {m === "full" ? (EN ? "With detail" : "Con detalle") : (EN ? "Summary" : "Resumen")}
                     </button>
@@ -1874,14 +1874,14 @@ export default function EstimateTab({
                 <iframe
                   src={emailPreview}
                   title="PDF preview"
-                  className="h-64 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA]"
+                  className="h-64 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220]"
                 />
               )}
             </div>
 
-            <div className="flex gap-2 border-t border-[#E6DDCB] p-4">
+            <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
               <button onClick={closeEmailModal}
-                className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-bold text-[#5C6A6E] hover:bg-[#F7F3EA]">
+                className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
                 {EN ? "Cancel" : "Cancelar"}
               </button>
               <button onClick={sendEmail} disabled={sendingEmail || !emailTo.includes("@")}
@@ -1902,40 +1902,40 @@ export default function EstimateTab({
           onClick={() => setShowAddSection(false)}
         >
           <div
-            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#E6DDCB] px-5 py-3.5">
+            <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] px-5 py-3.5">
               <span className="text-sm font-bold text-[var(--brand)]">
                 {EN ? "Add Section" : "Agregar Sección"}
               </span>
-              <button onClick={() => setShowAddSection(false)} className="text-[#5C6A6E] hover:text-[#B0492F]">
+              <button onClick={() => setShowAddSection(false)} className="text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[#B0492F]">
                 <X size={16} />
               </button>
             </div>
             <div className="max-h-[60vh] space-y-2 overflow-y-auto p-4">
-              <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+              <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {EN ? "From catalog" : "Del catálogo"}
               </div>
               {effectiveCatalog.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => addSection(cat as EstimateSectionCatalog & { id: string })}
-                  className="w-full rounded-xl border border-[#E6DDCB] px-4 py-3 text-left transition hover:border-[var(--accent)] hover:bg-[#EDF3FB]"
+                  className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-3 text-left transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]"
                 >
                   <div className="flex items-center gap-2">
                     <span>{cat.is_material_type ? "📦" : sectionEmoji(cat.name_en)}</span>
                     <span className="text-[12px] font-semibold text-[var(--brand)]">{EN ? cat.name_en : cat.name_es}</span>
                   </div>
                   {(EN ? cat.note_en : cat.note_es) && (
-                    <div className="mt-0.5 pl-6 text-[10px] text-[#5C6A6E]">{EN ? cat.note_en : cat.note_es}</div>
+                    <div className="mt-0.5 pl-6 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? cat.note_en : cat.note_es}</div>
                   )}
                 </button>
               ))}
-              <div className="border-t border-[#E6DDCB] pt-2">
+              <div className="border-t border-[#E6DDCB] dark:border-[#22304d] pt-2">
                 <button
                   onClick={() => addSection()}
-                  className="w-full rounded-xl border-2 border-dashed border-[#D7CBB3] px-4 py-3 text-left text-[12px] font-semibold text-[#5C6A6E] transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] hover:text-[var(--accent)]"
+                  className="w-full rounded-xl border-2 border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] px-4 py-3 text-left text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[var(--accent)]"
                 >
                   {EN ? "+ Custom section" : "+ Sección personalizada"}
                 </button>
@@ -1961,11 +1961,11 @@ export default function EstimateTab({
             onClick={() => { setDepositModal(null); setConfirmDeletePayId(null); setEditingPayId(null); }}
           >
             <div
-              className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+              className="w-full max-w-lg overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[var(--brand)] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] bg-[var(--brand)] px-5 py-4">
                 <div className="flex-1 min-w-0 pr-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
                     {EN ? "Payment Detail" : "Detalle de Pago"} · {money(target)}
@@ -1981,33 +1981,33 @@ export default function EstimateTab({
               </div>
 
               {/* Summary */}
-              <div className="grid grid-cols-3 gap-px bg-[#E6DDCB] border-b border-[#E6DDCB]">
+              <div className="grid grid-cols-3 gap-px bg-[#E6DDCB] dark:bg-[#17233d] border-b border-[#E6DDCB] dark:border-[#22304d]">
                 {[
                   { label: EN ? "Target" : "Total a cobrar", value: money(target), color: "text-[var(--brand)]" },
                   { label: EN ? "Received" : "Recibido",     value: money(received), color: "text-[#4F8A63]" },
                   { label: EN ? "Remaining" : "Pendiente",   value: money(remaining), color: remaining > 0 ? "text-[#B0492F]" : "text-[#4F8A63]" },
                 ].map(c => (
-                  <div key={c.label} className="bg-[#F7F3EA] px-4 py-3 text-center">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#5C6A6E]">{c.label}</p>
+                  <div key={c.label} className="bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-3 text-center">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">{c.label}</p>
                     <p className={`mt-1 font-mono text-[15px] font-bold ${c.color}`}>{c.value}</p>
                   </div>
                 ))}
               </div>
               {/* Progress bar */}
-              <div className="h-1.5 bg-[#E6DDCB]">
+              <div className="h-1.5 bg-[#E6DDCB] dark:bg-[#17233d]">
                 <div className={`h-full transition-all ${pct >= 100 ? "bg-[#4F8A63]" : "bg-[var(--accent)]"}`} style={{ width: `${pct}%` }} />
               </div>
 
               {/* Payments grid */}
               <div className="max-h-48 overflow-y-auto">
                 {pmts.length === 0 ? (
-                  <p className="py-6 text-center text-[12px] text-[#5C6A6E]">
+                  <p className="py-6 text-center text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                     {EN ? "No payments yet" : "Sin pagos registrados"}
                   </p>
                 ) : (
                   <table className="w-full text-[11px]">
                     <thead>
-                      <tr className="bg-[#FAFAF8] text-[9px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                      <tr className="bg-[#FAFAF8] dark:bg-[#17233d] text-[9px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">
                         <th className="px-4 py-2 text-left">{EN ? "Date" : "Fecha"}</th>
                         <th className="px-4 py-2 text-left">{EN ? "Concept" : "Concepto"}</th>
                         <th className="px-4 py-2 text-left">{EN ? "Method" : "Método"}</th>
@@ -2022,27 +2022,27 @@ export default function EstimateTab({
                         const editAmt = parseFloat(editForm.amount) || 0;
                         const editWouldExceed = isEditing && editAmt > 0 && otherTotal + editAmt > target + 0.005;
                         return (
-                          <tr key={p.id} className={`border-t border-[#F0EBE0] ${isEditing ? "bg-[#EDF3FB]" : "hover:bg-[#FDFAF6]"}`}>
+                          <tr key={p.id} className={`border-t border-[#F0EBE0] dark:border-[#22304d] ${isEditing ? "bg-[#EDF3FB] dark:bg-[#111a2e]" : "hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"}`}>
                             {isEditing ? (
                               <>
                                 <td className="px-2 py-1.5">
                                   <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
-                                    className="w-full rounded border border-[#D7CBB3] bg-white px-1.5 py-1 text-[11px] focus:outline-none" />
+                                    className="w-full rounded border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] focus:outline-none" />
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <input type="text" value={editForm.concept} onChange={e => setEditForm(f => ({ ...f, concept: e.target.value }))}
                                     placeholder={EN ? "Concept" : "Concepto"}
-                                    className="w-full rounded border border-[#D7CBB3] bg-white px-1.5 py-1 text-[11px] focus:outline-none" />
+                                    className="w-full rounded border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] focus:outline-none" />
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <select value={editForm.method} onChange={e => setEditForm(f => ({ ...f, method: e.target.value as Payment["method"] }))}
-                                    className="rounded border border-[#D7CBB3] bg-white px-1 py-1 text-[11px] focus:outline-none">
+                                    className="rounded border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1 py-1 text-[11px] focus:outline-none">
                                     {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => <option key={m}>{m}</option>)}
                                   </select>
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <input type="number" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))}
-                                    className={`w-20 rounded border px-1.5 py-1 text-right text-[11px] font-mono focus:outline-none ${editWouldExceed ? "border-[#B0492F] bg-[#FDF0ED]" : "border-[#D7CBB3] bg-white"}`} />
+                                    className={`w-20 rounded border px-1.5 py-1 text-right text-[11px] font-mono focus:outline-none ${editWouldExceed ? "border-[#B0492F] bg-[#FDF0ED] dark:bg-[#2a1712]" : "border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e]"}`} />
                                   {editWouldExceed && (
                                     <p className="mt-0.5 text-[9px] text-[#B0492F]">Máx: {money(Math.max(0, target - otherTotal))}</p>
                                   )}
@@ -2054,7 +2054,7 @@ export default function EstimateTab({
                                       {depSaving ? "…" : "✓"}
                                     </button>
                                     <button onClick={() => setEditingPayId(null)}
-                                      className="rounded border border-[#E6DDCB] px-2 py-1 text-[10px] text-[#5C6A6E] hover:bg-[#F7F3EA]">
+                                      className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-2 py-1 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
                                       ✕
                                     </button>
                                   </div>
@@ -2062,9 +2062,9 @@ export default function EstimateTab({
                               </>
                             ) : (
                               <>
-                                <td className="px-4 py-2 text-[#5C6A6E]">{p.date}</td>
+                                <td className="px-4 py-2 text-[#5C6A6E] dark:text-[#9fb0cc]">{p.date}</td>
                                 <td className="px-4 py-2 text-[var(--brand)] max-w-[130px] truncate">{p.concept || "—"}</td>
-                                <td className="px-4 py-2 text-[#5C6A6E]">{p.method}</td>
+                                <td className="px-4 py-2 text-[#5C6A6E] dark:text-[#9fb0cc]">{p.method}</td>
                                 <td className="px-4 py-2 text-right font-mono font-semibold text-[var(--brand)]">{money(p.amount)}</td>
                                 <td className="px-2 py-2">
                                   {confirmDeletePayId === p.id ? (
@@ -2076,18 +2076,18 @@ export default function EstimateTab({
                                       >{EN ? "Yes" : "Sí"}</button>
                                       <button
                                         onClick={() => setConfirmDeletePayId(null)}
-                                        className="rounded border border-[#E6DDCB] px-2 py-0.5 text-[10px] text-[#5C6A6E] hover:bg-[#F7F3EA]"
+                                        className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-2 py-0.5 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
                                       >{EN ? "No" : "No"}</button>
                                     </div>
                                   ) : (
                                     <div className="flex gap-1">
                                       <button
                                         onClick={() => { setEditingPayId(p.id); setEditForm({ amount: String(p.amount), date: p.date, method: p.method, concept: p.concept ?? "" }); }}
-                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] hover:text-[var(--accent)] transition"
+                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[var(--accent)] transition"
                                       ><Pencil size={10} /></button>
                                       <button
                                         onClick={() => setConfirmDeletePayId(p.id)}
-                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#FDF0ED] hover:text-[#B0492F] transition"
+                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] hover:text-[#B0492F] transition"
                                       ><X size={11} /></button>
                                     </div>
                                   )}
@@ -2103,10 +2103,10 @@ export default function EstimateTab({
               </div>
 
               {/* Add payment form */}
-              <div className="border-t border-[#E6DDCB] bg-[#F7F3EA] p-4">
+              <div className="border-t border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] p-4">
                 {/* Overage warning when already exceeded */}
                 {received > target + 0.005 && (
-                  <div className="mb-3 rounded-lg border border-[#F5C6B5] bg-[#FDF0ED] px-3 py-2 text-[11px] text-[#B0492F]">
+                  <div className="mb-3 rounded-lg border border-[#F5C6B5] bg-[#FDF0ED] dark:bg-[#2a1712] px-3 py-2 text-[11px] text-[#B0492F]">
                     ⚠️ {EN
                       ? `Total received (${money(received)}) exceeds target (${money(target)}) by ${money(received - target)}. Remove a payment to correct this.`
                       : `El total recibido (${money(received)}) supera el objetivo (${money(target)}) por ${money(received - target)}. Elimina un pago para corregirlo.`}
@@ -2118,7 +2118,7 @@ export default function EstimateTab({
                   const wouldExceed = newAmt > 0 && received + newAmt > target + 0.005;
                   return (
                     <>
-                      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">
                         {EN ? "Add partial payment" : "Agregar pago a cuenta"}
                         {remaining > 0 && <span className="ml-2 font-normal normal-case text-[var(--accent)]">({EN ? "pending" : "pendiente"}: {money(remaining)})</span>}
                       </p>
@@ -2127,7 +2127,7 @@ export default function EstimateTab({
                           <input
                             type="number" placeholder={EN ? "Amount" : "Monto"} value={depAmt}
                             onChange={e => setDepAmt(e.target.value)}
-                            className={`w-full rounded-lg border px-3 py-2 text-[12px] focus:outline-none ${wouldExceed ? "border-[#B0492F] bg-[#FDF0ED] focus:border-[#B0492F]" : "border-[#E6DDCB] bg-white focus:border-[var(--accent)]"}`}
+                            className={`w-full rounded-lg border px-3 py-2 text-[12px] focus:outline-none ${wouldExceed ? "border-[#B0492F] bg-[#FDF0ED] dark:bg-[#2a1712] focus:border-[#B0492F]" : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] focus:border-[var(--accent)]"}`}
                           />
                           {wouldExceed && (
                             <p className="mt-1 text-[10px] text-[#B0492F]">
@@ -2138,12 +2138,12 @@ export default function EstimateTab({
                         <input
                           type="date" value={depDate}
                           onChange={e => setDepDate(e.target.value)}
-                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         />
                         <select
                           value={depMethod}
                           onChange={e => setDepMethod(e.target.value as Payment["method"])}
-                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         >
                           {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => (
                             <option key={m} value={m}>{m}</option>
@@ -2152,11 +2152,11 @@ export default function EstimateTab({
                         <input
                           type="text" placeholder={EN ? "Comment (e.g. first deposit)" : "Comentario (ej. primer depósito)"}
                           value={depConcept} onChange={e => setDepConcept(e.target.value)}
-                          className="rounded-lg border border-[#E6DDCB] bg-white px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         />
                       </div>
                       {wouldExceed && (
-                        <p className="mt-2 rounded-lg border border-[#F5C6B5] bg-[#FDF0ED] px-3 py-2 text-[11px] text-[#B0492F]">
+                        <p className="mt-2 rounded-lg border border-[#F5C6B5] bg-[#FDF0ED] dark:bg-[#2a1712] px-3 py-2 text-[11px] text-[#B0492F]">
                           ⚠️ {EN
                             ? `This amount would exceed the target. You can only add up to ${money(remaining)}.`
                             : `Este monto supera el objetivo. Solo puedes agregar hasta ${money(remaining)}.`}
@@ -2185,11 +2185,11 @@ export default function EstimateTab({
           onClick={() => setConfirmDeleteSection(null)}
         >
           <div
-            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 border-b border-[#E6DDCB] px-5 py-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDF0ED] text-lg">
+            <div className="flex items-center gap-3 border-b border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDF0ED] dark:bg-[#2a1712] text-lg">
                 🗑
               </div>
               <h3 className="font-bold text-[var(--brand)]">
@@ -2197,16 +2197,16 @@ export default function EstimateTab({
               </h3>
             </div>
             <div className="px-5 py-4">
-              <p className="text-sm text-[#5C6A6E]">
+              <p className="text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {EN
                   ? <>The section <strong className="text-[var(--brand)]">{confirmDeleteSection.name}</strong> and all its items will be permanently deleted. This cannot be undone.</>
                   : <>La sección <strong className="text-[var(--brand)]">{confirmDeleteSection.name}</strong> y todos sus ítems serán eliminados permanentemente. Esta acción no se puede deshacer.</>}
               </p>
             </div>
-            <div className="flex gap-2 border-t border-[#E6DDCB] px-5 py-4">
+            <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
               <button
                 onClick={() => setConfirmDeleteSection(null)}
-                className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-semibold text-[#5C6A6E] transition hover:bg-[#F7F3EA]"
+                className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
               >
                 {EN ? "Cancel" : "Cancelar"}
               </button>
@@ -2238,7 +2238,7 @@ export default function EstimateTab({
         return (
           <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={() => setEditDepositIdx(null)}>
-            <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+            <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
               onClick={e => e.stopPropagation()}>
 
               {/* Header */}
@@ -2250,11 +2250,11 @@ export default function EstimateTab({
               </div>
 
               {/* Two-box value editor — active box gets color, secondary gets cream */}
-              <div className="grid grid-cols-2 divide-x divide-[#E6DDCB] border-b border-[#E6DDCB]">
+              <div className="grid grid-cols-2 divide-x divide-[#E6DDCB] border-b border-[#E6DDCB] dark:border-[#22304d]">
                 {/* % box */}
-                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "pct" ? "" : "bg-[#F7F3EA]"}`}
+                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "pct" ? "" : "bg-[#F7F3EA] dark:bg-[#0b1220]"}`}
                   style={editDepositLastChanged === "pct" ? { background: color } : {}}>
-                  <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "pct" ? "text-white/60" : "text-[#97A1A0]"}`}>
+                  <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "pct" ? "text-white/60" : "text-[#97A1A0] dark:text-[#728098]"}`}>
                     {EN ? "Percentage" : "Porcentaje"}
                   </label>
                   <div className="flex items-center gap-1">
@@ -2265,20 +2265,20 @@ export default function EstimateTab({
                       onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
                       className={`w-16 appearance-none bg-transparent text-center font-extrabold focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${editDepositLastChanged === "pct" ? "text-[28px] text-white" : "text-[22px] text-[var(--brand)]"}`}
                     />
-                    <span className={`font-bold ${editDepositLastChanged === "pct" ? "text-[20px] text-white/70" : "text-[16px] text-[#97A1A0]"}`}>%</span>
+                    <span className={`font-bold ${editDepositLastChanged === "pct" ? "text-[20px] text-white/70" : "text-[16px] text-[#97A1A0] dark:text-[#728098]"}`}>%</span>
                   </div>
                   {editDepositLastChanged === "pct" && (
                     <span className="mt-1 text-[9px] font-black uppercase tracking-widest text-white/40">{EN ? "primary" : "principal"}</span>
                   )}
                 </div>
                 {/* $ box */}
-                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "amount" ? "" : "bg-[#F7F3EA]"}`}
+                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "amount" ? "" : "bg-[#F7F3EA] dark:bg-[#0b1220]"}`}
                   style={editDepositLastChanged === "amount" ? { background: color } : {}}>
-                  <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "amount" ? "text-white/60" : "text-[#97A1A0]"}`}>
+                  <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "amount" ? "text-white/60" : "text-[#97A1A0] dark:text-[#728098]"}`}>
                     {EN ? "Amount" : "Monto"}
                   </label>
                   <div className="flex items-center gap-1">
-                    <span className={`font-bold ${editDepositLastChanged === "amount" ? "text-[20px] text-white/70" : "text-[16px] text-[#97A1A0]"}`}>$</span>
+                    <span className={`font-bold ${editDepositLastChanged === "amount" ? "text-[20px] text-white/70" : "text-[16px] text-[#97A1A0] dark:text-[#728098]"}`}>$</span>
                     <input
                       type="number" min={0}
                       value={editDepositAmt}
@@ -2294,8 +2294,8 @@ export default function EstimateTab({
               </div>
 
               {/* Remaining hint */}
-              <div className={`flex items-center justify-between px-5 py-2.5 text-[10px] font-bold ${Math.abs(currentAmt - remainAmt) < 0.02 ? "bg-[#DCEBDD]" : currentAmt > remainAmt ? "bg-[#FDE8E3]" : "bg-[#F7F3EA]"}`}>
-                <span className="text-[#5C6A6E]">
+              <div className={`flex items-center justify-between px-5 py-2.5 text-[10px] font-bold ${Math.abs(currentAmt - remainAmt) < 0.02 ? "bg-[#DCEBDD] dark:bg-[#14261c]" : currentAmt > remainAmt ? "bg-[#FDE8E3] dark:bg-[#2a1712]" : "bg-[#F7F3EA] dark:bg-[#0b1220]"}`}>
+                <span className="text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Available for this deposit:" : "Disponible para esta cuota:"}
                 </span>
                 <span className={currentAmt > remainAmt ? "text-[#B0492F]" : "text-[#4F8A63]"}>
@@ -2306,22 +2306,22 @@ export default function EstimateTab({
 
               {/* Concept */}
               <div className="px-5 py-4">
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Concept" : "Concepto"}
                 </label>
                 <input
                   value={editDepositLabel}
                   onChange={e => setEditDepositLabel(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
-                  className="w-full rounded-xl border border-[#E6DDCB] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                   placeholder={EN ? "e.g. At sign contract" : "Ej. Al firmar contrato"}
                 />
               </div>
 
               {/* Footer */}
-              <div className="flex gap-2 border-t border-[#E6DDCB] px-5 py-4">
+              <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
                 <button onClick={() => setEditDepositIdx(null)}
-                  className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-bold text-[#5C6A6E] transition hover:bg-[#F7F3EA]">
+                  className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
                   {EN ? "Cancel" : "Cancelar"}
                 </button>
                 <button onClick={saveDepositEdit}
@@ -2338,30 +2338,30 @@ export default function EstimateTab({
       {/* ── PDF mode modal ─────────────────────────────────────────────────── */}
       {showPdfModal && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-[#E6DDCB] bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E6DDCB] bg-[var(--brand)] px-5 py-4 rounded-t-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] bg-[var(--brand)] px-5 py-4 rounded-t-2xl">
               <p className="text-sm font-bold text-white">{EN ? "Choose PDF format" : "Elige el formato PDF"}</p>
               <button onClick={() => setShowPdfModal(false)} className="text-white/60 hover:text-white"><X size={18} /></button>
             </div>
             <div className="flex flex-col gap-3 p-5">
               <button
                 onClick={() => handleOpenPdf("full")}
-                className="flex items-start gap-4 rounded-xl border-2 border-[var(--brand)] bg-[#F7F3EA] p-4 text-left transition hover:bg-[#EDE8E0]"
+                className="flex items-start gap-4 rounded-xl border-2 border-[var(--brand)] bg-[#F7F3EA] dark:bg-[#0b1220] p-4 text-left transition hover:bg-[#EDE8E0]"
               >
                 <FileText size={28} className="mt-0.5 flex-none text-[var(--brand)]" />
                 <div>
                   <p className="font-bold text-[var(--brand)]">{EN ? "Estimate with detail" : "Estimado con detalle"}</p>
-                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Shows all section totals and item amounts" : "Muestra totales de secciones y montos de items"}</p>
+                  <p className="mt-0.5 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Shows all section totals and item amounts" : "Muestra totales de secciones y montos de items"}</p>
                 </div>
               </button>
               <button
                 onClick={() => handleOpenPdf("summary")}
-                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] bg-white p-4 text-left transition hover:border-[var(--accent)] hover:bg-[#F0F3FA]"
+                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4 text-left transition hover:border-[var(--accent)] hover:bg-[#F0F3FA] dark:hover:bg-[#111a2e]"
               >
                 <FileText size={28} className="mt-0.5 flex-none text-[var(--accent)]" />
                 <div>
                   <p className="font-bold text-[var(--brand)]">{EN ? "Estimate without detail" : "Estimado sin detalle"}</p>
-                  <p className="mt-0.5 text-xs text-[#5C6A6E]">{EN ? "Scope of work only — no amounts shown, payment schedule included" : "Solo alcance de trabajo — sin montos, incluye plan de pagos"}</p>
+                  <p className="mt-0.5 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Scope of work only — no amounts shown, payment schedule included" : "Solo alcance de trabajo — sin montos, incluye plan de pagos"}</p>
                 </div>
               </button>
             </div>
@@ -2387,7 +2387,7 @@ export default function EstimateTab({
           onClick={() => setShowCopyModal(false)}
         >
           <div
-            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -2405,24 +2405,24 @@ export default function EstimateTab({
 
             {/* Body */}
             <div className="px-5 py-5">
-              <p className="mb-3 text-[12px] text-[#5C6A6E]">
+              <p className="mb-3 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {EN
                   ? "All sections and items will be copied. Customer name and project title will be updated to match the target project."
                   : "Se copiarán todas las secciones e ítems. El nombre del cliente y el título del proyecto se actualizarán al proyecto destino."}
               </p>
               {copyProjects.length === 0 ? (
-                <p className="rounded-xl bg-[#F7F3EA] px-4 py-3 text-sm text-[#5C6A6E]">
+                <p className="rounded-xl bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-3 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "No other projects found." : "No hay otros proyectos disponibles."}
                 </p>
               ) : (
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E]">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">
                     {EN ? "Destination project" : "Proyecto destino"}
                   </label>
                   <select
                     value={copyTargetId}
                     onChange={e => onCopyTargetChange(e.target.value)}
-                    className="w-full rounded-xl border border-[#E6DDCB] bg-[#FDFAF6] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+                    className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                   >
                     {copyProjects.map(p => (
                       <option key={p.id} value={p.id}>
@@ -2434,7 +2434,7 @@ export default function EstimateTab({
               )}
 
               {copyHasEstimate && (
-                <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#F0DBD2] bg-[#FDF0ED] px-3 py-2.5">
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#F0DBD2] bg-[#FDF0ED] dark:bg-[#2a1712] px-3 py-2.5">
                   <span className="mt-0.5 shrink-0 text-[#B0492F]">⚠</span>
                   <p className="text-[11px] font-semibold text-[#B0492F]">
                     {EN
@@ -2446,10 +2446,10 @@ export default function EstimateTab({
             </div>
 
             {/* Footer */}
-            <div className="flex gap-2 border-t border-[#E6DDCB] px-5 py-4">
+            <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
               <button
                 onClick={() => setShowCopyModal(false)}
-                className="flex-1 rounded-xl border border-[#E6DDCB] py-2.5 text-sm font-semibold text-[#5C6A6E] transition hover:bg-[#F7F3EA]"
+                className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
               >
                 {EN ? "Cancel" : "Cancelar"}
               </button>

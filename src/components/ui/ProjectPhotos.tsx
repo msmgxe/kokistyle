@@ -202,13 +202,13 @@ export default function ProjectPhotos({
   return (
     <div>
       {/* ── Barra de captura ── */}
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4">
+      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4">
         {!projectId && projects && (
           <select
             value={selProject}
             onChange={e => setSelProject(e.target.value)}
             aria-label={tf.selectProject}
-            className="mb-3 w-full rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3 text-[15px] font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+            className="mb-3 w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-3 text-[15px] font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.title.split(" — ")[0]}{p.client ? ` — ${p.client}` : ""}</option>
@@ -230,7 +230,7 @@ export default function ProjectPhotos({
           </button>
           <button
             onClick={openGallery}
-            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-3.5 text-[15px] font-bold text-[var(--brand)] transition hover:bg-[#ECE3D1] active:scale-[0.98]"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-3.5 text-[15px] font-bold text-[var(--brand)] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d] active:scale-[0.98]"
           >
             {tf.fromGallery}
           </button>
@@ -238,7 +238,7 @@ export default function ProjectPhotos({
         {fallbackVisible && (
           <button
             onClick={openFileManager}
-            className="mt-2.5 w-full rounded-xl border-2 border-dashed border-[#B98A2F] bg-[#FBF5E6] px-3 py-3 text-[13px] font-bold text-[#7A6230] transition active:scale-[0.98]"
+            className="mt-2.5 w-full rounded-xl border-2 border-dashed border-[#B98A2F] bg-[#FBF5E6] dark:bg-[#17233d] px-3 py-3 text-[13px] font-bold text-[#7A6230] transition active:scale-[0.98]"
           >
             {tf.pickerRetry}
           </button>
@@ -275,7 +275,7 @@ export default function ProjectPhotos({
         <button
           onClick={() => setFilter("all")}
           className={`shrink-0 rounded-full border px-4 py-2 text-[13px] font-bold transition ${
-            filter === "all" ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#E6DDCB] bg-white text-[#5C6A6E]"
+            filter === "all" ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc]"
           }`}
         >
           {tf.all} · {photos.length}
@@ -310,7 +310,7 @@ export default function ProjectPhotos({
               key={a.id}
               onClick={() => setAlbumFilter(a.id)}
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[12px] font-bold transition ${
-                albumFilter === a.id ? "border-[#B98A2F] bg-[#FBF5E6] text-[#7A6230]" : "border-[#E6DDCB] bg-white text-[#97A1A0]"
+                albumFilter === a.id ? "border-[#B98A2F] bg-[#FBF5E6] dark:bg-[#17233d] text-[#7A6230]" : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#97A1A0] dark:text-[#728098]"
               }`}
             >
               {a.label}
@@ -325,14 +325,14 @@ export default function ProjectPhotos({
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
         </div>
       ) : visible.length === 0 ? (
-        <p className="py-12 text-center text-[14px] italic text-[#97A1A0]">{tf.empty}</p>
+        <p className="py-12 text-center text-[14px] italic text-[#97A1A0] dark:text-[#728098]">{tf.empty}</p>
       ) : (
         <div className="mt-4 grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-6">
           {visible.map((p, idx) => (
             <button
               key={p.id}
               onClick={() => { setViewIdx(idx); setConfirmDel(false); setEditMode(false); }}
-              className="relative aspect-square overflow-hidden rounded-xl bg-[#ECE3D1] transition active:scale-[0.97]"
+              className="relative aspect-square overflow-hidden rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] transition active:scale-[0.97]"
               aria-label={p.caption ?? tagLabel(p.tag)}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -370,7 +370,7 @@ export default function ProjectPhotos({
             </div>
             <button
               onClick={() => (editMode ? setEditMode(false) : openEdit(current))}
-              className={`grid h-10 shrink-0 place-items-center rounded-xl px-3 text-[13px] font-bold ${editMode ? "bg-white text-[var(--brand)]" : "bg-white/12 text-white"}`}
+              className={`grid h-10 shrink-0 place-items-center rounded-xl px-3 text-[13px] font-bold ${editMode ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]" : "bg-white/12 text-white"}`}
             >
               {tf.edit}
             </button>
@@ -393,7 +393,7 @@ export default function ProjectPhotos({
                 value={editData.caption}
                 onChange={e => setEditData(d => ({ ...d, caption: e.target.value }))}
                 placeholder={tf.captionPlaceholder}
-                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:outline-none"
+                className="w-full rounded-xl bg-white dark:bg-[#111a2e] px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:outline-none"
               />
               <div className="flex flex-wrap gap-1.5">
                 {TAG_ORDER.map(tg => (
@@ -424,7 +424,7 @@ export default function ProjectPhotos({
                   value={editData.customTag}
                   onChange={e => setEditData(d => ({ ...d, customTag: e.target.value }))}
                   placeholder={tf.customTagPlaceholder}
-                  className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] uppercase text-[var(--brand)] placeholder:normal-case placeholder:text-[#9CABB0] focus:outline-none"
+                  className="w-full rounded-xl bg-white dark:bg-[#111a2e] px-3.5 py-2.5 text-[14px] uppercase text-[var(--brand)] placeholder:normal-case placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:outline-none"
                 />
               )}
               <input
@@ -432,7 +432,7 @@ export default function ProjectPhotos({
                 onChange={e => setEditData(d => ({ ...d, album: e.target.value }))}
                 list="albums-list-edit"
                 placeholder={tf.albumPlaceholder}
-                className="w-full rounded-xl bg-white px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:outline-none"
+                className="w-full rounded-xl bg-white dark:bg-[#111a2e] px-3.5 py-2.5 text-[14px] text-[var(--brand)] placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:outline-none"
               />
               <datalist id="albums-list-edit">
                 {albums.map(a => <option key={a} value={a} />)}
@@ -482,12 +482,12 @@ export default function ProjectPhotos({
           {/* Pregunta de seguridad antes de eliminar */}
           {confirmDel && (
             <div className="absolute inset-0 z-10 grid place-items-center bg-black/70 px-6">
-              <div className="w-full max-w-[340px] rounded-2xl bg-white p-5 text-center">
+              <div className="w-full max-w-[340px] rounded-2xl bg-white dark:bg-[#111a2e] p-5 text-center">
                 <p className="text-[15px] font-bold leading-snug text-[var(--brand)]">{tf.deleteQuestion}</p>
                 <div className="mt-4 flex gap-2.5">
                   <button
                     onClick={() => setConfirmDel(false)}
-                    className="flex-1 rounded-xl bg-[#ECE3D1] py-3 text-[13px] font-bold text-[#5C6A6E]"
+                    className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 text-[13px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]"
                   >
                     {tf.noKeep}
                   </button>

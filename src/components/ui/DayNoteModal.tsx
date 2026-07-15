@@ -33,16 +33,16 @@ export default function DayNoteModal({
 
   return (
     <div className="fixed inset-0 z-[310] flex items-end justify-center bg-[var(--brand)]/60 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-[440px] rounded-t-[22px] bg-white p-4 sm:rounded-[20px]">
+      <div className="w-full max-w-[440px] rounded-t-[22px] bg-white dark:bg-[#111a2e] p-4 sm:rounded-[20px]">
         <div className="mb-3 flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-[#FBF5E6] text-[#B98A2F]">
+          <span className="grid size-8 place-items-center rounded-lg bg-[#FBF5E6] dark:bg-[#17233d] text-[#B98A2F]">
             <Pin size={15} />
           </span>
           <div className="min-w-0">
             <div className="truncate text-[15px] font-bold text-[var(--brand)]">
               {mode === "edit" ? tr.noteEdit : tr.noteNew}
             </div>
-            {contextLabel && <div className="text-[12px] text-[#97A1A0]">{contextLabel}</div>}
+            {contextLabel && <div className="text-[12px] text-[#97A1A0] dark:text-[#728098]">{contextLabel}</div>}
           </div>
         </div>
 
@@ -52,16 +52,16 @@ export default function DayNoteModal({
           onChange={e => setTitle(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onCancel(); }}
           placeholder={tr.notePlaceholder}
-          className="w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] focus:border-[#B98A2F] focus:outline-none"
+          className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:border-[#B98A2F] focus:outline-none"
         />
 
-        <label className="mt-3 block text-[11px] font-bold uppercase tracking-wide text-[#97A1A0]">
+        <label className="mt-3 block text-[11px] font-bold uppercase tracking-wide text-[#97A1A0] dark:text-[#728098]">
           {tr.noteProject}
         </label>
         <select
           value={projectId}
           onChange={e => setProjectId(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3.5 py-3 text-[15px] text-[var(--brand)] focus:border-[#B98A2F] focus:outline-none"
+          className="mt-1 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] focus:border-[#B98A2F] focus:outline-none"
         >
           <option value="">{tr.noteNoProject}</option>
           {projects.map(p => (
@@ -73,7 +73,7 @@ export default function DayNoteModal({
           <button
             onClick={onCancel}
             disabled={saving}
-            className="flex-1 rounded-xl bg-[#ECE3D1] py-3 text-[14px] font-bold text-[#5C6A6E] disabled:opacity-50"
+            className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 text-[14px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] disabled:opacity-50"
           >
             {tr.noteCancel}
           </button>

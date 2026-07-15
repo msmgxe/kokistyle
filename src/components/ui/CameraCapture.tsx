@@ -106,7 +106,7 @@ export default function CameraCapture({
           disabled={!ready}
           className="grid size-[74px] place-items-center rounded-full border-4 border-white bg-white/20 transition active:scale-90 disabled:opacity-40"
         >
-          <span className="block size-[54px] rounded-full bg-white" />
+          <span className="block size-[54px] rounded-full bg-white dark:bg-[#111a2e]" />
         </button>
         <span className="size-12" aria-hidden />
       </div>

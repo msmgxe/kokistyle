@@ -106,11 +106,11 @@ function ConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-[440px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
+      <div className="w-full max-w-[440px] rounded-t-[22px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl sm:rounded-[20px]">
         <h3 className="mb-1 text-lg font-bold text-[var(--brand)]">{title}</h3>
-        <p className="mb-5 text-sm text-[#5C6A6E]">{body}</p>
+        <p className="mb-5 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{body}</p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
+          <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">Cancelar</button>
           <button onClick={onConfirm} className={`flex-1 rounded-xl py-3 font-bold text-white ${danger ? "bg-[#B0492F]" : "bg-[var(--brand)]"}`}>{label}</button>
         </div>
       </div>
@@ -141,16 +141,16 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
         className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
-        <div className="w-full max-w-[460px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh] overflow-y-auto">
+        <div className="w-full max-w-[460px] rounded-t-[22px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl sm:rounded-[20px] max-h-[92vh] overflow-y-auto">
           <h3 className="mb-1 text-xl font-bold text-[var(--brand)]">{opts.title}</h3>
-          {opts.sub && <p className="mb-4 text-sm text-[#5C6A6E]">{opts.sub}</p>}
+          {opts.sub && <p className="mb-4 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{opts.sub}</p>}
           <div className="space-y-3">
             {opts.fields.map((f) => (
               <div key={f.key}>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{f.label}</label>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{f.label}</label>
                 {f.type === "select" ? (
                   <select value={vals[f.key] as string} onChange={(e) => set(f.key, e.target.value)}
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
+                    className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
                     {f.options?.map((o) => <option key={o} value={o}>{f.optionLabels?.[o] ?? o}</option>)}
                   </select>
                 ) : f.type === "number" ? (
@@ -163,25 +163,25 @@ function EditorModal({ opts, onClose }: { opts: EditorOpts; onClose: () => void 
                       set(f.key, raw === "" ? 0 : parseFloat(raw) || 0);
                     }}
                     placeholder="0"
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+                    className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   />
                 ) : f.type === "textarea" ? (
                   <textarea
                     rows={3}
                     value={vals[f.key] as string}
                     onChange={(e) => set(f.key, e.target.value)}
-                    className="w-full resize-none rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+                    className="w-full resize-none rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
                   />
                 ) : (
                   <input type={f.type} value={vals[f.key] as string}
                     onChange={(e) => set(f.key, e.target.value)}
-                    className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                    className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
                 )}
               </div>
             ))}
           </div>
           <div className="mt-5 flex gap-3">
-            <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancelar</button>
+            <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">Cancelar</button>
             <button onClick={() => setConfirmSave(true)} className="flex-1 rounded-xl bg-[var(--brand)] py-3 font-bold text-white">Guardar</button>
           </div>
           {opts.onDelete && (
@@ -487,23 +487,23 @@ function MaterialesTab({
     <div className="w-full">
       {/* Resumen */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-[400px]">
-        <div className="rounded-[13px] border border-[#E6DDCB] bg-white p-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.materials.toBuy}</div>
+        <div className="rounded-[13px] border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-3">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.materials.toBuy}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-[var(--brand)]">{money(por)}</div>
         </div>
-        <div className="rounded-[13px] border border-[#E6DDCB] bg-white p-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.materials.bought}</div>
+        <div className="rounded-[13px] border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-3">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.materials.bought}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-[#4F8A63]">{money(com)}</div>
         </div>
       </div>
 
       {/* Import from Estimate */}
-      <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#D5DEEF] bg-[#EDF3FB] px-4 py-3">
+      <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#D5DEEF] dark:border-[#22304d] bg-[#EDF3FB] dark:bg-[#111a2e] px-4 py-3">
         <div className="flex-1">
           <div className="text-[12px] font-bold text-[var(--accent)]">
             {EN ? "Import from Estimate" : "Importar del Estimado"}
           </div>
-          <div className="text-[10.5px] text-[#5C6A6E]">
+          <div className="text-[10.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">
             {EN
               ? "Adds estimate items as purchase orders (\"Purchase of …\"). Skips already-imported items."
               : "Agrega los items del estimado como órdenes de compra (\"Compra de …\"). Omite los ya importados."}
@@ -523,7 +523,7 @@ function MaterialesTab({
         {!selectMode ? (
           <button
             onClick={() => setSelectMode(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+            className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
           >
             ☑ {EN ? "Select" : "Seleccionar"}
           </button>
@@ -531,11 +531,11 @@ function MaterialesTab({
           <>
             <button
               onClick={() => setSelectedIds(selectedIds.size === items.length ? new Set() : new Set(items.map(m => m.id)))}
-              className="rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] transition hover:border-[var(--brand)]"
+              className="rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--brand)]"
             >
               {selectedIds.size === items.length ? (EN ? "Deselect all" : "Quitar todo") : (EN ? "Select all" : "Seleccionar todo")}
             </button>
-            <button onClick={exitSelectMode} className="rounded-xl border border-[#D7CBB3] bg-white px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E]">
+            <button onClick={exitSelectMode} className="rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[11px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
               {EN ? "Cancel" : "Cancelar"}
             </button>
           </>
@@ -554,14 +554,14 @@ function MaterialesTab({
                     onClick={() => selectMode ? toggleSelect(m.id) : openEdit(m)}
                     className={`flex cursor-pointer select-none items-start overflow-hidden rounded-[13px] border transition ${
                       isSelected ? "border-[#B0492F] bg-[#FDF3F1] ring-1 ring-[#B0492F]"
-                        : isDragging ? "border-[#E6DDCB] bg-white shadow-lg ring-1 ring-[var(--brand)]"
-                        : "border-[#E6DDCB] bg-white"
+                        : isDragging ? "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-lg ring-1 ring-[var(--brand)]"
+                        : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"
                     } ${m.bought && !isSelected ? "opacity-65" : ""}`}
                   >
                     {/* Left: select checkbox (select mode) or drag handle */}
                     {selectMode ? (
                       <div className="flex items-center justify-center px-2 pt-3.5">
-                        <span className={`grid size-6 flex-none place-items-center rounded-lg border-2 ${isSelected ? "border-[#B0492F] bg-[#B0492F]" : "border-[#D7CBB3]"}`}>
+                        <span className={`grid size-6 flex-none place-items-center rounded-lg border-2 ${isSelected ? "border-[#B0492F] bg-[#B0492F]" : "border-[#D7CBB3] dark:border-[#2c3c5e]"}`}>
                           {isSelected && <span className="text-[10px] font-bold text-white">✓</span>}
                         </span>
                       </div>
@@ -577,18 +577,18 @@ function MaterialesTab({
                     <div className="flex flex-1 items-start gap-3 py-3 pr-3">
                       <span
                         onClick={(e) => { e.stopPropagation(); handleToggleBought(m); }}
-                        className={`mt-0.5 grid size-6 flex-none cursor-pointer place-items-center rounded-lg border-2 transition ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3] hover:border-[#4F8A63]"}`}
+                        className={`mt-0.5 grid size-6 flex-none cursor-pointer place-items-center rounded-lg border-2 transition ${m.bought ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#D7CBB3] dark:border-[#2c3c5e] hover:border-[#4F8A63]"}`}
                       >
                         {m.bought && <span className="text-[10px] font-bold text-white">✓</span>}
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="flex items-center gap-1.5 flex-wrap">
                           {m.estimate_item_id && (
-                            <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent)]">
+                            <span className="rounded-full bg-[#EDF3FB] dark:bg-[#111a2e] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent)]">
                               {EN ? "FROM EST" : "DEL EST"}
                             </span>
                           )}
-                          <span className={`text-sm font-semibold ${m.bought ? "text-[#5C6A6E] line-through" : "text-[var(--brand)]"}`}>{m.name}</span>
+                          <span className={`text-sm font-semibold ${m.bought ? "text-[#5C6A6E] dark:text-[#9fb0cc] line-through" : "text-[var(--brand)]"}`}>{m.name}</span>
                         </span>
                         <span className="mt-0.5 flex flex-wrap items-center gap-2">
                           {((m.quantity && m.quantity !== 1) || m.unit) && (
@@ -596,22 +596,22 @@ function MaterialesTab({
                               {m.quantity ?? 1}{m.unit ? ` × ${m.unit}` : ""}
                             </span>
                           )}
-                          {m.supplier && <span className="text-[11px] text-[#97A1A0]">{m.supplier}</span>}
+                          {m.supplier && <span className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{m.supplier}</span>}
                           {m.purchase_date && (
-                            <span className="rounded bg-[#F0EBE0] px-1.5 py-0.5 font-mono text-[10px] text-[#5C6A6E]">
+                            <span className="rounded bg-[#F0EBE0] px-1.5 py-0.5 font-mono text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                               📅 {m.purchase_date}
                             </span>
                           )}
                         </span>
                         {m.notes && (
-                          <span className="mt-0.5 block truncate text-[10.5px] text-[#97A1A0]">{m.notes}</span>
+                          <span className="mt-0.5 block truncate text-[10.5px] text-[#97A1A0] dark:text-[#728098]">{m.notes}</span>
                         )}
                       </span>
                       <span className="mt-0.5 font-mono text-sm font-semibold text-[var(--brand)] whitespace-nowrap">{money(m.cost)}</span>
                       {!selectMode && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setConfirmDup(m); }}
-                          className="mt-0.5 grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+                          className="mt-0.5 grid size-7 flex-none place-items-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"
                           aria-label="Duplicate"
                         >
                           <Copy size={13} />
@@ -628,7 +628,7 @@ function MaterialesTab({
 
         <DragOverlay dropAnimation={dropAnimation}>
           {activeMat && (
-            <div className="flex items-center gap-3 rounded-[13px] border border-[var(--brand)] bg-white px-3 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
+            <div className="flex items-center gap-3 rounded-[13px] border border-[var(--brand)] bg-white dark:bg-[#111a2e] px-3 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
               <span className="text-sm font-semibold text-[var(--brand)]">{activeMat.name}</span>
               <span className="ml-auto font-mono text-sm font-semibold text-[var(--brand)]">{money(activeMat.cost)}</span>
             </div>
@@ -643,7 +643,7 @@ function MaterialesTab({
             {selectedIds.size} {EN ? `item${selectedIds.size !== 1 ? "s" : ""} selected` : `item${selectedIds.size !== 1 ? "s" : ""} seleccionado${selectedIds.size !== 1 ? "s" : ""}`}
           </span>
           <div className="flex gap-2">
-            <button onClick={exitSelectMode} className="rounded-xl bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+            <button onClick={exitSelectMode} className="rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] px-4 py-2 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
               {EN ? "Cancel" : "Cancelar"}
             </button>
             <button
@@ -685,7 +685,7 @@ function MaterialesTab({
             onRefresh(); toast(tp.materials.materialAdded);
           },
         })}
-        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
+        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
       >
         + {tp.materials.addMaterial}
       </button>
@@ -753,7 +753,7 @@ function ContactosTab({
   return (
     <div className="w-full">
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm font-semibold text-[#5C6A6E]">{tp.contacts.assigned}</span>
+        <span className="text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.contacts.assigned}</span>
         <button
           onClick={() => setPickerOpen(true)}
           className="rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white hover:bg-[#1e4455]"
@@ -763,8 +763,8 @@ function ContactosTab({
       </div>
 
       {contacts.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-[#D7CBB3] bg-white p-10 text-center">
-          <p className="text-sm text-[#5C6A6E]">{tp.contacts.noAssigned}</p>
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] p-10 text-center">
+          <p className="text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.contacts.noAssigned}</p>
           <button
             onClick={() => setPickerOpen(true)}
             className="rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1e4455]"
@@ -777,7 +777,7 @@ function ContactosTab({
           {contacts.map((c) => (
             <div
               key={c.id}
-              className="flex items-center gap-3 rounded-2xl border border-[#E6DDCB] bg-white px-4 py-3 shadow-sm"
+              className="flex items-center gap-3 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-3 shadow-sm"
             >
               <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[var(--brand)] text-sm font-bold text-white">
                 {initials(c.name)}
@@ -785,14 +785,14 @@ function ContactosTab({
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold text-[var(--brand)]">{c.name}</div>
                 {c.specialty && (
-                  <div className="text-xs text-[#5C6A6E]">
+                  <div className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
                     {c.specialty}{c.rate ? ` · ${c.rate} ${c.rate_type === "day" ? t.panel.globalContacts.rateDay : t.panel.globalContacts.rateHour}` : ""}
                   </div>
                 )}
               </div>
               <a
                 href={`tel:${c.phone}`}
-                className="inline-flex flex-none items-center gap-1.5 rounded-xl bg-[#DCEBDD] px-3 py-2 text-xs font-bold text-[#4F8A63]"
+                className="inline-flex flex-none items-center gap-1.5 rounded-xl bg-[#DCEBDD] dark:bg-[#14261c] px-3 py-2 text-xs font-bold text-[#4F8A63]"
               >
                 📞 {tp.contacts.call}
               </a>
@@ -800,7 +800,7 @@ function ContactosTab({
                 onClick={() => remove(c.id)}
                 disabled={busy === c.id}
                 aria-label={tp.contacts.removeSpecialist}
-                className="grid size-8 flex-none place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#FBE9E7] disabled:opacity-50"
+                className="grid size-8 flex-none place-items-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#B0492F] transition hover:bg-[#FBE9E7] disabled:opacity-50"
               >
                 ×
               </button>
@@ -811,7 +811,7 @@ function ContactosTab({
 
       {pickerOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center">
-          <div className="flex max-h-[80vh] w-full max-w-[460px] flex-col rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
+          <div className="flex max-h-[80vh] w-full max-w-[460px] flex-col rounded-t-[22px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl sm:rounded-[20px]">
             <h3 className="mb-4 text-xl font-bold text-[var(--brand)]">
               {tp.contacts.pickerTitle}
             </h3>
@@ -820,11 +820,11 @@ function ContactosTab({
               value={pickerSearch}
               onChange={(e) => setPickerSearch(e.target.value)}
               placeholder={tp.contacts.pickerSearch}
-              className="mb-3 w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+              className="mb-3 w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
             />
             <div className="flex-1 space-y-2 overflow-y-auto">
               {available.length === 0 ? (
-                <div className="py-8 text-center text-sm text-[#5C6A6E]">
+                <div className="py-8 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {tp.contacts.pickerEmpty}
                 </div>
               ) : (
@@ -833,7 +833,7 @@ function ContactosTab({
                     key={c.id}
                     onClick={() => assign(c.id)}
                     disabled={busy === c.id}
-                    className="flex w-full items-center gap-3 rounded-xl border border-[#E6DDCB] bg-white p-3 text-left transition hover:bg-[#F7F3EA] disabled:opacity-50"
+                    className="flex w-full items-center gap-3 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-3 text-left transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] disabled:opacity-50"
                   >
                     <span className="grid size-10 flex-none place-items-center rounded-[12px] bg-[var(--brand)] text-sm font-bold text-white">
                       {initials(c.name)}
@@ -841,7 +841,7 @@ function ContactosTab({
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold text-[var(--brand)]">{c.name}</div>
                       {c.specialty && (
-                        <div className="text-xs text-[#5C6A6E]">{c.specialty}</div>
+                        <div className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">{c.specialty}</div>
                       )}
                     </div>
                   </button>
@@ -850,7 +850,7 @@ function ContactosTab({
             </div>
             <button
               onClick={() => { setPickerOpen(false); setPickerSearch(""); }}
-              className="mt-4 w-full rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]"
+              className="mt-4 w-full rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]"
             >
               {tp.common.cancel}
             </button>
@@ -928,19 +928,19 @@ function PresupuestoTab({
     <div className="w-full">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-          <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] bg-white">
+          <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
             {items.map((b) => (
               <SortableRow key={b.id} id={b.id}>
                 {({ listeners, attributes }, isDragging) => (
                   <div
                     {...listeners} {...attributes}
                     onClick={() => openEdit(b)}
-                    className={`flex cursor-pointer select-none items-center border-b border-[#E6DDCB] last:border-0 transition ${isDragging ? "bg-[#F7F3EA] shadow-md" : "hover:bg-[#F7F3EA]"}`}
+                    className={`flex cursor-pointer select-none items-center border-b border-[#E6DDCB] dark:border-[#22304d] last:border-0 transition ${isDragging ? "bg-[#F7F3EA] dark:bg-[#0b1220] shadow-md" : "hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"}`}
                   >
                     <DragHandle />
                     <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] ${b.type === "mano" ? "bg-[#DCE8E9] text-[#4E7A82]" : "bg-[#DCE6E6] text-[#0E2630]"}`}>
+                        <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] ${b.type === "mano" ? "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]" : "bg-[#DCE6E6] dark:bg-[#122a2c] text-[#0E2630] dark:text-[#e8edf7]"}`}>
                           {b.type === "mano" ? tp.budget.labor : tp.budget.material}
                         </span>
                         <span className="truncate text-sm font-medium text-[var(--brand)]">{b.description}</span>
@@ -956,7 +956,7 @@ function PresupuestoTab({
 
         <DragOverlay dropAnimation={dropAnimation}>
           {activeBudget && (
-            <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl">
+            <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--brand)] bg-white dark:bg-[#111a2e] px-4 py-3 shadow-2xl">
               <span className="text-sm font-medium text-[var(--brand)]">{activeBudget.description}</span>
               <span className="font-mono text-sm font-semibold text-[var(--brand)]">{money(activeBudget.amount)}</span>
             </div>
@@ -971,9 +971,9 @@ function PresupuestoTab({
 
       <div className="mt-3 flex flex-wrap gap-2">
         {approved ? (
-          <div className="inline-flex items-center gap-2 rounded-xl bg-[#DCEBDD] px-4 py-3 text-sm font-semibold text-[#4F8A63]">✓ {tp.budget.approvedByClient}</div>
+          <div className="inline-flex items-center gap-2 rounded-xl bg-[#DCEBDD] dark:bg-[#14261c] px-4 py-3 text-sm font-semibold text-[#4F8A63]">✓ {tp.budget.approvedByClient}</div>
         ) : (
-          <button onClick={() => setConfirming(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#4E7A82] bg-[#DCE8E9] px-4 py-3 text-sm font-bold text-[#4E7A82] transition hover:bg-[#c8dfe0]">
+          <button onClick={() => setConfirming(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#4E7A82] bg-[#DCE8E9] dark:bg-[#122a2c] px-4 py-3 text-sm font-bold text-[#4E7A82] transition hover:bg-[#c8dfe0]">
             {tp.budget.markApproved}
           </button>
         )}
@@ -991,13 +991,13 @@ function PresupuestoTab({
               onRefresh(); toast(tp.budget.lineAdded);
             },
           })}
-          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
+          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
         >
           + {tp.budget.addLine}
         </button>
         <button
           onClick={() => exportCotizacion(project, items)}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA]"
+          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
         >
           ↓ {tp.budget.export}
         </button>
@@ -1128,25 +1128,25 @@ function PagosTab({
     <div className="w-full">
       {/* KPIs */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.income}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.expenses}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#B0492F]">{money(egr)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.outstanding}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(due)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">{tp.payments.cashFlow}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(caja)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.income}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.expenses}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#B0492F]">{money(egr)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.outstanding}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(due)}</div></div>
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.cashFlow}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(caja)}</div></div>
       </div>
-      {paid && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#DCEBDD] bg-[#E7F1E6] px-4 py-3 text-sm font-semibold text-[#4F8A63]">🎉 {tp.payments.paidFull}</div>}
+      {paid && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#DCEBDD] dark:border-[#1f3a2c] bg-[#E7F1E6] px-4 py-3 text-sm font-semibold text-[#4F8A63]">🎉 {tp.payments.paidFull}</div>}
 
       {/* Sub-tabs + export */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-xl border border-[#E6DDCB] bg-[#ECE3D1] p-1">
+        <div className="inline-flex rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#ECE3D1] dark:bg-[#17233d] p-1">
           {(["ingresos", "egresos"] as PaySubTab[]).map((sub) => (
-            <button key={sub} onClick={() => changeSubTab(sub)} className={`rounded-lg px-5 py-2 text-sm font-bold transition ${subTab === sub ? "bg-white text-[var(--brand)] shadow-sm" : "text-[#5C6A6E]"}`}>
+            <button key={sub} onClick={() => changeSubTab(sub)} className={`rounded-lg px-5 py-2 text-sm font-bold transition ${subTab === sub ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] shadow-sm" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>
               {sub === "ingresos" ? tp.payments.incomeTab : tp.payments.expensesTab}
             </button>
           ))}
         </div>
         <button
           onClick={() => exportEstadoCuenta(project, payments, expenses)}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] bg-white px-4 py-2 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA]"
+          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-4 py-2 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
         >
           ↓ {tp.payments.exportStatement}
         </button>
@@ -1157,23 +1157,23 @@ function PagosTab({
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handlePayDragStart} onDragEnd={handlePayDragEnd}>
           <SortableContext items={payItems.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
-              {payItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0]">{tp.payments.noIncome}</p>}
+              {payItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0] dark:text-[#728098]">{tp.payments.noIncome}</p>}
               {payItems.map((x) => (
                 <SortableRow key={x.id} id={x.id}>
                   {({ listeners, attributes }, isDragging) => (
                     <div
                       {...listeners} {...attributes}
                       onClick={() => openPayEdit(x)}
-                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] bg-white transition ${isDragging ? "shadow-lg ring-1 ring-[var(--brand)]" : "hover:bg-[#F7F3EA]"}`}
+                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] transition ${isDragging ? "shadow-lg ring-1 ring-[var(--brand)]" : "hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"}`}
                     >
                       <DragHandle />
                       <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                         <div>
                           <div className="flex items-center gap-2 text-sm font-semibold text-[var(--brand)]">
                             {x.method}
-                            <span className="rounded bg-[#ECE3D1] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E]">{tp.paymentType[x.type as keyof typeof tp.paymentType] ?? x.type}</span>
+                            <span className="rounded bg-[#ECE3D1] dark:bg-[#17233d] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.paymentType[x.type as keyof typeof tp.paymentType] ?? x.type}</span>
                           </div>
-                          <div className="text-[11px] text-[#5C6A6E]">{dateFmt(x.date)}</div>
+                          <div className="text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">{dateFmt(x.date)}</div>
                         </div>
                         <span className="font-mono text-base font-semibold text-[#4F8A63]">+{money(x.amount)}</span>
                       </div>
@@ -1185,7 +1185,7 @@ function PagosTab({
           </SortableContext>
           <DragOverlay dropAnimation={dropAnimation}>
             {activePay && (
-              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl">
+              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[var(--brand)] bg-white dark:bg-[#111a2e] px-4 py-3 shadow-2xl">
                 <span className="text-sm font-semibold text-[var(--brand)]">{activePay.method}</span>
                 <span className="font-mono text-base font-semibold text-[#4F8A63]">+{money(activePay.amount)}</span>
               </div>
@@ -1207,7 +1207,7 @@ function PagosTab({
                 onRefresh(); toast(tp.payments.incomeRecorded);
               },
             })}
-            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
+            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
           >
             + {tp.payments.registerIncome}
           </button>
@@ -1219,34 +1219,34 @@ function PagosTab({
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleExpDragStart} onDragEnd={handleExpDragEnd}>
           <SortableContext items={expItems.map((x) => x.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
-              {expItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0]">{tp.payments.noExpenses}</p>}
+              {expItems.length === 0 && <p className="py-4 text-center text-sm text-[#97A1A0] dark:text-[#728098]">{tp.payments.noExpenses}</p>}
               {expItems.map((x) => (
                 <SortableRow key={x.id} id={x.id}>
                   {({ listeners, attributes }, isDragging) => (
                     <div
                       {...listeners} {...attributes}
                       onClick={() => openExpEdit(x)}
-                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border transition ${x.material_id ? "border-[#D5DEEF] bg-[#F4F8FE]" : "border-[#E6DDCB] bg-white"} ${isDragging ? "shadow-lg ring-1 ring-[var(--brand)]" : "hover:bg-[#F7F3EA]"}`}
+                      className={`flex cursor-pointer select-none items-center overflow-hidden rounded-[13px] border transition ${x.material_id ? "border-[#D5DEEF] dark:border-[#22304d] bg-[#F4F8FE]" : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"} ${isDragging ? "shadow-lg ring-1 ring-[var(--brand)]" : "hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"}`}
                     >
                       <DragHandle />
                       <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-[var(--brand)]">
                             {x.material_id && (
-                              <span className="rounded-full bg-[#EDF3FB] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent)]">
+                              <span className="rounded-full bg-[#EDF3FB] dark:bg-[#111a2e] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent)]">
                                 {EN ? "FROM MAT" : "DEL MAT"}
                               </span>
                             )}
                             {x.payee_name}
-                            <span className="rounded bg-[#ECE3D1] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E]">{x.method}</span>
+                            <span className="rounded bg-[#ECE3D1] dark:bg-[#17233d] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5C6A6E] dark:text-[#9fb0cc]">{x.method}</span>
                           </div>
-                          <div className="text-[11px] text-[#5C6A6E]">{x.concept} · {dateFmt(x.date)}</div>
+                          <div className="text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">{x.concept} · {dateFmt(x.date)}</div>
                         </div>
                         <div className="flex items-center gap-2">
                           {x.material_id && (
                             <button
                               onClick={(e) => { e.stopPropagation(); unmarkMaterial(x); }}
-                              className="rounded-lg border border-[#D5DEEF] bg-white px-2 py-1 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB]"
+                              className="rounded-lg border border-[#D5DEEF] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-1 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]"
                             >
                               ↩ {EN ? "Unmark" : "Desmarcar"}
                             </button>
@@ -1262,7 +1262,7 @@ function PagosTab({
           </SortableContext>
           <DragOverlay dropAnimation={dropAnimation}>
             {activeExp && (
-              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl">
+              <div className="flex items-center justify-between gap-2 rounded-[13px] border border-[var(--brand)] bg-white dark:bg-[#111a2e] px-4 py-3 shadow-2xl">
                 <span className="text-sm font-semibold text-[var(--brand)]">{activeExp.payee_name}</span>
                 <span className="font-mono text-base font-semibold text-[#B0492F]">−{money(activeExp.amount)}</span>
               </div>
@@ -1285,7 +1285,7 @@ function PagosTab({
                 onRefresh(); toast(tp.payments.expenseRecorded);
               },
             })}
-            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] bg-[#ECE3D1] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
+            className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
           >
             + {tp.payments.registerExpense}
           </button>
@@ -1319,39 +1319,39 @@ function PlanTaskForm({
   return (
     <div className="space-y-3">
       <div>
-        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Activity</label>
+        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">Activity</label>
         <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+          className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Start date</label>
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">Start date</label>
           <input type="date" value={sDate} onChange={(e) => setSDate(e.target.value)}
-            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+            className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
         </div>
         <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">End date</label>
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">End date</label>
           <input type="date" value={eDate} onChange={(e) => setEDate(e.target.value)}
-            className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+            className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
         </div>
       </div>
-      <div className="text-xs text-[#5C6A6E]">Duration: ~{Math.round(durationDays / 7)} weeks ({durationDays} days)</div>
+      <div className="text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">Duration: ~{Math.round(durationDays / 7)} weeks ({durationDays} days)</div>
       <div>
-        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Estimated hours</label>
+        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">Estimated hours</label>
         <input type="number" min={0} value={hours} onChange={(e) => setHours(Number(e.target.value))}
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+          className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
       </div>
       <div>
-        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">Status</label>
+        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">Status</label>
         <select value={status} onChange={(e) => setStatus(e.target.value as "pend" | "prog" | "done")}
-          className="w-full rounded-xl border border-[#D7CBB3] bg-white px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
+          className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none">
           <option value="pend">To do</option>
           <option value="prog">In progress</option>
           <option value="done">Done</option>
         </select>
       </div>
       <div className="mt-5 flex gap-3">
-        <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">Cancel</button>
+        <button onClick={onClose} className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">Cancel</button>
         <button onClick={() => onSave({ name, hours, durationDays, status, startDate: sDate, endDate: eDate })} className="flex-1 rounded-xl bg-[var(--accent)] py-3 font-bold text-white">Save</button>
       </div>
     </div>
@@ -1444,7 +1444,7 @@ function PlanTab({
   const COLORS: Record<string, string> = {
     done: "bg-gradient-to-r from-[#4F8A63] to-[#69a67e] text-white",
     prog: "bg-gradient-to-r from-[#4E7A82] to-[#5e8c94] text-white",
-    pend: "bg-[#D7CBB3] text-[#5C6A6E]",
+    pend: "bg-[#D7CBB3] dark:bg-[#17233d] text-[#5C6A6E] dark:text-[#9fb0cc]",
   };
 
   const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
@@ -1478,7 +1478,7 @@ function PlanTab({
       {/* Controls: filter + assignee + gantt unit toggle */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         {/* Status filter */}
-        <div className="inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+        <div className="inline-flex rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
           {([
             { key: "all",  label: "All" },
             { key: "pend", label: tp.workflow.colPend },
@@ -1486,7 +1486,7 @@ function PlanTab({
             { key: "done", label: tp.workflow.colDone },
           ] as const).map(({ key, label }) => (
             <button key={key} onClick={() => setFilterStatus(key)}
-              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"}`}>
+              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"}`}>
               {label}
             </button>
           ))}
@@ -1496,7 +1496,7 @@ function PlanTab({
           <select
             value={filterAssignee}
             onChange={e => setFilterAssignee(e.target.value)}
-            className="rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] px-2 py-1.5 text-[11px] font-semibold text-[#5C6A6E] focus:border-[var(--accent)] focus:outline-none"
+            className="rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1.5 text-[11px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
           >
             {assigneeOptions.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -1504,10 +1504,10 @@ function PlanTab({
           </select>
         )}
         {/* Weeks / Days toggle */}
-        <div className="ml-auto inline-flex rounded-lg border border-[#D7CBB3] bg-[#F7F3EA] p-0.5">
+        <div className="ml-auto inline-flex rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
           {(["week", "day"] as const).map((u) => (
             <button key={u} onClick={() => setGanttUnit(u)}
-              className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] hover:text-[var(--brand)]"}`}>
+              className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"}`}>
               {u === "week" ? "Weeks" : "Days"}
             </button>
           ))}
@@ -1515,11 +1515,11 @@ function PlanTab({
       </div>
 
       {filteredRows.length === 0 ? (
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-10 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
           {tp.globalPlan.noTasks}
         </div>
       ) : (
-      <div ref={scrollRef} className="overflow-x-auto rounded-2xl border border-[#E6DDCB] bg-white [scrollbar-width:thin]">
+      <div ref={scrollRef} className="overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] [scrollbar-width:thin]">
         <div className="w-max min-w-full">
           <GanttHeader
             scale={scale}
@@ -1541,18 +1541,18 @@ function PlanTab({
                 <SortableRow key={t.id} id={t.id}>
                   {({ listeners, attributes }, isDragging) => (
                     <div
-                      className={`flex items-stretch border-b border-[#F0EBE0] ${isDragging ? "bg-white shadow-lg ring-1 ring-[var(--brand)]" : ""}`}
+                      className={`flex items-stretch border-b border-[#F0EBE0] dark:border-[#22304d] ${isDragging ? "bg-white dark:bg-[#111a2e] shadow-lg ring-1 ring-[var(--brand)]" : ""}`}
                       style={{ width: 300 + scale.laneWidth }}
                     >
                       <div
                         {...listeners} {...attributes}
-                        className="sticky left-0 z-10 flex shrink-0 select-none items-center border-r border-[#E6DDCB] bg-white"
+                        className="sticky left-0 z-10 flex shrink-0 select-none items-center border-r border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"
                         style={{ width: 300 }}
                       >
                         <DragHandle />
                         <div className="min-w-0 flex-1 py-1.5">
                           <div className="truncate text-[12px] font-semibold uppercase tracking-wide text-[var(--brand)]">{t.name}</div>
-                          <div className="truncate font-mono text-[10px] text-[#5C6A6E]">
+                          <div className="truncate font-mono text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                             {dShort(start)}–{dShort(end)} · {t.hours}h
                             {t.assigned_contact_id && (
                               <span className="ml-1 font-sans not-italic">· {contacts.find(c => c.id === t.assigned_contact_id)?.name ?? ""}</span>
@@ -1562,12 +1562,12 @@ function PlanTab({
                         <div className="mr-1.5 flex gap-1">
                           <button
                             onClick={(e) => { e.stopPropagation(); setEditTask({ task: { task: t, start, end, weekStart: dayStart }, startDate: start, endDate: end }); }}
-                            className="grid size-7 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+                            className="grid size-7 place-items-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"
                             aria-label="Edit"
                           >
                             <Pencil size={12} />
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); setConfirmDel(t.id); }} className="grid size-7 place-items-center rounded-lg border border-[#E6DDCB] bg-white text-[#B0492F] transition hover:bg-[#F0DBD2]" aria-label="Delete">🗑</button>
+                          <button onClick={(e) => { e.stopPropagation(); setConfirmDel(t.id); }} className="grid size-7 place-items-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#B0492F] transition hover:bg-[#F0DBD2] dark:hover:bg-[#2a1712]" aria-label="Delete">🗑</button>
                         </div>
                       </div>
 
@@ -1590,9 +1590,9 @@ function PlanTab({
 
         <DragOverlay dropAnimation={dropAnimation}>
           {activeTask && (
-            <div className="rounded-xl border border-[var(--brand)] bg-white px-4 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
+            <div className="rounded-xl border border-[var(--brand)] bg-white dark:bg-[#111a2e] px-4 py-3 shadow-2xl ring-1 ring-[var(--brand)]">
               <div className="text-sm font-semibold text-[var(--brand)]">{activeTask.name}</div>
-              <div className="font-mono text-[11px] text-[#5C6A6E]">{activeTask.hours}h · {activeTask.duration_weeks}w</div>
+              <div className="font-mono text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">{activeTask.hours}h · {activeTask.duration_weeks}w</div>
             </div>
           )}
         </DragOverlay>
@@ -1602,10 +1602,10 @@ function PlanTab({
       )}
 
       {/* Leyenda */}
-      <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E]">
+      <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
         <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4F8A63]" /> {tp.plan.done}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#4E7A82]" /> {tp.plan.inProgress}</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3]" /> {tp.plan.pending}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded bg-[#D7CBB3] dark:bg-[#17233d]" /> {tp.plan.pending}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded border border-[#9DC3E6] bg-[#DCEBF7]" /> {language === "en" ? "Saturday" : "Sábado"}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 rounded border border-[#F4B183] bg-[#FBE5D3]" /> {language === "en" ? "Sunday" : "Domingo"}</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-[2px] bg-[#B0492F]/70" /> {language === "en" ? "Today" : "Hoy"}</span>
@@ -1624,7 +1624,7 @@ function PlanTab({
       {editTask && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center"
           onClick={(e) => { if (e.target === e.currentTarget) setEditTask(null); }}>
-          <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px] max-h-[90vh]">
+          <div className="w-full max-w-[460px] overflow-y-auto rounded-t-[22px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl sm:rounded-[20px] max-h-[90vh]">
             <h3 className="mb-4 text-xl font-bold text-[var(--brand)]">Edit task</h3>
             <PlanTaskForm
               task={editTask.task.task}
@@ -1760,7 +1760,7 @@ function NotasTab({
       {!adding && (
         <button
           onClick={() => setAdding(true)}
-          className="flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] bg-[#ECE3D1] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
+          className="flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
         >
           <Plus size={14} /> {tp.notes.addNote}
         </button>
@@ -1768,19 +1768,19 @@ function NotasTab({
 
       {/* New note form */}
       {adding && (
-        <div className="rounded-2xl border border-[#4E7A82] bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-[#4E7A82] bg-white dark:bg-[#111a2e] p-4 shadow-sm">
           <textarea
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
             placeholder={tp.notes.placeholder}
             rows={3}
-            className="mb-3 w-full resize-none rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[var(--brand)] placeholder:text-[#97A1A0] focus:border-[var(--brand)] focus:outline-none"
+            className="mb-3 w-full resize-none rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2.5 text-sm text-[var(--brand)] placeholder:text-[#97A1A0] dark:placeholder:text-[#728098] focus:border-[var(--brand)] focus:outline-none"
           />
           {/* File preview */}
           {newFiles.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
               {newFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1 text-[11px] text-[#5C6A6E]">
+                <div key={i} className="flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {f.type.startsWith("image/") ? <ImageIcon size={11} /> : <FileText size={11} />}
                   <span className="max-w-[120px] truncate">{f.name}</span>
                   <button onClick={() => setNewFiles(prev => prev.filter((_, j) => j !== i))} className="ml-0.5 text-[#B0492F]"><X size={10} /></button>
@@ -1791,7 +1791,7 @@ function NotasTab({
           <div className="flex items-center gap-2">
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] bg-[#F7F3EA] px-3 py-2 text-xs font-semibold text-[#5C6A6E] transition hover:bg-[#ECE3D1]"
+              className="flex items-center gap-1.5 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-xs font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"
             >
               <Paperclip size={12} /> {tp.notes.attach}
             </button>
@@ -1806,7 +1806,7 @@ function NotasTab({
             />
             <div className="ml-auto flex gap-2">
               <button onClick={() => { setAdding(false); setNewContent(""); setNewFiles([]); }}
-                className="rounded-xl bg-[#ECE3D1] px-4 py-2 text-sm font-bold text-[#5C6A6E]">
+                className="rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] px-4 py-2 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">
                 {tp.common.cancel}
               </button>
               <button
@@ -1823,13 +1823,13 @@ function NotasTab({
 
       {/* Notes list */}
       {sorted.length === 0 && !adding && (
-        <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#97A1A0]">
+        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-10 text-center text-sm text-[#97A1A0] dark:text-[#728098]">
           {tp.notes.empty}
         </div>
       )}
 
       {sorted.map((note) => (
-        <div key={note.id} className="rounded-2xl border border-[#E6DDCB] bg-white p-4 shadow-sm">
+        <div key={note.id} className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4 shadow-sm">
           {/* Editing inline */}
           {editingNote?.id === note.id ? (
             <>
@@ -1837,7 +1837,7 @@ function NotasTab({
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={3}
-                className="mb-3 w-full resize-none rounded-xl border border-[#4E7A82] bg-[#F7F3EA] px-3 py-2.5 text-sm text-[var(--brand)] focus:outline-none"
+                className="mb-3 w-full resize-none rounded-xl border border-[#4E7A82] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2.5 text-sm text-[var(--brand)] focus:outline-none"
               />
               {/* Existing attachments */}
               {note.attachments?.length > 0 && (
@@ -1845,8 +1845,8 @@ function NotasTab({
                   {note.attachments.map((a, i) => (
                     <div key={i} className="group relative">
                       {a.type === "image"
-                        ? <img src={a.url} alt={a.name} className="h-14 w-14 rounded-lg object-cover border border-[#E6DDCB]" />
-                        : <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1 text-[11px] text-[#4E7A82]"><FileText size={11}/>{a.name}</a>
+                        ? <img src={a.url} alt={a.name} className="h-14 w-14 rounded-lg object-cover border border-[#E6DDCB] dark:border-[#22304d]" />
+                        : <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1 text-[11px] text-[#4E7A82]"><FileText size={11}/>{a.name}</a>
                       }
                       <button
                         onClick={() => removeAttachment(note, i)}
@@ -1860,7 +1860,7 @@ function NotasTab({
               {editFiles.length > 0 && (
                 <div className="mb-2 flex flex-wrap gap-2">
                   {editFiles.map((f, i) => (
-                    <div key={i} className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] bg-[#F7F3EA] px-2 py-1 text-[11px] text-[#5C6A6E]">
+                    <div key={i} className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                       {f.type.startsWith("image/") ? <ImageIcon size={10}/> : <FileText size={10}/>}
                       <span className="max-w-[100px] truncate">{f.name}</span>
                       <button onClick={() => setEditFiles(p => p.filter((_, j) => j !== i))}><X size={9} className="text-[#B0492F]"/></button>
@@ -1869,13 +1869,13 @@ function NotasTab({
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <button onClick={() => editFileRef.current?.click()} className="flex items-center gap-1 rounded-xl border border-[#D7CBB3] px-3 py-2 text-xs font-semibold text-[#5C6A6E]">
+                <button onClick={() => editFileRef.current?.click()} className="flex items-center gap-1 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] px-3 py-2 text-xs font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
                   <Paperclip size={11}/> {tp.notes.attachMore}
                 </button>
                 <input ref={editFileRef} type="file" accept="image/*,application/pdf" capture="environment" multiple className="hidden"
                   onChange={(e) => { if (e.target.files) setEditFiles(p => [...p, ...Array.from(e.target.files!)]); }} />
                 <div className="ml-auto flex gap-2">
-                  <button onClick={() => setEditingNote(null)} className="rounded-xl bg-[#ECE3D1] px-3 py-2 text-sm font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
+                  <button onClick={() => setEditingNote(null)} className="rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] px-3 py-2 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.common.cancel}</button>
                   <button onClick={handleSaveEdit} disabled={uploading} className="rounded-xl bg-[var(--brand)] px-3 py-2 text-sm font-bold text-white disabled:opacity-50">
                     {uploading ? "…" : tp.common.save}
                   </button>
@@ -1892,28 +1892,28 @@ function NotasTab({
                   {note.attachments.map((a, i) => (
                     a.type === "image"
                       ? <a key={i} href={a.url} target="_blank" rel="noopener noreferrer">
-                          <img src={a.url} alt={a.name} className="h-16 w-16 rounded-xl object-cover border border-[#E6DDCB] transition hover:opacity-90" />
+                          <img src={a.url} alt={a.name} className="h-16 w-16 rounded-xl object-cover border border-[#E6DDCB] dark:border-[#22304d] transition hover:opacity-90" />
                         </a>
                       : <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] bg-[#F7F3EA] px-3 py-2 text-[12px] font-medium text-[#4E7A82] transition hover:bg-[#DCE8E9]">
+                          className="flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-[12px] font-medium text-[#4E7A82] transition hover:bg-[#DCE8E9] dark:hover:bg-[#122a2c]">
                           <FileText size={13}/>{a.name}
                         </a>
                   ))}
                 </div>
               )}
               {/* Footer */}
-              <div className="flex items-center justify-between border-t border-[#F0EBE0] pt-2">
-                <span className="text-[11px] text-[#97A1A0]">{dateFmt(note.created_at ?? "")}</span>
+              <div className="flex items-center justify-between border-t border-[#F0EBE0] dark:border-[#22304d] pt-2">
+                <span className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{dateFmt(note.created_at ?? "")}</span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setPinPrompt({ action: "edit", note }); setPinValue(""); setPinError(""); }}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#4E7A82] transition hover:bg-[#DCE8E9]"
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#4E7A82] transition hover:bg-[#DCE8E9] dark:hover:bg-[#122a2c]"
                   >
                     <Pencil size={11}/> {tp.common.edit}
                   </button>
                   <button
                     onClick={() => { setPinPrompt({ action: "delete", note }); setPinValue(""); setPinError(""); }}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#B0492F] transition hover:bg-[#F0DBD2]"
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#B0492F] transition hover:bg-[#F0DBD2] dark:hover:bg-[#2a1712]"
                   >
                     <Trash2 size={11}/> {tp.common.delete}
                   </button>
@@ -1927,14 +1927,14 @@ function NotasTab({
       {/* PIN confirmation modal */}
       {pinPrompt && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center">
-          <div className="w-full max-w-[360px] rounded-t-[22px] bg-[#F7F3EA] p-6 shadow-2xl sm:rounded-[20px]">
+          <div className="w-full max-w-[360px] rounded-t-[22px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl sm:rounded-[20px]">
             <h3 className="mb-1 text-base font-bold text-[var(--brand)]">
               {pinPrompt.action === "delete" ? tp.notes.deleteNote : tp.notes.confirmEdit}
             </h3>
-            <p className="mb-4 text-sm text-[#5C6A6E]">{tp.notes.pinPrompt}</p>
+            <p className="mb-4 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.notes.pinPrompt}</p>
             <div className="mb-1 flex justify-center gap-3">
               {[0,1,2,3].map(i => (
-                <div key={i} className={`size-3 rounded-full transition ${pinValue.length > i ? "bg-[var(--brand)]" : "bg-[#D7CBB3]"}`} />
+                <div key={i} className={`size-3 rounded-full transition ${pinValue.length > i ? "bg-[var(--brand)]" : "bg-[#D7CBB3] dark:bg-[#17233d]"}`} />
               ))}
             </div>
             <input
@@ -1945,13 +1945,13 @@ function NotasTab({
               value={pinValue}
               onChange={(e) => { setPinValue(e.target.value.replace(/\D/g,"").slice(0,4)); setPinError(""); }}
               onKeyDown={(e) => e.key === "Enter" && pinValue.length === 4 && verifyPin()}
-              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] bg-white text-center font-mono text-xl tracking-[1.5em] text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-center font-mono text-xl tracking-[1.5em] text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
               placeholder="••••"
             />
             {pinError && <p className="mb-2 text-center text-xs font-semibold text-[#B0492F]">{pinError}</p>}
             <div className="flex gap-3 mt-2">
               <button onClick={() => { setPinPrompt(null); setPinValue(""); setPinError(""); }}
-                className="flex-1 rounded-xl bg-[#ECE3D1] py-3 font-bold text-[#5C6A6E]">{tp.common.cancel}</button>
+                className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.common.cancel}</button>
               <button onClick={verifyPin} disabled={pinValue.length < 4}
                 className={`flex-1 rounded-xl py-3 font-bold text-white disabled:opacity-40 ${pinPrompt.action === "delete" ? "bg-[#B0492F]" : "bg-[var(--brand)]"}`}>
                 {pinPrompt.action === "delete" ? tp.common.delete : tp.notes.confirm}
@@ -2009,7 +2009,7 @@ function PlannerTab({
   );
   if (!estimate) return (
     <div className="flex h-64 items-center justify-center">
-      <p className="text-[#5C6A6E]">{EN ? "No estimate found. Create one in the Estimate tab first." : "No hay estimado. Crea uno en el tab Estimate primero."}</p>
+      <p className="text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "No estimate found. Create one in the Estimate tab first." : "No hay estimado. Crea uno en el tab Estimate primero."}</p>
     </div>
   );
 
@@ -2166,7 +2166,7 @@ export default function ProjectDetailPage() {
   return (
     <div className="animate-in fade-in duration-300">
       {/* Back button */}
-      <button onClick={() => router.push("/proyectos")} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C6A6E] transition hover:text-[var(--brand)]">
+      <button onClick={() => router.push("/proyectos")} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:text-[var(--brand)]">
         <ArrowLeft size={15} /> {tp.nav.dashboard}
       </button>
 
@@ -2242,7 +2242,7 @@ export default function ProjectDetailPage() {
                 <button key={s.id}
                   onClick={() => { if (!s.tabs.includes(activeTab)) setActiveTab(s.tabs[0]); }}
                   className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-                    active ? "bg-white text-[var(--brand)] shadow-sm" : "text-[#A8C0BC] hover:text-white"
+                    active ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] shadow-sm" : "text-[#A8C0BC] hover:text-white"
                   }`}>
                   <span className="mr-1">{s.emoji}</span>{tp.sections[s.id]}
                 </button>
@@ -2250,7 +2250,7 @@ export default function ProjectDetailPage() {
             })}
           </div>
           {/* Sub-tabs de la sección activa (Day Planner + Gantt colapsan en "Cronograma") */}
-          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">
+          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] dark:bg-[#111a2e] px-4 py-2.5 [scrollbar-width:none]">
             {sectionPills.map((p) => (
               <button key={p.key} onClick={p.onClick}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
@@ -2267,11 +2267,11 @@ export default function ProjectDetailPage() {
 
       {/* Toggle Cronograma: Day Planner ↔ Gantt (dos vistas de la misma data) */}
       {inCrono && cronoTargets.length > 1 && (
-        <div className="mb-4 inline-flex rounded-xl border border-[#D5DEEF] bg-[#F0F3FA] p-1">
+        <div className="mb-4 inline-flex rounded-xl border border-[#D5DEEF] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#111a2e] p-1">
           {cronoTargets.map((id) => (
             <button key={id} onClick={() => setActiveTab(id)}
               className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
-                activeTab === id ? "bg-white text-[var(--brand)] shadow-sm" : "text-[#628ECB] hover:text-[var(--accent)]"
+                activeTab === id ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] shadow-sm" : "text-[#628ECB] hover:text-[var(--accent)]"
               }`}>
               {id === "planner" ? "📋 " : "📊 "}{tabLabel[id]}
             </button>

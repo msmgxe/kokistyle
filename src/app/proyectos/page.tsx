@@ -94,16 +94,16 @@ function KpiCard({
   };
   return (
     <div
-      className={`rounded-2xl border border-[#E6DDCB] bg-white p-4 transition-all${onClick ? " cursor-pointer hover:border-[var(--accent)]/40 hover:shadow-md active:scale-[0.98]" : ""}`}
+      className={`rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4 transition-all${onClick ? " cursor-pointer hover:border-[var(--accent)]/40 hover:shadow-md active:scale-[0.98]" : ""}`}
       onClick={onClick}
     >
-      <div className="text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E]">
+      <div className="text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
         {label}
       </div>
       <div className={`mt-2 font-mono text-2xl font-semibold tracking-tight ${colors[variant]}`}>
         {value}
       </div>
-      {sub && <div className="mt-1 text-[11px] text-[#5C6A6E]">{sub}</div>}
+      {sub && <div className="mt-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">{sub}</div>}
     </div>
   );
 }
@@ -111,11 +111,11 @@ function KpiCard({
 function StatusChip({ status }: { status: string }) {
   const { t } = useLanguage();
   const styles: Record<string, string> = {
-    prospecto: "bg-[#E3E8EE] text-[#44586B]",
-    presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-    aprobado: "bg-[#DCE8E9] text-[#4E7A82]",
-    en_obra: "bg-[#EDE3CF] text-[#7A6230]",
-    terminado: "bg-[#DCEBDD] text-[#4F8A63]",
+    prospecto: "bg-[#E3E8EE] dark:bg-[#111a2e] text-[#44586B] dark:text-[#9fb0cc]",
+    presupuesto: "bg-[#DCE6E6] dark:bg-[#122a2c] text-[#0E2630] dark:text-[#e8edf7]",
+    aprobado: "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]",
+    en_obra: "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
+    terminado: "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
   };
   const statusLabels = t.panel.status;
   const label = statusLabels[status as keyof typeof statusLabels] ?? status;
@@ -142,11 +142,11 @@ function ProgressBar({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-[11px] font-semibold text-[#5C6A6E]">
+      <div className="flex justify-between text-[11px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
         <span>{label}</span>
         <span className="font-mono text-[var(--brand)]">{valueLabel}</span>
       </div>
-      <div className="h-[7px] overflow-hidden rounded-full bg-[#E6DDCB]">
+      <div className="h-[7px] overflow-hidden rounded-full bg-[#E6DDCB] dark:bg-[#17233d]">
         <div
           className={`h-full rounded-full transition-all duration-500 ${color}`}
           style={{ width: `${Math.min(100, pct)}%` }}
@@ -181,7 +181,7 @@ function ProjectCard({
 
   return (
     <>
-    <div className="relative overflow-hidden rounded-[18px] border border-[#E6DDCB] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]">
+    <div className="relative overflow-hidden rounded-[18px] border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]">
 
       {/* Cover photo */}
       {project.photo_url && (
@@ -207,7 +207,7 @@ function ProjectCard({
             <span className="font-mono text-[17px] font-semibold text-[var(--brand)]">
               {money(budget)}
             </span>
-            <span className={`text-[9px] font-bold uppercase tracking-wide ${project.hasEstimate ? "text-[var(--accent)]" : "text-[#5C6A6E]"}`}>
+            <span className={`text-[9px] font-bold uppercase tracking-wide ${project.hasEstimate ? "text-[var(--accent)]" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>
               {project.hasEstimate
                 ? (EN ? "from estimate" : "del estimado")
                 : (EN ? "budget" : "presupuesto")}
@@ -216,7 +216,7 @@ function ProjectCard({
           {!showConfirm && (
             <button
               onClick={() => onEdit(project)}
-              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#EDF3FB] hover:text-[var(--accent)]"
+              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[var(--accent)]"
               aria-label={EN ? "Edit project" : "Editar proyecto"}
             >
               <Pencil size={13} />
@@ -225,7 +225,7 @@ function ProjectCard({
           {canDelete && !showConfirm && (
             <button
               onClick={() => setShowConfirm(true)}
-              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#FDF0ED] hover:text-[#B0492F]"
+              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] hover:text-[#B0492F]"
               aria-label={EN ? "Delete project" : "Eliminar proyecto"}
             >
               <Trash2 size={13} />
@@ -243,11 +243,11 @@ function ProjectCard({
         <h3 className="font-bookman text-[15px] font-semibold leading-tight text-[var(--brand)]">
           {project.title}
         </h3>
-        <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E]">
+        <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
           <User size={11} className="opacity-60" />
           {project.client}
         </div>
-        <div className="mt-0.5 flex items-center gap-1 text-xs text-[#5C6A6E]">
+        <div className="mt-0.5 flex items-center gap-1 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
           <MapPin size={11} className="opacity-60" />
           {project.address}
         </div>
@@ -271,19 +271,19 @@ function ProjectCard({
       {/* Delete confirmation overlay */}
       {showConfirm && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/97 p-5">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-[#FDF0ED]">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-[#FDF0ED] dark:bg-[#2a1712]">
             <Trash2 size={18} className="text-[#B0492F]" />
           </div>
           <p className="text-center text-[13px] font-bold text-[var(--brand)]">
             {EN ? "Delete this project?" : "¿Eliminar este proyecto?"}
           </p>
-          <p className="max-w-[180px] truncate text-center text-[11px] text-[#5C6A6E]">
+          <p className="max-w-[180px] truncate text-center text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
             {project.title}
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setShowConfirm(false)}
-              className="rounded-xl border border-[#E6DDCB] px-4 py-2 text-[12px] font-semibold text-[#5C6A6E] hover:bg-[#F7F3EA]"
+              className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-2 text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
             >
               {EN ? "Cancel" : "Cancelar"}
             </button>
@@ -328,13 +328,13 @@ function ProjectCard({
 
 function ProjectBand({ p, right }: { p: ProjectWithData; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5 bg-[#F2EFE7] px-3 py-2">
+    <div className="flex items-center gap-2.5 bg-[#F2EFE7] dark:bg-[#17233d] px-3 py-2">
       <ProjectThumb photoUrl={p.photo_url} title={p.title} size={30} rounded="rounded-lg" />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[12px] font-bold tracking-wide text-[var(--brand)]">
           {p.title.split(" — ")[0]}
         </div>
-        <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
+        <div className="truncate text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{p.client}</div>
       </div>
       {right}
     </div>
@@ -367,7 +367,7 @@ function KpiDetailModal({
 
   // Header oscuro de columnas + filas gris suave por proyecto
   const DTH = "bg-[var(--brand)] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90";
-  const GCELL = "bg-[#F2EFE7] px-3 py-2";
+  const GCELL = "bg-[#F2EFE7] dark:bg-[#17233d] px-3 py-2";
 
   const METHOD: Record<string, string> = EN
     ? { Efectivo: "Cash", Transferencia: "Wire", Zelle: "Zelle", Cheque: "Check", Tarjeta: "Card" }
@@ -385,16 +385,16 @@ function KpiDetailModal({
       onClick={onClose}
     >
       <div
-        className="relative flex w-full max-w-2xl max-h-[82vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="relative flex w-full max-w-2xl max-h-[82vh] flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#E6DDCB] px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] px-5 py-3.5">
           <span className="text-sm font-bold uppercase tracking-widest text-[var(--brand)]">
             {TITLES[type]}
           </span>
           <button
             onClick={onClose}
-            className="grid size-7 place-items-center rounded-lg text-[#5C6A6E] transition hover:bg-[#F7F3EA]"
+            className="grid size-7 place-items-center rounded-lg text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
           >
             <X size={15} />
           </button>
@@ -415,11 +415,11 @@ function KpiDetailModal({
               <tbody>
                 {projects.map(p => {
                   const STATUS_COLORS: Record<string, string> = {
-                    prospecto: "bg-[#E3E8EE] text-[#44586B]",
-                    presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-                    aprobado: "bg-[#DCE8E9] text-[#4E7A82]",
-                    en_obra: "bg-[#EDE3CF] text-[#7A6230]",
-                    terminado: "bg-[#DCEBDD] text-[#4F8A63]",
+                    prospecto: "bg-[#E3E8EE] dark:bg-[#111a2e] text-[#44586B] dark:text-[#9fb0cc]",
+                    presupuesto: "bg-[#DCE6E6] dark:bg-[#122a2c] text-[#0E2630] dark:text-[#e8edf7]",
+                    aprobado: "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]",
+                    en_obra: "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
+                    terminado: "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
                   };
                   const prog = advancePct(p.tasks);
                   const label = tp.status[p.status as keyof typeof tp.status] ?? p.status;
@@ -430,7 +430,7 @@ function KpiDetailModal({
                           <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                           <div className="min-w-0">
                             <div className="max-w-[150px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
-                            <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
+                            <div className="truncate text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{p.client}</div>
                           </div>
                         </div>
                       </td>
@@ -472,18 +472,18 @@ function KpiDetailModal({
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                               <div className="min-w-0">
                                 <div className="max-w-[170px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
-                                <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
+                                <div className="truncate text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{p.client}</div>
                               </div>
                             </div>
                           </td>
                           <td className={`${GCELL} font-mono text-right font-semibold text-[var(--brand)]`}>{money(p.budget)}</td>
-                          <td className={`${GCELL} rounded-r-lg font-mono text-right text-[#5C6A6E]`}>{pct}%</td>
+                          <td className={`${GCELL} rounded-r-lg font-mono text-right text-[#5C6A6E] dark:text-[#9fb0cc]`}>{pct}%</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-                <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[var(--brand)]">
+                <div className="mt-3 flex justify-between border-t border-[#E6DDCB] dark:border-[#22304d] pt-3 text-[12px] font-bold text-[var(--brand)]">
                   <span>Total</span>
                   <span className="font-mono">{money(total)}</span>
                 </div>
@@ -497,7 +497,7 @@ function KpiDetailModal({
             return (
               <div className="space-y-5">
                 {withInc.length === 0 && (
-                  <p className="py-8 text-center text-sm text-[#5C6A6E]">{col("No payments yet.", "Sin pagos aún.")}</p>
+                  <p className="py-8 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{col("No payments yet.", "Sin pagos aún.")}</p>
                 )}
                 {withInc.length > 0 && (
                   <div className="flex items-center rounded-lg bg-[var(--brand)] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90">
@@ -511,17 +511,17 @@ function KpiDetailModal({
                   const sub = totalIncome(p.payments);
                   const rows = [...p.payments].sort((a, b) => a.date.localeCompare(b.date));
                   return (
-                    <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                    <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d]">
                       <ProjectBand p={p} right={
                         <span className="shrink-0 font-mono text-[13px] font-bold text-[#4F8A63]">{money(sub)}</span>
                       } />
-                      <table className="w-full bg-white text-[12px]">
+                      <table className="w-full bg-white dark:bg-[#111a2e] text-[12px]">
                         <tbody>
                           {rows.map(py => (
-                            <tr key={py.id} className="border-b border-[#F7F3EA] last:border-0">
-                              <td className="w-[84px] py-1.5 pl-3 text-[#5C6A6E]">{dateFmt(py.date)}</td>
-                              <td className="py-1.5 text-[#5C6A6E]">{METHOD[py.method] ?? py.method}</td>
-                              <td className="py-1.5 text-[#5C6A6E]">{PAY_TYPE[py.type] ?? py.type}</td>
+                            <tr key={py.id} className="border-b border-[#F7F3EA] dark:border-[#22304d] last:border-0">
+                              <td className="w-[84px] py-1.5 pl-3 text-[#5C6A6E] dark:text-[#9fb0cc]">{dateFmt(py.date)}</td>
+                              <td className="py-1.5 text-[#5C6A6E] dark:text-[#9fb0cc]">{METHOD[py.method] ?? py.method}</td>
+                              <td className="py-1.5 text-[#5C6A6E] dark:text-[#9fb0cc]">{PAY_TYPE[py.type] ?? py.type}</td>
                               <td className="w-24 py-1.5 pr-3 text-right font-mono font-semibold text-[#4F8A63]">{money(py.amount)}</td>
                             </tr>
                           ))}
@@ -531,7 +531,7 @@ function KpiDetailModal({
                   );
                 })}
                 {withInc.length > 0 && (
-                  <div className="flex justify-between border-t-2 border-[#E6DDCB] pt-3 text-[13px] font-bold text-[var(--brand)]">
+                  <div className="flex justify-between border-t-2 border-[#E6DDCB] dark:border-[#22304d] pt-3 text-[13px] font-bold text-[var(--brand)]">
                     <span>Total</span>
                     <span className="font-mono text-[#4F8A63]">{money(grand)}</span>
                   </div>
@@ -546,7 +546,7 @@ function KpiDetailModal({
             return (
               <div className="space-y-5">
                 {withExp.length === 0 && (
-                  <p className="py-8 text-center text-sm text-[#5C6A6E]">{col("No expenses yet.", "Sin egresos aún.")}</p>
+                  <p className="py-8 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{col("No expenses yet.", "Sin egresos aún.")}</p>
                 )}
                 {withExp.length > 0 && (
                   <div className="flex items-center rounded-lg bg-[var(--brand)] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90">
@@ -560,17 +560,17 @@ function KpiDetailModal({
                   const sub = totalExpense(p.expenses);
                   const rows = [...p.expenses].sort((a, b) => a.date.localeCompare(b.date));
                   return (
-                    <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB]">
+                    <div key={p.id} className="overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d]">
                       <ProjectBand p={p} right={
                         <span className="shrink-0 font-mono text-[13px] font-bold text-[#B0492F]">{money(sub)}</span>
                       } />
-                      <table className="w-full bg-white text-[12px]">
+                      <table className="w-full bg-white dark:bg-[#111a2e] text-[12px]">
                         <tbody>
                           {rows.map(ex => (
-                            <tr key={ex.id} className="border-b border-[#F7F3EA] last:border-0">
-                              <td className="w-[84px] py-1.5 pl-3 text-[#5C6A6E]">{dateFmt(ex.date)}</td>
-                              <td className="max-w-[100px] truncate py-1.5 text-[#5C6A6E]">{ex.payee_name}</td>
-                              <td className="max-w-[120px] truncate py-1.5 text-[#5C6A6E]">{ex.concept}</td>
+                            <tr key={ex.id} className="border-b border-[#F7F3EA] dark:border-[#22304d] last:border-0">
+                              <td className="w-[84px] py-1.5 pl-3 text-[#5C6A6E] dark:text-[#9fb0cc]">{dateFmt(ex.date)}</td>
+                              <td className="max-w-[100px] truncate py-1.5 text-[#5C6A6E] dark:text-[#9fb0cc]">{ex.payee_name}</td>
+                              <td className="max-w-[120px] truncate py-1.5 text-[#5C6A6E] dark:text-[#9fb0cc]">{ex.concept}</td>
                               <td className="w-24 py-1.5 pr-3 text-right font-mono font-semibold text-[#B0492F]">{money(ex.amount)}</td>
                             </tr>
                           ))}
@@ -580,7 +580,7 @@ function KpiDetailModal({
                   );
                 })}
                 {withExp.length > 0 && (
-                  <div className="flex justify-between border-t-2 border-[#E6DDCB] pt-3 text-[13px] font-bold text-[var(--brand)]">
+                  <div className="flex justify-between border-t-2 border-[#E6DDCB] dark:border-[#22304d] pt-3 text-[13px] font-bold text-[var(--brand)]">
                     <span>Total</span>
                     <span className="font-mono text-[#B0492F]">{money(grand)}</span>
                   </div>
@@ -606,7 +606,7 @@ function KpiDetailModal({
                   <tbody>
                     {withBal.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-[#5C6A6E]">
+                        <td colSpan={4} className="py-8 text-center text-[#5C6A6E] dark:text-[#9fb0cc]">
                           {col("All projects fully paid.", "Todos los proyectos están saldados.")}
                         </td>
                       </tr>
@@ -622,7 +622,7 @@ function KpiDetailModal({
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                               <div className="min-w-0">
                                 <div className="max-w-[150px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
-                                <div className="truncate text-[10px] text-[#5C6A6E]">{p.client} · {pct}% {col("paid", "cobrado")}</div>
+                                <div className="truncate text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{p.client} · {pct}% {col("paid", "cobrado")}</div>
                               </div>
                             </div>
                           </td>
@@ -635,7 +635,7 @@ function KpiDetailModal({
                   </tbody>
                 </table>
                 {withBal.length > 0 && (
-                  <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[var(--brand)]">
+                  <div className="mt-3 flex justify-between border-t border-[#E6DDCB] dark:border-[#22304d] pt-3 text-[12px] font-bold text-[var(--brand)]">
                     <span>{col("Total Outstanding", "Total Pendiente")}</span>
                     <span className="font-mono text-[#B0492F]">{money(grand)}</span>
                   </div>
@@ -652,15 +652,15 @@ function KpiDetailModal({
               <>
                 <div className="mb-5 grid grid-cols-3 gap-3">
                   <div className="rounded-xl bg-[#F0FAF3] p-3 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">IN</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">IN</div>
                     <div className="mt-1 font-mono text-lg font-semibold text-[#4F8A63]">{money(allInc)}</div>
                   </div>
-                  <div className="rounded-xl bg-[#FDF0ED] p-3 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">OUT</div>
+                  <div className="rounded-xl bg-[#FDF0ED] dark:bg-[#2a1712] p-3 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">OUT</div>
                     <div className="mt-1 font-mono text-lg font-semibold text-[#B0492F]">{money(allExp)}</div>
                   </div>
-                  <div className="rounded-xl bg-[#EDF3FB] p-3 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E]">NET</div>
+                  <div className="rounded-xl bg-[#EDF3FB] dark:bg-[#111a2e] p-3 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">NET</div>
                     <div className={`mt-1 font-mono text-lg font-semibold ${net >= 0 ? "text-[#4F8A63]" : "text-[#B0492F]"}`}>
                       {money(net)}
                     </div>
@@ -687,7 +687,7 @@ function KpiDetailModal({
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                               <div className="min-w-0">
                                 <div className="max-w-[150px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
-                                <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
+                                <div className="truncate text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc]">{p.client}</div>
                               </div>
                             </div>
                           </td>
@@ -816,7 +816,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-[#E6DDCB] bg-white p-8 text-center text-sm text-[#B0492F]">
+      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-8 text-center text-sm text-[#B0492F]">
         {error}
       </div>
     );
@@ -871,11 +871,11 @@ export default function DashboardPage() {
         {projects.length > 0 && (() => {
           const STATUSES = ["prospecto", "presupuesto", "aprobado", "en_obra", "terminado"] as const;
           const ACTIVE: Record<string, string> = {
-            prospecto:   "bg-[#E3E8EE] text-[#44586B]",
-            presupuesto: "bg-[#DCE6E6] text-[#0E2630]",
-            aprobado:    "bg-[#DCE8E9] text-[#4E7A82]",
-            en_obra:     "bg-[#EDE3CF] text-[#7A6230]",
-            terminado:   "bg-[#DCEBDD] text-[#4F8A63]",
+            prospecto:   "bg-[#E3E8EE] dark:bg-[#111a2e] text-[#44586B] dark:text-[#9fb0cc]",
+            presupuesto: "bg-[#DCE6E6] dark:bg-[#122a2c] text-[#0E2630] dark:text-[#e8edf7]",
+            aprobado:    "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]",
+            en_obra:     "bg-[#EDE3CF] dark:bg-[#17233d] text-[#7A6230]",
+            terminado:   "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
           };
           return (
             <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -883,7 +883,7 @@ export default function DashboardPage() {
                 onClick={() => setStatusFilter("all")}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
                   statusFilter === "all"
-                    ? "bg-white text-[var(--brand)]"
+                    ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]"
                     : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
                 }`}
               >
@@ -937,12 +937,12 @@ export default function DashboardPage() {
       {(() => {
         const visibleProjects = statusFilter === "all" ? projects : projects.filter(p => p.status === statusFilter);
         if (projects.length === 0) return (
-          <div className="rounded-2xl border border-[#E6DDCB] bg-white p-12 text-center text-sm text-[#5C6A6E]">
+          <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-12 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
             {isSuperAdmin ? tp.dashboard.noProjectsAdmin : tp.dashboard.noProjectsUser}
           </div>
         );
         if (visibleProjects.length === 0) return (
-          <div className="rounded-2xl border border-[#E6DDCB] bg-white p-10 text-center text-sm text-[#5C6A6E]">
+          <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-10 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
             {EN
               ? `No projects with status "${tp.status[statusFilter as keyof typeof tp.status] ?? statusFilter}"`
               : `Sin proyectos con estado "${tp.status[statusFilter as keyof typeof tp.status] ?? statusFilter}"`}
@@ -970,7 +970,7 @@ export default function DashboardPage() {
           <div className="mt-8">
             <div className="mb-4">
               <h2 className="text-base font-bold text-[var(--brand)]">{tp.dashboard.security}</h2>
-              <p className="text-[11px] text-[#97A1A0]">{tp.dashboard.securityDesc}</p>
+              <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{tp.dashboard.securityDesc}</p>
             </div>
             <AdminSettings />
           </div>
