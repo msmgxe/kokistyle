@@ -1132,10 +1132,31 @@ export default function HelpPage() {
           </button>
         ))}
 
+        <div className="mx-4 my-3 border-t border-[#E6DDCB]" />
+        <div className="mb-2 px-4 text-[9px] font-bold uppercase tracking-widest text-[#5C6A6E]">
+          {EN ? "Printable guides" : "Guías imprimibles"}
+        </div>
+        {[
+          { href: "/guias/guia-navegacion-luxaris.html", icon: "🧭", label: EN ? "New navigation" : "Nueva navegación" },
+          { href: "/guias/guia-voz-katy.html",           icon: "🎙", label: EN ? "Talk to Katy"   : "Habla con Katy" },
+        ].map(g => (
+          <a
+            key={g.href}
+            href={g.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-2 flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#16323D] transition hover:bg-[#F7F3EA]"
+          >
+            <span className="text-base">{g.icon}</span>
+            <span className="text-[12px] font-semibold">{g.label}</span>
+            <span className="ml-auto text-[11px] text-[#97A1A0]">↗</span>
+          </a>
+        ))}
+
         <div className="mt-auto mx-3 rounded-xl bg-[#F7F3EA] p-3">
           <div className="text-[9px] leading-relaxed text-[#5C6A6E]">
-            {EN ? "💡 Click any feature to see step-by-step guide with visual examples."
-                : "💡 Clic en cualquier función para ver la guía paso a paso con ejemplos visuales."}
+            {EN ? "💡 Click a feature for a step-by-step guide, or open a printable guide (PDF) to share with your team."
+                : "💡 Clic en una función para la guía paso a paso, o abre una guía imprimible (PDF) para repartir al equipo."}
           </div>
         </div>
       </aside>

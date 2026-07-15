@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Luxaris · Guía de voz Katy para el equipo</title>
+<style>
+  :root {
+    --ink: #16323D; --soft: #5C6A6E; --faint: #97A1A0;
+    --paper: #FFFFFF; --cream: #F7F3EB; --panel: #F2EEE4;
+    --line: #E3DAC8; --navy: #395886; --navy-soft: #EDF3FB;
+    --ok: #4F8A63; --ok-soft: #E7F1EA; --bad: #B0492F;
+    --amber: #B98A2F; --amber-soft: #FBF5E6;
+    --serif: "Bookman Old Style", "Book Antiqua", Palatino, "Palatino Linotype", Georgia, serif;
+    --sans: "Segoe UI", "Avenir Next", system-ui, -apple-system, sans-serif;
+    --mono: "SF Mono", "DejaVu Sans Mono", "Consolas", ui-monospace, monospace;
+  }
+  * {
+    box-sizing: border-box;
+    /* Conserva los fondos y colores de marca al imprimir / exportar a PDF */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body {
+    margin: 0; background: var(--panel); color: var(--ink);
+    font-family: var(--sans); font-size: 14px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .sheet {
+    max-width: 900px; margin: 0 auto; background: var(--paper);
+    box-shadow: 0 20px 60px rgba(22,50,61,.18);
+  }
+  .wrap { padding: 0 44px; }
+  @media (max-width: 620px) { .wrap { padding: 0 20px; } }
+
+  /* Botón imprimir */
+  .toolbar {
+    position: sticky; top: 0; z-index: 20; display: flex; justify-content: center;
+    gap: 10px; padding: 12px; background: var(--panel);
+  }
+  .btn-print {
+    display: inline-flex; align-items: center; gap: 9px;
+    border: 0; border-radius: 999px; padding: 11px 22px;
+    background: var(--bad); color: #fff; font: inherit; font-weight: 800; font-size: 13.5px;
+    cursor: pointer; box-shadow: 0 6px 18px rgba(176,73,47,.35);
+  }
+  .btn-print:hover { background: #983c25; }
+  .btn-print[disabled] { opacity: .6; cursor: default; }
+  .btn-alt { background: var(--navy); box-shadow: 0 6px 18px rgba(57,88,134,.3); }
+  .btn-alt:hover { background: #2c476e; }
+  .toolbar .hint { align-self: center; font-size: 12px; color: var(--soft); }
+
+  /* Portada */
+  .cover {
+    background: var(--ink); color: #fff; padding: 40px 44px 34px;
+    position: relative; overflow: hidden;
+  }
+  .cover::after {
+    content: "🎙"; position: absolute; right: -6px; bottom: -24px;
+    font-size: 150px; opacity: .07; transform: rotate(-8deg);
+  }
+  .cover .brand { font-size: 11px; font-weight: 800; letter-spacing: .34em; color: #A8C0BC; }
+  .cover h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 40px;
+    margin: 12px 0 6px; line-height: 1.08; letter-spacing: .005em; text-wrap: balance;
+  }
+  .cover h1 b { color: #E8B45A; font-weight: 600; }
+  .cover .sub { font-size: 14.5px; color: #C4D2CF; max-width: 62ch; }
+  .cover .who {
+    margin-top: 20px; display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,.1); border-radius: 999px; padding: 7px 15px;
+    font-size: 12.5px; color: #E8EDEA;
+  }
+  .cover .who .k {
+    width: 26px; height: 26px; border-radius: 50%; background: #E8B45A; color: var(--ink);
+    display: grid; place-items: center; font-weight: 900; font-size: 12px;
+  }
+
+  h2.section {
+    font-family: var(--serif); font-size: 21px; font-weight: 500;
+    margin: 34px 0 4px; display: flex; align-items: baseline; gap: 11px;
+  }
+  h2.section .n {
+    font-family: var(--mono); font-size: 13px; font-weight: 700; color: #fff;
+    background: var(--navy); border-radius: 8px; padding: 3px 9px; letter-spacing: 0;
+  }
+  .lead { color: var(--soft); font-size: 13.5px; margin: 2px 0 18px; max-width: 68ch; }
+
+  /* Cómo funciona — 3 pasos */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 4px; }
+  .step {
+    background: var(--cream); border: 1px solid var(--line); border-radius: 14px; padding: 15px 16px;
+  }
+  .step .dot {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #fff;
+    display: grid; place-items: center; font-weight: 800; font-size: 14px; margin-bottom: 9px;
+  }
+  .step h3 { margin: 0 0 4px; font-size: 14px; }
+  .step p { margin: 0; font-size: 12.5px; color: var(--soft); line-height: 1.5; }
+
+  /* Fórmula */
+  .formula {
+    margin: 18px 0 6px; background: var(--navy-soft); border: 1px solid #D5E1F2;
+    border-radius: 14px; padding: 16px 18px;
+  }
+  .formula .lbl { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--navy); text-transform: uppercase; }
+  .formula .parts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 9px; }
+  .chip {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 700;
+    border-radius: 8px; padding: 5px 11px; white-space: nowrap;
+  }
+  .chip.q { background: #16323D; color: #fff; }
+  .chip.d { background: #DCE8E9; color: #2E5860; }
+  .chip.p { background: var(--ok-soft); color: #35664A; }
+  .chip.t { background: var(--amber-soft); color: #7A6230; }
+  .chip.opt { opacity: .85; border: 1px dashed currentColor; background: #fff !important; }
+  .formula .plus { color: var(--faint); font-weight: 800; }
+  .formula .ex { margin-top: 12px; font-size: 13px; }
+  .formula .ex .say { font-family: var(--mono); background: #fff; border: 1px solid #D5E1F2; border-radius: 8px; padding: 3px 8px; }
+
+  /* Contextos — tarjetas */
+  .ctx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+  @media (max-width: 620px) { .ctx-grid, .steps { grid-template-columns: 1fr; } }
+  .ctx {
+    border: 1px solid var(--line); border-radius: 15px; overflow: hidden;
+    background: var(--paper); break-inside: avoid;
+  }
+  .ctx .hd {
+    display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+    background: var(--cream); border-bottom: 1px solid var(--line);
+  }
+  .ctx .hd .ico {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .ctx .hd .t { font-weight: 800; font-size: 13.5px; }
+  .ctx .hd .m { font-size: 11px; color: var(--faint); margin-top: 1px; }
+  .ctx .bd { padding: 12px 14px; }
+  .bubble {
+    position: relative; background: var(--ink); color: #fff;
+    border-radius: 13px 13px 13px 4px; padding: 8px 12px; margin: 0 0 7px;
+    font-size: 13px; line-height: 1.45;
+  }
+  .bubble::before { content: "🗣"; margin-right: 7px; opacity: .7; }
+  .bubble em { font-style: normal; color: #E8B45A; }
+  .reply {
+    font-size: 11.5px; color: var(--soft); padding: 2px 4px 6px 8px;
+    display: flex; gap: 6px; align-items: flex-start;
+  }
+  .reply .kk {
+    width: 17px; height: 17px; border-radius: 50%; background: var(--ok); color: #fff;
+    display: grid; place-items: center; font-size: 8px; font-weight: 900; flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* Cheat sheet */
+  table.cheat { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  table.cheat th {
+    text-align: left; background: var(--ink); color: #fff; padding: 8px 12px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  }
+  table.cheat td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.cheat tr:nth-child(even) td { background: var(--cream); }
+  table.cheat .cmd { font-family: var(--mono); font-size: 11.5px; color: var(--navy); font-weight: 700; white-space: nowrap; }
+  table.cheat .say { color: var(--ink); }
+  .scroller { overflow-x: auto; }
+
+  /* Tips */
+  .tips { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 6px; }
+  @media (max-width: 620px) { .tips { grid-template-columns: 1fr; } }
+  .tip { display: flex; gap: 10px; background: var(--amber-soft); border: 1px solid #EAD9AC; border-radius: 12px; padding: 11px 13px; break-inside: avoid; }
+  .tip .e { font-size: 17px; }
+  .tip .x { font-size: 12.5px; line-height: 1.5; }
+  .tip .x b { color: #7A6230; }
+
+  .callout {
+    margin-top: 16px; border-left: 4px solid var(--bad); background: #FDF2EF;
+    border-radius: 0 12px 12px 0; padding: 12px 15px; font-size: 12.5px; color: #7a3a2b;
+  }
+  .callout b { color: var(--bad); }
+
+  footer.doc {
+    margin-top: 34px; border-top: 2px solid var(--ink); padding: 18px 0 34px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 20px; flex-wrap: wrap;
+  }
+  footer.doc .co b { letter-spacing: .16em; font-size: 11px; }
+  footer.doc .co { font-size: 10.5px; color: var(--soft); }
+  footer.doc .pg { font-size: 10.5px; color: var(--faint); }
+
+  @media print {
+    body { background: #fff; font-size: 11.5px; }
+    .toolbar { display: none; }
+    .sheet { box-shadow: none; max-width: none; }
+    .wrap { padding: 0 14mm; }
+    .cover { padding: 22mm 14mm 14mm; }
+    .ctx, .step, .tip, .formula { break-inside: avoid; }
+    h2.section { break-after: avoid; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+
+<div class="toolbar">
+  <button class="btn-print" id="pdfBtn" onclick="savePdf()">🖨 Descargar PDF</button>
+  <button class="btn-print btn-alt" onclick="window.print()">🖨 Imprimir</button>
+  <span class="hint">Descarga el PDF con todos los colores — listo para repartir al equipo.</span>
+</div>
+
+<div class="sheet">
+  <div class="cover">
+    <div class="brand">LUXARIS DESIGN · MANUAL DE CAMPO</div>
+    <h1>Habla con <b>Katy</b>.<br>Ella registra por ti.</h1>
+    <p class="sub">Guía rápida para el equipo: cómo dictar tareas, pagos, materiales, contactos y recordatorios sin teclear — desde la obra, el teléfono o la computadora.</p>
+    <span class="who"><span class="k">K</span> Katy · asistente de voz de tu panel</span>
+  </div>
+
+  <div class="wrap">
+    <!-- CÓMO FUNCIONA -->
+    <h2 class="section"><span class="n">1</span> Cómo funciona</h2>
+    <p class="lead">Tres pasos. Katy siempre te muestra una tarjeta para revisar antes de guardar — nada se registra sin tu confirmación.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="dot">1</div>
+        <h3>Toca el micrófono 🎙</h3>
+        <p>El botón rojo abajo a la derecha en cualquier pantalla. Escucha al instante — habla apenas lo toques.</p>
+      </div>
+      <div class="step">
+        <div class="dot">2</div>
+        <h3>Di lo que quieres</h3>
+        <p>En español normal, como se lo dirías a un compañero. Haz una pausa de ~2 seg al terminar y Katy procesa.</p>
+      </div>
+      <div class="step">
+        <div class="dot">3</div>
+        <h3>Revisa y confirma</h3>
+        <p>Aparece una tarjeta con los datos. Corrige lo que haga falta, elige el proyecto si te lo pide, y toca ✓ Confirmar.</p>
+      </div>
+    </div>
+
+    <div class="formula">
+      <div class="lbl">La fórmula que siempre funciona</div>
+      <div class="parts">
+        <span class="chip q">QUÉ</span><span class="plus">+</span>
+        <span class="chip d">DETALLE</span><span class="plus">+</span>
+        <span class="chip p opt">PROYECTO</span><span class="plus">+</span>
+        <span class="chip t opt">CUÁNDO</span>
+        <span style="font-size:11px;color:#97A1A0;margin-left:6px">(proyecto y cuándo son opcionales)</span>
+      </div>
+      <div class="ex">
+        Ej.: <span class="say">“Agregar <b>tarea</b> comprar tile <b>para Cocina Brickell</b> <b>mañana</b>”</span>
+      </div>
+    </div>
+
+    <!-- POR CONTEXTO -->
+    <h2 class="section"><span class="n">2</span> Qué decir en cada parte</h2>
+    <p class="lead">Katy entiende por dónde vas: si estás <b>dentro de un proyecto</b>, guarda ahí sin preguntar. Si estás en el Panel o en “Hoy”, te deja elegir el proyecto en la tarjeta.</p>
+
+    <div class="ctx-grid">
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#EDF3FB">📋</span><div><div class="t">Nuevo proyecto</div><div class="m">Desde cualquier pantalla</div></div></div>
+        <div class="bd">
+          <div class="bubble">Crear proyecto <em>Cocina Brickell</em> para <em>Ana Reyes</em>, presupuesto <em>20 mil</em></div>
+          <div class="reply"><span class="kk">K</span> Muestra la tarjeta con nombre, cliente y monto para confirmar.</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#EDF3FB">✅</span><div><div class="t">Tareas / actividades</div><div class="m">Day Planner · Gantt · Hoy</div></div></div>
+        <div class="bd">
+          <div class="bubble">Agregar tarea <em>instalar tile en el baño</em></div>
+          <div class="bubble">Pasar <em>demolición</em> a <em>hecho</em></div>
+          <div class="reply"><span class="kk">K</span> Fuera de un proyecto, elige el proyecto en la tarjeta.</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#E7F1EA">💵</span><div><div class="t">Ingresos (pagos)</div><div class="m">Cash Flow → Ingresos</div></div></div>
+        <div class="bd">
+          <div class="bubble">Registrar pago de <em>4 mil</em> por <em>Zelle</em></div>
+          <div class="reply"><span class="kk">K</span> Detecta método (Efectivo/Zelle/Transferencia) y tipo (anticipo/abono/final).</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#FDF0ED">🧾</span><div><div class="t">Egresos (gastos)</div><div class="m">Cash Flow → Egresos</div></div></div>
+        <div class="bd">
+          <div class="bubble">Egreso de <em>500</em> a <em>Home Depot</em> por <em>herramientas</em></div>
+          <div class="reply"><span class="kk">K</span> Si falta el monto o el concepto, te lo pregunta.</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#DCE8E9">🛒</span><div><div class="t">Materiales</div><div class="m">Tab Materials</div></div></div>
+        <div class="bd">
+          <div class="bubble">Agregar material <em>tile 24x48</em>, <em>800 dólares</em> de <em>Home Depot</em></div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#EDE3CF">💰</span><div><div class="t">Partidas del estimado</div><div class="m">Tab Estimate</div></div></div>
+        <div class="bd">
+          <div class="bubble">Agregar partida <em>plomería</em> por <em>1200</em></div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#F0E8F7">👷</span><div><div class="t">Contactos</div><div class="m">Katy pregunta paso a paso</div></div></div>
+        <div class="bd">
+          <div class="bubble">Agregar contacto <em>Jorge</em>, <em>plomero</em></div>
+          <div class="reply"><span class="kk">K</span> “¿Co-worker, cliente o amistad?” → “¿Teléfono?” → “¿Especialidad?” → “¿Tarifa?”</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hd"><span class="ico" style="background:#FBF5E6">🔔</span><div><div class="t">Recordatorios / Agenda</div><div class="m">Notas del día · Agenda</div></div></div>
+        <div class="bd">
+          <div class="bubble">Recuérdame la <em>inspección de plomería</em> el <em>viernes a las 9</em></div>
+          <div class="bubble">Anota <em>llamar al cliente</em> <em>mañana</em></div>
+          <div class="reply"><span class="kk">K</span> Dictado dentro de un proyecto → la nota queda ligada a ese proyecto.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <h2 class="section"><span class="n">3</span> Tabla rápida</h2>
+    <p class="lead">Imprímela y pégala en la obra. La palabra de arranque (en negrita) le dice a Katy qué quieres.</p>
+    <div class="scroller">
+      <table class="cheat">
+        <thead><tr><th>Quiero…</th><th>Palabra clave</th><th>Ejemplo para decir</th></tr></thead>
+        <tbody>
+          <tr><td>Crear un proyecto</td><td class="cmd">Crear proyecto</td><td class="say">“Crear proyecto Baño Aventura para Sofía, 18 mil”</td></tr>
+          <tr><td>Agregar una tarea</td><td class="cmd">Agregar tarea</td><td class="say">“Agregar tarea reubicar válvula de ducha”</td></tr>
+          <tr><td>Marcar avance</td><td class="cmd">Pasar … a</td><td class="say">“Pasar instalación de tile a en proceso”</td></tr>
+          <tr><td>Registrar un pago</td><td class="cmd">Registrar pago</td><td class="say">“Registrar pago de 4000 por transferencia”</td></tr>
+          <tr><td>Registrar un gasto</td><td class="cmd">Egreso / Gasto</td><td class="say">“Egreso de 500 a Jorge por mano de obra”</td></tr>
+          <tr><td>Agregar material</td><td class="cmd">Agregar material</td><td class="say">“Agregar material cemento 120 de Lowe’s”</td></tr>
+          <tr><td>Partida del estimado</td><td class="cmd">Agregar partida</td><td class="say">“Agregar partida eléctrico 900”</td></tr>
+          <tr><td>Guardar un contacto</td><td class="cmd">Agregar contacto</td><td class="say">“Agregar contacto María, ayudante”</td></tr>
+          <tr><td>Poner un recordatorio</td><td class="cmd">Recuérdame / Anota</td><td class="say">“Recuérdame comprar tile el jueves”</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TIPS -->
+    <h2 class="section"><span class="n">4</span> Trucos para que salga a la primera</h2>
+    <div class="tips">
+      <div class="tip"><span class="e">🎯</span><span class="x"><b>Di los montos como quieras.</b> “15 mil”, “mil quinientos” o “quinientos” — Katy los convierte a número.</span></div>
+      <div class="tip"><span class="e">🌐</span><span class="x"><b>Habla en el idioma de la app.</b> Si el panel está en Español (ES arriba a la derecha), dicta en español. En inglés, cambia a EN.</span></div>
+      <div class="tip"><span class="e">🏗</span><span class="x"><b>Entra al proyecto primero</b> y no tendrás que nombrarlo — Katy guarda ahí directo. Ideal cuando trabajas todo el día en la misma obra.</span></div>
+      <div class="tip"><span class="e">✏️</span><span class="x"><b>Todo es editable.</b> ¿Katy entendió mal una palabra? Corrígela en la tarjeta antes de confirmar. Nunca tienes que repetir todo.</span></div>
+      <div class="tip"><span class="e">⌨️</span><span class="x"><b>¿Mucho ruido en obra?</b> Usa el botón de teclado (junto al micrófono) y escribe la misma frase — funciona igual.</span></div>
+      <div class="tip"><span class="e">🔁</span><span class="x"><b>Encadena con “y”.</b> “Agregar tarea pintar recámara <b>y</b> anota llamar al inspector” crea dos cosas de una vez.</span></div>
+    </div>
+
+    <div class="callout">
+      <b>Si Katy no responde o pide “repetir” seguido:</b> revisa tu conexión, cierra y vuelve a abrir la app, y confirma que diste permiso de micrófono al navegador (Ajustes → Aplicaciones → Chrome → Permisos → Micrófono). El dictado nunca se pierde: si la IA no contesta, Katy te ofrece guardar lo que dijiste como pendiente editable.
+    </div>
+
+    <footer class="doc">
+      <div class="co"><b>LUXARIS DESIGN LLC</b><br>Remodeling &amp; Construction Management · South Florida</div>
+      <div class="pg">Guía de voz Katy · v1 · uso interno del equipo</div>
+    </footer>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  async function savePdf() {
+    // Sin las librerías (offline) → imprime con el pipeline nativo del navegador.
+    if (!window.html2canvas || !window.jspdf) { window.print(); return; }
+
+    const btn = document.getElementById("pdfBtn");
+    const label = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = "⏳ Generando…";
+
+    try {
+      const sheet = document.querySelector(".sheet");
+      // Renderiza la hoja tal cual se ve — conserva fondos oscuros y colores de marca.
+      const canvas = await html2canvas(sheet, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        windowWidth: 960,
+        width: sheet.offsetWidth,
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      const imgW = pageW;
+      const imgH = (canvas.height * pageW) / canvas.width;
+      const imgData = canvas.toDataURL("image/png");
+
+      let y = 0, remaining = imgH;
+      pdf.addImage(imgData, "PNG", 0, y, imgW, imgH, "guide", "FAST");
+      remaining -= pageH;
+      while (remaining > 0) {
+        y -= pageH;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, y, imgW, imgH, "guide", "FAST");
+        remaining -= pageH;
+      }
+
+      pdf.save("Guia-voz-Katy-Luxaris.pdf");
+    } catch (err) {
+      console.error(err);
+      window.print();
+    } finally {
+      btn.disabled = false; btn.innerHTML = label;
+    }
+  }
+</script>
+
+</body>
+</html>
