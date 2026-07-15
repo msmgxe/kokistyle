@@ -2084,6 +2084,25 @@ export default function ProjectDetailPage() {
     .filter(s => s.tabs.length > 0);
   const activeSection = sections.find(s => s.tabs.includes(activeTab)) ?? sections[0];
 
+  // Cronograma: Day Planner y Gantt son un solo tab con toggle (misma data, dos vistas)
+  const CRONO_TABS: TabId[] = ["planner", "plan"];
+  const cronoTargets = (activeSection?.tabs ?? []).filter(id => CRONO_TABS.includes(id));
+  const inCrono = CRONO_TABS.includes(activeTab);
+  const sectionPills: { key: string; label: string; active: boolean; onClick: () => void }[] = [];
+  let cronoDone = false;
+  for (const id of activeSection?.tabs ?? []) {
+    if (CRONO_TABS.includes(id)) {
+      if (cronoDone) continue;
+      cronoDone = true;
+      sectionPills.push({
+        key: "cronograma", label: tp.tabs.schedule, active: inCrono,
+        onClick: () => { if (!inCrono) setActiveTab(cronoTargets[0]); },
+      });
+    } else {
+      sectionPills.push({ key: id, label: tabLabel[id], active: activeTab === id, onClick: () => setActiveTab(id) });
+    }
+  }
+
   // For co-workers with "my tasks only", filter tasks to their assigned ones
   const myContactId = currentUser?.my_tasks_only ? (currentUser.contact_id ?? null) : null;
   const filteredTasks = myContactId
@@ -2235,19 +2254,33 @@ export default function ProjectDetailPage() {
               );
             })}
           </div>
-          {/* Sub-tabs de la sección activa */}
+          {/* Sub-tabs de la sección activa (Day Planner + Gantt colapsan en "Cronograma") */}
           <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] px-4 py-2.5 [scrollbar-width:none]">
-            {(activeSection?.tabs ?? []).map((id) => (
-              <button key={id} onClick={() => setActiveTab(id)}
+            {sectionPills.map((p) => (
+              <button key={p.key} onClick={p.onClick}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-                  activeTab === id
+                  p.active
                     ? "bg-[#395886] text-white shadow-sm"
                     : "text-[#628ECB] hover:text-[#395886]"
                 }`}>
-                {tabLabel[id]}
+                {p.label}
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Toggle Cronograma: Day Planner ↔ Gantt (dos vistas de la misma data) */}
+      {inCrono && cronoTargets.length > 1 && (
+        <div className="mb-4 inline-flex rounded-xl border border-[#D5DEEF] bg-[#F0F3FA] p-1">
+          {cronoTargets.map((id) => (
+            <button key={id} onClick={() => setActiveTab(id)}
+              className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
+                activeTab === id ? "bg-white text-[#16323D] shadow-sm" : "text-[#628ECB] hover:text-[#395886]"
+              }`}>
+              {id === "planner" ? "📋 " : "📊 "}{tabLabel[id]}
+            </button>
+          ))}
         </div>
       )}
 
