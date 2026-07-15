@@ -8,6 +8,7 @@ import { logActivity } from "@/src/lib/activity";
 import { branding } from "@/src/config/branding";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
+import DayNoteModal from "@/src/components/ui/DayNoteModal";
 import type { Project, Task } from "@/src/types/project";
 import type { AgendaEvent } from "@/src/types/agenda";
 
@@ -79,11 +80,10 @@ export default function DailyReport({
 
   // Notas del día = agenda_events (globales, sin proyecto obligatorio) — solo superadmin
   const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
-  const [addingNoteFor, setAddingNoteFor] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState("");
-  const [editNoteId, setEditNoteId] = useState<string | null>(null);
-  const [editNoteTitle, setEditNoteTitle] = useState("");
-  const [editNoteProject, setEditNoteProject] = useState("");
+  const [noteModal, setNoteModal] = useState<
+    { mode: "create" | "edit"; iso: string; id?: string; title?: string; projectId?: string } | null
+  >(null);
+  const [savingNote, setSavingNote] = useState(false);
 
   const projById = useMemo(() => new Map(projects.map(p => [p.id, p])), [projects]);
 
@@ -104,18 +104,17 @@ export default function DailyReport({
       .then(({ data }) => { if (data) setDayNotes(data as DayNote[]); });
   }, [isSuperAdmin, from, to]);
 
-  const addNote = async (iso: string) => {
-    const title = noteText.trim();
-    if (!title) return;
+  const createNote = async (iso: string, title: string, projectId: string | null) => {
+    setSavingNote(true);
     const { data, error } = await supabase
       .from("agenda_events")
-      .insert({ event_type: "task", title, event_date: iso })
+      .insert({ event_type: "task", title, event_date: iso, project_id: projectId })
       .select("id, title, event_date, event_time, done, event_type, project_id")
       .single();
+    setSavingNote(false);
     if (error || !data) { toast(tr.noteError); return; }
     setDayNotes(prev => [...prev, data as DayNote]);
-    setNoteText("");
-    setAddingNoteFor(null);
+    setNoteModal(null);
     logActivity({
       user_id: currentUser?.id, user_name: currentUser?.name, user_role: "superadmin",
       action: "create", entity_type: "agenda_event", entity_id: (data as DayNote).id, entity_name: title,
@@ -132,23 +131,13 @@ export default function DailyReport({
     }
   };
 
-  const startEditNote = (note: DayNote) => {
-    setEditNoteId(note.id);
-    setEditNoteTitle(note.title);
-    setEditNoteProject(note.project_id ?? "");
-    setAddingNoteFor(null);
-  };
-
-  const saveEditNote = async () => {
-    const id = editNoteId;
-    if (!id) return;
-    const title = editNoteTitle.trim();
-    if (!title) return;
-    const project_id = editNoteProject || null;
-    const { error } = await supabase.from("agenda_events").update({ title, project_id }).eq("id", id);
+  const updateNote = async (id: string, title: string, projectId: string | null) => {
+    setSavingNote(true);
+    const { error } = await supabase.from("agenda_events").update({ title, project_id: projectId }).eq("id", id);
+    setSavingNote(false);
     if (error) { toast(tr.noteError); return; }
-    setDayNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id } : n));
-    setEditNoteId(null);
+    setDayNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id: projectId } : n));
+    setNoteModal(null);
     toast(tr.noteUpdated);
   };
 
@@ -337,38 +326,9 @@ export default function DailyReport({
                 {/* Actividades del día */}
                 <div className="min-w-0 flex-1">
                   {/* Notas del día (agenda_events) — recordatorios sueltos a nivel de todos los proyectos */}
-                  {isSuperAdmin && (notesOfDay.length > 0 || addingNoteFor === iso) && (
+                  {isSuperAdmin && notesOfDay.length > 0 && (
                     <div className="mb-2.5 space-y-1.5">
                       {notesOfDay.map(n => (
-                        editNoteId === n.id ? (
-                          <div key={n.id} className="space-y-1.5 rounded-lg border border-[#B98A2F] bg-[#FBF5E6] px-3 py-2 print:hidden">
-                            <input
-                              autoFocus
-                              value={editNoteTitle}
-                              onChange={e => setEditNoteTitle(e.target.value)}
-                              onKeyDown={e => { if (e.key === "Enter") saveEditNote(); if (e.key === "Escape") setEditNoteId(null); }}
-                              className="w-full rounded border border-[#EAD9AC] bg-white px-2 py-1.5 text-[12px] font-medium text-[#16323D] focus:border-[#B98A2F] focus:outline-none"
-                            />
-                            <select
-                              value={editNoteProject}
-                              onChange={e => setEditNoteProject(e.target.value)}
-                              className="w-full rounded border border-[#EAD9AC] bg-white px-2 py-1.5 text-[12px] text-[#16323D] focus:border-[#B98A2F] focus:outline-none"
-                            >
-                              <option value="">{tr.noteNoProject}</option>
-                              {projects.map(p => (
-                                <option key={p.id} value={p.id}>{p.title.split(" — ")[0]}</option>
-                              ))}
-                            </select>
-                            <div className="flex gap-1.5">
-                              <button onClick={() => setEditNoteId(null)} className="flex-1 rounded bg-[#ECE3D1] py-1.5 text-[11px] font-bold text-[#5C6A6E]">
-                                {EN ? "Cancel" : "Cancelar"}
-                              </button>
-                              <button onClick={saveEditNote} disabled={!editNoteTitle.trim()} className="flex-1 rounded bg-[#B98A2F] py-1.5 text-[11px] font-bold text-white disabled:opacity-40">
-                                {tr.noteSaveEdit}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
                         <div key={n.id} className="flex items-center gap-2 rounded-lg border border-[#EAD9AC] bg-[#FBF5E6] px-3 py-1.5">
                           <Pin size={11} className="shrink-0 text-[#B98A2F]" />
                           <input
@@ -388,7 +348,7 @@ export default function DailyReport({
                           </span>
                           <span className="shrink-0 font-mono text-[10px] text-[#B98A2F]">{n.event_time?.slice(0, 5)}</span>
                           <button
-                            onClick={() => startEditNote(n)}
+                            onClick={() => setNoteModal({ mode: "edit", iso, id: n.id, title: n.title, projectId: n.project_id ?? "" })}
                             className="shrink-0 text-[#B98A2F]/60 transition hover:text-[#B98A2F] print:hidden"
                             aria-label={tr.noteEdit}
                           >
@@ -402,36 +362,12 @@ export default function DailyReport({
                             <X size={12} />
                           </button>
                         </div>
-                        )
                       ))}
-                      {addingNoteFor === iso && (
-                        <div className="flex items-center gap-2 rounded-lg border border-[#B98A2F] bg-[#FBF5E6] px-3 py-1.5">
-                          <Pin size={11} className="shrink-0 text-[#B98A2F]" />
-                          <input
-                            autoFocus
-                            value={noteText}
-                            onChange={e => setNoteText(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === "Enter") addNote(iso);
-                              if (e.key === "Escape") { setAddingNoteFor(null); setNoteText(""); }
-                            }}
-                            placeholder={tr.notePlaceholder}
-                            className="min-w-0 flex-1 bg-transparent text-[12px] text-[#16323D] placeholder:text-[#C4B27E] focus:outline-none"
-                          />
-                          <button
-                            onClick={() => addNote(iso)}
-                            disabled={!noteText.trim()}
-                            className="shrink-0 rounded-md bg-[#B98A2F] px-2.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
-                          >
-                            OK
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
 
                   {dayRows.length === 0 ? (
-                    (notesOfDay.length === 0 && addingNoteFor !== iso) && (
+                    (notesOfDay.length === 0) && (
                       <p className="pt-2 text-[12px] italic text-[#C4B89A]">{tr.emptyDay}</p>
                     )
                   ) : (
@@ -490,9 +426,9 @@ export default function DailyReport({
                     </>
                   )}
 
-                  {isSuperAdmin && addingNoteFor !== iso && (
+                  {isSuperAdmin && (
                     <button
-                      onClick={() => { setAddingNoteFor(iso); setNoteText(""); }}
+                      onClick={() => setNoteModal({ mode: "create", iso })}
                       className="mt-1.5 text-[10.5px] font-bold text-[#B98A2F] transition hover:underline print:hidden"
                     >
                       {tr.addNote}
@@ -519,6 +455,22 @@ export default function DailyReport({
           </div>
         </div>
       </div>
+
+      {noteModal && (
+        <DayNoteModal
+          mode={noteModal.mode}
+          initialTitle={noteModal.title}
+          initialProjectId={noteModal.projectId}
+          projects={projects.map(p => ({ id: p.id, title: p.title }))}
+          saving={savingNote}
+          onCancel={() => setNoteModal(null)}
+          onSave={({ title, projectId }) =>
+            noteModal.mode === "edit" && noteModal.id
+              ? updateNote(noteModal.id, title, projectId)
+              : createNote(noteModal.iso, title, projectId)
+          }
+        />
+      )}
     </div>
   );
 }

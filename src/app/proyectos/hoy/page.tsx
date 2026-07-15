@@ -7,6 +7,7 @@ import { initials } from "@/src/lib/utils";
 import { logActivity } from "@/src/lib/activity";
 import { branding } from "@/src/config/branding";
 import QuickPhoto from "@/src/components/ui/QuickPhoto";
+import DayNoteModal from "@/src/components/ui/DayNoteModal";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import type { Task } from "@/src/types/project";
@@ -65,11 +66,10 @@ export default function HoyPage() {
   const [notes, setNotes] = useState<DayNote[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
-  const [addingNote, setAddingNote] = useState(false);
-  const [noteText, setNoteText] = useState("");
-  const [editNoteId, setEditNoteId] = useState<string | null>(null);
-  const [editNoteTitle, setEditNoteTitle] = useState("");
-  const [editNoteProject, setEditNoteProject] = useState("");
+  const [noteModal, setNoteModal] = useState<
+    { mode: "create" | "edit"; id?: string; title?: string; projectId?: string } | null
+  >(null);
+  const [savingNote, setSavingNote] = useState(false);
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
 
@@ -156,18 +156,17 @@ export default function HoyPage() {
     }
   };
 
-  const addNote = async () => {
-    const title = noteText.trim();
-    if (!title) return;
+  const createNote = async (title: string, projectId: string | null) => {
+    setSavingNote(true);
     const { data, error } = await supabase
       .from("agenda_events")
-      .insert({ event_type: "task", title, event_date: date })
+      .insert({ event_type: "task", title, event_date: date, project_id: projectId })
       .select("id, title, event_date, event_time, done, event_type, project_id")
       .single();
+    setSavingNote(false);
     if (error || !data) { showToast(tr.noteError); return; }
     setNotes(prev => [...prev, data as DayNote]);
-    setNoteText("");
-    setAddingNote(false);
+    setNoteModal(null);
     logActivity({
       user_id: currentUser?.id, user_name: currentUser?.name, user_role: "superadmin",
       action: "create", entity_type: "agenda_event", entity_id: (data as DayNote).id, entity_name: title,
@@ -182,23 +181,13 @@ export default function HoyPage() {
     showToast(tr.noteDeleted);
   };
 
-  const startEditNote = (note: DayNote) => {
-    setEditNoteId(note.id);
-    setEditNoteTitle(note.title);
-    setEditNoteProject(note.project_id ?? "");
-    setAddingNote(false);
-  };
-
-  const saveEditNote = async () => {
-    const id = editNoteId;
-    if (!id) return;
-    const title = editNoteTitle.trim();
-    if (!title) return;
-    const project_id = editNoteProject || null;
-    const { error } = await supabase.from("agenda_events").update({ title, project_id }).eq("id", id);
+  const updateNote = async (id: string, title: string, projectId: string | null) => {
+    setSavingNote(true);
+    const { error } = await supabase.from("agenda_events").update({ title, project_id: projectId }).eq("id", id);
+    setSavingNote(false);
     if (error) { showToast(tr.noteError); return; }
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id } : n));
-    setEditNoteId(null);
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id: projectId } : n));
+    setNoteModal(null);
     showToast(tr.noteUpdated);
   };
 
@@ -288,41 +277,6 @@ export default function HoyPage() {
           {isSuperAdmin && (
             <div className="mb-3 space-y-1.5">
               {notes.map(n => (
-                editNoteId === n.id ? (
-                  <div key={n.id} className="space-y-2 rounded-2xl border border-[#B98A2F] bg-[#FBF5E6] px-3.5 py-3">
-                    <div className="flex items-center gap-2">
-                      <Pin size={13} className="shrink-0 text-[#B98A2F]" />
-                      <input
-                        autoFocus
-                        value={editNoteTitle}
-                        onChange={e => setEditNoteTitle(e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") saveEditNote(); if (e.key === "Escape") setEditNoteId(null); }}
-                        className="min-w-0 flex-1 rounded-lg border border-[#EAD9AC] bg-white px-2.5 py-2 text-[13px] font-semibold text-[#16323D] focus:border-[#B98A2F] focus:outline-none"
-                      />
-                    </div>
-                    <label className="block text-[9px] font-bold uppercase tracking-wide text-[#B98A2F]">
-                      {tr.noteProject}
-                    </label>
-                    <select
-                      value={editNoteProject}
-                      onChange={e => setEditNoteProject(e.target.value)}
-                      className="w-full rounded-lg border border-[#EAD9AC] bg-white px-2.5 py-2 text-[13px] text-[#16323D] focus:border-[#B98A2F] focus:outline-none"
-                    >
-                      <option value="">{tr.noteNoProject}</option>
-                      {projectSelectOptions.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditNoteId(null)} className="flex-1 rounded-lg bg-[#ECE3D1] py-2 text-[12px] font-bold text-[#5C6A6E]">
-                        {th.filterAll === "All" ? "Cancel" : "Cancelar"}
-                      </button>
-                      <button onClick={saveEditNote} disabled={!editNoteTitle.trim()} className="flex-1 rounded-lg bg-[#B98A2F] py-2 text-[12px] font-bold text-white disabled:opacity-40">
-                        {tr.noteSaveEdit}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
                 <div key={n.id} className="flex items-center gap-2.5 rounded-2xl border border-[#EAD9AC] bg-[#FBF5E6] px-3.5 py-2.5">
                   <Pin size={13} className="shrink-0 text-[#B98A2F]" />
                   <button
@@ -335,7 +289,7 @@ export default function HoyPage() {
                     {n.done && <span className="text-[11px] font-bold leading-none text-white">✓</span>}
                   </button>
                   <button
-                    onClick={() => startEditNote(n)}
+                    onClick={() => setNoteModal({ mode: "edit", id: n.id, title: n.title, projectId: n.project_id ?? "" })}
                     className={`min-w-0 flex-1 text-left text-[13px] ${n.done ? "text-[#97A1A0] line-through" : "font-semibold text-[#7A6230]"}`}
                   >
                     {n.title}
@@ -345,43 +299,20 @@ export default function HoyPage() {
                       </span>
                     )}
                   </button>
-                  <button onClick={() => startEditNote(n)} aria-label={tr.noteEdit} className="shrink-0 text-[#B98A2F]/60 hover:text-[#B98A2F]">
+                  <button onClick={() => setNoteModal({ mode: "edit", id: n.id, title: n.title, projectId: n.project_id ?? "" })} aria-label={tr.noteEdit} className="shrink-0 text-[#B98A2F]/60 hover:text-[#B98A2F]">
                     <Pencil size={13} />
                   </button>
                   <button onClick={() => deleteNote(n.id)} aria-label={tr.noteDeleted} className="shrink-0 text-[#B0492F]/50 hover:text-[#B0492F]">
                     <X size={14} />
                   </button>
                 </div>
-                )
               ))}
-              {addingNote ? (
-                <div className="flex items-center gap-2.5 rounded-2xl border border-[#B98A2F] bg-[#FBF5E6] px-3.5 py-2.5">
-                  <Pin size={13} className="shrink-0 text-[#B98A2F]" />
-                  <input
-                    autoFocus
-                    value={noteText}
-                    onChange={e => setNoteText(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter") addNote();
-                      if (e.key === "Escape") { setAddingNote(false); setNoteText(""); }
-                    }}
-                    placeholder={tr.notePlaceholder}
-                    className="min-w-0 flex-1 bg-transparent text-[13px] text-[#16323D] placeholder:text-[#C4B27E] focus:outline-none"
-                  />
-                  <button
-                    onClick={addNote}
-                    disabled={!noteText.trim()}
-                    className="shrink-0 rounded-lg bg-[#B98A2F] px-3 py-1 text-[11px] font-bold text-white disabled:opacity-40"
-                  >OK</button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => { setAddingNote(true); setNoteText(""); }}
-                  className="w-full rounded-2xl border-2 border-dashed border-[#EAD9AC] px-3.5 py-2.5 text-left text-[12px] font-bold text-[#B98A2F] transition hover:border-[#B98A2F]"
-                >
-                  {tr.addNote}…
-                </button>
-              )}
+              <button
+                onClick={() => setNoteModal({ mode: "create" })}
+                className="w-full rounded-2xl border-2 border-dashed border-[#EAD9AC] px-3.5 py-2.5 text-left text-[12px] font-bold text-[#B98A2F] transition hover:border-[#B98A2F]"
+              >
+                {tr.addNote}…
+              </button>
             </div>
           )}
 
@@ -457,6 +388,23 @@ export default function HoyPage() {
             );
           })}
         </div>
+      )}
+
+      {noteModal && (
+        <DayNoteModal
+          mode={noteModal.mode}
+          initialTitle={noteModal.title}
+          initialProjectId={noteModal.projectId}
+          contextLabel={date === toIso(new Date()) ? th.todayBtn : date}
+          projects={projectSelectOptions.map(p => ({ id: p.id, title: p.name }))}
+          saving={savingNote}
+          onCancel={() => setNoteModal(null)}
+          onSave={({ title, projectId }) =>
+            noteModal.mode === "edit" && noteModal.id
+              ? updateNote(noteModal.id, title, projectId)
+              : createNote(title, projectId)
+          }
+        />
       )}
 
       <div className={`fixed bottom-24 left-1/2 z-[200] w-full max-w-xs -translate-x-1/2 rounded-2xl bg-[#16323D] px-4 py-3 text-center text-sm font-medium text-white shadow-2xl transition-all duration-300 ${toastVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}>
