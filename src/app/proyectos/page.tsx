@@ -90,7 +90,7 @@ function KpiCard({
   const colors = {
     up: "text-[#4F8A63]",
     down: "text-[#B0492F]",
-    neutral: "text-[#16323D]",
+    neutral: "text-[var(--brand)]",
   };
   return (
     <div
@@ -144,7 +144,7 @@ function ProgressBar({
     <div className="flex flex-col gap-1">
       <div className="flex justify-between text-[11px] font-semibold text-[#5C6A6E]">
         <span>{label}</span>
-        <span className="font-mono text-[#16323D]">{valueLabel}</span>
+        <span className="font-mono text-[var(--brand)]">{valueLabel}</span>
       </div>
       <div className="h-[7px] overflow-hidden rounded-full bg-[#E6DDCB]">
         <div
@@ -204,10 +204,10 @@ function ProjectCard({
         <StatusChip status={project.status} />
         <div className="flex items-center gap-2">
           <div className="flex flex-col items-end">
-            <span className="font-mono text-[17px] font-semibold text-[#16323D]">
+            <span className="font-mono text-[17px] font-semibold text-[var(--brand)]">
               {money(budget)}
             </span>
-            <span className={`text-[9px] font-bold uppercase tracking-wide ${project.hasEstimate ? "text-[#395886]" : "text-[#5C6A6E]"}`}>
+            <span className={`text-[9px] font-bold uppercase tracking-wide ${project.hasEstimate ? "text-[var(--accent)]" : "text-[#5C6A6E]"}`}>
               {project.hasEstimate
                 ? (EN ? "from estimate" : "del estimado")
                 : (EN ? "budget" : "presupuesto")}
@@ -216,7 +216,7 @@ function ProjectCard({
           {!showConfirm && (
             <button
               onClick={() => onEdit(project)}
-              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#EDF3FB] hover:text-[#395886]"
+              className="rounded-lg p-1.5 text-[#C4B89A] transition hover:bg-[#EDF3FB] hover:text-[var(--accent)]"
               aria-label={EN ? "Edit project" : "Editar proyecto"}
             >
               <Pencil size={13} />
@@ -240,7 +240,7 @@ function ProjectCard({
         className="block px-[17px] pb-[17px]"
         aria-label={`Ver detalle de ${project.title}`}
       >
-        <h3 className="font-bookman text-[15px] font-semibold leading-tight text-[#16323D]">
+        <h3 className="font-bookman text-[15px] font-semibold leading-tight text-[var(--brand)]">
           {project.title}
         </h3>
         <div className="mt-1 flex items-center gap-1 text-xs text-[#5C6A6E]">
@@ -274,7 +274,7 @@ function ProjectCard({
           <div className="grid h-10 w-10 place-items-center rounded-full bg-[#FDF0ED]">
             <Trash2 size={18} className="text-[#B0492F]" />
           </div>
-          <p className="text-center text-[13px] font-bold text-[#16323D]">
+          <p className="text-center text-[13px] font-bold text-[var(--brand)]">
             {EN ? "Delete this project?" : "¿Eliminar este proyecto?"}
           </p>
           <p className="max-w-[180px] truncate text-center text-[11px] text-[#5C6A6E]">
@@ -331,7 +331,7 @@ function ProjectBand({ p, right }: { p: ProjectWithData; right?: React.ReactNode
     <div className="flex items-center gap-2.5 bg-[#F2EFE7] px-3 py-2">
       <ProjectThumb photoUrl={p.photo_url} title={p.title} size={30} rounded="rounded-lg" />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[12px] font-bold tracking-wide text-[#16323D]">
+        <div className="truncate text-[12px] font-bold tracking-wide text-[var(--brand)]">
           {p.title.split(" — ")[0]}
         </div>
         <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
@@ -366,7 +366,7 @@ function KpiDetailModal({
   const col = (en: string, es: string) => EN ? en : es;
 
   // Header oscuro de columnas + filas gris suave por proyecto
-  const DTH = "bg-[#16323D] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90";
+  const DTH = "bg-[var(--brand)] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90";
   const GCELL = "bg-[#F2EFE7] px-3 py-2";
 
   const METHOD: Record<string, string> = EN
@@ -389,7 +389,7 @@ function KpiDetailModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#E6DDCB] px-5 py-3.5">
-          <span className="text-sm font-bold uppercase tracking-widest text-[#16323D]">
+          <span className="text-sm font-bold uppercase tracking-widest text-[var(--brand)]">
             {TITLES[type]}
           </span>
           <button
@@ -429,7 +429,7 @@ function KpiDetailModal({
                         <div className="flex items-center gap-2.5">
                           <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                           <div className="min-w-0">
-                            <div className="max-w-[150px] truncate font-bold text-[#16323D]">{p.title.split(" — ")[0]}</div>
+                            <div className="max-w-[150px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
                             <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
                           </div>
                         </div>
@@ -439,8 +439,8 @@ function KpiDetailModal({
                           {label}
                         </span>
                       </td>
-                      <td className={`${GCELL} font-mono text-right text-[#16323D]`}>{money(p.budget)}</td>
-                      <td className={`${GCELL} rounded-r-lg font-mono text-right font-semibold ${prog >= 100 ? "text-[#4F8A63]" : "text-[#16323D]"}`}>
+                      <td className={`${GCELL} font-mono text-right text-[var(--brand)]`}>{money(p.budget)}</td>
+                      <td className={`${GCELL} rounded-r-lg font-mono text-right font-semibold ${prog >= 100 ? "text-[#4F8A63]" : "text-[var(--brand)]"}`}>
                         {prog}%
                       </td>
                     </tr>
@@ -471,19 +471,19 @@ function KpiDetailModal({
                             <div className="flex items-center gap-2.5">
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                               <div className="min-w-0">
-                                <div className="max-w-[170px] truncate font-bold text-[#16323D]">{p.title.split(" — ")[0]}</div>
+                                <div className="max-w-[170px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
                                 <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
                               </div>
                             </div>
                           </td>
-                          <td className={`${GCELL} font-mono text-right font-semibold text-[#16323D]`}>{money(p.budget)}</td>
+                          <td className={`${GCELL} font-mono text-right font-semibold text-[var(--brand)]`}>{money(p.budget)}</td>
                           <td className={`${GCELL} rounded-r-lg font-mono text-right text-[#5C6A6E]`}>{pct}%</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-                <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[#16323D]">
+                <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[var(--brand)]">
                   <span>Total</span>
                   <span className="font-mono">{money(total)}</span>
                 </div>
@@ -500,7 +500,7 @@ function KpiDetailModal({
                   <p className="py-8 text-center text-sm text-[#5C6A6E]">{col("No payments yet.", "Sin pagos aún.")}</p>
                 )}
                 {withInc.length > 0 && (
-                  <div className="flex items-center rounded-lg bg-[#16323D] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90">
+                  <div className="flex items-center rounded-lg bg-[var(--brand)] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90">
                     <span className="w-[84px]">{col("Date", "Fecha")}</span>
                     <span className="flex-1">{col("Method", "Método")}</span>
                     <span className="flex-1">{col("Type", "Tipo")}</span>
@@ -531,7 +531,7 @@ function KpiDetailModal({
                   );
                 })}
                 {withInc.length > 0 && (
-                  <div className="flex justify-between border-t-2 border-[#E6DDCB] pt-3 text-[13px] font-bold text-[#16323D]">
+                  <div className="flex justify-between border-t-2 border-[#E6DDCB] pt-3 text-[13px] font-bold text-[var(--brand)]">
                     <span>Total</span>
                     <span className="font-mono text-[#4F8A63]">{money(grand)}</span>
                   </div>
@@ -549,7 +549,7 @@ function KpiDetailModal({
                   <p className="py-8 text-center text-sm text-[#5C6A6E]">{col("No expenses yet.", "Sin egresos aún.")}</p>
                 )}
                 {withExp.length > 0 && (
-                  <div className="flex items-center rounded-lg bg-[#16323D] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90">
+                  <div className="flex items-center rounded-lg bg-[var(--brand)] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#F5E9DA]/90">
                     <span className="w-[84px]">{col("Date", "Fecha")}</span>
                     <span className="flex-1">{col("Payee", "A quién")}</span>
                     <span className="flex-1">{col("Concept", "Concepto")}</span>
@@ -580,7 +580,7 @@ function KpiDetailModal({
                   );
                 })}
                 {withExp.length > 0 && (
-                  <div className="flex justify-between border-t-2 border-[#E6DDCB] pt-3 text-[13px] font-bold text-[#16323D]">
+                  <div className="flex justify-between border-t-2 border-[#E6DDCB] pt-3 text-[13px] font-bold text-[var(--brand)]">
                     <span>Total</span>
                     <span className="font-mono text-[#B0492F]">{money(grand)}</span>
                   </div>
@@ -621,12 +621,12 @@ function KpiDetailModal({
                             <div className="flex items-center gap-2.5">
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                               <div className="min-w-0">
-                                <div className="max-w-[150px] truncate font-bold text-[#16323D]">{p.title.split(" — ")[0]}</div>
+                                <div className="max-w-[150px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
                                 <div className="truncate text-[10px] text-[#5C6A6E]">{p.client} · {pct}% {col("paid", "cobrado")}</div>
                               </div>
                             </div>
                           </td>
-                          <td className={`${GCELL} font-mono text-right text-[#16323D]`}>{money(p.budget)}</td>
+                          <td className={`${GCELL} font-mono text-right text-[var(--brand)]`}>{money(p.budget)}</td>
                           <td className={`${GCELL} font-mono text-right text-[#4F8A63]`}>{money(inc)}</td>
                           <td className={`${GCELL} rounded-r-lg font-mono text-right font-bold text-[#B0492F]`}>{money(bal)}</td>
                         </tr>
@@ -635,7 +635,7 @@ function KpiDetailModal({
                   </tbody>
                 </table>
                 {withBal.length > 0 && (
-                  <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[#16323D]">
+                  <div className="mt-3 flex justify-between border-t border-[#E6DDCB] pt-3 text-[12px] font-bold text-[var(--brand)]">
                     <span>{col("Total Outstanding", "Total Pendiente")}</span>
                     <span className="font-mono text-[#B0492F]">{money(grand)}</span>
                   </div>
@@ -686,7 +686,7 @@ function KpiDetailModal({
                             <div className="flex items-center gap-2.5">
                               <ProjectThumb photoUrl={p.photo_url} title={p.title} size={28} rounded="rounded-md" />
                               <div className="min-w-0">
-                                <div className="max-w-[150px] truncate font-bold text-[#16323D]">{p.title.split(" — ")[0]}</div>
+                                <div className="max-w-[150px] truncate font-bold text-[var(--brand)]">{p.title.split(" — ")[0]}</div>
                                 <div className="truncate text-[10px] text-[#5C6A6E]">{p.client}</div>
                               </div>
                             </div>
@@ -809,7 +809,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#16323D] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
       </div>
     );
   }
@@ -827,7 +827,7 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="mb-6 rounded-2xl bg-[#395886] px-6 py-5">
+      <div className="mb-6 rounded-2xl bg-[var(--accent)] px-6 py-5">
         <h1 className="font-bookman text-[28px] font-semibold tracking-tight text-white">
           {tp.dashboard.greeting}, {currentUser?.name ?? ""}
         </h1>
@@ -848,7 +848,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Projects bar — single row: title | filter pills | new project */}
-      <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#16323D] px-5 py-3">
+      <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[var(--brand)] px-5 py-3">
 
         {/* Title */}
         <div className="flex shrink-0 items-center gap-2">
@@ -883,7 +883,7 @@ export default function DashboardPage() {
                 onClick={() => setStatusFilter("all")}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold transition ${
                   statusFilter === "all"
-                    ? "bg-white text-[#16323D]"
+                    ? "bg-white text-[var(--brand)]"
                     : "border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
                 }`}
               >
@@ -969,7 +969,7 @@ export default function DashboardPage() {
           <UsersPanel projects={projects} contacts={allContacts} />
           <div className="mt-8">
             <div className="mb-4">
-              <h2 className="text-base font-bold text-[#16323D]">{tp.dashboard.security}</h2>
+              <h2 className="text-base font-bold text-[var(--brand)]">{tp.dashboard.security}</h2>
               <p className="text-[11px] text-[#97A1A0]">{tp.dashboard.securityDesc}</p>
             </div>
             <AdminSettings />
@@ -978,7 +978,7 @@ export default function DashboardPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-[#16323D] px-5 py-3 text-sm font-semibold text-white shadow-xl">
+        <div className="fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-semibold text-white shadow-xl">
           {toast}
         </div>
       )}
