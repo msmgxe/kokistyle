@@ -5,6 +5,18 @@
   --foreground: #172033;
 }
 
+/* Chrome de marca (sidebar + drawer). El tema de color los cambia vía data-accent
+   en <html>. Default = Luxaris (teal). Migrar el resto de la app a estos tokens
+   es incremental — hoy solo pinta el chrome de navegación. */
+:root {
+  --brand: #16323D;
+  --brand-accent: #7FA8D9;
+}
+:root[data-accent="navy"]     { --brand: #1B2E4D; --brand-accent: #6FA0DE; }
+:root[data-accent="ocean"]    { --brand: #14213D; --brand-accent: #4F86E8; }
+:root[data-accent="emerald"]  { --brand: #0B2A22; --brand-accent: #34B98C; }
+:root[data-accent="graphite"] { --brand: #1E2530; --brand-accent: #8B90F5; }
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

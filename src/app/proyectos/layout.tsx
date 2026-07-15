@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
 import {
-  LogOut, Menu, X, ChevronsLeft,
+  LogOut, Menu, X, ChevronsLeft, Settings,
   LayoutDashboard, CalendarCheck2, Image as ImageIcon, BarChart3, Users,
   Sparkles, Globe, CalendarClock, Activity, CalendarDays, HelpCircle,
 } from "lucide-react";
@@ -17,6 +17,19 @@ import { branding } from "@/src/config/branding";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 const COLLAPSE_KEY = "luxaris-nav-collapsed";
+const ACCENT_KEY = "luxaris-accent";
+const ACCENTS = [
+  { id: "luxaris",  label: "Luxaris",  dab: "#16323D" },
+  { id: "navy",     label: "Navy",     dab: "#2A4A7F" },
+  { id: "ocean",    label: "Ocean",    dab: "#2563EB" },
+  { id: "emerald",  label: "Emerald",  dab: "#0E7C57" },
+  { id: "graphite", label: "Graphite", dab: "#3A4859" },
+];
+
+function applyAccent(id: string) {
+  if (id === "luxaris") document.documentElement.removeAttribute("data-accent");
+  else document.documentElement.setAttribute("data-accent", id);
+}
 
 function LangSwitch() {
   const { language, setLanguage } = useLanguage();
@@ -40,14 +53,26 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   const [unlockError, setUnlockError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [accent, setAccent] = useState("luxaris");
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
   useEffect(() => { try { setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1"); } catch { /* noop */ } }, []);
+  useEffect(() => {
+    try {
+      const a = localStorage.getItem(ACCENT_KEY);
+      if (a) { setAccent(a); applyAccent(a); }
+    } catch { /* noop */ }
+  }, []);
   const toggleCollapse = () => setCollapsed(c => {
     const n = !c;
     try { localStorage.setItem(COLLAPSE_KEY, n ? "1" : "0"); } catch { /* noop */ }
     return n;
   });
+  const changeAccent = (id: string) => {
+    setAccent(id);
+    applyAccent(id);
+    try { localStorage.setItem(ACCENT_KEY, id); } catch { /* noop */ }
+  };
 
   useEffect(() => { if (!isAdmin) router.replace("/"); }, [isAdmin, router]);
   useEffect(() => {
@@ -117,7 +142,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
 
         {/* ── Sidebar (desktop): opción 2 (expandida) ↔ opción 3 (icon rail) ── */}
         <aside
-          className={`hidden shrink-0 flex-col bg-[#16323D] transition-[width] duration-200 lg:sticky lg:top-0 lg:flex lg:h-screen ${collapsed ? "lg:w-[76px]" : "lg:w-[236px]"}`}
+          className={`relative hidden shrink-0 flex-col bg-[var(--brand)] transition-[width] duration-200 lg:sticky lg:top-0 lg:z-20 lg:flex lg:h-screen ${collapsed ? "lg:w-[76px]" : "lg:w-[236px]"}`}
           aria-label="Navegación del panel"
         >
           {/* LD colapsa/expande el menú */}
@@ -150,7 +175,8 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
             )}
           </nav>
 
-          <div className="border-t border-white/10 px-3 py-3">
+          <div className="space-y-1 border-t border-white/10 px-3 py-3">
+            <ThemeGear collapsed={collapsed} accent={accent} onPick={changeAccent} label={t.panel.nav.appearance} themeLabel={t.panel.nav.theme} />
             <button
               onClick={toggleCollapse}
               title={collapsed ? "Expandir" : "Colapsar"}
@@ -167,7 +193,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#D5DEEF] bg-[#F7F3EB]/90 px-4 py-2.5 backdrop-blur lg:px-6">
             {/* Móvil: logo + marca */}
             <Link href="/proyectos" className="flex items-center gap-2.5 lg:hidden" aria-label={`${branding.companyShort} Panel`}>
-              <span className="grid size-9 place-items-center rounded-lg bg-[#16323D] text-xs font-bold text-white">{branding.initials}</span>
+              <span className="grid size-9 place-items-center rounded-lg bg-[var(--brand)] text-xs font-bold text-white">{branding.initials}</span>
               <span className="text-sm font-bold text-[#16323D]">{branding.companyShort}</span>
             </Link>
             <div className="flex-1" />
@@ -199,7 +225,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           <div className="fixed inset-0 z-[400] lg:hidden" onClick={() => setMenuOpen(false)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <div className="absolute right-0 top-0 flex h-full w-72 flex-col bg-[#F7F3EB] shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between bg-[#16323D] px-4 py-4">
+              <div className="flex items-center justify-between bg-[var(--brand)] px-4 py-4">
                 <span className="flex items-center gap-2.5">
                   <span className="grid size-9 place-items-center rounded-lg bg-[#F5E9DA] text-xs font-bold text-[#16323D]">{branding.initials}</span>
                   <span className="text-sm font-bold text-white">{branding.companyShort}</span>
@@ -250,7 +276,7 @@ function SideLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
         active ? "bg-white/[0.12] text-white" : "text-[#A9C1BC] hover:bg-white/[0.08] hover:text-white"
       }`}
     >
-      {active && <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#7FA8D9]" />}
+      {active && <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--brand-accent)]" />}
       <Icon size={18} className="shrink-0" />
       {!collapsed && <span className="truncate">{item.label}</span>}
     </Link>
@@ -271,5 +297,57 @@ function MobileTab({ item }: { item: NavItem }) {
       <Icon size={17} className="shrink-0" />
       {item.label}
     </Link>
+  );
+}
+
+// Tuerca de configuración: cambia el tema de color del chrome (sidebar/drawer) vía tokens CSS.
+function ThemeGear({
+  collapsed, accent, onPick, label, themeLabel,
+}: {
+  collapsed: boolean; accent: string; onPick: (id: string) => void; label: string; themeLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        title={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#A9C1BC] transition hover:bg-white/[0.08] hover:text-white ${collapsed ? "justify-center" : ""}`}
+      >
+        <Settings size={18} className="shrink-0" />
+        {!collapsed && <span>{label}</span>}
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-0 z-50 mb-2 w-56 rounded-xl border border-[#E6DDCB] bg-white p-3 shadow-xl">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#97A1A0]">{themeLabel}</div>
+          <div className="grid grid-cols-5 gap-2">
+            {ACCENTS.map(a => (
+              <button
+                key={a.id}
+                onClick={() => onPick(a.id)}
+                title={a.label}
+                aria-label={a.label}
+                aria-pressed={accent === a.id}
+                className={`h-9 rounded-lg border-2 transition ${accent === a.id ? "border-[#16323D]" : "border-transparent hover:border-[#D5DEEF]"}`}
+                style={{ background: a.dab }}
+              />
+            ))}
+          </div>
+          <p className="mt-2.5 text-[10.5px] leading-snug text-[#97A1A0]">
+            Cambia el color del menú. El resto de la app se irá migrando a estos colores.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
