@@ -332,24 +332,14 @@ function buildEstimatePdf(
   doc.text((projectTitle || estimate.project_title || (EN ? "PROJECT" : "PROYECTO")).toUpperCase(), CX, y + 5.5, { align: "center", maxWidth: CW - 4 });
   y += 11;
 
-  // ── PROPOSAL info block ────────────────────────────────────────────────────
-  const infoH = 22;
+  // ── Info block (cliente / contratista) — el rótulo "PROPOSAL" vive en la cabecera ─
+  const infoH = 17;
   doc.setFillColor(247, 243, 234);
   doc.setDrawColor(230, 221, 203);
   doc.setLineWidth(0.3);
   doc.roundedRect(ML, y, CW, infoH, 2, 2, "FD");
 
-  const propLabel = EN ? "PROPOSAL" : "PROPUESTA";
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(22, 50, 61);
-  doc.text(propLabel, CX, y + 5, { align: "center" });
-  doc.setDrawColor(210, 200, 188);
-  doc.setLineWidth(0.2);
-  const pw = doc.getTextWidth(propLabel);
-  doc.line(CX - pw / 2, y + 6, CX + pw / 2, y + 6);
-
-  const iy  = y + 10;
+  const iy  = y + 6;
   const lhh = 4.2;
   const c1v = ML + 4;
   const c2v = CX + 4;
