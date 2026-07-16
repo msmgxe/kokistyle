@@ -188,6 +188,9 @@ export interface ProjectEstimate {
   city: string;
   email: string;
   phone: string;
+  customer_company?: string;   // factura (BILL TO): empresa del cliente
+  customer_address?: string;   // factura: dirección/obra del cliente
+  customer_website?: string;   // factura: sitio web del cliente
   project_title: string;
   start_date: string;
   end_date: string;

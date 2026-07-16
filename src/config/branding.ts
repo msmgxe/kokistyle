@@ -7,6 +7,9 @@ export const branding = {
   phone: "561-305-6707",
   email: "luxaris25@yahoo.com",
   address: "South Florida, USA",
+  // Dirección postal (remitente "FROM" en la factura)
+  streetAddress: "23056 SW 55th Ave",
+  cityStateZip: "Boca Raton, FL 33433",
 
   contractor: "Jorge Saldarriaga",
 

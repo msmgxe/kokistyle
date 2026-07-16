@@ -725,3 +725,146 @@ export function getEstimatePdfBlob(
   const { doc } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle, mode);
   return doc.output("blob") as Blob;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  FACTURA (Invoice) — Opción 1 "Clásica", bilingüe. Reusa el letterhead del Estimate.
+// ═══════════════════════════════════════════════════════════════════════════════
+export interface InvoiceData {
+  invoiceNo: string;
+  date: string;                 // texto a mostrar (ej. "FEB. 04, 2026")
+  language: "en" | "es";
+  client: {
+    name: string; company?: string; address?: string; city?: string;
+    phone?: string; email?: string; website?: string;
+  };
+  lines: { description: string; amount: number }[];
+}
+
+function buildInvoicePdf(inv: InvoiceData): { doc: jsPDF; filename: string } {
+  const EN  = inv.language === "en";
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W   = doc.internal.pageSize.getWidth();
+  const CX  = W / 2, ML = 10, MR = W - 10, CW = MR - ML;
+  let y = 13;
+
+  // ── Letterhead (igual que el Estimate) ──
+  doc.setFont("times", "bolditalic"); doc.setFontSize(19); doc.setTextColor(22, 50, 61);
+  doc.text("LUXARIS DESIGN LLC.", ML, y);
+
+  const badge = EN ? "INVOICE" : "FACTURA";
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  const bw = doc.getTextWidth(badge) + 12;
+  doc.setDrawColor(22, 50, 61); doc.setLineWidth(0.6);
+  doc.roundedRect(MR - bw, 7, bw, 9, 1, 1, "S");
+  doc.setTextColor(22, 50, 61);
+  doc.text(badge, MR - bw / 2, 13.2, { align: "center" });
+
+  y += 5.5;
+  doc.setFont("times", "italic"); doc.setFontSize(10); doc.setTextColor(40, 40, 40);
+  doc.text(branding.slogan, ML, y);
+  y += 5;
+  doc.setFont("times", "normal"); doc.setFontSize(9.5);
+  doc.text(`Phone : ${branding.phone}     Email : ${branding.email}`, ML, y);
+
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(22, 50, 61);
+  doc.text(`${EN ? "INVOICE #" : "FACTURA #"} ${inv.invoiceNo}`, MR, 22, { align: "right" });
+  doc.text(inv.date, MR, 26.5, { align: "right" });
+
+  y += 4;
+  doc.setDrawColor(22, 50, 61); doc.setLineWidth(0.5); doc.line(ML, y, MR, y);
+  y += 8;
+
+  // ── FROM / BILL TO ──
+  const colX = CX + 4;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+  doc.text(EN ? "FROM" : "DE", ML, y);
+  doc.text(EN ? "BILL TO" : "FACTURAR A", colX, y);
+
+  const fromLines = [branding.streetAddress, branding.cityStateZip, branding.phone];
+  const c = inv.client;
+  const billLines: { t: string; bold?: boolean }[] = [];
+  if (c.name)    billLines.push({ t: c.name, bold: true });
+  if (c.company) billLines.push({ t: c.company, bold: true });
+  if (c.address) billLines.push({ t: c.address });
+  if (c.city)    billLines.push({ t: c.city });
+  const pe = [c.phone, c.email].filter(Boolean).join("  ·  ");
+  if (pe)        billLines.push({ t: pe });
+  if (c.website) billLines.push({ t: c.website });
+
+  const fy0 = y + 5;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40);
+  fromLines.forEach((l, i) => doc.text(l, ML, fy0 + i * 4.4));
+  let by = fy0;
+  billLines.forEach((l) => {
+    doc.setFont("helvetica", l.bold ? "bold" : "normal");
+    if (l.bold) doc.setTextColor(22, 50, 61); else doc.setTextColor(40, 40, 40);
+    doc.text(l.t, colX, by, { maxWidth: MR - colX });
+    by += 4.4;
+  });
+  y = Math.max(fy0 + fromLines.length * 4.4, by) + 5;
+
+  // ── Tabla ──
+  doc.setFillColor(22, 50, 61); doc.rect(ML, y, CW, 8, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
+  const cQty = ML + 3, cDesc = ML + 32, cUnit = MR - 42, cTot = MR - 3;
+  doc.text(EN ? "QUANTITY" : "CANTIDAD", cQty, y + 5.3);
+  doc.text(EN ? "DESCRIPTION" : "DESCRIPCIÓN", cDesc, y + 5.3);
+  doc.text(EN ? "UNIT PRICE" : "P. UNIT.", cUnit, y + 5.3, { align: "right" });
+  doc.text("TOTAL", cTot, y + 5.3, { align: "right" });
+  y += 8;
+
+  const rowH = 8;
+  const shownLines = inv.lines.length ? inv.lines : [{ description: EN ? "(no items selected)" : "(sin items seleccionados)", amount: 0 }];
+  shownLines.forEach((ln, i) => {
+    if (i % 2 === 1) { doc.setFillColor(247, 243, 234); doc.rect(ML, y, CW, rowH, "F"); }
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40);
+    doc.text("1", cQty + 9, y + 5.3, { align: "center" });
+    doc.text(ln.description, cDesc, y + 5.3, { maxWidth: cUnit - cDesc - 4 });
+    doc.setTextColor(150, 150, 150); doc.text("—", cUnit, y + 5.3, { align: "right" });
+    doc.setFont("helvetica", "bold"); doc.setTextColor(22, 50, 61);
+    doc.text(money(ln.amount), cTot, y + 5.3, { align: "right" });
+    doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.2); doc.line(ML, y + rowH, MR, y + rowH);
+    y += rowH;
+  });
+  y += 8;
+
+  // ── TOTAL DUE ──
+  const total = inv.lines.reduce((s, l) => s + l.amount, 0);
+  const boxW = 46, boxH = 11, boxX = MR - boxW, boxY = y;
+  doc.setFillColor(22, 50, 61); doc.roundedRect(boxX, boxY, boxW, boxH, 1.5, 1.5, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+  doc.text(money(total), boxX + boxW - 4, boxY + 7.6, { align: "right" });
+  doc.setTextColor(92, 106, 110); doc.setFontSize(10.5);
+  doc.text(EN ? "TOTAL DUE" : "TOTAL A PAGAR", boxX - 4, boxY + 7.6, { align: "right" });
+  y += boxH + 13;
+
+  // ── Notas + gracias ──
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(60, 60, 60);
+  doc.text(EN ? "Make all checks payable to LUXARIS DESIGN LLC." : "Emitir todos los cheques a nombre de LUXARIS DESIGN LLC.", ML, y);
+  y += 4.6;
+  doc.text(
+    EN ? `If you have any questions concerning this invoice, contact ${branding.contractor} at the number or email above.`
+       : `Cualquier pregunta sobre esta factura, contacte a ${branding.contractor} al teléfono o correo de arriba.`,
+    ML, y, { maxWidth: CW });
+  y += 15;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(22, 50, 61);
+  doc.text(EN ? "THANK YOU FOR YOUR BUSINESS!" : "¡GRACIAS POR SU PREFERENCIA!", CX, y, { align: "center" });
+
+  const filename = `Invoice_${(inv.invoiceNo || "Luxaris").replace(/\s+/g, "-")}.pdf`;
+  return { doc, filename };
+}
+
+export function exportInvoicePdf(inv: InvoiceData) {
+  const { doc, filename } = buildInvoicePdf(inv);
+  doc.save(filename);
+}
+export function openInvoicePdfInBrowser(inv: InvoiceData) {
+  const { doc } = buildInvoicePdf(inv);
+  const url = URL.createObjectURL(doc.output("blob") as Blob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+export function getInvoicePdfBlob(inv: InvoiceData): Blob {
+  const { doc } = buildInvoicePdf(inv);
+  return doc.output("blob") as Blob;
+}

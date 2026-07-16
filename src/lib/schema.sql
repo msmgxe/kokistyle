@@ -206,6 +206,11 @@ CREATE TABLE IF NOT EXISTS project_estimates (
   updated_at       TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
+-- Factura (BILL TO): campos extra del cliente. Migración si la tabla ya existe:
+ALTER TABLE project_estimates ADD COLUMN IF NOT EXISTS customer_company TEXT;
+ALTER TABLE project_estimates ADD COLUMN IF NOT EXISTS customer_address TEXT;
+ALTER TABLE project_estimates ADD COLUMN IF NOT EXISTS customer_website TEXT;
+
 -- Secciones del estimado (DEMOLITION, PLUMBING, etc.)
 CREATE TABLE IF NOT EXISTS estimate_sections (
   id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,

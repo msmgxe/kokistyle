@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
-import { openEstimatePdfInBrowser, getEstimatePdfBlob } from "@/src/lib/pdf";
+import { openEstimatePdfInBrowser, getEstimatePdfBlob, exportInvoicePdf, openInvoicePdfInBrowser, getInvoicePdfBlob, type InvoiceData } from "@/src/lib/pdf";
 
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -66,6 +66,9 @@ interface EstimateRow {
   city: string;
   email: string;
   phone: string;
+  customer_company?: string;
+  customer_address?: string;
+  customer_website?: string;
   project_title: string;
   start_date: string;
   end_date: string;
@@ -580,6 +583,18 @@ export default function EstimateTab({
   const [copyHasEstimate, setCopyHasEstimate] = useState(false);
   const [copying,         setCopying]         = useState(false);
 
+  // ── Invoice modal (factura desde el payment schedule) ─────────────────────
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invView,      setInvView]      = useState<"build" | "email">("build");
+  const [invNo,        setInvNo]        = useState("");
+  const [invDate,      setInvDate]      = useState("");
+  const [invLines,     setInvLines]     = useState<{ on: boolean; glosa: string }[]>([]);
+  const [invEmailTo,   setInvEmailTo]   = useState("");
+  const [invEmailSub,  setInvEmailSub]  = useState("");
+  const [invEmailMsg,  setInvEmailMsg]  = useState("");
+  const [invPreview,   setInvPreview]   = useState<string | null>(null);
+  const [invSending,   setInvSending]   = useState(false);
+
   // ── Estimate sub-tabs ─────────────────────────────────────────────────────
   const [estimateSubTab,   setEstimateSubTab]   = useState<"sections" | "schedule">("sections");
 
@@ -685,11 +700,14 @@ export default function EstimateTab({
     if (!estimate) return;
     setSaving(true);
 
-    await supabase.from("project_estimates").update({
+    const headerPayload = {
       customer_name:    estimate.customer_name,
       city:             estimate.city,
       email:            estimate.email,
       phone:            estimate.phone,
+      customer_company: estimate.customer_company ?? null,
+      customer_address: estimate.customer_address ?? null,
+      customer_website: estimate.customer_website ?? null,
       project_title:    estimate.project_title,
       start_date:       estimate.start_date  || null,
       end_date:         estimate.end_date    || null,
@@ -699,7 +717,14 @@ export default function EstimateTab({
       deposit_schedule: estimate.deposit_schedule,
       notes:            estimate.notes,
       updated_at:       new Date().toISOString(),
-    }).eq("id", estimate.id);
+    };
+    const { error: hdrErr } = await supabase.from("project_estimates").update(headerPayload).eq("id", estimate.id);
+    // Si aún no corrió la migración de los campos de factura, guarda sin ellos (no rompe el Save)
+    if (hdrErr && /customer_(company|address|website)|column|schema cache/i.test(hdrErr.message)) {
+      const { customer_company: _c, customer_address: _a, customer_website: _w, ...rest } = headerPayload;
+      void _c; void _a; void _w;
+      await supabase.from("project_estimates").update(rest).eq("id", estimate.id);
+    }
 
     // Auto-create/update client contact when name + phone are present
     if (estimate.customer_name.trim() && estimate.phone.trim()) {
@@ -1176,6 +1201,85 @@ export default function EstimateTab({
     }
   }, [buildEmailPdfBlob, emailMode, emailTo, emailSubject, emailMsg, project.title, EN, toast, closeEmailModal]);
 
+  // ── Invoice (factura) — se arma desde el payment schedule ─────────────────
+  const setHdr = useCallback((patch: Partial<EstimateRow>) =>
+    setEstimate(p => p ? { ...p, ...patch } : p), []);
+
+  const buildInvoiceData = useCallback((): InvoiceData => {
+    const gt = totals.grandTotal;
+    const lines = (estimate?.deposit_schedule ?? []).map((dep, i) => {
+      const st = invLines[i];
+      if (!st?.on) return null;
+      return { description: st.glosa.trim() || (EN ? dep.label_en : dep.label_es), amount: depositTarget(dep, gt) };
+    }).filter(Boolean) as { description: string; amount: number }[];
+    return {
+      invoiceNo: invNo.trim(), date: invDate.trim(), language,
+      client: {
+        name:    estimate?.customer_name ?? "",
+        company: estimate?.customer_company ?? "",
+        address: estimate?.customer_address ?? "",
+        city:    estimate?.city ?? "",
+        phone:   estimate?.phone ?? "",
+        email:   estimate?.email ?? "",
+        website: estimate?.customer_website ?? "",
+      },
+      lines,
+    };
+  }, [estimate, invLines, invNo, invDate, language, totals, depositTarget, EN]);
+
+  const openInvoiceModal = useCallback(() => {
+    if (!estimate) return;
+    const now = new Date();
+    const mEN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const mES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+    const mm  = (EN ? mEN : mES)[now.getMonth()];
+    setInvDate(EN ? `${mm}. ${String(now.getDate()).padStart(2,"0")}, ${now.getFullYear()}`
+                  : `${String(now.getDate()).padStart(2,"0")} ${mm}. ${now.getFullYear()}`);
+    setInvNo("");
+    setInvLines(estimate.deposit_schedule.map(d => ({ on: true, glosa: EN ? d.label_en : d.label_es })));
+    setInvView("build");
+    setInvEmailTo(estimate.email?.trim() ?? "");
+    setInvEmailSub(`${EN ? "Invoice" : "Factura"} — ${project.title}`);
+    setInvEmailMsg(EN
+      ? `Hello${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nPlease find attached your invoice for "${project.title}".\nFeel free to reply to this email with any questions.\n\nBest regards,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`
+      : `Hola${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nAdjunto encontrará su factura de "${project.title}".\nCualquier duda, puede responder directamente a este correo.\n\nSaludos cordiales,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`);
+    setShowInvoiceModal(true);
+  }, [estimate, EN, project.title]);
+
+  const closeInvoiceModal = useCallback(() => {
+    setShowInvoiceModal(false);
+    setInvPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
+  }, []);
+
+  const goInvoiceEmail = useCallback(() => {
+    const url = URL.createObjectURL(getInvoicePdfBlob(buildInvoiceData()));
+    setInvPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
+    setInvView("email");
+  }, [buildInvoiceData]);
+
+  const sendInvoiceEmail = useCallback(async () => {
+    if (!invEmailTo.includes("@")) return;
+    setInvSending(true);
+    try {
+      const blob = getInvoicePdfBlob(buildInvoiceData());
+      const pdfBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(String(reader.result).split(",")[1] ?? "");
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const res = await fetch("/api/estimate/send-email", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: invEmailTo.trim(), subject: invEmailSub.trim(), message: invEmailMsg, fileName: `Invoice - ${project.title}.pdf`, pdfBase64 }),
+      });
+      const data = await res.json();
+      if (data.ok) { toast(EN ? `Invoice sent to ${invEmailTo.trim()} ✓` : `Factura enviada a ${invEmailTo.trim()} ✓`); closeInvoiceModal(); }
+      else toast((EN ? "Send failed: " : "Error al enviar: ") + (data.error ?? ""));
+    } catch {
+      toast(EN ? "Send failed — check your connection" : "Error al enviar — revisa tu conexión");
+    } finally { setInvSending(false); }
+  }, [invEmailTo, invEmailSub, invEmailMsg, buildInvoiceData, project.title, EN, toast, closeInvoiceModal]);
+
   // ── Copy estimate to another project ─────────────────────────────────────
   const openCopyModal = useCallback(async () => {
     const { data } = await supabase
@@ -1464,6 +1568,16 @@ export default function EstimateTab({
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
               <span className="hidden sm:inline">Email</span>
+            </button>
+
+            {/* Invoice / Factura */}
+            <button
+              onClick={openInvoiceModal}
+              title={EN ? "Generate invoice from the payment schedule" : "Generar factura desde el payment schedule"}
+              className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-bold text-white/90 transition hover:bg-white/18 hover:text-white"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3h16v18l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+              <span className="hidden sm:inline">{EN ? "Invoice" : "Factura"}</span>
             </button>
 
             {/* PDF */}
@@ -1804,6 +1918,120 @@ export default function EstimateTab({
       )}
 
     </div>{/* /main card */}
+
+      {/* ── Invoice modal (factura desde el payment schedule) ──────────────── */}
+      {showInvoiceModal && estimate && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center" onClick={closeInvoiceModal}>
+          <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between bg-[var(--brand)] px-5 py-3.5">
+              <span className="text-sm font-bold text-white">
+                🧾 {invView === "email" ? (EN ? "Send invoice by email" : "Enviar factura por correo") : (EN ? "Invoice" : "Factura")}
+              </span>
+              <button onClick={closeInvoiceModal} className="text-white/60 hover:text-white"><X size={16} /></button>
+            </div>
+
+            {invView === "build" ? (
+              <>
+                <div className="flex-1 space-y-4 overflow-y-auto p-5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Invoice #" : "Factura #"}</label>
+                      <input value={invNo} onChange={e => setInvNo(e.target.value)} placeholder="001"
+                        className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Date" : "Fecha"}</label>
+                      <input value={invDate} onChange={e => setInvDate(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
+                      {EN ? "Description — from payment schedule" : "Descripción — del payment schedule"}
+                    </label>
+                    <div className="space-y-2">
+                      {estimate.deposit_schedule.map((dep, i) => {
+                        const st  = invLines[i] ?? { on: false, glosa: "" };
+                        const amt = depositTarget(dep, totals.grandTotal);
+                        return (
+                          <div key={i} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${st.on ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#17233d]" : "border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220]"}`}>
+                            <input type="checkbox" checked={st.on}
+                              onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, on: e.target.checked } : x))}
+                              className="mt-1 h-4 w-4 accent-[var(--accent)]" />
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1 flex items-center gap-2">
+                                <span className="rounded bg-[var(--brand)] px-1.5 py-0.5 text-[9px] font-bold text-white">{dep.pct}%</span>
+                                <span className="text-[11px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">{money(amt)}</span>
+                              </div>
+                              <input value={st.glosa}
+                                onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, glosa: e.target.value } : x))}
+                                placeholder={EN ? "Description…" : "Descripción…"}
+                                className="w-full border-0 border-b border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 flex items-center justify-end gap-2 text-[12px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
+                      {EN ? "Total due" : "Total a pagar"}: <span>{money(buildInvoiceData().lines.reduce((s, l) => s + l.amount, 0))}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
+                      {EN ? "Bill to (from project)" : "Facturar a (del proyecto)"}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input value={estimate.customer_name} onChange={e => setHdr({ customer_name: e.target.value })} placeholder={EN ? "Name" : "Nombre"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.customer_company ?? ""} onChange={e => setHdr({ customer_company: e.target.value })} placeholder={EN ? "Company" : "Empresa"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    </div>
+                    <input value={estimate.customer_address ?? ""} onChange={e => setHdr({ customer_address: e.target.value })} placeholder={EN ? "Address" : "Dirección"} className="mt-2 h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <input value={estimate.city} onChange={e => setHdr({ city: e.target.value })} placeholder={EN ? "City / State" : "Ciudad / Estado"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.phone} onChange={e => setHdr({ phone: e.target.value })} placeholder={EN ? "Phone" : "Teléfono"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.email} onChange={e => setHdr({ email: e.target.value })} placeholder="Email" className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.customer_website ?? ""} onChange={e => setHdr({ customer_website: e.target.value })} placeholder="Website" className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    </div>
+                    <p className="mt-1.5 text-[10px] text-[#97A1A0] dark:text-[#728098]">{EN ? "Saved with the estimate (Save)." : "Se guardan con el estimado (Guardar)."}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
+                  <button onClick={closeInvoiceModal} className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">{EN ? "Cancel" : "Cancelar"}</button>
+                  <button onClick={() => openInvoicePdfInBrowser(buildInvoiceData())} className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">{EN ? "Open" : "Abrir"}</button>
+                  <button onClick={() => exportInvoicePdf(buildInvoiceData())} className="inline-flex items-center gap-1.5 rounded-xl bg-[#7B1838] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#6a1530]"><FileText size={13} />PDF</button>
+                  <button onClick={goInvoiceEmail} className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--accent-strong)]">✉️ Email</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex-1 space-y-3 overflow-y-auto p-5">
+                  <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{EN ? "From" : "Desde"}: <span className="font-bold text-[var(--brand)] dark:text-[#e8edf7]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span></p>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "To" : "Para"} *</label>
+                    <input type="email" value={invEmailTo} onChange={e => setInvEmailTo(e.target.value)} placeholder="cliente@email.com" className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Subject" : "Asunto"}</label>
+                    <input value={invEmailSub} onChange={e => setInvEmailSub(e.target.value)} className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Message" : "Mensaje"}</label>
+                    <textarea rows={5} value={invEmailMsg} onChange={e => setInvEmailMsg(e.target.value)} className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                  </div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "PDF preview" : "Vista previa del PDF"}</label>
+                  {invPreview && <iframe src={invPreview} title="Invoice preview" className="h-64 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220]" />}
+                </div>
+                <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
+                  <button onClick={() => setInvView("build")} className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">← {EN ? "Back" : "Atrás"}</button>
+                  <button onClick={sendInvoiceEmail} disabled={invSending || !invEmailTo.includes("@")} className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">{invSending ? (EN ? "Sending…" : "Enviando…") : (EN ? "Send invoice" : "Enviar factura")}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Email modal ────────────────────────────────────────────────────── */}
       {showEmailModal && (
