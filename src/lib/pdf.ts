@@ -290,10 +290,10 @@ function buildEstimatePdf(
     if (y + needed > 278) { doc.addPage(); y = 12; }
   }
 
-  // ── Letterhead header (empresa a la izquierda + badge PROPOSAL a la derecha) ─
+  // ── Letterhead header (justificado a la izquierda + badge PROPOSAL a la derecha) ─
   y = 13;
   doc.setFont("times", "bolditalic");
-  doc.setFontSize(21);
+  doc.setFontSize(19);
   doc.setTextColor(22, 50, 61);
   doc.text("LUXARIS DESIGN LLC.", ML, y);
 
@@ -311,12 +311,12 @@ function buildEstimatePdf(
   doc.setFont("times", "italic");
   doc.setFontSize(10);
   doc.setTextColor(40, 40, 40);
-  doc.text(branding.slogan, ML + 2, y);
+  doc.text(branding.slogan, ML, y);
   y += 5;
   doc.setFont("times", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(40, 40, 40);
-  doc.text(`Phone : ${branding.phone}     Email : ${branding.email}`, ML + 6, y);
+  doc.text(`Phone : ${branding.phone}     Email : ${branding.email}`, ML, y);
   y += 3;
   doc.setDrawColor(22, 50, 61);
   doc.setLineWidth(0.5);
@@ -666,14 +666,16 @@ function buildEstimatePdf(
   doc.line(slx1, y, slx2, y);
   doc.line(srx1, y, srx2, y);
   y += 5;
-  doc.setFont("times", "italic");
-  doc.setFontSize(10.5);
-  doc.setTextColor(22, 50, 61);
+  // Fuente del cuerpo del estimado (helvetica), no la serif del letterhead
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(92, 106, 110);
   doc.text(EN ? "CONTRACTOR" : "CONTRATISTA", (slx1 + slx2) / 2, y, { align: "center" });
   doc.text(EN ? "CUSTOMER" : "CLIENTE", (srx1 + srx2) / 2, y, { align: "center" });
   y += 5;
-  doc.setFont("times", "bolditalic");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(10.5);
+  doc.setTextColor(22, 50, 61);
   doc.text(branding.contractor.toUpperCase(), (slx1 + slx2) / 2, y, { align: "center" });
   doc.text((estimate.customer_name || "—").toUpperCase(), (srx1 + srx2) / 2, y, { align: "center" });
 
