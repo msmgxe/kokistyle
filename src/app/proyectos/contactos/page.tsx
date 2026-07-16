@@ -241,6 +241,8 @@ export default function ContactosPage() {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const [assignPickerFor, setAssignPickerFor] = useState<string | null>(null);
+  const [assignSearch, setAssignSearch] = useState("");
   const { isSuperAdmin } = useAuth();
   const { t, language } = useLanguage();
   const tp = t.panel;
@@ -251,6 +253,14 @@ export default function ContactosPage() {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "equipo") setSection("team");
   }, []);
+
+  // Cerrar el selector de proyecto al hacer clic fuera de su tarjeta
+  useEffect(() => {
+    if (assignPickerFor === null) return;
+    const close = () => setAssignPickerFor(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [assignPickerFor]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -440,29 +450,68 @@ export default function ContactosPage() {
                       {[specialtyLabel, rateLabel].filter(Boolean).join(" · ")}
                     </div>
                   )}
-                  {projects.length > 0 && (
-                    <div
-                      className="mt-2 flex flex-wrap gap-1.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {projects.map((p) => {
-                        const on = pIds.has(p.id);
-                        return (
-                          <button
+                  {projects.length > 0 && (() => {
+                    const assignedProjects = projects.filter((p) => pIds.has(p.id));
+                    const pickerOpen = assignPickerFor === c.id;
+                    const q = assignSearch.trim().toLowerCase();
+                    const pickerList = projects
+                      .filter((p) => !pIds.has(p.id))
+                      .filter((p) => (q ? p.title.toLowerCase().includes(q) : true));
+                    return (
+                      <div
+                        className="relative mt-2 flex flex-wrap items-center gap-1.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {assignedProjects.map((p) => (
+                          <span
                             key={p.id}
-                            onClick={() => toggleAssign(c.id, p.id)}
-                            className={`rounded-lg border px-2.5 py-1 text-[10.5px] font-bold transition ${
-                              on
-                                ? "border-[#DCE8E9] dark:border-[#1f3a44] bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]"
-                                : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc] hover:border-[#D7CBB3] dark:hover:border-[#2c3c5e]"
-                            }`}
+                            className="inline-flex items-center gap-1 rounded-lg border border-[#DCE8E9] dark:border-[#1f3a44] bg-[#DCE8E9] dark:bg-[#122a2c] px-2.5 py-1 text-[10.5px] font-bold text-[#4E7A82]"
                           >
                             {shortTitle(p.title)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                            <button
+                              onClick={() => toggleAssign(c.id, p.id)}
+                              aria-label={gc.removed}
+                              className="leading-none text-[#4E7A82]/60 transition hover:text-[#B0492F]"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                        <button
+                          onClick={() => { setAssignSearch(""); setAssignPickerFor(pickerOpen ? null : c.id); }}
+                          className="rounded-lg border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] px-2.5 py-1 text-[10.5px] font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                        >
+                          + {gc.assignProject}
+                        </button>
+                        {pickerOpen && (
+                          <div className="absolute left-0 top-full z-20 mt-1 w-64 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-2 shadow-lg">
+                            <input
+                              autoFocus
+                              value={assignSearch}
+                              onChange={(e) => setAssignSearch(e.target.value)}
+                              placeholder={gc.searchProject}
+                              className="mb-1.5 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#0c1424] px-2.5 py-1.5 text-xs text-[#16323D] dark:text-[#e8eefc] outline-none focus:border-[var(--brand)]"
+                            />
+                            <div className="max-h-48 overflow-y-auto">
+                              {pickerList.length === 0 ? (
+                                <div className="px-2 py-3 text-center text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+                                  {gc.noProjectsToAssign}
+                                </div>
+                              ) : pickerList.map((p) => (
+                                <button
+                                  key={p.id}
+                                  onClick={() => toggleAssign(c.id, p.id)}
+                                  className="block w-full truncate rounded-lg px-2.5 py-1.5 text-left text-xs text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#16233c]"
+                                >
+                                  {shortTitle(p.title)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div

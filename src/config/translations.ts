@@ -943,6 +943,9 @@ export const translations = {
         searchPlaceholder: "Search contacts...",
         noResults: "No contacts match your search.",
         specialties: "Specialty",
+        assignProject: "Assign project",
+        searchProject: "Search project...",
+        noProjectsToAssign: "No projects to assign.",
       },
       voice: {
         openerWorkflow: "What are we doing?",
@@ -1929,6 +1932,9 @@ export const translations = {
         searchPlaceholder: "Buscar contactos...",
         noResults: "Ningún contacto coincide con tu búsqueda.",
         specialties: "Especialidad",
+        assignProject: "Asignar proyecto",
+        searchProject: "Buscar proyecto...",
+        noProjectsToAssign: "No hay proyectos por asignar.",
       },
       voice: {
         openerWorkflow: "¿Qué hacemos?",
