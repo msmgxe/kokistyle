@@ -648,7 +648,7 @@ function buildEstimatePdf(
 
   // ── Firmas: ancladas al pie de la página para intentar caber en la 1ª ────────
   const sigLineY = 262;               // línea de firma cerca del pie (A4 usable ~285)
-  const sigImgW = 48, sigImgH = 20;   // firma digital del constructor sobre la línea
+  const sigImgW = 36, sigImgH = 24;   // firma del constructor (aspecto ~1.5, sin deformar)
   // Si el contenido ya bajó demasiado, el bloque no cabe → pasa a página nueva
   if (y + 6 > sigLineY - sigImgH) { doc.addPage(); }
   y = sigLineY;
