@@ -636,7 +636,7 @@ function buildEstimatePdf(
   y += 4;
   doc.setFont("helvetica", "italic");
   doc.setFontSize(7);
-  doc.setTextColor(170, 170, 170);
+  doc.setTextColor(22, 50, 61); // mismo color que los nombres de las firmas (bold)
   doc.text(
     EN
       ? `Contractor: ${branding.contractor}  ·  This estimate is valid for 30 days  ·  Any additional item will be charged with additional change order`
