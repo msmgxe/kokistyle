@@ -5,6 +5,7 @@ import { Mic, X, Loader2, CheckCircle, Keyboard, Send } from "lucide-react";
 import { useVoice } from "@/src/context/VoiceContext";
 import type { VoiceMeta } from "@/src/context/VoiceContext";
 import { supabase } from "@/src/lib/supabase";
+import { addProjectNote, noteDate } from "@/src/lib/notes";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import {
@@ -618,6 +619,16 @@ export default function VoiceFAB() {
       const msg = await saveAction(pendingAction.action, editableData, metaRef.current);
       await auditLog("confirmed", pendingAction.action, editableData);
       void learnFromConfirm(pendingAction.action, pendingAction.data, editableData);
+      if (pendingAction.action === "create_payment") {
+        const pid = editableData.__project_id ? String(editableData.__project_id) : metaRef.current.projectId;
+        const amt = Number(editableData.amount ?? 0);
+        if (pid && amt > 0) {
+          const method = editableData.method ? ` (${editableData.method})` : "";
+          void addProjectNote(pid, language === "en"
+            ? `💵 Payment received: ${fmt(amt)}${method} — ${noteDate("en")}`
+            : `💵 Ingreso recibido: ${fmt(amt)}${method} — ${noteDate("es")}`);
+        }
+      }
       setStatusMsg(msg);
       setPhase("success");
       window.dispatchEvent(new CustomEvent("kokivoice_saved", {
@@ -629,7 +640,7 @@ export default function VoiceFAB() {
       await auditLog("error", pendingAction.action, editableData, errMsg);
       showError(errMsg);
     }
-  }, [pendingAction, editableData, closeClean, showError, t, auditLog, learnFromConfirm]);
+  }, [pendingAction, editableData, closeClean, showError, t, language, auditLog, learnFromConfirm]);
 
   const handleCancel = useCallback(async () => {
     if (pendingAction) {

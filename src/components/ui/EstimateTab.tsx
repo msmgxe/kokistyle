@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
 import { openEstimatePdfInBrowser, getEstimatePdfBlob, exportInvoicePdf, openInvoicePdfInBrowser, getInvoicePdfBlob, type InvoiceData } from "@/src/lib/pdf";
+import { addProjectNote, noteDate } from "@/src/lib/notes";
 
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -972,6 +973,9 @@ export default function EstimateTab({
     setDepSaving(false);
     if (error || !data) { toast(EN ? "Error recording payment" : "Error al registrar el pago"); return; }
     setProjectPayments(p => [data as Payment, ...p]);
+    addProjectNote(project.id, EN
+      ? `💵 Payment received: ${money(amount)} (${depMethod})${depConcept.trim() ? " — " + depConcept.trim() : ""} — ${noteDate("en")}`
+      : `💵 Ingreso recibido: ${money(amount)} (${depMethod})${depConcept.trim() ? " — " + depConcept.trim() : ""} — ${noteDate("es")}`);
     setDepAmt(""); setDepConcept("");
     toast(`${EN ? "Payment added" : "Pago registrado"} · ${money(amount)}`);
     onRefresh();
@@ -1190,6 +1194,9 @@ export default function EstimateTab({
       const data = await res.json();
       if (data.ok) {
         toast(EN ? `Estimate sent to ${emailTo.trim()} ✓` : `Estimado enviado a ${emailTo.trim()} ✓`);
+        addProjectNote(project.id, EN
+          ? `📤 Estimate emailed to ${emailTo.trim()} — ${noteDate("en")}`
+          : `📤 Estimado enviado por correo a ${emailTo.trim()} — ${noteDate("es")}`);
         closeEmailModal();
       } else {
         toast((EN ? "Send failed: " : "Error al enviar: ") + (data.error ?? ""));
@@ -1273,7 +1280,13 @@ export default function EstimateTab({
         body: JSON.stringify({ to: invEmailTo.trim(), subject: invEmailSub.trim(), message: invEmailMsg, fileName: `Invoice - ${project.title}.pdf`, pdfBase64 }),
       });
       const data = await res.json();
-      if (data.ok) { toast(EN ? `Invoice sent to ${invEmailTo.trim()} ✓` : `Factura enviada a ${invEmailTo.trim()} ✓`); closeInvoiceModal(); }
+      if (data.ok) {
+        toast(EN ? `Invoice sent to ${invEmailTo.trim()} ✓` : `Factura enviada a ${invEmailTo.trim()} ✓`);
+        addProjectNote(project.id, EN
+          ? `📤 Invoice${invNo.trim() ? " #" + invNo.trim() : ""} emailed to ${invEmailTo.trim()} — ${noteDate("en")}`
+          : `📤 Factura${invNo.trim() ? " #" + invNo.trim() : ""} enviada por correo a ${invEmailTo.trim()} — ${noteDate("es")}`);
+        closeInvoiceModal();
+      }
       else toast((EN ? "Send failed: " : "Error al enviar: ") + (data.error ?? ""));
     } catch {
       toast(EN ? "Send failed — check your connection" : "Error al enviar — revisa tu conexión");

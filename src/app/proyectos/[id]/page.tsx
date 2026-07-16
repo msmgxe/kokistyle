@@ -44,6 +44,7 @@ import {
 import type {
   Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment,
 } from "@/src/types/project";
+import { addProjectNote, noteDate } from "@/src/lib/notes";
 import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -1204,6 +1205,9 @@ function PagosTab({
                 if (Number(vals.amount) <= 0) { toast(tp.payments.amountRequired); return; }
                 const { error } = await supabase.from("payments").insert({ project_id: project.id, ...vals });
                 if (error) { toast(tp.common.errorSaving + error.message); return; }
+                addProjectNote(project.id, language === "en"
+                  ? `💵 Payment received: ${money(Number(vals.amount))} (${vals.method}) — ${noteDate("en")}`
+                  : `💵 Ingreso recibido: ${money(Number(vals.amount))} (${vals.method}) — ${noteDate("es")}`);
                 onRefresh(); toast(tp.payments.incomeRecorded);
               },
             })}
