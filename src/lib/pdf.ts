@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import type { BudgetItem, Payment, Expense, Project, ProjectEstimate } from "@/src/types/project";
 import { money } from "./utils";
 import { branding } from "@/src/config/branding";
+import { CONTRACTOR_SIGNATURE } from "@/src/config/signature";
 
 const INK  = "#16323D";
 const MUTED = "#5C6A6E";
@@ -645,12 +646,22 @@ function buildEstimatePdf(
     { align: "center", maxWidth: CW },
   );
 
-  // ── Firmas: línea + rol + nombre (contratista izquierda · cliente derecha) ───
-  checkPage(44);
-  y += 24;
+  // ── Firmas: ancladas al pie de la página para intentar caber en la 1ª ────────
+  const sigLineY = 262;               // línea de firma cerca del pie (A4 usable ~285)
+  const sigImgW = 48, sigImgH = 20;   // firma digital del constructor sobre la línea
+  // Si el contenido ya bajó demasiado, el bloque no cabe → pasa a página nueva
+  if (y + 6 > sigLineY - sigImgH) { doc.addPage(); }
+  y = sigLineY;
   const sigW = 72;
   const slx1 = ML + 8, slx2 = slx1 + sigW;
   const srx2 = MR - 8, srx1 = srx2 - sigW;
+  // Firma digital del constructor sobre su línea (si está configurada)
+  if (CONTRACTOR_SIGNATURE) {
+    const fmt = /^data:image\/jpe?g/i.test(CONTRACTOR_SIGNATURE) ? "JPEG" : "PNG";
+    try {
+      doc.addImage(CONTRACTOR_SIGNATURE, fmt, (slx1 + slx2) / 2 - sigImgW / 2, y - sigImgH - 0.5, sigImgW, sigImgH);
+    } catch { /* firma inválida → se omite */ }
+  }
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.4);
   doc.line(slx1, y, slx2, y);
