@@ -18,6 +18,15 @@ function fmtDate(d: string) {
   return `${day}/${m}/${y}`;
 }
 
+// Modo inglés: "JULY, 2026" (mes en texto, coma, año) — como el letterhead impreso
+const MONTHS_EN = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+function fmtDateEN(d: string) {
+  if (!d) return "—";
+  const [y, m] = d.split("-");
+  return `${MONTHS_EN[parseInt(m, 10) - 1] ?? ""}, ${y}`;
+}
+
 function header(doc: jsPDF, title: string, project: Project) {
   const W = doc.internal.pageSize.getWidth();
 
@@ -281,32 +290,34 @@ function buildEstimatePdf(
     if (y + needed > 278) { doc.addPage(); y = 12; }
   }
 
-  // ── Centered header ────────────────────────────────────────────────────────
-  y = 7;
-  const badgeLabel = EN ? "ESTIMATE" : "ESTIMADO";
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(6);
-  const badgeW = doc.getTextWidth(badgeLabel) + 6;
-  doc.setFillColor(22, 50, 61);
-  doc.roundedRect(CX - badgeW / 2, y - 3.5, badgeW, 5, 1, 1, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.text(badgeLabel, CX, y, { align: "center" });
-  y += 6;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  // ── Letterhead header (empresa a la izquierda + badge PROPOSAL a la derecha) ─
+  y = 13;
+  doc.setFont("times", "bolditalic");
+  doc.setFontSize(21);
   doc.setTextColor(22, 50, 61);
-  doc.text(branding.companyName.toUpperCase(), CX, y, { align: "center" });
+  doc.text("LUXARIS DESIGN LLC.", ML, y);
+
+  const ppW = 36, ppH = 10, ppX = MR - ppW, ppY = 7;
+  doc.setFillColor(224, 224, 224);
+  doc.setDrawColor(110, 110, 110);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(ppX, ppY, ppW, ppH, 0.6, 0.6, "FD");
+  doc.setFont("times", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text(EN ? "PROPOSAL" : "PROPUESTA", ppX + ppW / 2, ppY + 6.6, { align: "center" });
+
+  y += 5.5;
+  doc.setFont("times", "italic");
+  doc.setFontSize(10);
+  doc.setTextColor(40, 40, 40);
+  doc.text(branding.slogan, ML + 2, y);
   y += 5;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(92, 106, 110);
-  doc.text(branding.slogan, CX, y, { align: "center" });
-  y += 4;
-  doc.text(`${branding.phone}  ·  ${branding.email}`, CX, y, { align: "center" });
-  y += 4;
-
+  doc.setFont("times", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(40, 40, 40);
+  doc.text(`Phone : ${branding.phone}     Email : ${branding.email}`, ML + 6, y);
+  y += 3;
   doc.setDrawColor(22, 50, 61);
   doc.setLineWidth(0.5);
   doc.line(ML, y, MR, y);
@@ -351,8 +362,8 @@ function buildEstimatePdf(
   ];
   const rightRows = [
     { l: EN ? "Contractor:" : "Contratista:", v: branding.contractor },
-    { l: EN ? "Start Date:"  : "Inicio:",      v: estimate.start_date ? fmtDate(estimate.start_date) : "—" },
-    { l: EN ? "End Date:"    : "Fecha fin:",   v: estimate.end_date   ? fmtDate(estimate.end_date)   : "—" },
+    { l: EN ? "Start Date:"  : "Inicio:",      v: estimate.start_date ? (EN ? fmtDateEN(estimate.start_date) : fmtDate(estimate.start_date)) : "—" },
+    { l: EN ? "End Date:"    : "Fecha fin:",   v: estimate.end_date   ? (EN ? fmtDateEN(estimate.end_date)   : fmtDate(estimate.end_date))   : "—" },
   ];
 
   doc.setFontSize(7.5);
@@ -643,6 +654,28 @@ function buildEstimatePdf(
     CX, y,
     { align: "center", maxWidth: CW },
   );
+
+  // ── Firmas: línea + rol + nombre (contratista izquierda · cliente derecha) ───
+  checkPage(44);
+  y += 24;
+  const sigW = 72;
+  const slx1 = ML + 8, slx2 = slx1 + sigW;
+  const srx2 = MR - 8, srx1 = srx2 - sigW;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.4);
+  doc.line(slx1, y, slx2, y);
+  doc.line(srx1, y, srx2, y);
+  y += 5;
+  doc.setFont("times", "italic");
+  doc.setFontSize(10.5);
+  doc.setTextColor(22, 50, 61);
+  doc.text(EN ? "CONTRACTOR" : "CONTRATISTA", (slx1 + slx2) / 2, y, { align: "center" });
+  doc.text(EN ? "CUSTOMER" : "CLIENTE", (srx1 + srx2) / 2, y, { align: "center" });
+  y += 5;
+  doc.setFont("times", "bolditalic");
+  doc.setFontSize(10.5);
+  doc.text(branding.contractor.toUpperCase(), (slx1 + slx2) / 2, y, { align: "center" });
+  doc.text((estimate.customer_name || "—").toUpperCase(), (srx1 + srx2) / 2, y, { align: "center" });
 
   const filename = `Estimate_${(estimate.project_title || "project").replace(/\s+/g, "_")}.pdf`;
   return { doc, filename };
