@@ -520,114 +520,74 @@ function buildEstimatePdf(
     y += 1.5;
   }
 
-  // ── Totals + payment schedule (2-column) ───────────────────────────────────
+  // ── Payment schedule (ancho completo) + totales debajo, a la derecha ───────
   y += 4;
-  checkPage(48);
+  const schedRowH = 9;
+  const schedBoxH = 9 + estimate.deposit_schedule.length * schedRowH + 1;
+  const belowH    = (discountAmt > 0 ? 15 : 0) + 14;
+  checkPage(schedBoxH + belowH + 8);
 
-  const totalsStartY = y;
-  const schedW       = 90;
-  const schedX       = ML;
-  const rightX       = ML + schedW + 5;
-  const rightBlockW  = CW - schedW - 5;
-
-  // Payment schedule (left column)
-  const schedBoxH = 7 + estimate.deposit_schedule.length * 11 + 2;
-  doc.setDrawColor(230, 221, 203);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(schedX, totalsStartY, schedW, schedBoxH, 2, 2, "D");
+  const schedX = ML, schedW = CW, schedY = y;
+  doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3);
+  doc.roundedRect(schedX, schedY, schedW, schedBoxH, 2, 2, "D");
 
   const schedTitle = EN ? "PAYMENT SCHEDULE" : "CALENDARIO DE PAGOS";
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(92, 106, 110);
-  doc.text(schedTitle, schedX + schedW / 2, totalsStartY + 4.5, { align: "center" });
+  doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(92, 106, 110);
+  doc.text(schedTitle, schedX + schedW / 2, schedY + 5, { align: "center" });
   const stw = doc.getTextWidth(schedTitle);
-  doc.setDrawColor(220, 212, 200);
-  doc.setLineWidth(0.15);
-  doc.line(schedX + schedW / 2 - stw / 2, totalsStartY + 5.5, schedX + schedW / 2 + stw / 2, totalsStartY + 5.5);
+  doc.setDrawColor(220, 212, 200); doc.setLineWidth(0.15);
+  doc.line(schedX + schedW / 2 - stw / 2, schedY + 6, schedX + schedW / 2 + stw / 2, schedY + 6);
 
-  const depRgb: [number, number, number][] = [
-    [57, 88, 134],
-    [78, 122, 130],
-    [79, 138, 99],
-  ];
-  let py = totalsStartY + 8;
+  const depRgb: [number, number, number][] = [[57, 88, 134], [78, 122, 130], [79, 138, 99]];
+  const amountX = schedX + schedW - 4;
+  const labelX  = schedX + 23;
+  let py = schedY + 9.5;
   for (let i = 0; i < estimate.deposit_schedule.length; i++) {
     const dep = estimate.deposit_schedule[i];
     const rgb = depRgb[i] ?? ([92, 106, 110] as [number, number, number]);
     doc.setFillColor(rgb[0], rgb[1], rgb[2]);
-    doc.roundedRect(schedX + 3, py, 14, 7, 1.5, 1.5, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`${dep.pct}%`, schedX + 10, py + 4.8, { align: "center" });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(22, 50, 61);
-    doc.text(money(grandTotal * dep.pct / 100), schedX + schedW - 3, py + 5.5, { align: "right" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
-    doc.setTextColor(92, 106, 110);
-    doc.text(EN ? dep.label_en : dep.label_es, schedX + 19, py + 5.5);
-    py += 11;
+    doc.roundedRect(schedX + 3, py, 15, 7, 1.5, 1.5, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+    doc.text(`${dep.pct}%`, schedX + 10.5, py + 4.8, { align: "center" });
+    // Monto a la derecha
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(22, 50, 61);
+    const amtStr = money(grandTotal * dep.pct / 100);
+    const amtW   = doc.getTextWidth(amtStr);
+    doc.text(amtStr, amountX, py + 4.9, { align: "right" });
+    // Glosa con maxWidth para no chocar con el monto
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(92, 106, 110);
+    doc.text(EN ? dep.label_en : dep.label_es, labelX, py + 4.9, { maxWidth: amountX - amtW - labelX - 6 });
+    py += schedRowH;
   }
 
-  // Grand total bar height — anchored to bottom of payment schedule box
-  const gtBarH = 14;
-  const gtY    = totalsStartY + schedBoxH - gtBarH;
-
-  // Discount rows (right column, top-aligned)
+  // Totales debajo del schedule, alineados a la derecha
+  let ty = schedY + schedBoxH + 5;
+  const totW = 84, tX = MR - totW;
   if (discountAmt > 0) {
-    const discBoxH   = 13;
-    const labelMaxW  = rightBlockW - 28;
-    doc.setFillColor(247, 243, 234);
-    doc.setDrawColor(230, 221, 203);
-    doc.setLineWidth(0.2);
-    doc.roundedRect(rightX, totalsStartY, rightBlockW, discBoxH, 1.5, 1.5, "FD");
-
-    // Labor subtotal row
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(92, 106, 110);
-    doc.text(
-      EN ? "Labor subtotal" : "Subtotal mano de obra",
-      rightX + 4, totalsStartY + 4.5,
-      { maxWidth: labelMaxW },
-    );
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(22, 50, 61);
-    doc.text(money(laborTotal), rightX + rightBlockW - 3, totalsStartY + 4.5, { align: "right" });
-
-    // Internal divider
-    doc.setDrawColor(220, 212, 200);
-    doc.setLineWidth(0.15);
-    doc.line(rightX + 2, totalsStartY + 7, rightX + rightBlockW - 2, totalsStartY + 7);
-
-    // Discount row — use plain hyphen, Helvetica doesn't render U+2212
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(92, 106, 110);
-    doc.text(
-      `${estimate.discount_label || "Discount"} (-${estimate.discount_pct}%)`,
-      rightX + 4, totalsStartY + 10.5,
-      { maxWidth: labelMaxW },
-    );
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(79, 138, 99);
-    doc.text(`-${money(discountAmt)}`, rightX + rightBlockW - 3, totalsStartY + 10.5, { align: "right" });
+    const boxH = 13;
+    doc.setFillColor(247, 243, 234); doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.2);
+    doc.roundedRect(tX, ty, totW, boxH, 1.5, 1.5, "FD");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(92, 106, 110);
+    doc.text(EN ? "Labor subtotal" : "Subtotal mano de obra", tX + 4, ty + 4.5, { maxWidth: totW - 28 });
+    doc.setFont("helvetica", "bold"); doc.setTextColor(22, 50, 61);
+    doc.text(money(laborTotal), tX + totW - 3, ty + 4.5, { align: "right" });
+    doc.setDrawColor(220, 212, 200); doc.setLineWidth(0.15);
+    doc.line(tX + 2, ty + 7, tX + totW - 2, ty + 7);
+    // Guion normal — Helvetica no renderiza U+2212
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(92, 106, 110);
+    doc.text(`${estimate.discount_label || "Discount"} (-${estimate.discount_pct}%)`, tX + 4, ty + 10.5, { maxWidth: totW - 28 });
+    doc.setFont("helvetica", "bold"); doc.setTextColor(79, 138, 99);
+    doc.text(`-${money(discountAmt)}`, tX + totW - 3, ty + 10.5, { align: "right" });
+    ty += boxH + 2;
   }
-
-  // Grand total bar — bottom-aligned with payment schedule rectangle
-  doc.setFillColor(22, 50, 61);
-  doc.roundedRect(rightX, gtY, rightBlockW, gtBarH, 2, 2, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", rightX + 5, gtY + 5);
+  const gtBarH = 14;
+  doc.setFillColor(22, 50, 61); doc.roundedRect(tX, ty, totW, gtBarH, 2, 2, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+  doc.text(EN ? "GRAND TOTAL" : "TOTAL FINAL", tX + 5, ty + 5.5);
   doc.setFontSize(13);
-  doc.text(money(grandTotal), rightX + rightBlockW - 4, gtY + 10.5, { align: "right" });
+  doc.text(money(grandTotal), tX + totW - 4, ty + 10.5, { align: "right" });
 
-  y = totalsStartY + schedBoxH + 2;
+  y = ty + gtBarH + 2;
 
   // ── Footer ─────────────────────────────────────────────────────────────────
   y += 5;
