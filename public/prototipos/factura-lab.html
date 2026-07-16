@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luxaris · Prototipo de Factura (3 opciones)</title>
+<style>
+  :root{
+    --ink:#16323D; --ink2:#0e2630; --navy:#395886; --navy-soft:#EDF3FB;
+    --cream:#F7F3EA; --cream2:#F1EEE6; --border:#E4DDCE; --border2:#D6CDB9;
+    --text:#17272C; --soft:#5C6A6E; --faint:#97A1A0;
+    --ok:#3E8E5F; --gold:#8A7A45; --danger:#B0492F;
+    --serif:"Times New Roman", Georgia, serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","DejaVu Sans Mono",ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream2);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* Toolbar */
+  .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 18px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+  .bar .logo{width:34px;height:34px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
+  .bar .ttl{font-weight:800;font-size:14px} .bar .sub{font-size:11px;color:var(--soft)}
+  .seg{display:inline-flex;background:var(--cream);border:1px solid var(--border);border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;color:var(--soft);font-weight:700;font-size:12.5px;padding:7px 14px;border-radius:999px}
+  .seg button.on{background:var(--ink);color:#fff}
+  .spacer{flex:1}
+  .btn{border:0;border-radius:999px;padding:10px 18px;font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn.pdf{background:var(--danger);color:#fff} .btn.print{background:var(--navy);color:#fff}
+  .btn[disabled]{opacity:.6}
+
+  .stage{display:grid;grid-template-columns:330px 1fr;gap:20px;padding:20px;max-width:1300px;margin:0 auto;align-items:start}
+  @media (max-width:900px){.stage{grid-template-columns:1fr}}
+
+  /* Builder */
+  .builder{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;position:sticky;top:78px}
+  .builder h3{margin:0 0 4px;font-size:14px}
+  .builder .hint{font-size:11.5px;color:var(--soft);margin:0 0 14px}
+  .fld{margin-bottom:10px}
+  .fld label{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+  .fld input{width:100%;border:1px solid var(--border);border-radius:9px;padding:8px 10px;font:inherit;font-size:13px;color:var(--text);background:var(--cream)}
+  .fld input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-soft)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .sect{margin:16px 0 8px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)}
+  .pay{display:flex;align-items:flex-start;gap:9px;border:1px solid var(--border);border-radius:11px;padding:9px 10px;margin-bottom:8px;background:var(--cream)}
+  .pay.on{border-color:var(--navy);background:var(--navy-soft)}
+  .pay input[type=checkbox]{margin-top:3px;width:16px;height:16px;accent-color:var(--navy);flex:none}
+  .pay .body{flex:1;min-width:0}
+  .pay .pct{display:inline-block;font-size:9px;font-weight:800;background:var(--ink);color:#fff;border-radius:5px;padding:1px 6px;margin-bottom:4px}
+  .pay .glosa{width:100%;border:0;border-bottom:1px dashed var(--border2);background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--text);padding:2px 0}
+  .pay .glosa:focus{outline:none;border-bottom-color:var(--navy)}
+  .pay .amt{font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap}
+  .notebox{margin-top:14px;font-size:11px;color:var(--soft);background:var(--cream);border:1px solid var(--border);border-radius:11px;padding:11px}
+  .notebox b{color:var(--text)}
+  .tag{display:inline-block;font-size:9.5px;font-weight:800;border-radius:5px;padding:1px 6px;margin:1px 2px 1px 0}
+  .tag.have{background:#E4F1E8;color:#2f5a41} .tag.new{background:#FBF3E1;color:#7a6230}
+
+  /* Invoice preview */
+  .paper-wrap{display:flex;justify-content:center}
+  .paper{width:720px;max-width:100%;background:#fff;box-shadow:0 12px 40px rgba(23,39,44,.14);border:1px solid var(--border)}
+  @media (max-width:900px){.paper{width:100%}}
+
+  /* shared invoice bits */
+  .lh-name{font-family:var(--serif);font-weight:700;font-style:italic;color:var(--ink);letter-spacing:.01em}
+  .inv-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+  .inv-tbl th{background:var(--ink);color:#fff;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;padding:8px 10px;text-align:left}
+  .inv-tbl th.r,.inv-tbl td.r{text-align:right}
+  .inv-tbl td{padding:9px 10px;border-bottom:1px solid var(--border)}
+  .inv-tbl tr:nth-child(even) td{background:var(--cream)}
+  .muted{color:var(--soft)} .b{font-weight:700}
+
+  /* ---- OPT 1 : Clásica (espejo del Estimate) ---- */
+  .o1{padding:34px 40px}
+  .o1 .head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+  .o1 .lh-name{font-size:26px}
+  .o1 .slogan{font-family:var(--serif);font-style:italic;font-size:12.5px;color:#3a3a3a;margin-top:3px}
+  .o1 .contact{font-family:var(--serif);font-size:11.5px;color:#3a3a3a;margin-top:2px}
+  .o1 .badge{border:1.5px solid var(--ink);border-radius:4px;padding:6px 16px;font-weight:800;letter-spacing:.08em;color:var(--ink);font-size:13px}
+  .o1 .meta{text-align:right;margin-top:8px;font-size:12px;font-weight:700;color:var(--ink)}
+  .o1 .rule{height:2px;background:var(--ink);margin:10px 0 16px}
+  .o1 .parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px}
+  .o1 .from .lab,.o1 .to .lab{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:3px}
+  .o1 .from div,.o1 .to div{font-size:12px;line-height:1.5}
+  .o1 .to .cname{font-weight:800;color:var(--ink)}
+  .o1 .totalrow{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin-top:14px}
+  .o1 .totalrow .lab{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--soft)}
+  .o1 .totalrow .amt{background:var(--ink);color:#fff;font-weight:800;font-size:16px;padding:8px 18px;border-radius:6px}
+  .o1 .foot{margin-top:22px;font-size:11.5px;color:var(--soft);line-height:1.6}
+  .o1 .thanks{text-align:center;font-weight:800;letter-spacing:.04em;color:var(--ink);margin-top:18px}
+
+  /* ---- OPT 2 : Ejecutiva (banda superior) ---- */
+  .o2 .band{background:var(--ink);color:#fff;padding:22px 34px;display:flex;justify-content:space-between;align-items:center}
+  .o2 .band .big{font-family:var(--serif);font-style:italic;font-weight:700;font-size:22px}
+  .o2 .band .inv{text-align:right}
+  .o2 .band .inv .t{font-size:20px;font-weight:800;letter-spacing:.14em}
+  .o2 .band .inv .m{font-size:11px;color:#A8C0BC;margin-top:2px}
+  .o2 .body2{padding:22px 34px}
+  .o2 .sub{font-family:var(--serif);font-style:italic;font-size:12px;color:#3a3a3a;margin-bottom:16px}
+  .o2 .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+  .o2 .card{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .o2 .card .h{background:var(--cream);border-bottom:1px solid var(--border);padding:7px 12px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)}
+  .o2 .card .c{padding:10px 12px;font-size:12px;line-height:1.55}
+  .o2 .card .c .cname{font-weight:800;color:var(--ink)}
+  .o2 .totbox{margin-top:16px;margin-left:auto;width:260px;background:var(--ink);color:#fff;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+  .o2 .totbox .l{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#A8C0BC}
+  .o2 .totbox .v{font-size:22px;font-weight:800}
+  .o2 .foot{padding:0 34px 26px;font-size:11.5px;color:var(--soft);line-height:1.6}
+  .o2 .thanks{padding:0 34px 8px;text-align:center;font-weight:800;color:var(--ink)}
+
+  /* ---- OPT 3 : Minimal ---- */
+  .o3{padding:40px 44px}
+  .o3 .top{display:flex;justify-content:space-between;align-items:flex-start}
+  .o3 .lh-name{font-size:19px}
+  .o3 .tiny{font-size:10.5px;color:var(--soft);margin-top:3px;font-family:var(--sans)}
+  .o3 .metaR{text-align:right}
+  .o3 .metaR .inv{font-size:11px;letter-spacing:.14em;color:var(--faint);font-weight:800;text-transform:uppercase}
+  .o3 .metaR .no{font-size:24px;font-weight:800;color:var(--ink)}
+  .o3 .metaR .dt{font-size:11px;color:var(--soft)}
+  .o3 .hr{height:1px;background:var(--border2);margin:20px 0}
+  .o3 .bill{display:flex;justify-content:space-between;gap:24px;font-size:12px}
+  .o3 .bill .lab{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+  .o3 .bill .cname{font-weight:800;color:var(--ink)}
+  .o3 .lines{margin:22px 0}
+  .o3 .line{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--border)}
+  .o3 .line .d{font-size:13px} .o3 .line .a{font-size:13px;font-weight:700}
+  .o3 .due{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:12px;border-top:2px solid var(--ink)}
+  .o3 .due .l{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--soft)}
+  .o3 .due .v{font-size:26px;font-weight:800;color:var(--navy)}
+  .o3 .foot{margin-top:26px;font-size:11px;color:var(--soft);line-height:1.7}
+
+  @media print{ .bar,.builder{display:none} .stage{display:block;padding:0} .paper{box-shadow:none;border:0;width:100%} @page{size:A4;margin:12mm} }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="logo">LD</span>
+  <span><span class="ttl">Prototipo de Factura</span><br><span class="sub">Luxaris Design · 3 opciones · datos en vivo</span></span>
+  <span class="spacer"></span>
+  <div class="seg" id="opts">
+    <button class="on" data-o="1">Opción 1 · Clásica</button>
+    <button data-o="2">Opción 2 · Ejecutiva</button>
+    <button data-o="3">Opción 3 · Minimal</button>
+  </div>
+  <button class="btn pdf" id="pdfBtn" onclick="savePdf()">🖨 Descargar PDF</button>
+  <button class="btn print" onclick="window.print()">Imprimir</button>
+</div>
+
+<div class="stage">
+  <!-- BUILDER -->
+  <aside class="builder">
+    <h3>Armar la factura</h3>
+    <p class="hint">La descripción sale del <b>Payment Schedule</b> del Estimate: marca qué pagos facturar y edita su glosa. El total se recalcula solo.</p>
+
+    <div class="two">
+      <div class="fld"><label>Invoice #</label><input id="inNo" value="123"></div>
+      <div class="fld"><label>Fecha</label><input id="inDate" value="FEB. 04, 2026"></div>
+    </div>
+
+    <div class="sect">Payment schedule (del Estimate)</div>
+    <div id="payList"></div>
+
+    <div class="sect">Cliente (TO)</div>
+    <div class="fld"><label>Nombre de contacto</label><input id="cName" value="Alicia Daniels"></div>
+    <div class="fld"><label>Empresa</label><input id="cCompany" value="CEM Aquatics"></div>
+    <div class="fld"><label>Dirección</label><input id="cAddr" value="Aqualina – South Tower – Unit #50, 17901 Collins Ave, Sunny Isles Beach, FL"></div>
+    <div class="two">
+      <div class="fld"><label>Teléfono</label><input id="cPhone" value="954-873-1822"></div>
+      <div class="fld"><label>Email</label><input id="cEmail" value="aliciad@cemaquatics.com"></div>
+    </div>
+
+    <div class="notebox">
+      <b>Campos del proyecto:</b><br>
+      <span class="tag have">customer_name ✓</span><span class="tag have">city ✓</span><span class="tag have">phone ✓</span>
+      <span class="tag new">company +</span><span class="tag new">address +</span><span class="tag new">email +</span><span class="tag new">website +</span>
+      <span class="tag new">invoice_no +</span><span class="tag new">invoice_date +</span><br>
+      <span style="color:var(--faint)">Los ✓ ya existen; los <b>+</b> los agregaríamos al proyecto/estimado.</span>
+    </div>
+  </aside>
+
+  <!-- PREVIEW -->
+  <div class="paper-wrap">
+    <div class="paper" id="paper"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* ── datos ── */
+const company = {
+  name:"LUXARIS DESIGN LLC.",
+  slogan:"Kitchen, Baths, Flooring, Painting & Design of South Florida",
+  phone:"561-305-6707", email:"luxaris25@yahoo.com",
+  addr:["23056 SW 55th Ave","Boca Raton, FL 33433","561-305-6707"],
+  contractor:"Jorge Saldarriaga",
+};
+let payments = [
+  { pct:50, glosa:"Deposit for South Tower – Unit #50", amount:2750, on:true },
+  { pct:25, glosa:"When tile is complete",               amount:1375, on:false },
+  { pct:25, glosa:"Final on completion",                 amount:1375, on:false },
+];
+function client(){ return {
+  name:val("cName"), company:val("cCompany"), addr:val("cAddr"),
+  phone:val("cPhone"), email:val("cEmail"),
+}; }
+function val(id){ return document.getElementById(id).value; }
+function money(n){ return "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function rows(){ return payments.filter(p=>p.on); }
+function total(){ return rows().reduce((s,p)=>s+p.amount,0); }
+
+let opt = 1;
+
+/* ── builder: lista de pagos ── */
+function renderPayList(){
+  const el = document.getElementById("payList");
+  el.innerHTML = payments.map((p,i)=>`
+    <div class="pay ${p.on?'on':''}">
+      <input type="checkbox" ${p.on?'checked':''} data-i="${i}">
+      <div class="body">
+        <span class="pct">${p.pct}%</span>
+        <input class="glosa" data-g="${i}" value="${p.glosa.replace(/"/g,'&quot;')}">
+      </div>
+      <span class="amt num">${money(p.amount)}</span>
+    </div>`).join("");
+  el.querySelectorAll('input[type=checkbox]').forEach(c=>c.addEventListener('change',e=>{ payments[+e.target.dataset.i].on=e.target.checked; renderPayList(); render(); }));
+  el.querySelectorAll('.glosa').forEach(g=>g.addEventListener('input',e=>{ payments[+e.target.dataset.g].glosa=e.target.value; render(); }));
+}
+
+/* ── plantillas ── */
+function tableRows(){
+  return rows().map(p=>`<tr><td class="num">1</td><td>${esc(p.glosa)}</td><td class="r muted">—</td><td class="r num b">${money(p.amount)}</td></tr>`).join("")
+    || `<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">Marca al menos un pago…</td></tr>`;
+}
+function esc(s){ return (s||"").replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function footNotes(){ return `Make all checks payable to <b>LUXARIS DESIGN LLC</b>.<br>Cualquier pregunta sobre esta factura: ${company.contractor} — ${company.phone} · ${company.email}`; }
+
+function opt1(){ const c=client(); return `<div class="o1">
+  <div class="head">
+    <div>
+      <div class="lh-name">${company.name}</div>
+      <div class="slogan">${company.slogan}</div>
+      <div class="contact">Phone : ${company.phone}&nbsp;&nbsp;&nbsp;Email : ${company.email}</div>
+    </div>
+    <div style="text-align:right">
+      <span class="badge">INVOICE</span>
+      <div class="meta">INVOICE # ${val("inNo")}<br>${val("inDate")}</div>
+    </div>
+  </div>
+  <div class="rule"></div>
+  <div class="parties">
+    <div class="from"><div class="lab">From</div>${company.addr.map(a=>`<div>${a}</div>`).join("")}</div>
+    <div class="to"><div class="lab">Bill to</div>
+      <div class="cname">${esc(c.name)}</div><div class="b">${esc(c.company)}</div>
+      <div>${esc(c.addr)}</div><div>${esc(c.phone)} · ${esc(c.email)}</div>
+    </div>
+  </div>
+  <table class="inv-tbl"><thead><tr><th style="width:70px">Quantity</th><th>Description</th><th class="r" style="width:90px">Unit price</th><th class="r" style="width:100px">Total</th></tr></thead>
+    <tbody>${tableRows()}</tbody></table>
+  <div class="totalrow"><span class="lab">Total due</span><span class="amt num">${money(total())}</span></div>
+  <div class="foot">${footNotes()}</div>
+  <div class="thanks">THANK YOU FOR YOUR BUSINESS!</div>
+</div>`; }
+
+function opt2(){ const c=client(); return `<div class="o2">
+  <div class="band">
+    <div class="big">${company.name}</div>
+    <div class="inv"><div class="t">INVOICE</div><div class="m"># ${val("inNo")} · ${val("inDate")}</div></div>
+  </div>
+  <div class="body2">
+    <div class="sub">${company.slogan} · Phone ${company.phone} · ${company.email}</div>
+    <div class="cards">
+      <div class="card"><div class="h">From</div><div class="c">${company.addr.join("<br>")}</div></div>
+      <div class="card"><div class="h">Bill to</div><div class="c"><span class="cname">${esc(c.name)}</span> · ${esc(c.company)}<br>${esc(c.addr)}<br>${esc(c.phone)} · ${esc(c.email)}</div></div>
+    </div>
+    <table class="inv-tbl"><thead><tr><th style="width:70px">Qty</th><th>Description</th><th class="r" style="width:90px">Unit</th><th class="r" style="width:100px">Total</th></tr></thead>
+      <tbody>${tableRows()}</tbody></table>
+    <div class="totbox"><span class="l">Total due</span><span class="v num">${money(total())}</span></div>
+  </div>
+  <div class="thanks">THANK YOU FOR YOUR BUSINESS!</div>
+  <div class="foot">${footNotes()}</div>
+</div>`; }
+
+function opt3(){ const c=client(); return `<div class="o3">
+  <div class="top">
+    <div><div class="lh-name">${company.name}</div><div class="tiny">${company.slogan}<br>${company.phone} · ${company.email}</div></div>
+    <div class="metaR"><div class="inv">Invoice</div><div class="no">#${val("inNo")}</div><div class="dt">${val("inDate")}</div></div>
+  </div>
+  <div class="hr"></div>
+  <div class="bill">
+    <div><div class="lab">From</div>${company.addr.join("<br>")}</div>
+    <div style="text-align:right"><div class="lab">Bill to</div><span class="cname">${esc(c.name)}</span><br>${esc(c.company)}<br>${esc(c.addr)}<br>${esc(c.phone)}</div>
+  </div>
+  <div class="lines">${ rows().map(p=>`<div class="line"><span class="d">${esc(p.glosa)}</span><span class="a num">${money(p.amount)}</span></div>`).join("") || '<div class="line"><span class="d muted">Marca al menos un pago…</span></div>' }</div>
+  <div class="due"><span class="l">Total due</span><span class="v num">${money(total())}</span></div>
+  <div class="foot">${footNotes()}</div>
+</div>`; }
+
+const TPL = {1:opt1,2:opt2,3:opt3};
+function render(){ document.getElementById("paper").innerHTML = TPL[opt](); }
+
+/* ── eventos ── */
+document.getElementById("opts").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  document.querySelectorAll("#opts button").forEach(x=>x.classList.toggle("on",x===b));
+  opt=+b.dataset.o; render();
+});
+["inNo","inDate","cName","cCompany","cAddr","cPhone","cEmail"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", render);
+});
+
+/* ── PDF (rasteriza la factura; en la app real será jsPDF vectorial) ── */
+async function savePdf(){
+  if(!window.html2canvas||!window.jspdf){ window.print(); return; }
+  const btn=document.getElementById("pdfBtn"), lbl=btn.innerHTML; btn.disabled=true; btn.innerHTML="⏳…";
+  try{
+    const canvas=await html2canvas(document.getElementById("paper"),{scale:2,backgroundColor:"#fff",useCORS:true});
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:"pt",format:"a4"});
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+    const iw=pw, ih=canvas.height*pw/canvas.width; let y=0,rem=ih;
+    const data=canvas.toDataURL("image/png");
+    pdf.addImage(data,"PNG",0,y,iw,ih,"inv","FAST"); rem-=ph;
+    while(rem>0){ y-=ph; pdf.addPage(); pdf.addImage(data,"PNG",0,y,iw,ih,"inv","FAST"); rem-=ph; }
+    pdf.save("Invoice-"+val("inNo")+"-Luxaris.pdf");
+  }catch(e){ console.error(e); window.print(); }
+  finally{ btn.disabled=false; btn.innerHTML=lbl; }
+}
+
+renderPayList(); render();
+</script>
+
+</body>
+</html>
