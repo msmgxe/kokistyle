@@ -46,6 +46,51 @@ function pidProp(projectIds: string[], description: string) {
   return p;
 }
 
+const normp = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// Resuelve un nombre hablado ("Jacuzzi") al id del proyecto, con matching
+// determinístico. El modelo pasa el nombre que dijo el usuario; el matching
+// título→id lo hace el servidor, que es confiable con títulos que empiezan con
+// fecha/código ("2026. 07 - JACUZZI").
+function resolveProjectId(hint: string | undefined | null, projects: { id: string; title: string }[]): string | null {
+  if (!projects.length) return null;
+  if (!hint) return projects.length === 1 ? projects[0].id : null;
+  const exact = projects.find(p => p.id === hint);
+  if (exact) return exact.id;
+  const n = normp(hint).trim();
+  const contains = projects.find(p => normp(p.title).includes(n) || n.includes(normp(p.title)));
+  if (contains) return contains.id;
+  // Palabras distintivas: descarta números/fechas y palabras cortas
+  const hintWords = n.split(/[^a-z0-9]+/).filter(w => w.length > 2 && !/^\d+$/.test(w));
+  if (hintWords.length) {
+    const scored = projects
+      .map(p => {
+        const tw = normp(p.title).split(/[^a-z0-9]+/);
+        return { id: p.id, score: hintWords.filter(w => tw.some(t => t.includes(w) || w.includes(t))).length };
+      })
+      .sort((a, b) => b.score - a.score);
+    if (scored[0]?.score > 0) return scored[0].id;
+  }
+  return projects.length === 1 ? projects[0].id : null;
+}
+
+// Detecta si el texto del usuario menciona un proyecto (por palabra distintiva
+// del título). A diferencia de resolveProjectId, NO cae al "único proyecto":
+// una pregunta global ("¿qué gasté en total?") no debe fijar proyecto. Alimenta
+// el `focus` que usa readTools como red de seguridad si el modelo llama una
+// consulta sin proyecto.
+function detectProjectMention(text: string, projects: { id: string; title: string }[]): { id: string; title: string } | null {
+  const n = normp(text);
+  const STOP = new Set(["para", "proyecto", "que", "the", "one", "del", "los", "las", "and", "por", "con", "obra", "unit", "tower", "north", "design", "remodeling"]);
+  let best: { id: string; title: string; score: number } | null = null;
+  for (const p of projects) {
+    const words = normp(p.title).split(/[^a-z0-9]+/).filter(w => w.length > 3 && !/^\d+$/.test(w) && !STOP.has(w));
+    const score = words.filter(w => n.includes(w)).length;
+    if (score > 0 && (!best || score > best.score)) best = { ...p, score };
+  }
+  return best ? { id: best.id, title: best.title } : null;
+}
+
 function writeTools(lang: Lang, projectIds: string[]): ToolSet {
   const methods = METHODS[lang];
   const es      = lang === "es";
@@ -217,12 +262,17 @@ function readTools(
   perms: Permissions | null,
   isSuperAdmin: boolean,
   projects: { id: string; title: string }[],
+  focusId: string | null,
 ): ToolSet {
   const es  = lang === "es";
   const can = (section: keyof Permissions) => isSuperAdmin || perms?.[section]?.view === true;
   const tools: ToolSet = {};
   const projectIds = projects.map(p => p.id);
   const titleOf = (id: string | null) => projects.find(p => p.id === id)?.title ?? null;
+  // Red de seguridad: si el modelo no pasa proyecto (o pasa algo que no resuelve)
+  // pero hay uno en foco, usamos ese. Cierra el caso donde Haiku llama la tool
+  // sin argumento de proyecto confiando en el contexto.
+  const resolveOrFocus = (hint: string | undefined) => resolveProjectId(hint, projects) ?? focusId;
 
   // La agenda es global y no depende de tener proyectos cargados
   if (isSuperAdmin) {
@@ -262,25 +312,30 @@ function readTools(
 
   if (!projectIds.length) return tools;
 
-  const pidProp = {
-    project_id: { type: "string" as const, enum: projectIds, description: es ? "Id del proyecto a consultar" : "Project id to look up" },
+  // El modelo pasa el NOMBRE (o parte) que dijo el usuario; resolveProjectId lo
+  // convierte al id en el servidor. Haiku pasa texto bien; UUIDs, mal.
+  const proyProp = {
+    proyecto: { type: "string" as const, description: es ? "Nombre o parte del nombre del proyecto (ej: \"Jacuzzi\", \"el de Brickell\")" : "Project name or part of it (e.g. \"Jacuzzi\", \"the Brickell one\")" },
   };
+  const notFound = es ? "No encontré ese proyecto" : "Project not found";
 
   if (can("notas")) {
     tools.consultar_notas = tool({
       description: es
         ? "Leer las notas de un proyecto, de la más reciente a la más vieja. Úsala para \"¿qué dice la última nota?\" o \"léeme las notas\"."
         : "Read a project's notes, newest first. Use for \"what does the last note say?\" or \"read me the notes\".",
-      inputSchema: jsonSchema<{ project_id: string; cuantas?: number }>({
+      inputSchema: jsonSchema<{ proyecto?: string; cuantas?: number }>({
         type: "object",
         properties: {
-          ...pidProp,
+          ...proyProp,
           cuantas: { type: "number", description: es ? "Cuántas notas traer (default 5, máx 15)" : "How many notes (default 5, max 15)" },
         },
-        required: ["project_id"],
+        required: [],
         additionalProperties: false,
       }),
-      execute: async ({ project_id, cuantas }) => {
+      execute: async ({ proyecto, cuantas }) => {
+        const project_id = resolveOrFocus(proyecto);
+        if (!project_id) return { error: notFound };
         const limit = Math.min(Math.max(Number(cuantas ?? 5), 1), 15);
         const { data } = await supabase
           .from("project_notes")
@@ -306,10 +361,12 @@ function readTools(
       description: es
         ? "Consultar dinero de un proyecto: presupuesto, cobrado, por cobrar, gastado y balance. Úsala para \"¿cuánto llevo cobrado?\", \"¿cuánto falta por cobrar?\", \"¿cuánto he gastado?\"."
         : "Look up a project's money: budget, collected, outstanding, spent, balance. Use for \"how much have I collected?\", \"how much is still owed?\".",
-      inputSchema: jsonSchema<{ project_id: string }>({
-        type: "object", properties: pidProp, required: ["project_id"], additionalProperties: false,
+      inputSchema: jsonSchema<{ proyecto?: string }>({
+        type: "object", properties: proyProp, required: [], additionalProperties: false,
       }),
-      execute: async ({ project_id }) => {
+      execute: async ({ proyecto }) => {
+        const project_id = resolveOrFocus(proyecto);
+        if (!project_id) return { error: notFound };
         const [{ data: pays }, { data: exps }, { data: proj }] = await Promise.all([
           supabase.from("payments").select("amount, date, method, type").eq("project_id", project_id),
           supabase.from("expenses").select("amount, date, payee_name, concept").eq("project_id", project_id),
@@ -336,16 +393,18 @@ function readTools(
       description: es
         ? "Consultar actividades y su estado. Con project_id, las de ese proyecto; SIN project_id, las de todos. Úsala para \"¿qué falta en Brickell?\", \"¿qué hay para hoy?\", \"¿qué tengo esta semana?\"."
         : "Look up tasks and their status. With project_id, that project's; WITHOUT it, across all projects. Use for \"what's pending?\", \"what's on for today?\".",
-      inputSchema: jsonSchema<{ project_id?: string; fecha?: string }>({
+      inputSchema: jsonSchema<{ proyecto?: string; fecha?: string }>({
         type: "object",
         properties: {
-          project_id: { ...pidProp.project_id, description: es ? "Omítelo para ver las tareas de todos los proyectos" : "Omit to see tasks across all projects" },
+          proyecto: { type: "string", description: es ? "Nombre o parte del nombre. OMÍTELO para ver las tareas de todos los proyectos." : "Project name or part of it. OMIT to see tasks across all projects." },
           fecha: { type: "string", description: es ? "YYYY-MM-DD para filtrar por día programado" : "YYYY-MM-DD to filter by scheduled day" },
         },
         required: [],
         additionalProperties: false,
       }),
-      execute: async ({ project_id, fecha }) => {
+      execute: async ({ proyecto, fecha }) => {
+        const project_id = proyecto ? resolveProjectId(proyecto, projects) : null;
+        if (proyecto && !project_id) return { error: notFound };
         let q = supabase.from("tasks").select("name, status, scheduled_date, project_id").limit(80);
         // Sin proyecto → solo los que este usuario ya puede ver (los que vinieron en el contexto)
         q = project_id ? q.eq("project_id", project_id) : q.in("project_id", projectIds);
@@ -370,14 +429,16 @@ function readTools(
   // dinero solo se incluye si tiene permiso de Cash Flow.
   tools.consultar_proyecto = tool({
     description: es
-      ? "Ficha de un proyecto: estado, cliente, dirección, fechas y un resumen de cómo va. Úsala para \"¿cómo va Brickell?\", \"¿de quién es Cocina Miami?\", \"¿cuándo empezó?\"."
-      : "A project's fact sheet: status, client, address, dates and a progress summary. Use for \"how's Brickell going?\", \"whose project is this?\".",
-    inputSchema: jsonSchema<{ project_id: string }>({
-      type: "object", properties: pidProp, required: ["project_id"], additionalProperties: false,
+      ? "Ficha de un proyecto: estado, cliente, dirección, fecha de inicio y un resumen de cómo va. Úsala para \"¿cómo va Brickell?\", \"¿de quién es Cocina Miami?\", \"¿cuándo empezó?\"."
+      : "A project's fact sheet: status, client, address, start date and a progress summary. Use for \"how's Brickell going?\", \"whose project is this?\".",
+    inputSchema: jsonSchema<{ proyecto?: string }>({
+      type: "object", properties: proyProp, required: [], additionalProperties: false,
     }),
-    execute: async ({ project_id }) => {
+    execute: async ({ proyecto }) => {
+      const project_id = resolveOrFocus(proyecto);
+      if (!project_id) return { error: notFound };
       const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }] = await Promise.all([
-        supabase.from("projects").select("title, client, address, status, budget, start_date, end_date").eq("id", project_id).single(),
+        supabase.from("projects").select("title, client, address, status, budget, start_date").eq("id", project_id).single(),
         supabase.from("tasks").select("status").eq("project_id", project_id),
         supabase.from("materials").select("bought").eq("project_id", project_id),
         supabase.from("payments").select("amount").eq("project_id", project_id),
@@ -396,7 +457,7 @@ function readTools(
       return {
         titulo: p.title, cliente: p.client, direccion: p.address,
         estado: ESTADOS[p.status] ?? p.status,
-        inicio: p.start_date, fin: p.end_date,
+        inicio: p.start_date,
         tareas: { total: t.length, hechas: t.filter(x => x.status === "done").length },
         materiales: { total: (mats ?? []).length, pendientes: (mats ?? []).filter(m => !m.bought).length },
         ...(dinero ? { dinero } : {}),
@@ -443,12 +504,14 @@ function readTools(
       description: es
         ? "Revisar qué le falta registrar a un proyecto: estimado, tareas, materiales, pagos, fechas. Úsala para \"¿qué me falta en Brickell?\", \"¿qué tengo incompleto?\"."
         : "Audit what a project is missing: estimate, tasks, materials, payments, dates. Use for \"what am I missing on Brickell?\".",
-      inputSchema: jsonSchema<{ project_id: string }>({
-        type: "object", properties: pidProp, required: ["project_id"], additionalProperties: false,
+      inputSchema: jsonSchema<{ proyecto?: string }>({
+        type: "object", properties: proyProp, required: [], additionalProperties: false,
       }),
-      execute: async ({ project_id }) => {
+      execute: async ({ proyecto }) => {
+        const project_id = resolveOrFocus(proyecto);
+        if (!project_id) return { error: notFound };
         const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }, { data: pc }] = await Promise.all([
-          supabase.from("projects").select("title, status, budget, end_date").eq("id", project_id).single(),
+          supabase.from("projects").select("title, status, budget").eq("id", project_id).single(),
           supabase.from("tasks").select("status, scheduled_date").eq("project_id", project_id),
           supabase.from("materials").select("bought, cost").eq("project_id", project_id),
           supabase.from("payments").select("amount").eq("project_id", project_id),
@@ -465,7 +528,6 @@ function readTools(
         if (!t.length) faltantes.push(es ? "No tiene ninguna actividad registrada" : "No tasks recorded");
         if (!(mats ?? []).length) faltantes.push(es ? "No tiene materiales en la lista de compras" : "No materials in the shopping list");
         if (!(pc ?? []).length) faltantes.push(es ? "No tiene a nadie del equipo asignado" : "Nobody from the team is assigned");
-        if (!p.end_date) faltantes.push(es ? "No tiene fecha de fin" : "No end date set");
         if (presupuesto > 0 && cobrado <= 0 && ["aprobado", "en_obra"].includes(p.status)) {
           faltantes.push(es ? "Está aprobado pero no hay ni un ingreso registrado" : "Approved but no income recorded");
         }
@@ -491,10 +553,12 @@ function readTools(
       description: es
         ? "Consultar materiales de un proyecto: comprados y pendientes. Úsala cuando pregunten qué falta comprar."
         : "Look up a project's materials: bought and pending. Use when asked what's left to buy.",
-      inputSchema: jsonSchema<{ project_id: string }>({
-        type: "object", properties: pidProp, required: ["project_id"], additionalProperties: false,
+      inputSchema: jsonSchema<{ proyecto?: string }>({
+        type: "object", properties: proyProp, required: [], additionalProperties: false,
       }),
-      execute: async ({ project_id }) => {
+      execute: async ({ proyecto }) => {
+        const project_id = resolveOrFocus(proyecto);
+        if (!project_id) return { error: notFound };
         const { data } = await supabase.from("materials").select("name, cost, supplier, bought").eq("project_id", project_id).limit(80);
         const rows = data ?? [];
         return {
@@ -562,14 +626,16 @@ WHERE THINGS GET SAVED — THIS MATTERS
 CONTEXT
 Active module: "${ctx}". Today: ${today}.
 Known contacts: ${contacts.length ? contacts.join(", ") : "none"}.
-Active projects (use these to resolve "the Brickell one"): ${projectsList}.
+Active projects: ${projectsList}.
+
 ${mem}
 TOOLS
 - Use a write tool the moment you have enough. The user sees an editable confirmation card before anything is saved, so don't over-interrogate — a good guess they can fix beats three questions.
 ${hasReadTools
-  ? `- Use the lookup tools to answer questions about their data, then reply in plain prose with the number they asked for. Don't dump the raw data — they are listening, not reading.
+  ? `- When the user asks about a project, CALL the lookup tool right away. Pass the exact word they said in "proyecto" (e.g. "Jacuzzi", "Brickell") — do NOT try to match it to a full title yourself, and do NOT ask "which project?". The server resolves the name and tells you if it truly doesn't exist. Titles often start with a date/code ("2026. 07 - JACUZZI") — that is normal; still just pass "Jacuzzi".
+- Then answer in plain prose with what they asked for. Don't dump the raw data — they are listening, not reading.
 - "outstanding" comes from the Estimate's Grand Total, which syncs when that tab is opened or saved. If it looks stale or the budget is 0, say so instead of stating it as fact.
-- If a lookup returns nothing, say so plainly. Never invent a figure.`
+- Only if the tool result itself says it found nothing, tell them plainly. Never invent a figure, and never refuse to look before calling the tool.`
   : "- You cannot look up figures. If they ask, tell them which tab to open."}
 `.trim();
 
@@ -594,14 +660,16 @@ DÓNDE SE GUARDAN LAS COSAS — ESTO IMPORTA
 CONTEXTO
 Módulo activo: "${ctx}". Hoy: ${today}.
 Contactos conocidos: ${contacts.length ? contacts.join(", ") : "ninguno"}.
-Proyectos activos (úsalos para resolver "el de Brickell"): ${projectsList}.
+Proyectos activos: ${projectsList}.
+
 ${mem}
 HERRAMIENTAS
 - Usa una herramienta de escritura en cuanto tengas lo suficiente. El usuario ve una tarjeta de confirmación editable antes de que se guarde nada, así que no interrogues de más — una buena suposición que él corrige vale más que tres preguntas.
 ${hasReadTools
-  ? `- Usa las herramientas de consulta para responder sobre sus datos, y contesta en prosa con el número que te pidieron. No vuelques los datos crudos — te están escuchando, no leyendo.
+  ? `- Cuando el usuario pregunte por un proyecto, LLAMA la herramienta de consulta de inmediato. Pasa en "proyecto" la palabra exacta que dijo (ej: "Jacuzzi", "Brickell") — NO trates de emparejarla tú con el título completo, y NO preguntes "¿cuál proyecto?". El servidor resuelve el nombre y te dice si de verdad no existe. Los títulos suelen empezar con fecha o código ("2026. 07 - JACUZZI") — es normal; igual pasa solo "Jacuzzi".
+- Luego contesta en prosa con lo que te pidieron. No vuelques los datos crudos — te están escuchando, no leyendo.
 - El "por cobrar" sale del Grand Total del Estimate, que se sincroniza al abrir o guardar ese tab. Si se ve desactualizado o el presupuesto es 0, dilo en vez de afirmarlo como un hecho.
-- Si una consulta no devuelve nada, dilo tal cual. Nunca inventes una cifra.`
+- Solo si el resultado de la herramienta dice que no encontró nada, dilo tal cual. Nunca inventes una cifra, y nunca te niegues a buscar antes de llamar la herramienta.`
   : "- No puedes consultar cifras. Si te preguntan, dile qué tab abrir."}
 `.trim();
 };
@@ -633,7 +701,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ type: "question", text: language === "en" ? "How can I help?" : "¿En qué te ayudo?" });
     }
 
-    const reads  = readTools(language, body.permissions ?? null, isSuperAdmin, projects);
+    // El proyecto en foco es la red de seguridad de la resolución server-side: el
+    // abierto en pantalla, o el que el usuario nombró por apodo en este turno. Si
+    // el modelo llama una consulta sin proyecto (o con uno que no resuelve), la
+    // herramienta cae a este foco. Así "¿qué me falta en Jacuzzi?" resuelve aunque
+    // el título sea "2026. 07 - JACUZZI".
+    const lastUser = [...messages].reverse().find(m => m.role === "user")?.content ?? "";
+    const focus = (projectTitle && projects.find(p => p.title === projectTitle)) || detectProjectMention(lastUser, projects);
+
+    const reads  = readTools(language, body.permissions ?? null, isSuperAdmin, projects, focus?.id ?? null);
     const tools: ToolSet = { ...writeTools(language, projects.map(p => p.id)), ...reads };
 
     // Proveedor explícito → usa ANTHROPIC_API_KEY directo (el string "anthropic/..." iba
@@ -646,7 +722,6 @@ export async function POST(req: NextRequest) {
       // el loop corta ahí y la tool call vuelve sin ejecutar.
       stopWhen: stepCountIs(4),
       // 0 la hacía repetir la MISMA pregunta textual cuando el dictado fallaba.
-      // Los inputSchema protegen la extracción, así que el margen es seguro.
       temperature: 0.5,
       tools,
       messages,
