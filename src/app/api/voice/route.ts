@@ -91,6 +91,30 @@ function detectProjectMention(text: string, projects: { id: string; title: strin
   return best ? { id: best.id, title: best.title } : null;
 }
 
+// El presupuesto que Katy debe usar es el Grand Total del Estimate, no
+// projects.budget: ese solo se sincroniza cuando alguien abre o guarda el tab
+// Estimate. Aquí se lee del estimado directo (misma lógica que el dashboard),
+// así "¿cuánto presupuesté?" funciona aunque nadie haya abierto el tab.
+// Devuelve null si el proyecto no tiene estimado.
+async function estimateGrandTotal(projectId: string): Promise<number | null> {
+  const { data: est } = await supabase
+    .from("project_estimates").select("id, discount_pct").eq("project_id", projectId).maybeSingle();
+  if (!est) return null;
+  const { data: secs } = await supabase
+    .from("estimate_sections")
+    .select("section_total, is_material_type, estimate_items(amount)")
+    .eq("estimate_id", est.id);
+  let all = 0, labor = 0;
+  for (const s of secs ?? []) {
+    const itemsSum = ((s.estimate_items ?? []) as Array<{ amount: number }>).reduce((a, i) => a + Number(i.amount ?? 0), 0);
+    const st = itemsSum > 0 ? itemsSum : Number(s.section_total ?? 0);
+    all += st;
+    if (!s.is_material_type) labor += st;
+  }
+  const disc = Math.round(labor * (Number(est.discount_pct ?? 0) / 100) * 100) / 100;
+  return all - disc;
+}
+
 function writeTools(lang: Lang, projectIds: string[]): ToolSet {
   const methods = METHODS[lang];
   const es      = lang === "es";
@@ -278,8 +302,8 @@ function readTools(
   if (isSuperAdmin) {
     tools.consultar_agenda = tool({
       description: es
-        ? "Consultar la agenda: citas, tareas y reuniones de un día. Úsala para \"¿qué tengo hoy?\", \"¿qué tengo mañana?\", \"¿qué hay esta semana?\"."
-        : "Look up the agenda: appointments, tasks and meetings for a day. Use for \"what do I have today?\", \"what's tomorrow?\".",
+        ? "Consultar la agenda de CUALQUIER día o rango — futuro O PASADO. Úsala para \"¿qué tengo hoy?\", \"¿qué tengo mañana?\", \"¿qué tuve ayer?\", \"¿qué hubo la semana pasada?\". Sí puedes ver el historial: pásale el rango de fechas."
+        : "Look up the agenda for ANY day or range — future OR PAST. Use for \"what do I have today?\", \"what did I have yesterday?\", \"what was last week?\". You CAN see history: just pass the date range.",
       inputSchema: jsonSchema<{ desde?: string; hasta?: string }>({
         type: "object",
         properties: {
@@ -367,18 +391,19 @@ function readTools(
       execute: async ({ proyecto }) => {
         const project_id = resolveOrFocus(proyecto);
         if (!project_id) return { error: notFound };
-        const [{ data: pays }, { data: exps }, { data: proj }] = await Promise.all([
+        const [{ data: pays }, { data: exps }, { data: proj }, estTotal] = await Promise.all([
           supabase.from("payments").select("amount, date, method, type").eq("project_id", project_id),
           supabase.from("expenses").select("amount, date, payee_name, concept").eq("project_id", project_id),
           supabase.from("projects").select("budget").eq("id", project_id).single(),
+          estimateGrandTotal(project_id),
         ]);
         const ingresos = (pays ?? []).reduce((s, p) => s + Number(p.amount ?? 0), 0);
         const egresos  = (exps ?? []).reduce((s, e) => s + Number(e.amount ?? 0), 0);
-        // projects.budget lo sincroniza EstimateTab con el Grand Total al cargar o guardar
-        // ese tab. Si el estimado cambió sin abrirlo, este número puede ir atrasado.
-        const presupuesto = Number(proj?.budget ?? 0);
+        // El estimado es la fuente de verdad; projects.budget es respaldo por si
+        // no hay estimado (o su sincronización quedó como único dato).
+        const presupuesto = estTotal ?? Number(proj?.budget ?? 0);
         return {
-          presupuesto,
+          presupuesto, tiene_estimado: estTotal !== null,
           ingresos, egresos, balance: ingresos - egresos,
           por_cobrar: presupuesto > 0 ? Math.max(0, presupuesto - ingresos) : null,
           n_ingresos: pays?.length ?? 0, n_egresos: exps?.length ?? 0,
@@ -437,11 +462,12 @@ function readTools(
     execute: async ({ proyecto }) => {
       const project_id = resolveOrFocus(proyecto);
       if (!project_id) return { error: notFound };
-      const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }] = await Promise.all([
+      const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }, estTotal] = await Promise.all([
         supabase.from("projects").select("title, client, address, status, budget, start_date").eq("id", project_id).single(),
         supabase.from("tasks").select("status").eq("project_id", project_id),
         supabase.from("materials").select("bought").eq("project_id", project_id),
         supabase.from("payments").select("amount").eq("project_id", project_id),
+        estimateGrandTotal(project_id),
       ]);
       if (!p) return { error: es ? "No encontré ese proyecto" : "Project not found" };
       const ESTADOS: Record<string, string> = es
@@ -450,7 +476,7 @@ function readTools(
       const t = tasks ?? [];
       const dinero = can("pagos")
         ? {
-            presupuesto: Number(p.budget ?? 0),
+            presupuesto: estTotal ?? Number(p.budget ?? 0),
             cobrado: (pays ?? []).reduce((s, x) => s + Number(x.amount ?? 0), 0),
           }
         : undefined;
@@ -510,21 +536,22 @@ function readTools(
       execute: async ({ proyecto }) => {
         const project_id = resolveOrFocus(proyecto);
         if (!project_id) return { error: notFound };
-        const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }, { data: pc }] = await Promise.all([
+        const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }, { data: pc }, estTotal] = await Promise.all([
           supabase.from("projects").select("title, status, budget").eq("id", project_id).single(),
           supabase.from("tasks").select("status, scheduled_date").eq("project_id", project_id),
           supabase.from("materials").select("bought, cost").eq("project_id", project_id),
           supabase.from("payments").select("amount").eq("project_id", project_id),
           supabase.from("project_contacts").select("contact_id").eq("project_id", project_id),
+          estimateGrandTotal(project_id),
         ]);
         if (!p) return { error: es ? "No encontré ese proyecto" : "Project not found" };
 
-        const presupuesto = Number(p.budget ?? 0);
+        const presupuesto = estTotal ?? Number(p.budget ?? 0);
         const cobrado = (pays ?? []).reduce((s, x) => s + Number(x.amount ?? 0), 0);
         const t = tasks ?? [];
         const faltantes: string[] = [];
 
-        if (presupuesto <= 0) faltantes.push(es ? "No tiene estimado (el presupuesto está en cero) — arma el Estimate" : "No estimate yet (budget is zero)");
+        if (estTotal === null && presupuesto <= 0) faltantes.push(es ? "No tiene estimado — arma el Estimate" : "No estimate yet");
         if (!t.length) faltantes.push(es ? "No tiene ninguna actividad registrada" : "No tasks recorded");
         if (!(mats ?? []).length) faltantes.push(es ? "No tiene materiales en la lista de compras" : "No materials in the shopping list");
         if (!(pc ?? []).length) faltantes.push(es ? "No tiene a nadie del equipo asignado" : "Nobody from the team is assigned");
