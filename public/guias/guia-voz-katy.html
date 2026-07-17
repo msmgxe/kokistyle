@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luxaris · Guía de voz Katy para el equipo</title>
 </head>
 <body>
-<title>Luxaris · Guía de voz Katy para el equipo</title>
 <style>
   :root {
     --ink: #16323D; --soft: #5C6A6E; --faint: #97A1A0;
     --paper: #FFFFFF; --cream: #F7F3EB; --panel: #F2EEE4;
     --line: #E3DAC8; --navy: #395886; --navy-soft: #EDF3FB;
-    --ok: #4F8A63; --ok-soft: #E7F1EA; --bad: #B0492F;
+    --ok: #4F8A63; --ok-soft: #E7F1EA; --bad: #B0492F; --bad-soft: #FDF2EF;
     --amber: #B98A2F; --amber-soft: #FBF5E6;
     --serif: "Bookman Old Style", "Book Antiqua", Palatino, "Palatino Linotype", Georgia, serif;
     --sans: "Segoe UI", "Avenir Next", system-ui, -apple-system, sans-serif;
@@ -120,6 +120,80 @@
   .formula .ex { margin-top: 12px; font-size: 13px; }
   .formula .ex .say { font-family: var(--mono); background: #fff; border: 1px solid #D5E1F2; border-radius: 8px; padding: 3px 8px; }
 
+  /* ── Infografía: matriz puedo / no puedo ── */
+  .matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+  @media (max-width: 620px) { .matrix { grid-template-columns: 1fr; } }
+  .mcol { border-radius: 15px; overflow: hidden; border: 1px solid var(--line); break-inside: avoid; }
+  .mcol .mh {
+    padding: 10px 14px; font-weight: 800; font-size: 13px; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mcol.yes .mh { background: var(--ok); }
+  .mcol.no  .mh { background: var(--bad); }
+  .mcol ul { list-style: none; margin: 0; padding: 8px 0; }
+  .mcol li {
+    display: flex; gap: 9px; padding: 6px 14px; font-size: 12.5px; line-height: 1.45; align-items: flex-start;
+  }
+  .mcol li .m { flex-shrink: 0; font-weight: 900; margin-top: 1px; }
+  .mcol.yes li .m { color: var(--ok); }
+  .mcol.no  li .m { color: var(--bad); }
+  .mcol.yes { background: var(--ok-soft); }
+  .mcol.no  { background: var(--bad-soft); }
+  .mcol li b { font-weight: 800; }
+  .mcol li .why { color: var(--soft); display: block; font-size: 11.5px; margin-top: 1px; }
+
+  /* ── Infografía: consultas ── */
+  .qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  @media (max-width: 620px) { .qgrid { grid-template-columns: 1fr; } }
+  .q {
+    border: 1px solid var(--line); border-left: 4px solid var(--navy); border-radius: 0 13px 13px 0;
+    background: var(--paper); padding: 12px 14px; break-inside: avoid;
+  }
+  .q .qt { font-weight: 800; font-size: 13px; display: flex; align-items: center; gap: 7px; }
+  .q .qs { font-family: var(--mono); font-size: 12px; color: var(--navy); background: var(--navy-soft);
+           border-radius: 7px; padding: 4px 9px; margin: 8px 0 6px; display: inline-block; }
+  .q .qa { font-size: 12px; color: var(--soft); line-height: 1.5; }
+  .q .qa b { color: var(--ink); }
+  .q .gate { font-size: 10.5px; color: var(--faint); margin-top: 7px; display: flex; align-items: center; gap: 5px; }
+
+  /* ── Infografía: flujo manos libres ── */
+  .flow { display: flex; align-items: stretch; gap: 0; margin-top: 8px; flex-wrap: wrap; }
+  .fstep {
+    flex: 1; min-width: 120px; background: var(--cream); border: 1px solid var(--line);
+    padding: 12px; text-align: center; position: relative;
+  }
+  .fstep:first-child { border-radius: 13px 0 0 13px; }
+  .fstep:last-child  { border-radius: 0 13px 13px 0; }
+  @media (max-width: 620px) { .fstep { border-radius: 13px !important; min-width: 100%; } }
+  .fstep .fi { font-size: 20px; }
+  .fstep .ft { font-size: 12px; font-weight: 800; margin-top: 4px; }
+  .fstep .fd { font-size: 11px; color: var(--soft); line-height: 1.4; margin-top: 2px; }
+  .fstep.loop { background: var(--ok-soft); border-color: #BFD9C7; }
+  .fstep.loop .ft { color: #35664A; }
+  .floop {
+    margin-top: 9px; background: var(--ok-soft); border: 1px dashed var(--ok);
+    border-radius: 11px; padding: 9px 13px; font-size: 12.5px; color: #35664A; text-align: center;
+  }
+  .floop b { font-weight: 800; }
+
+  /* ── Infografía: anatomía de la tarjeta ── */
+  .anat { border: 1px solid var(--line); border-radius: 15px; overflow: hidden; margin-top: 6px; break-inside: avoid; }
+  .anat .ah { background: var(--ink); color: #fff; padding: 9px 14px; font-size: 12px; font-weight: 800; }
+  .anat .ab { padding: 14px; background: var(--cream); }
+  .anat .dest {
+    display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 12px;
+  }
+  .anat .dest .dl { font-size: 9.5px; font-weight: 800; letter-spacing: .08em; color: var(--soft); text-transform: uppercase; }
+  .anat .dest .dv { font-size: 14px; font-weight: 800; color: var(--ink); }
+  .anat .row { display: flex; gap: 9px; margin-top: 8px; align-items: center; }
+  .anat .row .rl { width: 74px; flex-shrink: 0; font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: var(--soft); }
+  .anat .row .rv { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; }
+  .anat .note {
+    margin-top: 11px; font-size: 12px; color: var(--soft); display: flex; gap: 8px; align-items: flex-start;
+  }
+  .anat .note .ar { color: var(--bad); font-weight: 900; }
+
   /* Contextos — tarjetas */
   .ctx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
   @media (max-width: 620px) { .ctx-grid, .steps { grid-template-columns: 1fr; } }
@@ -166,6 +240,22 @@
   table.cheat .say { color: var(--ink); }
   .scroller { overflow-x: auto; }
 
+  /* Pruébalo tú mismo */
+  .checks { margin-top: 6px; }
+  .chk {
+    display: flex; gap: 11px; align-items: flex-start; padding: 9px 0;
+    border-bottom: 1px dashed var(--line); break-inside: avoid;
+  }
+  .chk:last-child { border-bottom: 0; }
+  .chk .box {
+    width: 17px; height: 17px; border: 2px solid var(--navy); border-radius: 5px;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .chk .ct { font-size: 12.5px; line-height: 1.5; }
+  .chk .ct .said { font-family: var(--mono); font-size: 11.5px; background: var(--cream); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+  .chk .ct .exp { color: var(--soft); display: block; margin-top: 2px; }
+  .chk .ct .exp b { color: var(--ok); }
+
   /* Tips */
   .tips { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 6px; }
   @media (max-width: 620px) { .tips { grid-template-columns: 1fr; } }
@@ -175,10 +265,12 @@
   .tip .x b { color: #7A6230; }
 
   .callout {
-    margin-top: 16px; border-left: 4px solid var(--bad); background: #FDF2EF;
+    margin-top: 16px; border-left: 4px solid var(--bad); background: var(--bad-soft);
     border-radius: 0 12px 12px 0; padding: 12px 15px; font-size: 12.5px; color: #7a3a2b;
   }
   .callout b { color: var(--bad); }
+  .callout.info { border-left-color: var(--navy); background: var(--navy-soft); color: #2c476e; }
+  .callout.info b { color: var(--navy); }
 
   footer.doc {
     margin-top: 34px; border-top: 2px solid var(--ink); padding: 18px 0 34px;
@@ -194,7 +286,7 @@
     .sheet { box-shadow: none; max-width: none; }
     .wrap { padding: 0 14mm; }
     .cover { padding: 22mm 14mm 14mm; }
-    .ctx, .step, .tip, .formula { break-inside: avoid; }
+    .ctx, .step, .tip, .formula, .mcol, .q, .anat, .chk { break-inside: avoid; }
     h2.section { break-after: avoid; }
     @page { size: A4; margin: 0; }
   }
@@ -209,30 +301,31 @@
 <div class="sheet">
   <div class="cover">
     <div class="brand">LUXARIS DESIGN · MANUAL DE CAMPO</div>
-    <h1>Habla con <b>Katy</b>.<br>Ella registra por ti.</h1>
-    <p class="sub">Guía rápida para el equipo: cómo dictar tareas, pagos, materiales, contactos y recordatorios sin teclear — desde la obra, el teléfono o la computadora.</p>
+    <h1>Habla con <b>Katy</b>.<br>Registra por ti — y ahora te responde.</h1>
+    <p class="sub">Guía para el equipo: cómo dictar tareas, pagos, materiales, contactos y recordatorios sin teclear — y cómo preguntarle por tu agenda, tus notas y tu dinero. Con lo que sí puede y lo que no.</p>
     <span class="who"><span class="k">K</span> Katy · asistente de voz de tu panel</span>
   </div>
 
   <div class="wrap">
-    <!-- CÓMO FUNCIONA -->
+
+    <!-- 1 · CÓMO FUNCIONA -->
     <h2 class="section"><span class="n">1</span> Cómo funciona</h2>
-    <p class="lead">Tres pasos. Katy siempre te muestra una tarjeta para revisar antes de guardar — nada se registra sin tu confirmación.</p>
+    <p class="lead">Tres pasos. Katy siempre te muestra una tarjeta antes de guardar — nada se registra sin tu confirmación.</p>
     <div class="steps">
       <div class="step">
         <div class="dot">1</div>
         <h3>Toca el micrófono 🎙</h3>
-        <p>El botón rojo abajo a la derecha en cualquier pantalla. Escucha al instante — habla apenas lo toques.</p>
+        <p>El botón abajo a la derecha, en cualquier pantalla. Escucha al instante — habla apenas lo toques. ¿Sin micrófono o mucho ruido? El botón ⌨ de al lado abre un panel para escribir.</p>
       </div>
       <div class="step">
         <div class="dot">2</div>
         <h3>Di lo que quieres</h3>
-        <p>En español normal, como se lo dirías a un compañero. Haz una pausa de ~2 seg al terminar y Katy procesa.</p>
+        <p>En español normal, como se lo dirías a un compañero. Dilo todo de un tirón: entre más completo, menos te pregunta.</p>
       </div>
       <div class="step">
         <div class="dot">3</div>
         <h3>Revisa y confirma</h3>
-        <p>Aparece una tarjeta con los datos. Corrige lo que haga falta, elige el proyecto si te lo pide, y toca ✓ Confirmar.</p>
+        <p>Katy te repite lo que entendió y muestra la tarjeta. Di <b>“sí”</b> o toca ✓ Confirmar. Corrige cualquier campo antes.</p>
       </div>
     </div>
 
@@ -246,118 +339,311 @@
         <span style="font-size:11px;color:#97A1A0;margin-left:6px">(proyecto y cuándo son opcionales)</span>
       </div>
       <div class="ex">
-        Ej.: <span class="say">“Agregar <b>tarea</b> comprar tile <b>para Cocina Brickell</b> <b>mañana</b>”</span>
+        Ej.: <span class="say">“Agregar <b>material</b> tile por 800 de Home Depot <b>para Cocina Brickell</b>”</span>
       </div>
     </div>
 
-    <!-- POR CONTEXTO -->
-    <h2 class="section"><span class="n">2</span> Qué decir en cada parte</h2>
-    <p class="lead">Katy entiende por dónde vas: si estás <b>dentro de un proyecto</b>, guarda ahí sin preguntar. Si estás en el Panel o en “Hoy”, te deja elegir el proyecto en la tarjeta.</p>
+    <div class="callout info">
+      <b>Dilo todo junto.</b> Katy solo pregunta lo que de verdad falta. Si dices “agrega el tile por 800 de Home Depot”, no te hace ni una pregunta: va directo a la tarjeta. Si dices solo “agrega un material”, ahí sí te preguntará cuál.
+    </div>
 
+    <!-- 2 · QUÉ PUEDE Y QUÉ NO -->
+    <h2 class="section"><span class="n">2</span> Qué puede y qué no puede</h2>
+    <p class="lead">Lo más importante de esta guía. Katy es muy buena en lo suyo y no hace nada fuera de eso — si le pides algo de la derecha, te lo dirá.</p>
+    <div class="matrix">
+      <div class="mcol yes">
+        <div class="mh">✅ Sí puede</div>
+        <ul>
+          <li><span class="m">✓</span><span><b>Registrar 9 cosas:</b> proyecto, ingreso, egreso, tarea, material, línea de presupuesto, contacto, cambio de estado de una tarea y entrada de agenda.</span></li>
+          <li><span class="m">✓</span><span><b>Responder sobre tus datos:</b> agenda del día, notas de un proyecto, dinero, tareas y materiales. <span class="why">Ver la sección 3.</span></span></li>
+          <li><span class="m">✓</span><span><b>Leerte las respuestas en voz alta</b> <span class="why">Si preguntaste hablando, contesta hablando.</span></span></li>
+          <li><span class="m">✓</span><span><b>Conversar normal</b> <span class="why">Salúdala, pregúntale qué puede hacer, corrígela a media frase.</span></span></li>
+          <li><span class="m">✓</span><span><b>Entender “el de Brickell”</b> <span class="why">Conoce tus proyectos activos por nombre.</span></span></li>
+          <li><span class="m">✓</span><span><b>Trabajar en español o inglés</b> <span class="why">Sigue el idioma del panel.</span></span></li>
+          <li><span class="m">✓</span><span><b>Seguir escuchando sin que la toques</b> <span class="why">Modo manos libres — sección 5.</span></span></li>
+        </ul>
+      </div>
+      <div class="mcol no">
+        <div class="mh">❌ No puede</div>
+        <ul>
+          <li><span class="m">✕</span><span><b>Despertar sola con “hey Katy”</b> <span class="why">Hay que tocar el micrófono. Con la app cerrada o la pantalla apagada el navegador apaga el micrófono — eso no lo arregla ningún código.</span></span></li>
+          <li><span class="m">✕</span><span><b>Borrar nada</b> <span class="why">Solo crea. Para borrar, entra al tab.</span></span></li>
+          <li><span class="m">✕</span><span><b>Editar lo ya guardado</b> <span class="why">La única excepción es el estado de una tarea.</span></span></li>
+          <li><span class="m">✕</span><span><b>Decirte qué te falta registrar</b> <span class="why">No audita tus proyectos. Eso lo ves en el Dashboard.</span></span></li>
+          <li><span class="m">✕</span><span><b>Darte las tareas de todos los proyectos juntas</b> <span class="why">Necesita un proyecto. Para el día completo usa la vista <b>Hoy</b>.</span></span></li>
+          <li><span class="m">✕</span><span><b>Fotos, PDFs ni correos</b> <span class="why">Eso se hace desde sus tabs.</span></span></li>
+          <li><span class="m">✕</span><span><b>Inventar</b> <span class="why">Si no encuentra el dato, lo dice. No adivina cifras.</span></span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 3 · PREGUNTARLE COSAS -->
+    <h2 class="section"><span class="n">3</span> Preguntarle cosas (no solo dictarle)</h2>
+    <p class="lead">Katy consulta tus datos y te contesta hablando. Cinco tipos de pregunta. Lo que puede responder depende de tus permisos: un co-worker no escucha montos.</p>
+    <div class="qgrid">
+      <div class="q">
+        <div class="qt">📅 Tu agenda del día</div>
+        <div class="qs">“¿Qué tengo hoy?”</div>
+        <div class="qa">También <b>“¿qué tengo mañana?”</b> o <b>“¿qué hay esta semana?”</b>. Te lee las citas, tareas y reuniones con su hora y si ya están hechas.</div>
+        <div class="gate">🔒 Solo superadmin</div>
+      </div>
+      <div class="q">
+        <div class="qt">📝 Las notas de un proyecto</div>
+        <div class="qs">“Léeme las notas de Cocina Miami”</div>
+        <div class="qa">Te lee las últimas notas, de la más nueva a la más vieja, con su fecha. Puedes pedir <b>“las últimas tres”</b>.</div>
+        <div class="gate">🔒 Requiere permiso de Notas</div>
+      </div>
+      <div class="q">
+        <div class="qt">💵 El dinero</div>
+        <div class="qs">“¿Cuánto llevo cobrado en Brickell?”</div>
+        <div class="qa">Presupuesto, <b>cobrado</b>, <b>por cobrar</b>, gastado y balance. También <b>“¿cuánto he gastado?”</b> o <b>“¿en qué se fue el dinero?”</b>.</div>
+        <div class="gate">🔒 Requiere permiso de Cash Flow</div>
+      </div>
+      <div class="q">
+        <div class="qt">✅ Las tareas de un proyecto</div>
+        <div class="qs">“¿Qué falta en Cocina Miami?”</div>
+        <div class="qa">Cuántas hay por hacer, en proceso y hechas. Puedes acotar por día: <b>“¿qué hay para el viernes en Brickell?”</b>.</div>
+        <div class="gate">🔒 Requiere permiso de Tareas</div>
+      </div>
+      <div class="q">
+        <div class="qt">🧱 Los materiales</div>
+        <div class="qs">“¿Qué falta comprar en Brickell?”</div>
+        <div class="qa">Lo pendiente con su proveedor y cuánto suma, más cuántos ya están comprados.</div>
+        <div class="gate">🔒 Requiere permiso de Materiales</div>
+      </div>
+      <div class="q" style="border-left-color:var(--amber)">
+        <div class="qt">🔗 Preguntar y actuar seguido</div>
+        <div class="qs">“¿Qué falta comprar? … agenda eso para mañana”</div>
+        <div class="qa">Pregunta primero y luego dicta el recordatorio: Katy mantiene el hilo dentro de la misma conversación.</div>
+        <div class="gate">💡 Funciona en la misma sesión</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>Ojo con el “por cobrar”.</b> Sale del <b>Grand Total del Estimate</b>, y ese número se sincroniza cuando abres o guardas el tab Estimate. Si cambiaste el estimado y nunca abriste ese tab, el “por cobrar” puede ir atrasado. Katy te lo advierte si el presupuesto está en cero, pero la fuente de verdad siempre es el tab Estimate.
+    </div>
+
+    <!-- 4 · DÓNDE SE GUARDA -->
+    <h2 class="section"><span class="n">4</span> Dónde se guarda — míralo antes de confirmar</h2>
+    <p class="lead">Antes, Katy podía guardar en un proyecto que no nombraste y no te lo decía. Ya no: la tarjeta <b>siempre</b> muestra el destino, y el mensaje de guardado también lo nombra.</p>
+    <div class="anat">
+      <div class="ah">🎙 Katy · Revisa y confirma</div>
+      <div class="ab">
+        <div class="dest">
+          <span class="dl">Se guardará en</span>
+          <span class="dv">Cocina Miami</span>
+        </div>
+        <div class="row"><span class="rl">Monto</span><span class="rv">4000</span></div>
+        <div class="row"><span class="rl">Método</span><span class="rv">Zelle</span></div>
+        <div class="row"><span class="rl">Tipo</span><span class="rv">abono</span></div>
+        <div class="note"><span class="ar">↑</span><span>Esta franja es la más importante de la tarjeta. Si estás en el Dashboard sin proyecto abierto, Katy propone el <b>último que usaste</b> — cómodo, pero revísalo. Si aparece en rojo diciendo <b>“Elige un proyecto”</b>, no podrás confirmar hasta escoger uno.</span></div>
+      </div>
+    </div>
+    <div class="callout info">
+      <b>Y al guardar te lo dice.</b> Ya no verás “Ingreso de $4,000 guardado” a secas: ahora dice <b>“Ingreso de $4,000 guardado en Cocina Miami”</b>. Si estás en modo voz, te lo dice en voz alta.
+    </div>
+
+    <!-- 5 · MANOS LIBRES -->
+    <h2 class="section"><span class="n">5</span> Manos libres — para la obra</h2>
+    <p class="lead">Antes cada registro cerraba la sesión y había que volver a tocar el micrófono. Ahora tocas una vez y sigues hablando hasta que digas que ya.</p>
+    <div class="flow">
+      <div class="fstep">
+        <div class="fi">🎙</div>
+        <div class="ft">Tocas una vez</div>
+        <div class="fd">Solo al principio</div>
+      </div>
+      <div class="fstep">
+        <div class="fi">🗣</div>
+        <div class="ft">Dictas</div>
+        <div class="fd">“Agrega un egreso de 500 a Jorge”</div>
+      </div>
+      <div class="fstep">
+        <div class="fi">💬</div>
+        <div class="ft">Katy confirma</div>
+        <div class="fd">“Ok, egreso de $500 a Jorge en Brickell. ¿Confirmo?”</div>
+      </div>
+      <div class="fstep loop">
+        <div class="fi">✅</div>
+        <div class="ft">Dices “sí”</div>
+        <div class="fd">Guarda y vuelve a escuchar</div>
+      </div>
+    </div>
+    <div class="floop">
+      ↻ <b>Y sigue viva:</b> “Listo, guardado en Brickell. ¿Algo más?” → dictas el siguiente sin tocar nada. Cierra diciendo <b>“listo”</b>, <b>“ya”</b>, <b>“nada más”</b> o <b>“gracias”</b>.
+    </div>
+    <div class="tips" style="margin-top:14px">
+      <div class="tip">
+        <span class="e">👍</span>
+        <span class="x"><b>“Sí” corto = guardar.</b> Vale “sí”, “dale”, “ok”, “confirma”, “guarda”. Para descartar: “no” o “cancela”.</span>
+      </div>
+      <div class="tip">
+        <span class="e">✋</span>
+        <span class="x"><b>Frase larga = corrección.</b> Si dices “sí pero cambia el monto a 500”, <b>no</b> guarda: lo toma como corrección y ajusta la tarjeta. El “sí” solo cuenta si va solo.</span>
+      </div>
+      <div class="tip">
+        <span class="e">🔘</span>
+        <span class="x"><b>Los botones siguen ahí.</b> Puedes tocar ✓ Confirmar o Cancelar en cualquier momento — no tienes que hablar.</span>
+      </div>
+      <div class="tip">
+        <span class="e">🤫</span>
+        <span class="x"><b>Si te quedas callado</b> tres veces seguidas, Katy cierra sola. No deja el micrófono abierto para siempre.</span>
+      </div>
+    </div>
+
+    <!-- 6 · DESDE DÓNDE -->
+    <h2 class="section"><span class="n">6</span> Desde dónde funciona cada cosa</h2>
+    <p class="lead">El micrófono está en todas las pantallas y Katy sabe dónde estás parado. Dentro de un proyecto no hace falta nombrarlo; desde el Dashboard, nómbralo o revisa la franja de destino.</p>
     <div class="ctx-grid">
       <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#EDF3FB">📋</span><div><div class="t">Nuevo proyecto</div><div class="m">Desde cualquier pantalla</div></div></div>
+        <div class="hd">
+          <div class="ico" style="background:#EDF3FB">📊</div>
+          <div><div class="t">Dashboard</div><div class="m">Cualquier proyecto — nómbralo</div></div>
+        </div>
         <div class="bd">
-          <div class="bubble">Crear proyecto <em>Cocina Brickell</em> para <em>Ana Reyes</em>, presupuesto <em>20 mil</em></div>
-          <div class="reply"><span class="kk">K</span> Muestra la tarjeta con nombre, cliente y monto para confirmar.</div>
+          <div class="bubble">Crear proyecto <em>Cocina Miami</em> para Jennifer Walsh</div>
+          <div class="reply"><span class="kk">K</span><span>“Listo, creo Cocina Miami para Jennifer. ¿Presupuesto?”</span></div>
+          <div class="bubble">Agrega un egreso de 500 a Jorge <em>en el de Brickell</em></div>
+          <div class="reply"><span class="kk">K</span><span>Reconoce “el de Brickell” y lo pone en la franja de destino.</span></div>
         </div>
       </div>
-
       <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#EDF3FB">✅</span><div><div class="t">Tareas / actividades</div><div class="m">Day Planner · Gantt · Hoy</div></div></div>
+        <div class="hd">
+          <div class="ico" style="background:#E7F1EA">💵</div>
+          <div><div class="t">Dentro de un proyecto · Cash Flow</div><div class="m">El proyecto ya es el contexto</div></div>
+        </div>
         <div class="bd">
-          <div class="bubble">Agregar tarea <em>instalar tile en el baño</em></div>
-          <div class="bubble">Pasar <em>demolición</em> a <em>hecho</em></div>
-          <div class="reply"><span class="kk">K</span> Fuera de un proyecto, elige el proyecto en la tarjeta.</div>
+          <div class="bubble">Agregar ingreso de <em>4 mil</em> por Zelle</div>
+          <div class="reply"><span class="kk">K</span><span>“Ok, ingreso de $4,000 por Zelle. ¿Confirmo?” — no pregunta el proyecto.</span></div>
+          <div class="bubble">¿Cuánto <em>falta por cobrar</em>?</div>
+          <div class="reply"><span class="kk">K</span><span>Consulta y te lo dice hablando.</span></div>
         </div>
       </div>
-
       <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#E7F1EA">💵</span><div><div class="t">Ingresos (pagos)</div><div class="m">Cash Flow → Ingresos</div></div></div>
+        <div class="hd">
+          <div class="ico" style="background:#EDE3CF">🧱</div>
+          <div><div class="t">Materiales · Presupuesto</div><div class="m">Compras y partidas</div></div>
+        </div>
         <div class="bd">
-          <div class="bubble">Registrar pago de <em>4 mil</em> por <em>Zelle</em></div>
-          <div class="reply"><span class="kk">K</span> Detecta método (Efectivo/Zelle/Transferencia) y tipo (anticipo/abono/final).</div>
+          <div class="bubble">Agregar material <em>tile por 800</em> de Home Depot</div>
+          <div class="reply"><span class="kk">K</span><span>Tarjeta directa, sin preguntas.</span></div>
+          <div class="bubble">Agregar item de presupuesto <em>plomería 1200</em> mano de obra</div>
+          <div class="reply"><span class="kk">K</span><span>Entiende “mano” vs “material”.</span></div>
         </div>
       </div>
-
       <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#FDF0ED">🧾</span><div><div class="t">Egresos (gastos)</div><div class="m">Cash Flow → Egresos</div></div></div>
+        <div class="hd">
+          <div class="ico" style="background:#FBF5E6">📅</div>
+          <div><div class="t">Agenda · Recordatorios</div><div class="m">Desde cualquier pantalla</div></div>
+        </div>
         <div class="bd">
-          <div class="bubble">Egreso de <em>500</em> a <em>Home Depot</em> por <em>herramientas</em></div>
-          <div class="reply"><span class="kk">K</span> Si falta el monto o el concepto, te lo pregunta.</div>
+          <div class="bubble">Recuérdame la <em>inspección mañana a las 9</em></div>
+          <div class="reply"><span class="kk">K</span><span>Resuelve “mañana” a fecha real y le pone aviso.</span></div>
+          <div class="bubble">Avísame <em>cada día</em> hasta el jueves lo del permiso</div>
+          <div class="reply"><span class="kk">K</span><span>Entiende que debe insistir a diario.</span></div>
         </div>
       </div>
-
       <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#DCE8E9">🛒</span><div><div class="t">Materiales</div><div class="m">Tab Materials</div></div></div>
+        <div class="hd">
+          <div class="ico" style="background:#DCE8E9">👷</div>
+          <div><div class="t">Contactos</div><div class="m">Co-worker, cliente o amistad</div></div>
+        </div>
         <div class="bd">
-          <div class="bubble">Agregar material <em>tile 24x48</em>, <em>800 dólares</em> de <em>Home Depot</em></div>
+          <div class="bubble">Agrega a <em>Jorge el plomero</em>, 786-555-1234</div>
+          <div class="reply"><span class="kk">K</span><span>Saca tipo, nombre, teléfono y especialidad de una sola frase.</span></div>
         </div>
       </div>
-
       <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#EDE3CF">💰</span><div><div class="t">Partidas del estimado</div><div class="m">Tab Estimate</div></div></div>
-        <div class="bd">
-          <div class="bubble">Agregar partida <em>plomería</em> por <em>1200</em></div>
+        <div class="hd">
+          <div class="ico" style="background:#F0DBD2">✅</div>
+          <div><div class="t">Tareas · Day Planner</div><div class="m">Crear y mover de estado</div></div>
         </div>
-      </div>
-
-      <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#F0E8F7">👷</span><div><div class="t">Contactos</div><div class="m">Katy pregunta paso a paso</div></div></div>
         <div class="bd">
-          <div class="bubble">Agregar contacto <em>Jorge</em>, <em>plomero</em></div>
-          <div class="reply"><span class="kk">K</span> “¿Co-worker, cliente o amistad?” → “¿Teléfono?” → “¿Especialidad?” → “¿Tarifa?”</div>
-        </div>
-      </div>
-
-      <div class="ctx">
-        <div class="hd"><span class="ico" style="background:#FBF5E6">🔔</span><div><div class="t">Recordatorios / Agenda</div><div class="m">Notas del día · Agenda</div></div></div>
-        <div class="bd">
-          <div class="bubble">Recuérdame la <em>inspección de plomería</em> el <em>viernes a las 9</em></div>
-          <div class="bubble">Anota <em>llamar al cliente</em> <em>mañana</em></div>
-          <div class="reply"><span class="kk">K</span> Dictado dentro de un proyecto → la nota queda ligada a ese proyecto.</div>
+          <div class="bubble">Pasar <em>instalar tile</em> a hecho</div>
+          <div class="reply"><span class="kk">K</span><span>Busca la tarea por nombre parecido y cambia el estado.</span></div>
         </div>
       </div>
     </div>
 
-    <!-- CHEAT SHEET -->
-    <h2 class="section"><span class="n">3</span> Tabla rápida</h2>
-    <p class="lead">Imprímela y pégala en la obra. La palabra de arranque (en negrita) le dice a Katy qué quieres.</p>
+    <!-- 7 · CHULETA -->
+    <h2 class="section"><span class="n">7</span> Chuleta de comandos</h2>
+    <p class="lead">Los 9 registros. Solo lo marcado como obligatorio hace falta para que aparezca la tarjeta — el resto lo llenas ahí o te lo pregunta.</p>
     <div class="scroller">
       <table class="cheat">
-        <thead><tr><th>Quiero…</th><th>Palabra clave</th><th>Ejemplo para decir</th></tr></thead>
+        <thead><tr><th>Qué hace</th><th>Dilo así</th><th>Obligatorio</th></tr></thead>
         <tbody>
-          <tr><td>Crear un proyecto</td><td class="cmd">Crear proyecto</td><td class="say">“Crear proyecto Baño Aventura para Sofía, 18 mil”</td></tr>
-          <tr><td>Agregar una tarea</td><td class="cmd">Agregar tarea</td><td class="say">“Agregar tarea reubicar válvula de ducha”</td></tr>
-          <tr><td>Marcar avance</td><td class="cmd">Pasar … a</td><td class="say">“Pasar instalación de tile a en proceso”</td></tr>
-          <tr><td>Registrar un pago</td><td class="cmd">Registrar pago</td><td class="say">“Registrar pago de 4000 por transferencia”</td></tr>
-          <tr><td>Registrar un gasto</td><td class="cmd">Egreso / Gasto</td><td class="say">“Egreso de 500 a Jorge por mano de obra”</td></tr>
-          <tr><td>Agregar material</td><td class="cmd">Agregar material</td><td class="say">“Agregar material cemento 120 de Lowe’s”</td></tr>
-          <tr><td>Partida del estimado</td><td class="cmd">Agregar partida</td><td class="say">“Agregar partida eléctrico 900”</td></tr>
-          <tr><td>Guardar un contacto</td><td class="cmd">Agregar contacto</td><td class="say">“Agregar contacto María, ayudante”</td></tr>
-          <tr><td>Poner un recordatorio</td><td class="cmd">Recuérdame / Anota</td><td class="say">“Recuérdame comprar tile el jueves”</td></tr>
+          <tr><td class="cmd">Proyecto</td><td class="say">“Crear proyecto Cocina Miami para Jennifer”</td><td>Nombre</td></tr>
+          <tr><td class="cmd">Ingreso</td><td class="say">“Agregar ingreso de 4 mil por Zelle”</td><td>Monto</td></tr>
+          <tr><td class="cmd">Egreso</td><td class="say">“Agregar egreso de 500 a Jorge por plomería”</td><td>Monto + a quién</td></tr>
+          <tr><td class="cmd">Tarea</td><td class="say">“Agregar tarea demoler paredes”</td><td>Qué hacer</td></tr>
+          <tr><td class="cmd">Estado</td><td class="say">“Pasar instalar tile a hecho”</td><td>Tarea + estado</td></tr>
+          <tr><td class="cmd">Material</td><td class="say">“Agregar material tile por 800 de Home Depot”</td><td>Nombre</td></tr>
+          <tr><td class="cmd">Presupuesto</td><td class="say">“Agregar item plomería 1200 mano de obra”</td><td>Descripción + monto</td></tr>
+          <tr><td class="cmd">Contacto</td><td class="say">“Agrega a Jorge el plomero, 786-555-1234”</td><td>Tipo + nombre</td></tr>
+          <tr><td class="cmd">Agenda</td><td class="say">“Recuérdame la inspección mañana a las 9”</td><td>De qué se trata</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- TIPS -->
-    <h2 class="section"><span class="n">4</span> Trucos para que salga a la primera</h2>
+    <!-- 8 · PRUÉBALO -->
+    <h2 class="section"><span class="n">8</span> Pruébalo tú mismo</h2>
+    <p class="lead">Nueve pruebas de dos minutos. Si todas pasan, Katy está bien configurada en tu dispositivo. Si alguna falla, avísale a Marco con cuál fue.</p>
+    <div class="checks">
+      <div class="chk"><div class="box"></div><div class="ct">
+        Di <span class="said">“agrega el material tile por 800 de Home Depot”</span>
+        <span class="exp"><b>Debe:</b> ir directo a la tarjeta, sin hacerte ni una pregunta.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Di <span class="said">“agrega un ingreso de 4 mil”</span>
+        <span class="exp"><b>Debe:</b> repetirte lo que entendió antes de preguntar — algo como “Ok, ingreso de $4,000 — ¿por qué método?”. No una pregunta pelada.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Desde el <b>Dashboard</b>, sin proyecto abierto, dicta un egreso
+        <span class="exp"><b>Debe:</b> mostrar la franja <b>“Se guardará en: …”</b> antes de que confirmes.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Confirma cualquier registro
+        <span class="exp"><b>Debe:</b> el mensaje de guardado <b>nombra el proyecto</b>.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Contesta algo confuso dos veces seguidas
+        <span class="exp"><b>Debe:</b> reformular la pregunta o darte opciones. <b>Nunca</b> repetir la misma frase idéntica.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Di <span class="said">“hola”</span> o <span class="said">“¿qué puedes hacer?”</span>
+        <span class="exp"><b>Debe:</b> conversar contigo, sin forzar un registro.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Pregunta <span class="said">“¿cuánto llevo gastado en [tu proyecto]?”</span>
+        <span class="exp"><b>Debe:</b> darte el número hablando, no leerte datos crudos.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        <b>Manos libres:</b> toca el micrófono una vez y registra <b>dos cosas seguidas</b> confirmando por voz
+        <span class="exp"><b>Debe:</b> no pedirte que toques el teléfono entre una y otra. Cierra diciendo “listo”.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Ponte en <b>modo avión</b> y dicta algo
+        <span class="exp"><b>Debe:</b> no perder tu dictado — te lo ofrece como pendiente editable en la agenda.</span>
+      </div></div>
+    </div>
+
+    <!-- 9 · TIPS -->
+    <h2 class="section"><span class="n">9</span> Trucos que ayudan</h2>
     <div class="tips">
-      <div class="tip"><span class="e">🎯</span><span class="x"><b>Di los montos como quieras.</b> “15 mil”, “mil quinientos” o “quinientos” — Katy los convierte a número.</span></div>
-      <div class="tip"><span class="e">🌐</span><span class="x"><b>Habla en el idioma de la app.</b> Si el panel está en Español (ES arriba a la derecha), dicta en español. En inglés, cambia a EN.</span></div>
-      <div class="tip"><span class="e">🏗</span><span class="x"><b>Entra al proyecto primero</b> y no tendrás que nombrarlo — Katy guarda ahí directo. Ideal cuando trabajas todo el día en la misma obra.</span></div>
-      <div class="tip"><span class="e">✏️</span><span class="x"><b>Todo es editable.</b> ¿Katy entendió mal una palabra? Corrígela en la tarjeta antes de confirmar. Nunca tienes que repetir todo.</span></div>
-      <div class="tip"><span class="e">⌨️</span><span class="x"><b>¿Mucho ruido en obra?</b> Usa el botón de teclado (junto al micrófono) y escribe la misma frase — funciona igual.</span></div>
-      <div class="tip"><span class="e">🔁</span><span class="x"><b>Encadena con “y”.</b> “Agregar tarea pintar recámara <b>y</b> anota llamar al inspector” crea dos cosas de una vez.</span></div>
+      <div class="tip"><span class="e">🗣</span><span class="x"><b>Habla como a un compañero.</b> No hay palabras mágicas. “Se me olvidó, ayer le pagué 500 a Jorge” funciona igual que el comando formal.</span></div>
+      <div class="tip"><span class="e">🔢</span><span class="x"><b>Montos en palabras.</b> “Cuatro mil” → $4,000. “Mil quinientos” → $1,500. No hace falta deletrear.</span></div>
+      <div class="tip"><span class="e">🧠</span><span class="x"><b>Katy aprende.</b> Recuerda tu método de pago habitual, el último proyecto que tocaste y cómo llamas a las cosas. Corrígela una vez y ya.</span></div>
+      <div class="tip"><span class="e">⌨</span><span class="x"><b>El botón de teclado</b> junto al micrófono funciona sin permisos y sin ruido. Ideal en obra ruidosa o en la computadora.</span></div>
+      <div class="tip"><span class="e">📋</span><span class="x"><b>Todo queda auditado.</b> Cada comando —confirmado, cancelado o con error— se registra. Siempre hay rastro.</span></div>
+      <div class="tip"><span class="e">🌐</span><span class="x"><b>Cambia el idioma</b> arriba a la derecha y Katy te habla en inglés.</span></div>
     </div>
 
     <div class="callout">
-      <b>Si Katy no responde o pide “repetir” seguido:</b> revisa tu conexión, cierra y vuelve a abrir la app, y confirma que diste permiso de micrófono al navegador (Ajustes → Aplicaciones → Chrome → Permisos → Micrófono). El dictado nunca se pierde: si la IA no contesta, Katy te ofrece guardar lo que dijiste como pendiente editable.
+      <b>Nada se guarda sin que confirmes.</b> Katy nunca escribe en la base de datos por su cuenta: siempre pasa por la tarjeta, siempre puedes corregir, y siempre puedes cancelar. Si algo salió mal, se arregla desde el tab correspondiente — Katy no puede borrarlo.
     </div>
 
     <footer class="doc">
-      <div class="co"><b>LUXARIS DESIGN LLC</b><br>Remodeling &amp; Construction Management · South Florida</div>
-      <div class="pg">Guía de voz Katy · v1 · uso interno del equipo</div>
+      <div class="co"><b>LUXARIS DESIGN LLC</b> · South Florida · luxaris25@yahoo.com</div>
+      <div class="pg">Guía de voz Katy · v2 · uso interno del equipo</div>
     </footer>
   </div>
 </div>

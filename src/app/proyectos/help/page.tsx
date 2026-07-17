@@ -339,9 +339,7 @@ function MockupDayPlanner({ EN }: { EN: boolean }) {
 }
 
 function MockupVoice({ EN }: { EN: boolean }) {
-  const cmds = EN
-    ? ["Create project Miami Kitchen","Add task demo walls","Add payment $4000","Add material tile $800"]
-    : ["Crear proyecto Cocina Miami","Agregar tarea demoler paredes","Agregar pago $4000","Agregar material tile $800"];
+  // Una conversación real: acuse de recibo, franja de destino y continuación manos libres
   return (
     <div className="flex gap-3">
       <div className="flex shrink-0 flex-col items-center gap-2">
@@ -352,16 +350,42 @@ function MockupVoice({ EN }: { EN: boolean }) {
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#4F8A63]">
           <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-white dark:bg-[#111a2e]" />
         </div>
-        <div className="text-[7px] text-[#4F8A63] font-bold">{EN?"Listening…":"Escuchando…"}</div>
+        <div className="text-[7px] font-bold text-[#4F8A63]">{EN ? "Listening…" : "Escuchando…"}</div>
       </div>
+
       <div className="flex-1 space-y-1.5">
-        <div className="text-[9px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc] mb-2">{EN?"Say commands like:":"Di comandos como:"}</div>
-        {cmds.map(c => (
-          <div key={c} className="flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-2.5 py-1.5">
-            <span className="text-[9px]">🗣</span>
-            <span className="font-mono text-[9px] text-[var(--accent)]">"{c}"</span>
+        <div className="rounded-lg rounded-bl-sm bg-[var(--brand)] px-2.5 py-1.5 text-[9px] text-white">
+          🗣 {EN ? "Add an income of four thousand by Zelle" : "Agregar un ingreso de cuatro mil por Zelle"}
+        </div>
+        <div className="pl-2 text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+          <b className="text-[var(--brand)] dark:text-[#cfe0ff]">K ·</b>{" "}
+          {EN ? "Got it, $4,000 by Zelle. Adding it to Miami Kitchen." : "Ok, $4,000 por Zelle. Lo agrego a Cocina Miami."}
+        </div>
+
+        {/* Franja de destino — el punto que resuelve "¿dónde lo registró?" */}
+        <div className="overflow-hidden rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e]">
+          <div className="flex items-center gap-1.5 bg-[#F7F3EA] dark:bg-[#16233d] px-2 py-1">
+            <span className="text-[7px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
+              {EN ? "Will save to" : "Se guardará en"}
+            </span>
+            <span className="text-[9px] font-black text-[var(--brand)] dark:text-[#cfe0ff]">Cocina Miami</span>
           </div>
-        ))}
+          <div className="flex gap-1 bg-white px-2 py-1.5 dark:bg-[#111a2e]">
+            <span className="rounded bg-[#F7F3EA] px-1.5 py-0.5 font-mono text-[8px] text-[var(--brand)] dark:bg-[#16233d] dark:text-[#cfe0ff]">4000</span>
+            <span className="rounded bg-[#F7F3EA] px-1.5 py-0.5 font-mono text-[8px] text-[var(--brand)] dark:bg-[#16233d] dark:text-[#cfe0ff]">Zelle</span>
+            <span className="rounded bg-[#F7F3EA] px-1.5 py-0.5 font-mono text-[8px] text-[var(--brand)] dark:bg-[#16233d] dark:text-[#cfe0ff]">abono</span>
+          </div>
+        </div>
+
+        <div className="rounded-lg rounded-bl-sm bg-[var(--brand)] px-2.5 py-1.5 text-[9px] text-white">
+          🗣 {EN ? "Yes" : "Sí"}
+        </div>
+        <div className="flex items-center gap-1.5 rounded-lg bg-[#DCEBDD] px-2.5 py-1.5 dark:bg-[#14261c]">
+          <span className="text-[9px]">✅</span>
+          <span className="text-[9px] font-bold text-[#4F8A63]">
+            {EN ? "Income of $4,000 saved in Cocina Miami. Anything else?" : "Ingreso de $4,000 guardado en Cocina Miami. ¿Algo más?"}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -791,38 +815,40 @@ function useFeatures(EN: boolean) {
     {
       id: "voice", icon: "🎙",
       title: EN ? "Katy — Voice Assistant" : "Katy — Asistente de Voz",
-      desc:  EN ? "Tap the microphone button (bottom-right) and speak, or tap the keyboard button to type — Katy understands both modes and creates records automatically."
-                : "Toca el micrófono (abajo a la derecha) y habla, o toca el botón de teclado para escribir — Katy entiende ambos modos y crea los registros automáticamente.",
+      desc:  EN ? "Talk to her like you'd talk to a coworker. She records 9 kinds of entry, answers questions about your data, and always shows you where it's going to be saved — hands-free."
+                : "Háblale como le hablarías a un compañero. Registra 9 tipos de entrada, responde preguntas sobre tus datos, y siempre te muestra dónde va a guardar — sin usar las manos.",
       mockup: <MockupVoice EN={EN} />,
       steps: EN ? [
-        { t:"Voice mode — mic button", d:"Tap the <b>🎙 microphone button</b> at the bottom-right corner of any page. It glows while Katy listens. Works on Chrome/Safari on devices with a microphone." },
-        { t:"Text mode — keyboard button", d:"No mic available? Tap the <b>⌨ keyboard button</b> (to the left of the mic). A text panel slides up — type your command and press Enter or the Send button. Useful on noisy job sites or desktop browsers." },
-        { t:"Speak or type your command", d:"Examples: <b>\"Add payment $3000\"</b>, <b>\"Create task install tile\"</b>, <b>\"Add expense $500 Jorge\"</b>. Katy understands English and Spanish and handles amounts in words (\"fifteen hundred\" → 1500)." },
-        { t:"Creating a contact (conversational)", d:"Say <b>\"Create a contact\"</b> and Katy guides you step by step: (1) <i>Type? Co-worker, client or friend?</i> (2) <i>Name?</i> (3) <i>Phone?</i> (4) <i>Specialty?</i> (only for co-workers — Plumbing, Painting, Electrical…) (5) <i>Rate?</i> (optional, e.g. 25/hour). Each question waits for your answer before asking the next." },
-        { t:"Review before saving", d:"Katy shows a confirmation card with what she understood and all extracted fields. You can <b>edit any field</b> before confirming. Nothing saves until you tap Confirm." },
-        { t:"Katy knows your projects", d:"From the Dashboard, Katy receives the full list of active projects. You can say <b>\"the Brickell one\"</b> or <b>\"the Miami kitchen project\"</b> and she'll match it automatically." },
-        { t:"Navigate context first", d:"Inside a project, Katy automatically uses that project as context — no need to name it. From Dashboard, name the project or Katy will ask." },
+        { t:"Tap the mic — or the keyboard", d:"The <b>🎙 mic button</b> sits bottom-right on every page and listens the moment you tap it. No mic, or a loud job site? The <b>⌨ keyboard button</b> next to it opens a text panel instead — no browser permission needed." },
+        { t:"Say it all in one breath", d:"The more complete your sentence, the fewer questions. <b>\"Add material tile for 800 from Home Depot\"</b> goes straight to the card — Katy only asks for what's genuinely missing. She converts amounts in words (\"four thousand\" → 4000) and understands \"the Brickell one\"." },
+        { t:"She repeats back what she understood", d:"Katy acknowledges before asking: <b>\"Got it, $4,000 income — which method?\"</b>. If she misheard, correct her mid-sentence — no need to start over." },
+        { t:"Check WHERE it will be saved", d:"The card always shows a <b>“Will save to: …”</b> strip. From the Dashboard, Katy proposes the <b>last project you used</b> — convenient, but check it. If it's red saying <b>“Pick a project”</b>, you can't confirm until you choose one." },
+        { t:"Confirm by voice or by button", d:"Say <b>\"yes\"</b> / <b>\"go ahead\"</b> to save, <b>\"no\"</b> to discard — or tap the buttons. A long sentence like <b>\"yes but change the amount to 500\"</b> is treated as a correction, not a save." },
+        { t:"Hands-free: keep going", d:"After saving, the session stays alive: <b>\"Saved in Miami Kitchen. Anything else?\"</b> — dictate the next one without touching the phone. Close with <b>\"done\"</b>, <b>\"that's all\"</b> or <b>\"thanks\"</b>." },
+        { t:"Ask her things too", d:"Katy reads your data back to you: <b>\"What do I have today?\"</b> (agenda), <b>\"Read me the notes for Miami Kitchen\"</b>, <b>\"How much is still owed on Brickell?\"</b>, <b>\"What's left to buy?\"</b>. What she can answer depends on your permissions." },
       ] : [
-        { t:"Modo voz — botón micrófono", d:"Toca el <b>botón 🎙 micrófono</b> en la esquina inferior derecha. Brilla mientras Katy escucha. Funciona en Chrome/Safari en dispositivos con micrófono." },
-        { t:"Modo texto — botón teclado", d:"¿Sin micrófono? Toca el <b>botón ⌨ teclado</b> (a la izquierda del mic). Un panel de texto sube — escribe tu comando y presiona Enter o el botón Enviar. Ideal en obras ruidosas o en desktop." },
-        { t:"Hablar o escribir el comando", d:"Ejemplos: <b>\"Agregar pago $3000\"</b>, <b>\"Crear tarea instalar tile\"</b>, <b>\"Agregar egreso $500 Jorge\"</b>. Katy entiende inglés y español y convierte montos en palabras (\"quince mil\" → 15000)." },
-        { t:"Crear un contacto (conversacional)", d:"Di <b>\"Crear un contacto\"</b> y Katy te guía paso a paso: (1) <i>¿Tipo? ¿Co-worker, cliente o amistad?</i> (2) <i>¿Nombre?</i> (3) <i>¿Teléfono?</i> (4) <i>¿Especialidad?</i> (solo co-workers — Plomería, Pintura, Electricidad…) (5) <i>¿Tarifa?</i> (opcional, ej: 25/hora). Cada pregunta espera tu respuesta antes de la siguiente." },
-        { t:"Revisar antes de guardar", d:"Katy muestra una tarjeta de confirmación con lo que entendió y todos los campos extraídos. Puedes <b>editar cualquier campo</b> antes de confirmar. Nada se guarda hasta que toques Confirmar." },
-        { t:"Katy conoce tus proyectos", d:"Desde el Dashboard, Katy recibe la lista completa de proyectos activos. Puedes decir <b>\"el de Brickell\"</b> o <b>\"el proyecto de la cocina\"</b> y lo identificará automáticamente." },
-        { t:"Navegar al contexto primero", d:"Dentro de un proyecto, Katy lo usa automáticamente como contexto — no necesitas nombrarlo. Desde el Dashboard, indica el proyecto o Katy lo preguntará." },
+        { t:"Toca el micrófono — o el teclado", d:"El <b>botón 🎙</b> está abajo a la derecha en todas las pantallas y escucha apenas lo tocas. ¿Sin micrófono, o mucho ruido en obra? El <b>botón ⌨</b> de al lado abre un panel para escribir — sin permisos del navegador." },
+        { t:"Dilo todo de un tirón", d:"Entre más completa la frase, menos preguntas. <b>\"Agregar material tile por 800 de Home Depot\"</b> va directo a la tarjeta — Katy solo pregunta lo que de verdad falta. Convierte montos en palabras (\"cuatro mil\" → 4000) y entiende \"el de Brickell\"." },
+        { t:"Te repite lo que entendió", d:"Katy acusa recibo antes de preguntar: <b>\"Ok, ingreso de $4,000 — ¿por qué método?\"</b>. Si escuchó mal, corrígela a media frase — no hace falta empezar de nuevo." },
+        { t:"Revisa DÓNDE se va a guardar", d:"La tarjeta siempre muestra la franja <b>“Se guardará en: …”</b>. Desde el Dashboard, Katy propone el <b>último proyecto que usaste</b> — cómodo, pero revísalo. Si sale en rojo diciendo <b>“Elige un proyecto”</b>, no podrás confirmar hasta escoger uno." },
+        { t:"Confirma por voz o con el botón", d:"Di <b>\"sí\"</b> / <b>\"dale\"</b> para guardar, <b>\"no\"</b> para descartar — o toca los botones. Una frase larga como <b>\"sí pero cambia el monto a 500\"</b> se toma como corrección, no como guardado." },
+        { t:"Manos libres: sigue dictando", d:"Después de guardar la sesión sigue viva: <b>\"Guardado en Cocina Miami. ¿Algo más?\"</b> — dicta el siguiente sin tocar el teléfono. Cierra con <b>\"listo\"</b>, <b>\"nada más\"</b> o <b>\"gracias\"</b>." },
+        { t:"También puedes preguntarle", d:"Katy te lee tus datos: <b>\"¿Qué tengo hoy?\"</b> (agenda), <b>\"Léeme las notas de Cocina Miami\"</b>, <b>\"¿Cuánto falta por cobrar en Brickell?\"</b>, <b>\"¿Qué falta comprar?\"</b>. Lo que puede responder depende de tus permisos." },
       ],
       tips: EN ? [
-        "🗣 Supported commands: <b>Create project · Add task · Add material · Add budget item · Add payment · Add expense · Add contact</b>",
-        "⌨ The <b>keyboard button</b> is always available next to the mic — no browser permissions needed. Great for desktop use or quiet zones.",
-        "📋 Every command (confirmed, cancelled or error) is <b>automatically logged</b> as an audit trail — so you always have a record of voice actions.",
-        "💡 Speak at a <b>normal pace</b> — Katy waits for a natural silence before processing. Amounts in words are converted automatically.",
-        "🌐 Switch to Spanish with the top-right language toggle and Katy will respond in Spanish too.",
+        "🗣 <b>Records 9 things:</b> project · income · expense · task · task status · material · budget line · contact · agenda entry.",
+        "❓ <b>Answers 5 questions:</b> today's agenda · a project's notes · money (budget, collected, outstanding, spent) · tasks · materials. Permission-gated — a co-worker won't hear amounts.",
+        "🚫 <b>She can't:</b> wake on \"hey Katy\", listen with the app closed, delete anything, edit what's already saved (except task status), or tell you what you forgot to record.",
+        "⚠️ <b>\"Outstanding\"</b> comes from the Estimate's Grand Total, which syncs when you open or save that tab — if you changed the estimate without opening it, the number may lag.",
+        "📅 <b>No global \"what's on today\"</b> across all projects — task lookups need one project. Use the <b>Today</b> view for the full day.",
+        "📋 Every command (confirmed, cancelled or error) is <b>logged automatically</b> — there's always an audit trail.",
       ] : [
-        "🗣 Comandos soportados: <b>Crear proyecto · Agregar tarea · Agregar material · Agregar item de presupuesto · Agregar pago · Agregar egreso · Agregar contacto</b>",
-        "⌨ El <b>botón de teclado</b> siempre está disponible junto al mic — sin permisos del navegador. Ideal para desktop o zonas tranquilas.",
-        "📋 Cada comando (confirmado, cancelado o error) se <b>registra automáticamente</b> como auditoría — siempre hay rastro de las acciones por voz.",
-        "💡 Habla a <b>ritmo normal</b> — Katy espera un silencio natural antes de procesar. Los montos en palabras se convierten automáticamente.",
-        "🌐 Cambia a español con el selector de idioma (arriba a la derecha) y Katy también responderá en español.",
+        "🗣 <b>Registra 9 cosas:</b> proyecto · ingreso · egreso · tarea · estado de tarea · material · línea de presupuesto · contacto · entrada de agenda.",
+        "❓ <b>Responde 5 preguntas:</b> agenda del día · notas de un proyecto · dinero (presupuesto, cobrado, por cobrar, gastado) · tareas · materiales. Según permisos — un co-worker no escucha montos.",
+        "🚫 <b>No puede:</b> despertar con \"hey Katy\", escuchar con la app cerrada, borrar nada, editar lo ya guardado (salvo el estado de una tarea), ni decirte qué se te olvidó registrar.",
+        "⚠️ El <b>\"por cobrar\"</b> sale del Grand Total del Estimate, que se sincroniza al abrir o guardar ese tab — si cambiaste el estimado sin abrirlo, el número puede ir atrasado.",
+        "📅 <b>No hay \"¿qué tengo hoy?\" global</b> de todos los proyectos — las tareas se consultan por proyecto. Para el día completo usa la vista <b>Hoy</b>.",
+        "📋 Cada comando (confirmado, cancelado o con error) se <b>registra automáticamente</b> — siempre hay rastro.",
       ],
     },
     {

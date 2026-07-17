@@ -212,33 +212,118 @@ function writeTools(lang: Lang, projectIds: string[]): ToolSet {
 // El gate por permisos es un guardarraíl de UX, no una frontera de seguridad:
 // `permissions` viaja desde el cliente. El endurecimiento real es Fase 2 de
 // SECURITY_PLAN.md.
-function readTools(lang: Lang, perms: Permissions | null, isSuperAdmin: boolean, projectIds: string[]): ToolSet {
+function readTools(
+  lang: Lang,
+  perms: Permissions | null,
+  isSuperAdmin: boolean,
+  projects: { id: string; title: string }[],
+): ToolSet {
   const es  = lang === "es";
   const can = (section: keyof Permissions) => isSuperAdmin || perms?.[section]?.view === true;
   const tools: ToolSet = {};
+  const projectIds = projects.map(p => p.id);
+  const titleOf = (id: string | null) => projects.find(p => p.id === id)?.title ?? null;
+
+  // La agenda es global y no depende de tener proyectos cargados
+  if (isSuperAdmin) {
+    tools.consultar_agenda = tool({
+      description: es
+        ? "Consultar la agenda: citas, tareas y reuniones de un día. Úsala para \"¿qué tengo hoy?\", \"¿qué tengo mañana?\", \"¿qué hay esta semana?\"."
+        : "Look up the agenda: appointments, tasks and meetings for a day. Use for \"what do I have today?\", \"what's tomorrow?\".",
+      inputSchema: jsonSchema<{ desde?: string; hasta?: string }>({
+        type: "object",
+        properties: {
+          desde: { type: "string", description: es ? "YYYY-MM-DD. Default: hoy." : "YYYY-MM-DD. Defaults to today." },
+          hasta: { type: "string", description: es ? "YYYY-MM-DD. Omítelo para un solo día." : "YYYY-MM-DD. Omit for a single day." },
+        },
+        required: [],
+        additionalProperties: false,
+      }),
+      execute: async ({ desde, hasta }) => {
+        const from = desde || TODAY();
+        const to   = hasta || from;
+        const { data } = await supabase
+          .from("agenda_events")
+          .select("title, event_type, event_date, event_time, done, project_id, notes")
+          .gte("event_date", from).lte("event_date", to)
+          .order("event_date").order("event_time").limit(50);
+        const rows = data ?? [];
+        return {
+          desde: from, hasta: to, total: rows.length,
+          pendientes: rows.filter(e => !e.done).length,
+          eventos: rows.map(e => ({
+            titulo: e.title, tipo: e.event_type, fecha: e.event_date, hora: e.event_time,
+            hecho: e.done, proyecto: titleOf(e.project_id), notas: e.notes,
+          })),
+        };
+      },
+    });
+  }
+
   if (!projectIds.length) return tools;
 
   const pidProp = {
     project_id: { type: "string" as const, enum: projectIds, description: es ? "Id del proyecto a consultar" : "Project id to look up" },
   };
 
+  if (can("notas")) {
+    tools.consultar_notas = tool({
+      description: es
+        ? "Leer las notas de un proyecto, de la más reciente a la más vieja. Úsala para \"¿qué dice la última nota?\" o \"léeme las notas\"."
+        : "Read a project's notes, newest first. Use for \"what does the last note say?\" or \"read me the notes\".",
+      inputSchema: jsonSchema<{ project_id: string; cuantas?: number }>({
+        type: "object",
+        properties: {
+          ...pidProp,
+          cuantas: { type: "number", description: es ? "Cuántas notas traer (default 5, máx 15)" : "How many notes (default 5, max 15)" },
+        },
+        required: ["project_id"],
+        additionalProperties: false,
+      }),
+      execute: async ({ project_id, cuantas }) => {
+        const limit = Math.min(Math.max(Number(cuantas ?? 5), 1), 15);
+        const { data } = await supabase
+          .from("project_notes")
+          .select("content, attachments, created_at")
+          .eq("project_id", project_id)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        const rows = data ?? [];
+        return {
+          total: rows.length,
+          notas: rows.map(n => ({
+            texto: n.content,
+            fecha: String(n.created_at).slice(0, 10),
+            adjuntos: Array.isArray(n.attachments) ? n.attachments.length : 0,
+          })),
+        };
+      },
+    });
+  }
+
   if (can("pagos")) {
     tools.consultar_finanzas = tool({
       description: es
-        ? "Consultar ingresos, egresos y balance de un proyecto. Úsala cuando pregunten cuánto se ha cobrado, gastado o cómo va el dinero."
-        : "Look up income, expenses, and balance for a project. Use when asked how much was collected or spent.",
+        ? "Consultar dinero de un proyecto: presupuesto, cobrado, por cobrar, gastado y balance. Úsala para \"¿cuánto llevo cobrado?\", \"¿cuánto falta por cobrar?\", \"¿cuánto he gastado?\"."
+        : "Look up a project's money: budget, collected, outstanding, spent, balance. Use for \"how much have I collected?\", \"how much is still owed?\".",
       inputSchema: jsonSchema<{ project_id: string }>({
         type: "object", properties: pidProp, required: ["project_id"], additionalProperties: false,
       }),
       execute: async ({ project_id }) => {
-        const [{ data: pays }, { data: exps }] = await Promise.all([
+        const [{ data: pays }, { data: exps }, { data: proj }] = await Promise.all([
           supabase.from("payments").select("amount, date, method, type").eq("project_id", project_id),
           supabase.from("expenses").select("amount, date, payee_name, concept").eq("project_id", project_id),
+          supabase.from("projects").select("budget").eq("id", project_id).single(),
         ]);
         const ingresos = (pays ?? []).reduce((s, p) => s + Number(p.amount ?? 0), 0);
         const egresos  = (exps ?? []).reduce((s, e) => s + Number(e.amount ?? 0), 0);
+        // projects.budget lo sincroniza EstimateTab con el Grand Total al cargar o guardar
+        // ese tab. Si el estimado cambió sin abrirlo, este número puede ir atrasado.
+        const presupuesto = Number(proj?.budget ?? 0);
         return {
+          presupuesto,
           ingresos, egresos, balance: ingresos - egresos,
+          por_cobrar: presupuesto > 0 ? Math.max(0, presupuesto - ingresos) : null,
           n_ingresos: pays?.length ?? 0, n_egresos: exps?.length ?? 0,
           ultimos_egresos: (exps ?? []).slice(-5).map(e => ({ a: e.payee_name, monto: e.amount, concepto: e.concept })),
         };
@@ -356,7 +441,11 @@ Active projects (use these to resolve "the Brickell one"): ${projectsList}.
 ${mem}
 TOOLS
 - Use a write tool the moment you have enough. The user sees an editable confirmation card before anything is saved, so don't over-interrogate — a good guess they can fix beats three questions.
-${hasReadTools ? "- Use the lookup tools to answer questions about their data, then reply in plain prose with the number they asked for. Don't dump the raw data." : "- You cannot look up figures. If they ask, tell them which tab to open."}
+${hasReadTools
+  ? `- Use the lookup tools to answer questions about their data, then reply in plain prose with the number they asked for. Don't dump the raw data — they are listening, not reading.
+- "outstanding" comes from the Estimate's Grand Total, which syncs when that tab is opened or saved. If it looks stale or the budget is 0, say so instead of stating it as fact.
+- If a lookup returns nothing, say so plainly. Never invent a figure.`
+  : "- You cannot look up figures. If they ask, tell them which tab to open."}
 `.trim();
 
   return `
@@ -384,7 +473,11 @@ Proyectos activos (úsalos para resolver "el de Brickell"): ${projectsList}.
 ${mem}
 HERRAMIENTAS
 - Usa una herramienta de escritura en cuanto tengas lo suficiente. El usuario ve una tarjeta de confirmación editable antes de que se guarde nada, así que no interrogues de más — una buena suposición que él corrige vale más que tres preguntas.
-${hasReadTools ? "- Usa las herramientas de consulta para responder sobre sus datos, y contesta en prosa con el número que te pidieron. No vuelques los datos crudos." : "- No puedes consultar cifras. Si te preguntan, dile qué tab abrir."}
+${hasReadTools
+  ? `- Usa las herramientas de consulta para responder sobre sus datos, y contesta en prosa con el número que te pidieron. No vuelques los datos crudos — te están escuchando, no leyendo.
+- El "por cobrar" sale del Grand Total del Estimate, que se sincroniza al abrir o guardar ese tab. Si se ve desactualizado o el presupuesto es 0, dilo en vez de afirmarlo como un hecho.
+- Si una consulta no devuelve nada, dilo tal cual. Nunca inventes una cifra.`
+  : "- No puedes consultar cifras. Si te preguntan, dile qué tab abrir."}
 `.trim();
 };
 
@@ -415,9 +508,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ type: "question", text: language === "en" ? "How can I help?" : "¿En qué te ayudo?" });
     }
 
-    const projectIds = projects.map(p => p.id);
-    const reads  = readTools(language, body.permissions ?? null, isSuperAdmin, projectIds);
-    const tools: ToolSet = { ...writeTools(language, projectIds), ...reads };
+    const reads  = readTools(language, body.permissions ?? null, isSuperAdmin, projects);
+    const tools: ToolSet = { ...writeTools(language, projects.map(p => p.id)), ...reads };
 
     // Proveedor explícito → usa ANTHROPIC_API_KEY directo (el string "anthropic/..." iba
     // por el AI Gateway de Vercel, nunca configurado — Katy fallaba en cada comando)
