@@ -334,19 +334,21 @@ function readTools(
   if (can("workflow")) {
     tools.consultar_tareas = tool({
       description: es
-        ? "Consultar actividades de un proyecto y su estado. Úsala cuando pregunten qué falta, qué hay para hoy o cómo van las tareas."
-        : "Look up a project's tasks and their status. Use when asked what's pending or what's on for today.",
-      inputSchema: jsonSchema<{ project_id: string; fecha?: string }>({
+        ? "Consultar actividades y su estado. Con project_id, las de ese proyecto; SIN project_id, las de todos. Úsala para \"¿qué falta en Brickell?\", \"¿qué hay para hoy?\", \"¿qué tengo esta semana?\"."
+        : "Look up tasks and their status. With project_id, that project's; WITHOUT it, across all projects. Use for \"what's pending?\", \"what's on for today?\".",
+      inputSchema: jsonSchema<{ project_id?: string; fecha?: string }>({
         type: "object",
         properties: {
-          ...pidProp,
+          project_id: { ...pidProp.project_id, description: es ? "Omítelo para ver las tareas de todos los proyectos" : "Omit to see tasks across all projects" },
           fecha: { type: "string", description: es ? "YYYY-MM-DD para filtrar por día programado" : "YYYY-MM-DD to filter by scheduled day" },
         },
-        required: ["project_id"],
+        required: [],
         additionalProperties: false,
       }),
       execute: async ({ project_id, fecha }) => {
-        let q = supabase.from("tasks").select("name, status, scheduled_date").eq("project_id", project_id).limit(60);
+        let q = supabase.from("tasks").select("name, status, scheduled_date, project_id").limit(80);
+        // Sin proyecto → solo los que este usuario ya puede ver (los que vinieron en el contexto)
+        q = project_id ? q.eq("project_id", project_id) : q.in("project_id", projectIds);
         if (fecha) q = q.eq("scheduled_date", fecha);
         const { data } = await q;
         const rows = data ?? [];
@@ -355,7 +357,130 @@ function readTools(
           por_hacer:  rows.filter(t => t.status === "pend").length,
           en_proceso: rows.filter(t => t.status === "prog").length,
           hechas:     rows.filter(t => t.status === "done").length,
-          tareas: rows.map(t => ({ nombre: t.name, estado: t.status, fecha: t.scheduled_date })),
+          tareas: rows.map(t => ({
+            nombre: t.name, estado: t.status, fecha: t.scheduled_date,
+            ...(project_id ? {} : { proyecto: titleOf(t.project_id) }),
+          })),
+        };
+      },
+    });
+  }
+
+  // Ficha del proyecto. Sin gate: quien ve el proyecto ve sus datos — pero el
+  // dinero solo se incluye si tiene permiso de Cash Flow.
+  tools.consultar_proyecto = tool({
+    description: es
+      ? "Ficha de un proyecto: estado, cliente, dirección, fechas y un resumen de cómo va. Úsala para \"¿cómo va Brickell?\", \"¿de quién es Cocina Miami?\", \"¿cuándo empezó?\"."
+      : "A project's fact sheet: status, client, address, dates and a progress summary. Use for \"how's Brickell going?\", \"whose project is this?\".",
+    inputSchema: jsonSchema<{ project_id: string }>({
+      type: "object", properties: pidProp, required: ["project_id"], additionalProperties: false,
+    }),
+    execute: async ({ project_id }) => {
+      const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }] = await Promise.all([
+        supabase.from("projects").select("title, client, address, status, budget, start_date, end_date").eq("id", project_id).single(),
+        supabase.from("tasks").select("status").eq("project_id", project_id),
+        supabase.from("materials").select("bought").eq("project_id", project_id),
+        supabase.from("payments").select("amount").eq("project_id", project_id),
+      ]);
+      if (!p) return { error: es ? "No encontré ese proyecto" : "Project not found" };
+      const ESTADOS: Record<string, string> = es
+        ? { prospecto: "Prospecto", presupuesto: "Estimado", aprobado: "Aprobado", en_obra: "En obra", terminado: "Terminado" }
+        : { prospecto: "Prospect", presupuesto: "Estimate", aprobado: "Approved", en_obra: "In progress", terminado: "Completed" };
+      const t = tasks ?? [];
+      const dinero = can("pagos")
+        ? {
+            presupuesto: Number(p.budget ?? 0),
+            cobrado: (pays ?? []).reduce((s, x) => s + Number(x.amount ?? 0), 0),
+          }
+        : undefined;
+      return {
+        titulo: p.title, cliente: p.client, direccion: p.address,
+        estado: ESTADOS[p.status] ?? p.status,
+        inicio: p.start_date, fin: p.end_date,
+        tareas: { total: t.length, hechas: t.filter(x => x.status === "done").length },
+        materiales: { total: (mats ?? []).length, pendientes: (mats ?? []).filter(m => !m.bought).length },
+        ...(dinero ? { dinero } : {}),
+      };
+    },
+  });
+
+  if (can("contactos")) {
+    tools.consultar_contactos = tool({
+      description: es
+        ? "Buscar en el directorio de contactos: co-workers, clientes y amistades. Úsala para \"¿cuál es el teléfono de Jorge?\", \"¿quién es el plomero?\", \"¿qué electricistas tengo?\"."
+        : "Search the contact directory: coworkers, clients, friends. Use for \"what's Jorge's phone?\", \"who's the plumber?\".",
+      inputSchema: jsonSchema<{ busqueda?: string; especialidad?: string }>({
+        type: "object",
+        properties: {
+          busqueda:     { type: "string", description: es ? "Parte del nombre a buscar" : "Part of the name to search" },
+          especialidad: { type: "string", enum: SPECIALTIES, description: es ? "Filtrar por especialidad (en inglés)" : "Filter by specialty" },
+        },
+        required: [],
+        additionalProperties: false,
+      }),
+      execute: async ({ busqueda, especialidad }) => {
+        let q = supabase.from("contacts").select("name, specialty, phone, rate, rate_type, type").limit(40);
+        if (busqueda)     q = q.ilike("name", `%${busqueda}%`);
+        if (especialidad) q = q.eq("specialty", especialidad);
+        const { data } = await q;
+        const rows = data ?? [];
+        return {
+          total: rows.length,
+          contactos: rows.map(c => ({
+            nombre: c.name, tipo: c.type, especialidad: c.specialty || null,
+            telefono: c.phone || null,
+            tarifa: c.rate ? `${c.rate}/${c.rate_type === "day" ? (es ? "día" : "day") : (es ? "hora" : "hour")}` : null,
+          })),
+        };
+      },
+    });
+  }
+
+  // Auditoría "qué me falta registrar". Solo superadmin: mezcla huecos de dinero
+  // con huecos de obra, y es una vista de gestión.
+  if (isSuperAdmin) {
+    tools.consultar_pendientes = tool({
+      description: es
+        ? "Revisar qué le falta registrar a un proyecto: estimado, tareas, materiales, pagos, fechas. Úsala para \"¿qué me falta en Brickell?\", \"¿qué tengo incompleto?\"."
+        : "Audit what a project is missing: estimate, tasks, materials, payments, dates. Use for \"what am I missing on Brickell?\".",
+      inputSchema: jsonSchema<{ project_id: string }>({
+        type: "object", properties: pidProp, required: ["project_id"], additionalProperties: false,
+      }),
+      execute: async ({ project_id }) => {
+        const [{ data: p }, { data: tasks }, { data: mats }, { data: pays }, { data: pc }] = await Promise.all([
+          supabase.from("projects").select("title, status, budget, end_date").eq("id", project_id).single(),
+          supabase.from("tasks").select("status, scheduled_date").eq("project_id", project_id),
+          supabase.from("materials").select("bought, cost").eq("project_id", project_id),
+          supabase.from("payments").select("amount").eq("project_id", project_id),
+          supabase.from("project_contacts").select("contact_id").eq("project_id", project_id),
+        ]);
+        if (!p) return { error: es ? "No encontré ese proyecto" : "Project not found" };
+
+        const presupuesto = Number(p.budget ?? 0);
+        const cobrado = (pays ?? []).reduce((s, x) => s + Number(x.amount ?? 0), 0);
+        const t = tasks ?? [];
+        const faltantes: string[] = [];
+
+        if (presupuesto <= 0) faltantes.push(es ? "No tiene estimado (el presupuesto está en cero) — arma el Estimate" : "No estimate yet (budget is zero)");
+        if (!t.length) faltantes.push(es ? "No tiene ninguna actividad registrada" : "No tasks recorded");
+        if (!(mats ?? []).length) faltantes.push(es ? "No tiene materiales en la lista de compras" : "No materials in the shopping list");
+        if (!(pc ?? []).length) faltantes.push(es ? "No tiene a nadie del equipo asignado" : "Nobody from the team is assigned");
+        if (!p.end_date) faltantes.push(es ? "No tiene fecha de fin" : "No end date set");
+        if (presupuesto > 0 && cobrado <= 0 && ["aprobado", "en_obra"].includes(p.status)) {
+          faltantes.push(es ? "Está aprobado pero no hay ni un ingreso registrado" : "Approved but no income recorded");
+        }
+        const sinProgramar = t.filter(x => !x.scheduled_date && x.status !== "done").length;
+        if (sinProgramar) faltantes.push(es ? `${sinProgramar} actividad(es) sin día asignado en el Day Planner` : `${sinProgramar} task(s) with no day assigned`);
+        const porComprar = (mats ?? []).filter(m => !m.bought).length;
+        if (porComprar) faltantes.push(es ? `${porComprar} material(es) sin comprar` : `${porComprar} material(s) not bought yet`);
+        if (presupuesto > 0 && cobrado < presupuesto) {
+          faltantes.push(es ? `Faltan $${(presupuesto - cobrado).toLocaleString("en-US")} por cobrar` : `$${(presupuesto - cobrado).toLocaleString("en-US")} still to collect`);
+        }
+
+        return {
+          proyecto: p.title,
+          todo_en_orden: faltantes.length === 0,
+          faltantes,
         };
       },
     });

@@ -302,7 +302,7 @@
   <div class="cover">
     <div class="brand">LUXARIS DESIGN · MANUAL DE CAMPO</div>
     <h1>Habla con <b>Katy</b>.<br>Registra por ti — y ahora te responde.</h1>
-    <p class="sub">Guía para el equipo: cómo dictar tareas, pagos, materiales, contactos y recordatorios sin teclear — y cómo preguntarle por tu agenda, tus notas y tu dinero. Con lo que sí puede y lo que no.</p>
+    <p class="sub">Guía para el equipo: cómo dictar tareas, pagos, materiales, contactos y recordatorios sin teclear — y cómo preguntarle por tu agenda, tus proyectos, tu obra, tu gente y tu dinero. Con lo que sí puede y lo que no.</p>
     <span class="who"><span class="k">K</span> Katy · asistente de voz de tu panel</span>
   </div>
 
@@ -355,7 +355,7 @@
         <div class="mh">✅ Sí puede</div>
         <ul>
           <li><span class="m">✓</span><span><b>Registrar 9 cosas:</b> proyecto, ingreso, egreso, tarea, material, línea de presupuesto, contacto, cambio de estado de una tarea y entrada de agenda.</span></li>
-          <li><span class="m">✓</span><span><b>Responder sobre tus datos:</b> agenda del día, notas de un proyecto, dinero, tareas y materiales. <span class="why">Ver la sección 3.</span></span></li>
+          <li><span class="m">✓</span><span><b>Responder 8 tipos de pregunta:</b> agenda, ficha del proyecto, notas, dinero, tareas, materiales, contactos y qué te falta registrar. <span class="why">Ver la sección 3.</span></span></li>
           <li><span class="m">✓</span><span><b>Leerte las respuestas en voz alta</b> <span class="why">Si preguntaste hablando, contesta hablando.</span></span></li>
           <li><span class="m">✓</span><span><b>Conversar normal</b> <span class="why">Salúdala, pregúntale qué puede hacer, corrígela a media frase.</span></span></li>
           <li><span class="m">✓</span><span><b>Entender “el de Brickell”</b> <span class="why">Conoce tus proyectos activos por nombre.</span></span></li>
@@ -369,9 +369,9 @@
           <li><span class="m">✕</span><span><b>Despertar sola con “hey Katy”</b> <span class="why">Hay que tocar el micrófono. Con la app cerrada o la pantalla apagada el navegador apaga el micrófono — eso no lo arregla ningún código.</span></span></li>
           <li><span class="m">✕</span><span><b>Borrar nada</b> <span class="why">Solo crea. Para borrar, entra al tab.</span></span></li>
           <li><span class="m">✕</span><span><b>Editar lo ya guardado</b> <span class="why">La única excepción es el estado de una tarea.</span></span></li>
-          <li><span class="m">✕</span><span><b>Decirte qué te falta registrar</b> <span class="why">No audita tus proyectos. Eso lo ves en el Dashboard.</span></span></li>
-          <li><span class="m">✕</span><span><b>Darte las tareas de todos los proyectos juntas</b> <span class="why">Necesita un proyecto. Para el día completo usa la vista <b>Hoy</b>.</span></span></li>
-          <li><span class="m">✕</span><span><b>Fotos, PDFs ni correos</b> <span class="why">Eso se hace desde sus tabs.</span></span></li>
+          <li><span class="m">✕</span><span><b>Fotos, PDFs ni correos</b> <span class="why">Eso se hace desde sus tabs. Tampoco ve el contenido de una foto.</span></span></li>
+          <li><span class="m">✕</span><span><b>Leerte el Estimate línea por línea</b> <span class="why">Te da el total y lo cobrado, no cada partida. Para el detalle, abre el tab.</span></span></li>
+          <li><span class="m">✕</span><span><b>Ver lo que tus permisos ocultan</b> <span class="why">Un co-worker no escucha montos, aunque pregunte.</span></span></li>
           <li><span class="m">✕</span><span><b>Inventar</b> <span class="why">Si no encuentra el dato, lo dice. No adivina cifras.</span></span></li>
         </ul>
       </div>
@@ -379,13 +379,19 @@
 
     <!-- 3 · PREGUNTARLE COSAS -->
     <h2 class="section"><span class="n">3</span> Preguntarle cosas (no solo dictarle)</h2>
-    <p class="lead">Katy consulta tus datos y te contesta hablando. Cinco tipos de pregunta. Lo que puede responder depende de tus permisos: un co-worker no escucha montos.</p>
+    <p class="lead">Katy consulta tus datos y te contesta hablando. Ocho tipos de pregunta que cubren proyectos, obra, dinero y gente. Lo que puede responder depende de tus permisos: un co-worker no escucha montos.</p>
     <div class="qgrid">
       <div class="q">
         <div class="qt">📅 Tu agenda del día</div>
         <div class="qs">“¿Qué tengo hoy?”</div>
         <div class="qa">También <b>“¿qué tengo mañana?”</b> o <b>“¿qué hay esta semana?”</b>. Te lee las citas, tareas y reuniones con su hora y si ya están hechas.</div>
         <div class="gate">🔒 Solo superadmin</div>
+      </div>
+      <div class="q">
+        <div class="qt">📋 La ficha de un proyecto</div>
+        <div class="qs">“¿Cómo va Brickell?”</div>
+        <div class="qa">Estado, cliente, dirección, fechas y un resumen de cómo va: tareas hechas, materiales pendientes y dinero. También <b>“¿de quién es Cocina Miami?”</b>.</div>
+        <div class="gate">🔓 El dinero solo si tienes Cash Flow</div>
       </div>
       <div class="q">
         <div class="qt">📝 Las notas de un proyecto</div>
@@ -400,9 +406,9 @@
         <div class="gate">🔒 Requiere permiso de Cash Flow</div>
       </div>
       <div class="q">
-        <div class="qt">✅ Las tareas de un proyecto</div>
-        <div class="qs">“¿Qué falta en Cocina Miami?”</div>
-        <div class="qa">Cuántas hay por hacer, en proceso y hechas. Puedes acotar por día: <b>“¿qué hay para el viernes en Brickell?”</b>.</div>
+        <div class="qt">✅ Las tareas — de uno o de todos</div>
+        <div class="qs">“¿Qué hay para hoy?”</div>
+        <div class="qa">Sin nombrar proyecto te da <b>todos</b> los tuyos juntos. Nombrando uno, solo ese: <b>“¿qué falta en Cocina Miami?”</b>. Y puedes acotar por día.</div>
         <div class="gate">🔒 Requiere permiso de Tareas</div>
       </div>
       <div class="q">
@@ -411,10 +417,22 @@
         <div class="qa">Lo pendiente con su proveedor y cuánto suma, más cuántos ya están comprados.</div>
         <div class="gate">🔒 Requiere permiso de Materiales</div>
       </div>
+      <div class="q">
+        <div class="qt">👷 El directorio de contactos</div>
+        <div class="qs">“¿Cuál es el teléfono de Jorge?”</div>
+        <div class="qa">Busca por nombre o por oficio: <b>“¿qué plomeros tengo?”</b>, <b>“¿quién es el electricista?”</b>. Te da teléfono, especialidad y tarifa.</div>
+        <div class="gate">🔒 Requiere permiso de Contactos</div>
+      </div>
+      <div class="q" style="border-left-color:var(--bad)">
+        <div class="qt">🔍 Qué te falta registrar</div>
+        <div class="qs">“¿Qué me falta en Brickell?”</div>
+        <div class="qa">Revisa el proyecto y te canta los huecos: sin estimado, sin tareas, sin equipo asignado, sin fecha de fin, aprobado pero sin ingresos, tareas sin día, materiales sin comprar, cuánto falta por cobrar.</div>
+        <div class="gate">🔒 Solo superadmin</div>
+      </div>
       <div class="q" style="border-left-color:var(--amber)">
         <div class="qt">🔗 Preguntar y actuar seguido</div>
-        <div class="qs">“¿Qué falta comprar? … agenda eso para mañana”</div>
-        <div class="qa">Pregunta primero y luego dicta el recordatorio: Katy mantiene el hilo dentro de la misma conversación.</div>
+        <div class="qs">“¿Qué me falta en Brickell? … agenda eso para mañana”</div>
+        <div class="qa">Pregunta primero y luego dicta el recordatorio: Katy mantiene el hilo dentro de la misma conversación, sin que tengas que repetirle el contexto.</div>
         <div class="gate">💡 Funciona en la misma sesión</div>
       </div>
     </div>
@@ -586,7 +604,7 @@
 
     <!-- 8 · PRUÉBALO -->
     <h2 class="section"><span class="n">8</span> Pruébalo tú mismo</h2>
-    <p class="lead">Nueve pruebas de dos minutos. Si todas pasan, Katy está bien configurada en tu dispositivo. Si alguna falla, avísale a Marco con cuál fue.</p>
+    <p class="lead">Trece pruebas de dos minutos. Si todas pasan, Katy está bien configurada en tu dispositivo. Si alguna falla, avísale a Marco con cuál fue.</p>
     <div class="checks">
       <div class="chk"><div class="box"></div><div class="ct">
         Di <span class="said">“agrega el material tile por 800 de Home Depot”</span>
@@ -615,6 +633,18 @@
       <div class="chk"><div class="box"></div><div class="ct">
         Pregunta <span class="said">“¿cuánto llevo gastado en [tu proyecto]?”</span>
         <span class="exp"><b>Debe:</b> darte el número hablando, no leerte datos crudos.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Pregunta <span class="said">“¿qué me falta en [tu proyecto]?”</span>
+        <span class="exp"><b>Debe:</b> cantarte los huecos reales del proyecto. Si está todo completo, decírtelo.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Pregunta <span class="said">“¿qué hay para hoy?”</span> <b>sin nombrar proyecto</b>
+        <span class="exp"><b>Debe:</b> darte las tareas de todos tus proyectos juntas, diciendo de cuál es cada una.</span>
+      </div></div>
+      <div class="chk"><div class="box"></div><div class="ct">
+        Pregunta <span class="said">“¿cuál es el teléfono de [un contacto tuyo]?”</span>
+        <span class="exp"><b>Debe:</b> encontrarlo en el directorio y decírtelo.</span>
       </div></div>
       <div class="chk"><div class="box"></div><div class="ct">
         <b>Manos libres:</b> toca el micrófono una vez y registra <b>dos cosas seguidas</b> confirmando por voz
