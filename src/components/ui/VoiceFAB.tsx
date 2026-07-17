@@ -7,6 +7,7 @@ import type { VoiceMeta } from "@/src/context/VoiceContext";
 import { supabase } from "@/src/lib/supabase";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
 import { useLanguage } from "@/src/context/LanguageContext";
+import type { translations } from "@/src/config/translations";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   loadVoicePrefs, toMemory, learnCorrections, saveVoiceLearning,
@@ -16,6 +17,7 @@ import {
 type Phase  = "idle" | "listening" | "thinking" | "speaking" | "confirm" | "saving" | "success" | "error" | "text";
 type ApiMsg = { role: "user" | "assistant"; content: string };
 interface Msg { role: "user" | "assistant"; text: string; }
+type VoiceT = Record<keyof (typeof translations)["es"]["panel"]["voice"], string>;
 
 const ASSISTANT  = "Katy";
 // Hoy en hora local del dispositivo (toISOString() es UTC y desfasa la fecha por la tarde)
@@ -41,6 +43,22 @@ function localDetect(text: string, context: string): string {
   if (/\bpresupuesto|cotiza|linea/.test(t))     return "create_budget_item";
   if (/\bcontacto|especiali|proveedor/.test(t)) return "create_contact";
   return "create_project";
+}
+
+const YES_RE  = /^(si|sip|dale|ok|okey|okay|confirma|confirmar|confirmado|guarda|guardar|guardalo|correcto|exacto|asi es|yes|yep|yeah|sure|save|confirm|go)\b/;
+const NO_RE   = /^(no|nel|cancela|cancelar|borra|borrar|descarta|descartalo|nope|cancel|discard)\b/;
+const QUIT_RE = /^(listo|ya|nada mas|eso es todo|gracias|adios|chao|terminamos|done|thats all|nothing else|thanks|bye|stop)\b/;
+
+// Confirmación por voz. Solo una frase CORTA cuenta como sí/no: "sí, pero cambia el
+// monto a 500" no puede disparar un guardado — eso es una corrección y va al modelo.
+function confirmIntent(text: string): "yes" | "no" | "quit" | "other" {
+  const t = norm(text).trim();
+  if (!t) return "other";
+  if (t.split(/\s+/).length > 3) return "other";
+  if (QUIT_RE.test(t)) return "quit";
+  if (YES_RE.test(t))  return "yes";
+  if (NO_RE.test(t))   return "no";
+  return "other";
 }
 
 const ACTION_LABELS: Record<string, string> = {
@@ -69,10 +87,28 @@ const PROJECT_ACTIONS = new Set([
   "create_material", "create_budget_item", "update_task_status",
 ]);
 
-async function saveAction(action: string, data: Record<string, unknown>, meta: VoiceMeta): Promise<string> {
-  // Contextual: proyecto elegido en la tarjeta (__project_id) > proyecto abierto en pantalla
-  const pid  = data.__project_id ? String(data.__project_id) : meta.projectId;
-  const date = String(data.date ?? TODAY());
+const fill = (tpl: string, x: string | number = "", y: string | number = "") =>
+  tpl.replace("{x}", String(x)).replace("{y}", String(y));
+
+// Proyecto destino de una acción: el elegido en la tarjeta gana sobre el abierto en pantalla
+function destProjectId(data: Record<string, unknown>, meta: VoiceMeta): string | null {
+  return data.__project_id ? String(data.__project_id) : (meta.projectId ?? null);
+}
+
+// El mensaje de éxito debe decir SIEMPRE en qué proyecto quedó — no saberlo era el
+// reclamo #1: "cuando graba no sabemos dónde lo registra"
+function destProjectTitle(data: Record<string, unknown>, meta: VoiceMeta): string | null {
+  const pid = destProjectId(data, meta);
+  if (!pid) return null;
+  if (pid === meta.projectId) return meta.projectTitle ?? null;
+  return meta.projects?.find(p => p.id === pid)?.title ?? null;
+}
+
+async function saveAction(action: string, data: Record<string, unknown>, meta: VoiceMeta, tv: VoiceT): Promise<string> {
+  const pid    = destProjectId(data, meta);
+  const date   = String(data.date ?? TODAY());
+  const proj   = destProjectTitle(data, meta);
+  const inProj = proj ? fill(tv.inProject, proj) : "";
 
   switch (action) {
     case "create_project": {
@@ -82,36 +118,36 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
         status: "prospecto", start_date: String(data.start_date ?? TODAY()),
       }).select("title").single();
       if (error) throw error;
-      return `Proyecto "${row.title}" creado`;
+      return fill(tv.okProject, row.title);
     }
     case "create_payment": {
-      if (!pid) throw new Error("Abre un proyecto primero");
+      if (!pid) throw new Error(tv.needProject);
       const { error } = await supabase.from("payments").insert({
         project_id: pid, amount: Number(data.amount ?? 0), date,
         method: String(data.method ?? "Efectivo"), type: String(data.type ?? "abono"),
       });
       if (error) throw error;
-      return `Ingreso de ${fmt(Number(data.amount ?? 0))} guardado`;
+      return fill(tv.okPayment, fmt(Number(data.amount ?? 0))) + inProj;
     }
     case "create_expense": {
-      if (!pid) throw new Error("Abre un proyecto primero");
+      if (!pid) throw new Error(tv.needProject);
       const { error } = await supabase.from("expenses").insert({
         project_id: pid, amount: Number(data.amount ?? 0), date,
         method: String(data.method ?? "Efectivo"),
         payee_name: String(data.payee_name ?? ""), concept: String(data.concept ?? ""),
       });
       if (error) throw error;
-      return `Egreso de ${fmt(Number(data.amount ?? 0))} guardado`;
+      return fill(tv.okExpense, fmt(Number(data.amount ?? 0))) + inProj;
     }
     case "create_task": {
-      if (!pid) throw new Error("Abre un proyecto primero");
+      if (!pid) throw new Error(tv.needProject);
       const { error } = await supabase.from("tasks").insert({
         project_id: pid, name: String(data.name ?? "Nueva tarea"),
         hours: Number(data.hours ?? 8), duration_weeks: Number(data.duration_weeks ?? 1),
         status: "pend", sort_order: 9999, assigned_contact_id: null,
       });
       if (error) throw error;
-      return `Tarea "${data.name ?? "Nueva tarea"}" creada`;
+      return fill(tv.okTask, String(data.name ?? "")) + inProj;
     }
     case "create_material": {
       if (!pid) throw new Error("Abre un proyecto primero");
@@ -120,16 +156,16 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
         cost: Number(data.cost ?? 0), bought: false,
       });
       if (error) throw error;
-      return `Material "${data.name}" agregado`;
+      return fill(tv.okMaterial, String(data.name ?? "")) + inProj;
     }
     case "create_budget_item": {
-      if (!pid) throw new Error("Abre un proyecto primero");
+      if (!pid) throw new Error(tv.needProject);
       const { error } = await supabase.from("budget_items").insert({
         project_id: pid, type: String(data.type ?? "material"),
         description: String(data.description ?? ""), amount: Number(data.amount ?? 0),
       });
       if (error) throw error;
-      return `Línea "${data.description}" agregada`;
+      return fill(tv.okBudgetItem, String(data.description ?? "")) + inProj;
     }
     case "create_contact": {
       const rawType = String(data.type ?? "coworker").toLowerCase();
@@ -149,7 +185,7 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
         rate_type: isCoworker ? rateType : "hour",
       });
       if (error) throw error;
-      return `Contacto "${data.name}" (${contactType}) creado`;
+      return fill(tv.okContact, String(data.name ?? ""), contactType);
     }
     case "create_agenda_event": {
       const validType = ["cita", "task", "reunion"].includes(String(data.event_type))
@@ -164,12 +200,12 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
         repeat_every: data.repeat_every && data.repeat_every !== "once" ? "daily" : "once",
       });
       if (error) throw error;
-      return `Agendado "${data.title}" para ${data.event_date ?? TODAY()} ${data.event_time ?? "10:00"}`;
+      return fill(tv.okAgenda, String(data.title ?? ""), `${data.event_date ?? TODAY()} ${data.event_time ?? "10:00"}`) + inProj;
     }
     case "update_task_status": {
-      if (!pid) throw new Error("Abre un proyecto primero");
+      if (!pid) throw new Error(tv.needProject);
       const { data: taskList } = await supabase.from("tasks").select("id, name").eq("project_id", pid);
-      if (!taskList?.length) throw new Error("No hay actividades en este proyecto");
+      if (!taskList?.length) throw new Error(tv.noTasks);
       const search = String(data.task_name ?? "").toLowerCase().trim();
       const words  = search.split(/\s+/).filter((w) => w.length > 2);
       const scored = taskList.map((t) => {
@@ -177,13 +213,13 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
         const score = words.filter((w) => name.includes(w)).length;
         return { t, score };
       }).sort((a, b) => b.score - a.score);
-      if (!scored[0] || scored[0].score === 0) throw new Error(`No encontré la actividad "${data.task_name}"`);
+      if (!scored[0] || scored[0].score === 0) throw new Error(fill(tv.taskNotFound, String(data.task_name ?? "")));
       const match     = scored[0].t;
       const newStatus = String(data.status ?? "pend");
       const { error } = await supabase.from("tasks").update({ status: newStatus }).eq("id", match.id);
       if (error) throw error;
-      const sl: Record<string, string> = { pend: "Por hacer", prog: "En proceso", done: "Hecho" };
-      return `"${match.name}" movida a ${sl[newStatus] ?? newStatus}`;
+      const sl: Record<string, string> = { pend: tv.statusPend, prog: tv.statusProg, done: tv.statusDone };
+      return fill(tv.okStatus, match.name, sl[newStatus] ?? newStatus) + inProj;
     }
     default:
       throw new Error(`Acción desconocida: ${action}`);
@@ -421,6 +457,8 @@ export default function VoiceFAB() {
   const [editableData,  setEditableData]  = useState<Record<string, unknown>>({});
   const [statusMsg,     setStatusMsg]     = useState("");
   const [textInput,     setTextInput]     = useState("");
+  // Espejo de textModeRef para el render (el ref lo lee el loop async, que no re-renderiza)
+  const [textMode,      setTextMode]      = useState(false);
 
   const activeRef     = useRef(false);
   const recRef        = useRef<SR | null>(null);
@@ -433,6 +471,16 @@ export default function VoiceFAB() {
   // Memoria de Katy ("Katy aprende"): prefs del usuario cargadas al iniciar la sesión
   const prefsRef      = useRef<VoicePrefs | null>(null);
   const memoryRef     = useRef<VoiceMemory | undefined>(undefined);
+  // El loop de voz corre dentro de una IIFE: lee la tarjeta y guarda por refs,
+  // porque su closure no ve los re-renders de React
+  const editableDataRef = useRef<Record<string, unknown>>({});
+  const commitRef = useRef<
+    ((a: string, d: Record<string, unknown>, o: Record<string, unknown>, k: boolean) => Promise<string | null>) | null
+  >(null);
+  useEffect(() => { editableDataRef.current = editableData; }, [editableData]);
+  // La tarjeta se puede resolver por voz o por botón, y el micrófono sigue abierto
+  // mientras tanto: sin este candado un "sí" suelto guardaría dos veces
+  const settledRef = useRef(false);
 
   const supported =
     typeof window !== "undefined" &&
@@ -534,6 +582,8 @@ export default function VoiceFAB() {
     activeRef.current   = false;
     startedRef.current  = false;
     textModeRef.current = false;
+    setTextMode(false);
+    settledRef.current = false;
     transcriptRef.current = "";
     recorderStopRef.current?.();
     apiHistRef.current  = [];
@@ -612,18 +662,25 @@ export default function VoiceFAB() {
     memoryRef.current = toMemory(updated, userLabel) ?? undefined;
   }, [currentUser, projectOptions]);
 
-  const handleConfirm = useCallback(async () => {
-    if (!pendingAction) return;
+  // Guardado real. Recibe action/data explícitos (no del estado) para que la
+  // confirmación por voz pueda llamarlo sin esperar a que React re-renderice.
+  // keepAlive = la sesión de voz sigue viva para el próximo comando.
+  const commit = useCallback(async (
+    action:   string,
+    data:     Record<string, unknown>,
+    original: Record<string, unknown>,
+    keepAlive: boolean,
+  ): Promise<string | null> => {
     setPhase("saving");
     try {
-      const msg = await saveAction(pendingAction.action, editableData, metaRef.current);
-      await auditLog("confirmed", pendingAction.action, editableData);
-      void learnFromConfirm(pendingAction.action, pendingAction.data, editableData);
-      if (pendingAction.action === "create_payment") {
-        const pid = editableData.__project_id ? String(editableData.__project_id) : metaRef.current.projectId;
-        const amt = Number(editableData.amount ?? 0);
+      const msg = await saveAction(action, data, metaRef.current, t.panel.voice);
+      await auditLog("confirmed", action, data);
+      void learnFromConfirm(action, original, data);
+      if (action === "create_payment") {
+        const pid = destProjectId(data, metaRef.current);
+        const amt = Number(data.amount ?? 0);
         if (pid && amt > 0) {
-          const method = editableData.method ? ` (${editableData.method})` : "";
+          const method = data.method ? ` (${data.method})` : "";
           void addProjectNote(pid, language === "en"
             ? `💵 Payment received: ${fmt(amt)}${method} — ${noteDate("en")}`
             : `💵 Ingreso recibido: ${fmt(amt)}${method} — ${noteDate("es")}`);
@@ -632,17 +689,28 @@ export default function VoiceFAB() {
       setStatusMsg(msg);
       setPhase("success");
       window.dispatchEvent(new CustomEvent("kokivoice_saved", {
-        detail: { action: pendingAction.action, projectId: metaRef.current.projectId }
+        detail: { action, projectId: destProjectId(data, metaRef.current) }
       }));
-      setTimeout(closeClean, 2500);
+      if (!keepAlive) setTimeout(closeClean, 5000);
+      return msg;
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : t.panel.voice.errorSaving;
-      await auditLog("error", pendingAction.action, editableData, errMsg);
+      await auditLog("error", action, data, errMsg);
       showError(errMsg);
+      return null;
     }
-  }, [pendingAction, editableData, closeClean, showError, t, language, auditLog, learnFromConfirm]);
+  }, [closeClean, showError, t, language, auditLog, learnFromConfirm]);
+  useEffect(() => { commitRef.current = commit; }, [commit]);
+
+  const handleConfirm = useCallback(async () => {
+    if (!pendingAction || settledRef.current) return;
+    settledRef.current = true;
+    await commit(pendingAction.action, editableData, pendingAction.data, false);
+  }, [pendingAction, editableData, commit]);
 
   const handleCancel = useCallback(async () => {
+    if (settledRef.current) { closeClean(); return; }
+    settledRef.current = true;
     if (pendingAction) {
       await auditLog("cancelled", pendingAction.action, editableData);
     }
@@ -664,6 +732,7 @@ export default function VoiceFAB() {
     startedRef.current  = true;
     activeRef.current   = true;
     textModeRef.current = true;
+    setTextMode(true);
     transcriptRef.current = "";
     apiHistRef.current  = [];
     setMessages([]); setPendingAction(null); setEditableData({}); setStatusMsg(""); setTextInput("");
@@ -673,7 +742,7 @@ export default function VoiceFAB() {
 
     const converse = async (): Promise<void> => {
       setPhase("thinking");
-      let result: { type: string; text?: string; action?: string; data?: Record<string, unknown> };
+      let result: { type: string; text?: string; say?: string; action?: string; data?: Record<string, unknown> };
       try {
         const ctrl = new AbortController();
         const tid  = setTimeout(() => ctrl.abort(), 12_000);
@@ -688,6 +757,10 @@ export default function VoiceFAB() {
             projectTitle: metaRef.current.projectTitle ?? "",
             language,
             memory:       memoryRef.current,
+            // Gatea qué herramientas de consulta se le ofrecen al modelo (guardarraíl
+            // de UX: la anon key ya permite leer estas tablas desde el navegador)
+            permissions:  currentUser?.permissions ?? null,
+            role:         currentUser?.role ?? "",
           }),
           signal: ctrl.signal,
         });
@@ -704,6 +777,8 @@ export default function VoiceFAB() {
         const data: Record<string, unknown> = { event_type: "task", title: lastUser, event_date: TODAY(), event_time: "09:00" };
         setPendingAction({ action: "create_agenda_event", data });
         setEditableData({ ...data });
+        editableDataRef.current = { ...data };
+        settledRef.current = false;
         push("assistant", language === "en"
           ? "AI is unreachable — review and save your dictation as an editable to-do:"
           : "No pude conectar con la IA — revisa y guarda tu dictado como pendiente editable:");
@@ -714,14 +789,22 @@ export default function VoiceFAB() {
       if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
         const action = result.action;
         const data: Record<string, unknown> = { ...result.data };
+        // El modelo nombra el proyecto ("el de Brickell") → la tarjeta lo lee de __project_id
+        if (data.project_id) { data.__project_id = String(data.project_id); delete data.project_id; }
         applyPrefsDefaults(action, data);
         if (!data.date) data.date = TODAY();
         if (action === "create_task" && !data.hours) data.hours = 8;
         setPendingAction({ action, data });
         setEditableData({ ...data });
+        editableDataRef.current = { ...data };
+        settledRef.current = false;
+        if (result.say?.trim()) {
+          apiHistRef.current.push({ role: "assistant", content: result.say });
+          push("assistant", result.say);
+        }
         setPhase("confirm");
       } else {
-        const question = result.text ?? "¿Algo más?";
+        const question = result.text ?? t.panel.voice.anythingElse;
         apiHistRef.current.push({ role: "assistant", content: question });
         push("assistant", question);
         setPhase("text");
@@ -730,7 +813,7 @@ export default function VoiceFAB() {
 
     converseRef.current = converse;
     setPhase("text");
-  }, [language, push, ensurePrefs, applyPrefsDefaults]);
+  }, [language, push, ensurePrefs, applyPrefsDefaults, t, currentUser]);
 
   const start = useCallback(() => {
     if (phase !== "idle" || startedRef.current) return;
@@ -788,7 +871,7 @@ export default function VoiceFAB() {
         if (!activeRef.current) return;
         setPhase("thinking");
 
-        let result: { type: string; text?: string; action?: string; data?: Record<string, unknown> };
+        let result: { type: string; text?: string; say?: string; action?: string; data?: Record<string, unknown> };
         try {
           const ctrl = new AbortController();
           const tid  = setTimeout(() => ctrl.abort(), 12_000);
@@ -803,6 +886,10 @@ export default function VoiceFAB() {
               projectTitle: metaRef.current.projectTitle ?? "",
               language,
               memory:       memoryRef.current,
+              // Gatea qué herramientas de consulta se le ofrecen al modelo (guardarraíl
+              // de UX: la anon key ya permite leer estas tablas desde el navegador)
+              permissions:  currentUser?.permissions ?? null,
+              role:         currentUser?.role ?? "",
             }),
             signal: ctrl.signal,
           });
@@ -829,37 +916,104 @@ export default function VoiceFAB() {
         if (result.type === "action" && result.action && EDIT_FIELDS[result.action]) {
           const action = result.action;
           const data: Record<string, unknown> = { ...result.data };
+          // El modelo nombra el proyecto ("el de Brickell") → la tarjeta lo lee de __project_id
+          if (data.project_id) { data.__project_id = String(data.project_id); delete data.project_id; }
           applyPrefsDefaults(action, data);
           if (!data.date) data.date = TODAY();
           if (action === "create_task" && !data.hours) data.hours = 8;
 
           setPendingAction({ action, data });
           setEditableData({ ...data });
+          editableDataRef.current = { ...data };
+          settledRef.current = false;
 
-          // Directo a la tarjeta (sin narración): el resumen se lee, no se espera
-          const summary = buildSummary(action, data);
-          const label   = ACTION_LABELS[action] ?? "registro";
-          push("assistant", `Voy a guardar ${label}: ${summary}. Revisa y confirma.`);
+          // El acuse de recibo de Katy; si por lo que sea vino vacío, cae al resumen viejo
+          const said = result.say?.trim()
+            || `Voy a guardar ${ACTION_LABELS[action] ?? "registro"}: ${buildSummary(action, data)}.`;
+          apiHist.push({ role: "assistant", content: said });
+          push("assistant", said);
           setPhase("confirm");
+          await awaitConfirm(action, data);
 
         } else {
-          const question = result.text ?? "¿Algo más?";
+          const question = result.text ?? tpVoice.anythingElse;
           apiHist.push({ role: "assistant", content: question });
           const stillAlive = await say(question);
           if (!stillAlive) return;
 
           let answer = await listen();
           if (!activeRef.current) return;
-          if (answer === null) { showError("Perdí el micrófono. Intenta de nuevo."); return; }
+          if (answer === null) { showError(tpVoice.noMicAccess); return; }
           if (!answer) {
-            await say("No te escuché. ¿Repites?");
+            await say(tpVoice.didntHear);
             answer = await listen();
             if (!answer || !activeRef.current) { closeClean(); return; }
           }
+          if (confirmIntent(answer) === "quit") { closeClean(); return; }
           push("user", answer);
           apiHist.push({ role: "user", content: answer });
           await converse();
         }
+      };
+
+      // Manos libres: con la tarjeta en pantalla Katy sigue escuchando un sí/no, para
+      // no obligar a tocar el teléfono con las manos ocupadas. Los botones siguen ahí.
+      const awaitConfirm = async (action: string, original: Record<string, unknown>): Promise<void> => {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          if (!activeRef.current || settledRef.current) return;
+          const reply = await listen();
+          // Pudo resolverse con los botones mientras escuchábamos: no guardes dos veces
+          if (!activeRef.current || settledRef.current) return;
+          if (reply === null) return;           // sin micrófono: quedan los botones
+          if (!reply) continue;                 // silencio: reintenta
+
+          const intent = confirmIntent(reply);
+          push("user", reply);
+
+          if (intent === "quit") { closeClean(); return; }
+
+          if (intent === "yes") {
+            settledRef.current = true;
+            const msg = await commitRef.current?.(action, editableDataRef.current, original, true);
+            if (msg) await keepGoing(msg);
+            return;
+          }
+
+          if (intent === "no") {
+            settledRef.current = true;
+            await auditLog("cancelled", action, editableDataRef.current);
+            setPendingAction(null); setEditableData({});
+            await keepGoing(null);
+            return;
+          }
+
+          // Ni sí ni no: es una corrección hablada → que la resuelva el modelo,
+          // que emitirá una tarjeta nueva (y ahí settledRef vuelve a abrirse)
+          settledRef.current = true;
+          apiHist.push({ role: "user", content: reply });
+          setPendingAction(null);
+          await converse();
+          return;
+        }
+        // Tres silencios seguidos: no dejamos el micrófono abierto para siempre
+        closeClean();
+      };
+
+      // Tras guardar, la sesión NO muere: vuelve a escuchar para el siguiente comando
+      const keepGoing = async (savedMsg: string | null): Promise<void> => {
+        if (!activeRef.current) return;
+        const cue = savedMsg ? `${savedMsg}. ${tpVoice.anythingElse}` : tpVoice.anythingElse;
+        apiHist.push({ role: "assistant", content: cue });
+        const stillAlive = await say(cue);
+        if (!stillAlive) return;
+
+        setPendingAction(null); setEditableData({}); setStatusMsg("");
+        const next = await listen();
+        if (!next || !activeRef.current) { closeClean(); return; }
+        if (confirmIntent(next) === "quit") { closeClean(); return; }
+        push("user", next);
+        apiHist.push({ role: "user", content: next });
+        await converse();
       };
 
       await converse();
@@ -869,7 +1023,19 @@ export default function VoiceFAB() {
       if (activeRef.current) showError("Error inesperado. Toca para reintentar.");
       else startedRef.current = false;
     });
-  }, [phase, say, listen, push, closeClean, showError, language, t, currentUser, ensurePrefs, applyPrefsDefaults]);
+  }, [phase, say, listen, push, closeClean, showError, language, t, currentUser, ensurePrefs, applyPrefsDefaults, auditLog]);
+
+  // Proyecto al que va a parar la acción pendiente. Puede venir autocompletado desde
+  // la memoria de Katy, así que la tarjeta lo muestra siempre — no en silencio.
+  const destTitle = (() => {
+    if (!pendingAction) return null;
+    const id = destProjectId(editableData, meta);
+    if (!id) return null;
+    const title = id === meta.projectId
+      ? meta.projectTitle
+      : (projectOptions.find(p => p.id === id)?.title ?? meta.projects?.find(p => p.id === id)?.title);
+    return title ? title.split(" — ")[0] : null;
+  })();
 
   const headerLabel: Record<Phase, string> = {
     idle: "", listening: "Escuchando…", thinking: "Procesando…",
@@ -1017,6 +1183,18 @@ export default function VoiceFAB() {
           {/* Confirm form */}
           {phase === "confirm" && pendingAction && (
             <div className="max-h-[300px] overflow-y-auto border-t border-[#E6DDCB] dark:border-[#22304d] p-3">
+              {/* Destino SIEMPRE visible antes de confirmar: el proyecto puede venir
+                  autocompletado de la memoria, y en silencio era imposible notarlo */}
+              {PROJECT_ACTIONS.has(pendingAction.action) && (
+                <div className="mb-2 flex items-center gap-2 rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#16233d] px-2.5 py-1.5">
+                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
+                    {t.panel.voice.saveTo}
+                  </span>
+                  <span className={`truncate text-sm font-bold ${destTitle ? "text-[var(--brand)] dark:text-[#cfe0ff]" : "text-[#B0492F]"}`}>
+                    {destTitle ?? t.panel.voice.pickProject}
+                  </span>
+                </div>
+              )}
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#97A1A0] dark:text-[#728098]">
                 Revisa y corrige si es necesario
               </p>
@@ -1080,6 +1258,12 @@ export default function VoiceFAB() {
                   ✓ Confirmar
                 </button>
               </div>
+              {/* En voz los botones son opcionales: Katy sigue escuchando el sí/no */}
+              {!textMode && (
+                <p className="mt-2 text-center text-[10px] text-[#97A1A0] dark:text-[#728098]">
+                  🎙 {t.panel.voice.handsFreeHint}
+                </p>
+              )}
             </div>
           )}
 
