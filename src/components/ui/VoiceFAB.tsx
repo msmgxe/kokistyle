@@ -353,7 +353,13 @@ async function recordOnce(
   activeRef: { current: boolean },
   stopRef: { current: (() => void) | null },
 ): Promise<string> {
+  // Un reintento corto: en Android el dispositivo queda "ocupado" un instante
+  // tras un uso reciente (cerrar y reabrir la sesión), y el 2º intento entra.
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    .catch(async () => {
+      await new Promise<void>(r => setTimeout(r, 400));
+      return navigator.mediaDevices.getUserMedia({ audio: true });
+    })
     .catch(() => { throw new Error("mic-denied"); });
   return new Promise<string>((resolve, reject) => {
     let recorder: MediaRecorder;
@@ -825,8 +831,14 @@ export default function VoiceFAB() {
 
     (async () => {
       try {
+        // Prueba de permiso + warm-up con los delays de primeMic: en Android el
+        // dispositivo no se libera al instante, y sin la pausa la grabación que
+        // viene justo después falla ("micrófono ocupado") al reactivar la sesión.
+        const android = IS_ANDROID();
         const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        await new Promise<void>(r => setTimeout(r, android ? 500 : 200));
         s.getTracks().forEach(track => track.stop());
+        await new Promise<void>(r => setTimeout(r, android ? 350 : 120));
       } catch {
         showError(tpVoice.noMic);
         return;
