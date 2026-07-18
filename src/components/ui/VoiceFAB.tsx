@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, X, Loader2, CheckCircle, Keyboard, Send } from "lucide-react";
+import { Mic, X, Loader2, CheckCircle, Keyboard, Send, Ear } from "lucide-react";
 import { useVoice } from "@/src/context/VoiceContext";
 import type { VoiceMeta } from "@/src/context/VoiceContext";
 import { supabase } from "@/src/lib/supabase";
@@ -44,6 +44,10 @@ function localDetect(text: string, context: string): string {
   if (/\bcontacto|especiali|proveedor/.test(t)) return "create_contact";
   return "create_project";
 }
+
+// Frase de activación "hey Katy" y variantes de dictado (español + inglés)
+const WAKE_RE = /\b(hey|hei|ey|oye|hola|escucha|okay|ok) ?(katy|caty|katie|cathy|ketty|kati|catty)\b/;
+const hasWake = (text: string) => WAKE_RE.test(norm(text));
 
 const YES_RE  = /^(si|sip|dale|ok|okey|okay|confirma|confirmar|confirmado|guarda|guardar|guardalo|correcto|exacto|asi es|yes|yep|yeah|sure|save|confirm|go)\b/;
 const NO_RE   = /^(no|nel|cancela|cancelar|borra|borrar|descarta|descartalo|nope|cancel|discard)\b/;
@@ -490,6 +494,16 @@ export default function VoiceFAB() {
   const preferRecRef    = useRef(false);
   const recorderStopRef = useRef<(() => void) | null>(null);
   const [projectOptions, setProjectOptions] = useState<{ id: string; title: string }[]>([]);
+
+  // Modo "hey Katy": escucha continua del navegador (Web Speech) que abre Katy al
+  // oír la frase. Opt-in por dispositivo (consume batería, necesita la app abierta)
+  // y depende del motor de voz del equipo — puede no dispararse en MIUI.
+  const [wakeOn, setWakeOn]  = useState(() =>
+    typeof window !== "undefined" && localStorage.getItem("kokistyle-wake") === "1");
+  const wakeOnRef      = useRef(false);
+  const wakeRecRef     = useRef<SR | null>(null);
+  const startRef       = useRef<() => void>(() => {});
+  const startWakeRef   = useRef<() => void>(() => {});
 
   // Si la acción necesita proyecto y no hay uno abierto, cargar la lista para el selector
   useEffect(() => {
@@ -1030,6 +1044,62 @@ export default function VoiceFAB() {
     });
   }, [phase, say, listen, push, closeClean, showError, language, t, currentUser, ensurePrefs, applyPrefsDefaults, auditLog]);
 
+  // ── Modo "hey Katy" (wake word) ────────────────────────────────────────────
+  useEffect(() => { startRef.current = start; }, [start]);
+  useEffect(() => { wakeOnRef.current = wakeOn; }, [wakeOn]);
+
+  const stopWake = useCallback(() => {
+    try { wakeRecRef.current?.abort(); } catch { /* noop */ }
+    wakeRecRef.current = null;
+  }, []);
+
+  // Arranca la escucha continua. Se reinicia sola (el motor se corta cada tanto).
+  const startWake = useCallback(() => {
+    if (!supported || wakeRecRef.current) return;
+    const SRClass = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SRClass) return;
+    const rec = new SRClass();
+    rec.lang           = IS_ANDROID() ? language : `${language}-US`;
+    rec.continuous     = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    wakeRecRef.current = rec;
+
+    rec.onresult = (e: SpeechRecognitionEvent) => {
+      const txt = Array.from(e.results).map(r => r[0]?.transcript ?? "").join(" ");
+      if (hasWake(txt)) {
+        stopWake();
+        // Abre Katy en modo voz; el efecto de fase pausa el wake mientras dura
+        startRef.current();
+      }
+    };
+    // El reconocedor se detiene solo periódicamente o por error de red: relanzar
+    // mientras siga activado y Katy esté cerrada (vía ref para no auto-referenciarse).
+    rec.onend   = () => { wakeRecRef.current = null; if (wakeOnRef.current && !activeRef.current) setTimeout(() => startWakeRef.current(), 400); };
+    rec.onerror = () => { try { rec.stop(); } catch { /* noop */ } };
+    try { rec.start(); } catch { wakeRecRef.current = null; }
+  }, [supported, language, stopWake]);
+  useEffect(() => { startWakeRef.current = startWake; }, [startWake]);
+
+  // Enciende/apaga y persiste; libera el micrófono mientras Katy está activa
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("kokistyle-wake", wakeOn ? "1" : "0");
+    if (wakeOn && phase === "idle") startWake();
+    else stopWake();
+    return () => stopWake();
+  }, [wakeOn, phase, startWake, stopWake]);
+
+  // Pausa el wake si la pestaña se oculta (ahorra batería y evita que el motor
+  // quede colgado en segundo plano); lo reanuda al volver.
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) stopWake();
+      else if (wakeOnRef.current && phase === "idle") startWake();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [phase, startWake, stopWake]);
+
   // Proyecto al que va a parar la acción pendiente. Puede venir autocompletado desde
   // la memoria de Katy, así que la tarjeta lo muestra siempre — no en silencio.
   const destTitle = (() => {
@@ -1310,6 +1380,25 @@ export default function VoiceFAB() {
           className="fixed bottom-6 right-[5.5rem] z-[150] grid size-10 place-items-center rounded-full bg-[var(--accent)] text-white shadow-xl transition-all duration-200 active:scale-95 hover:bg-[var(--accent-strong)]"
         >
           <Keyboard size={18} />
+        </button>
+      )}
+
+      {/* Toggle "hey Katy": escucha continua opt-in. Solo si el navegador lo soporta. */}
+      {phase === "idle" && supported && (
+        <button
+          type="button"
+          onClick={() => setWakeOn(v => !v)}
+          aria-label={wakeOn ? 'Desactivar "hey Katy"' : 'Activar "hey Katy"'}
+          aria-pressed={wakeOn}
+          title={wakeOn ? 'Escuchando "hey Katy" — toca para apagar' : 'Activar "hey Katy" (manos libres)'}
+          className={`fixed bottom-[4.75rem] right-6 z-[150] flex h-8 items-center gap-1.5 rounded-full pl-2 pr-3 text-[11px] font-bold shadow-xl transition-all duration-200 active:scale-95 ${
+            wakeOn ? "bg-[#4F8A63] text-white" : "bg-white/95 dark:bg-[#17233d] text-[#5C6A6E] dark:text-[#9fb0cc] ring-1 ring-[#E6DDCB] dark:ring-[#2c3c5e]"
+          }`}
+        >
+          {wakeOn
+            ? <span className="grid size-4 place-items-center"><span className="size-2 animate-ping rounded-full bg-white" /></span>
+            : <Ear size={14} />}
+          hey Katy
         </button>
       )}
 
