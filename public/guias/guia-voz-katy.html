@@ -382,9 +382,9 @@
     <p class="lead">Katy consulta tus datos y te contesta hablando. Ocho tipos de pregunta que cubren proyectos, obra, dinero y gente. Lo que puede responder depende de tus permisos: un co-worker no escucha montos.</p>
     <div class="qgrid">
       <div class="q">
-        <div class="qt">📅 Tu agenda del día</div>
+        <div class="qt">📅 Tu agenda — cualquier día</div>
         <div class="qs">“¿Qué tengo hoy?”</div>
-        <div class="qa">También <b>“¿qué tengo mañana?”</b> o <b>“¿qué hay esta semana?”</b>. Te lee las citas, tareas y reuniones con su hora y si ya están hechas.</div>
+        <div class="qa">Hoy, mañana, <b>“¿qué tuve ayer?”</b>, <b>“¿qué hubo la semana pasada?”</b>. Sí ve el historial — pásale el día. Te lee citas, tareas y reuniones con su hora y si están hechas.</div>
         <div class="gate">🔒 Solo superadmin</div>
       </div>
       <div class="q">
@@ -401,8 +401,8 @@
       </div>
       <div class="q">
         <div class="qt">💵 El dinero</div>
-        <div class="qs">“¿Cuánto llevo cobrado en Brickell?”</div>
-        <div class="qa">Presupuesto, <b>cobrado</b>, <b>por cobrar</b>, gastado y balance. También <b>“¿cuánto he gastado?”</b> o <b>“¿en qué se fue el dinero?”</b>.</div>
+        <div class="qs">“¿Cuánto le presupuesté al cliente?”</div>
+        <div class="qa">Presupuesto (lo lee del <b>Estimate</b> directo), <b>cobrado</b>, <b>por cobrar</b>, gastado y balance. También <b>“¿cuánto he gastado?”</b> o <b>“¿en qué se fue el dinero?”</b>.</div>
         <div class="gate">🔒 Requiere permiso de Cash Flow</div>
       </div>
       <div class="q">
@@ -437,8 +437,8 @@
       </div>
     </div>
 
-    <div class="callout">
-      <b>Ojo con el “por cobrar”.</b> Sale del <b>Grand Total del Estimate</b>, y ese número se sincroniza cuando abres o guardas el tab Estimate. Si cambiaste el estimado y nunca abriste ese tab, el “por cobrar” puede ir atrasado. Katy te lo advierte si el presupuesto está en cero, pero la fuente de verdad siempre es el tab Estimate.
+    <div class="callout info">
+      <b>El presupuesto sale del Estimate real.</b> Cuando preguntas por dinero, Katy calcula el total directo del <b>Estimate</b> del proyecto (secciones + descuento), no de un número guardado aparte. Así responde bien aunque nadie haya abierto ese tab. Si el proyecto no tiene Estimate armado, te lo dice en vez de inventar.
     </div>
 
     <!-- 4 · DÓNDE SE GUARDA -->
@@ -508,8 +508,45 @@
       </div>
     </div>
 
-    <!-- 6 · DESDE DÓNDE -->
-    <h2 class="section"><span class="n">6</span> Desde dónde funciona cada cosa</h2>
+    <!-- 6 · ENCADENA PREGUNTAS -->
+    <h2 class="section"><span class="n">6</span> Encadena preguntas — Katy no repite trabajo</h2>
+    <p class="lead">Dentro de una misma conversación, Katy <b>recuerda de qué proyecto están hablando</b>. Pregunta una cosa tras otra sin volver a nombrarlo — y va rápido, porque no rearma el contexto cada vez.</p>
+    <div class="ctx-grid">
+      <div class="ctx">
+        <div class="hd">
+          <div class="ico" style="background:#E7F1EA">🔗</div>
+          <div><div class="t">Una conversación, varias preguntas</div><div class="m">No repites el proyecto</div></div>
+        </div>
+        <div class="bd">
+          <div class="bubble">¿Cuánto llevo cobrado en <em>Jacuzzi</em>?</div>
+          <div class="reply"><span class="kk">K</span><span>“Nada aún. Presupuestaste $11,500, todo por cobrar.”</span></div>
+          <div class="bubble">¿Y cuánto he <em>gastado</em>?</div>
+          <div class="reply"><span class="kk">K</span><span>Sabe que sigues en Jacuzzi — no vuelve a preguntar.</span></div>
+          <div class="bubble">¿Qué me falta <em>comprar</em>?</div>
+          <div class="reply"><span class="kk">K</span><span>Mismo hilo, misma obra. Respuesta al toque.</span></div>
+        </div>
+      </div>
+      <div class="ctx">
+        <div class="hd">
+          <div class="ico" style="background:#EDF3FB">⚡</div>
+          <div><div class="t">Por qué va rápido</div><div class="m">Y por qué cuesta menos</div></div>
+        </div>
+        <div class="bd">
+          <div style="font-size:12.5px;line-height:1.6;color:var(--soft)">
+            La primera pregunta arma todo el contexto (tus proyectos, lo que Katy sabe hacer). De ahí en adelante, mientras sigas en la <b>misma conversación</b>, ese contexto queda <b>listo y reutilizado</b> — no se rehace. Por eso la 2ª, 3ª y 4ª pregunta salen más rápido que la primera.
+            <div style="margin-top:10px;padding:9px 12px;background:var(--ok-soft);border-radius:10px;color:#35664A;font-weight:600">
+              💡 Tip: agrupa tus preguntas de un proyecto en una sola sesión de voz, en vez de abrir y cerrar el micrófono para cada una.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="callout info">
+      <b>Encadenar también aplica a preguntar + actuar.</b> “¿Qué me falta en Jacuzzi? … agéndame comprar el tile para mañana” — Katy consulta, te responde, y con lo que quedó en el aire crea el recordatorio, sin que le repitas el proyecto.
+    </div>
+
+    <!-- 7 · DESDE DÓNDE -->
+    <h2 class="section"><span class="n">7</span> Desde dónde funciona cada cosa</h2>
     <p class="lead">El micrófono está en todas las pantallas y Katy sabe dónde estás parado. Dentro de un proyecto no hace falta nombrarlo; desde el Dashboard, nómbralo o revisa la franja de destino.</p>
     <div class="ctx-grid">
       <div class="ctx">
@@ -582,8 +619,8 @@
       </div>
     </div>
 
-    <!-- 7 · CHULETA -->
-    <h2 class="section"><span class="n">7</span> Chuleta de comandos</h2>
+    <!-- 8 · CHULETA -->
+    <h2 class="section"><span class="n">8</span> Chuleta de comandos</h2>
     <p class="lead">Los 9 registros. Solo lo marcado como obligatorio hace falta para que aparezca la tarjeta — el resto lo llenas ahí o te lo pregunta.</p>
     <div class="scroller">
       <table class="cheat">
@@ -602,8 +639,8 @@
       </table>
     </div>
 
-    <!-- 8 · PRUÉBALO -->
-    <h2 class="section"><span class="n">8</span> Pruébalo tú mismo</h2>
+    <!-- 9 · PRUÉBALO -->
+    <h2 class="section"><span class="n">9</span> Pruébalo tú mismo</h2>
     <p class="lead">Trece pruebas de dos minutos. Si todas pasan, Katy está bien configurada en tu dispositivo. Si alguna falla, avísale a Marco con cuál fue.</p>
     <div class="checks">
       <div class="chk"><div class="box"></div><div class="ct">
@@ -656,8 +693,8 @@
       </div></div>
     </div>
 
-    <!-- 9 · TIPS -->
-    <h2 class="section"><span class="n">9</span> Trucos que ayudan</h2>
+    <!-- 10 · TIPS -->
+    <h2 class="section"><span class="n">10</span> Trucos que ayudan</h2>
     <div class="tips">
       <div class="tip"><span class="e">🗣</span><span class="x"><b>Habla como a un compañero.</b> No hay palabras mágicas. “Se me olvidó, ayer le pagué 500 a Jorge” funciona igual que el comando formal.</span></div>
       <div class="tip"><span class="e">🔢</span><span class="x"><b>Montos en palabras.</b> “Cuatro mil” → $4,000. “Mil quinientos” → $1,500. No hace falta deletrear.</span></div>
