@@ -290,6 +290,12 @@ function readTools(
 ): ToolSet {
   const es  = lang === "es";
   const can = (section: keyof Permissions) => isSuperAdmin || perms?.[section]?.view === true;
+  // Nivel admin de voz: el superadmin, o un co-worker a quien el superadmin le dio
+  // TODOS los permisos de vista en el panel de Equipo. Habilita las herramientas
+  // de gestión (tu agenda + la auditoría "¿qué me falta?"). Así el superadmin
+  // controla persona por persona: la cuadrilla de campo queda limitada por default.
+  const SECTIONS: (keyof Permissions)[] = ["workflow", "materiales", "contactos", "presupuesto", "pagos", "notas"];
+  const adminLevel = isSuperAdmin || (!!perms && SECTIONS.every(s => perms[s]?.view === true));
   const tools: ToolSet = {};
   const projectIds = projects.map(p => p.id);
   const titleOf = (id: string | null) => projects.find(p => p.id === id)?.title ?? null;
@@ -299,7 +305,7 @@ function readTools(
   const resolveOrFocus = (hint: string | undefined) => resolveProjectId(hint, projects) ?? focusId;
 
   // La agenda es global y no depende de tener proyectos cargados
-  if (isSuperAdmin) {
+  if (adminLevel) {
     tools.consultar_agenda = tool({
       description: es
         ? "Consultar la agenda de CUALQUIER día o rango — futuro O PASADO. Úsala para \"¿qué tengo hoy?\", \"¿qué tengo mañana?\", \"¿qué tuve ayer?\", \"¿qué hubo la semana pasada?\". Sí puedes ver el historial: pásale el rango de fechas."
@@ -523,9 +529,9 @@ function readTools(
     });
   }
 
-  // Auditoría "qué me falta registrar". Solo superadmin: mezcla huecos de dinero
+  // Auditoría "qué me falta registrar". Nivel admin: mezcla huecos de dinero
   // con huecos de obra, y es una vista de gestión.
-  if (isSuperAdmin) {
+  if (adminLevel) {
     tools.consultar_pendientes = tool({
       description: es
         ? "Revisar qué le falta registrar a un proyecto: estimado, tareas, materiales, pagos, fechas. Úsala para \"¿qué me falta en Brickell?\", \"¿qué tengo incompleto?\"."
