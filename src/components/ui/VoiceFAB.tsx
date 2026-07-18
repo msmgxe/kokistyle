@@ -257,17 +257,32 @@ function loadVoices(): Promise<void> {
   });
 }
 
-function pickVoice(lang: "en" | "es"): SpeechSynthesisVoice | null {
-  const vs = window.speechSynthesis.getVoices();
-  if (lang === "en") {
-    const enPrefs = ["Samantha", "Google US English", "Karen", "Victoria"];
-    for (const p of enPrefs) { const v = vs.find(v => v.name.includes(p)); if (v) return v; }
-    return vs.find(v => v.lang.startsWith("en")) ?? null;
+// Puntúa cada voz para elegir la MENOS robótica disponible: motores neural/natural/
+// enhanced/Siri primero, luego Google (suave en Android/Chrome) y voces de red;
+// en español prioriza el latino (más cálido para el sur de Florida) sobre el de España.
+function scoreVoice(v: SpeechSynthesisVoice, lang: "en" | "es"): number {
+  const name = v.name.toLowerCase();
+  const tag  = `${v.lang} ${v.name}`.toLowerCase();
+  let s = 0;
+  if (/(neural|natural|enhanced|premium|siri)/.test(name)) s += 50;
+  if (/google/.test(name)) s += 30;
+  if (v.localService === false) s += 12;
+  if (lang === "es") {
+    if (/(es-us|es-mx|es-419|estados unidos|m[eé]xico|latin)/.test(tag)) s += 25;
+    if (/(es-es|españa|espana)/.test(tag)) s -= 8;
+    if (["paulina","m[oó]nica","luciana","pen[eé]lope","google español"].some(n => new RegExp(n).test(name))) s += 18;
+  } else {
+    if (/(en-us)/.test(tag)) s += 15;
+    if (["samantha","google us english","aria","jenny","karen","victoria"].some(n => name.includes(n))) s += 18;
   }
-  const esPrefs = ["Paulina","Mónica","Monica","Luciana","Penélope","Penelope",
-                   "Google español de Estados Unidos","Google español"];
-  for (const p of esPrefs) { const v = vs.find(v => v.name.includes(p)); if (v) return v; }
-  return vs.find(v => v.lang.startsWith("es")) ?? null;
+  return s;
+}
+
+function pickVoice(lang: "en" | "es"): SpeechSynthesisVoice | null {
+  const all = window.speechSynthesis.getVoices();
+  const vs  = all.filter(v => v.lang.toLowerCase().startsWith(lang));
+  if (!vs.length) return all.find(v => v.lang.toLowerCase().startsWith(lang)) ?? null;
+  return vs.map(v => ({ v, s: scoreVoice(v, lang) })).sort((a, b) => b.s - a.s)[0].v;
 }
 
 async function tts(text: string, lang: "en" | "es"): Promise<void> {
@@ -277,10 +292,12 @@ async function tts(text: string, lang: "en" | "es"): Promise<void> {
   await new Promise<void>((resolve) => {
     const utt  = new SpeechSynthesisUtterance(text);
     utt.lang   = lang === "en" ? "en-US" : "es-US";
-    utt.rate   = 1.0;
-    utt.pitch  = 1.1;
+    // Entrega cálida y natural: un pelín lenta y con tono neutro (el pitch alto sonaba
+    // artificial). La voz elegida por scoreVoice hace la mayor diferencia.
+    utt.rate   = 0.98;
+    utt.pitch  = 1.0;
     const voice = pickVoice(lang);
-    if (voice) utt.voice = voice;
+    if (voice) { utt.voice = voice; if (voice.lang) utt.lang = voice.lang; }
     // Continuar de inmediato al terminar de hablar: solo una pausa mínima para que
     // el sintetizador suelte el audio (el reintento de recordOnce cubre el "ocupado").
     utt.onend   = () => setTimeout(resolve, IS_ANDROID() ? 180 : 40);
