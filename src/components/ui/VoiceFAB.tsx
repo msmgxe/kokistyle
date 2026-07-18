@@ -257,16 +257,17 @@ function loadVoices(): Promise<void> {
   });
 }
 
-// Puntúa cada voz para elegir la MENOS robótica disponible: motores neural/natural/
-// enhanced/Siri primero, luego Google (suave en Android/Chrome) y voces de red;
-// en español prioriza el latino (más cálido para el sur de Florida) sobre el de España.
+// Puntúa cada voz para elegir la MENOS robótica que ADEMÁS suene fiable: los motores
+// neural/natural/enhanced/Siri primero, y se prioriza local sobre remoto — las voces de
+// red (Google en desktop Chrome) enmudecen en silencio en varios navegadores. En Android
+// la voz de Google es local, así que igual gana ahí. En español, latino > España.
 function scoreVoice(v: SpeechSynthesisVoice, lang: "en" | "es"): number {
   const name = v.name.toLowerCase();
   const tag  = `${v.lang} ${v.name}`.toLowerCase();
   let s = 0;
   if (/(neural|natural|enhanced|premium|siri)/.test(name)) s += 50;
-  if (/google/.test(name)) s += 30;
-  if (v.localService === false) s += 12;
+  if (/google/.test(name)) s += 22;
+  if (v.localService !== false) s += 25; // local = fiable (habla siempre)
   if (lang === "es") {
     if (/(es-us|es-mx|es-419|estados unidos|m[eé]xico|latin)/.test(tag)) s += 25;
     if (/(es-es|españa|espana)/.test(tag)) s -= 8;
@@ -288,7 +289,11 @@ function pickVoice(lang: "en" | "es"): SpeechSynthesisVoice | null {
 async function tts(text: string, lang: "en" | "es"): Promise<void> {
   if (!("speechSynthesis" in window)) return;
   await loadVoices();
-  window.speechSynthesis.cancel();
+  const synth = window.speechSynthesis;
+  try { synth.cancel(); } catch { /* noop */ }
+  // Chrome deja el motor "en pausa" tras cancel() (el que dispara la X al cerrar); sin
+  // este resume() el siguiente speak() queda MUDO aunque todo lo demás funcione.
+  try { synth.resume(); } catch { /* noop */ }
   await new Promise<void>((resolve) => {
     const utt  = new SpeechSynthesisUtterance(text);
     utt.lang   = lang === "en" ? "en-US" : "es-US";
@@ -298,11 +303,24 @@ async function tts(text: string, lang: "en" | "es"): Promise<void> {
     utt.pitch  = 1.0;
     const voice = pickVoice(lang);
     if (voice) { utt.voice = voice; if (voice.lang) utt.lang = voice.lang; }
-    // Continuar de inmediato al terminar de hablar: solo una pausa mínima para que
-    // el sintetizador suelte el audio (el reintento de recordOnce cubre el "ocupado").
-    utt.onend   = () => setTimeout(resolve, IS_ANDROID() ? 180 : 40);
-    utt.onerror = () => setTimeout(resolve, 120);
-    window.speechSynthesis.speak(utt);
+
+    // A prueba de cuelgues: si la voz falla en silencio (voz remota no disponible, bug
+    // del motor), onend/onerror pueden no dispararse nunca y el flujo quedaría atascado
+    // en "hablando…". Dos guardas: si NUNCA arranca en 1.8s, seguimos; y un tope absoluto
+    // por si arranca pero no termina. Si habla normal, onend gana antes que cualquiera.
+    let done = false;
+    const finish = (delay: number) => { if (done) return; done = true; setTimeout(resolve, delay); };
+    let started = false;
+    const words = text.trim().split(/\s+/).filter(Boolean).length;
+    utt.onstart = () => { started = true; };
+    utt.onend   = () => finish(IS_ANDROID() ? 180 : 40);
+    utt.onerror = () => finish(120);
+    setTimeout(() => { if (!started) finish(0); }, 1800);
+    setTimeout(() => finish(0), Math.min(20000, Math.max(4000, words * 520)));
+
+    synth.speak(utt);
+    // Segundo resume(): en algunos Chrome el audio no arranca hasta un resume() post-speak.
+    try { synth.resume(); } catch { /* noop */ }
   });
 }
 
