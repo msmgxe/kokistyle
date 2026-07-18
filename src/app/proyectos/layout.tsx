@@ -146,6 +146,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   ];
   const moreLinks: NavItem[] = [
     ...(isSuperAdmin ? [
+      { href: "/proyectos/config",     icon: Settings,      label: t.panel.nav.config },
       { href: "/proyectos/prospectos", icon: Sparkles,      label: t.panel.nav.prospects },
       { href: "/proyectos/sitio",      icon: Globe,         label: t.panel.nav.site },
       { href: "/proyectos/agenda",     icon: CalendarClock, label: t.panel.nav.agenda },

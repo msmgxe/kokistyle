@@ -287,6 +287,7 @@ export const translations = {
         bookings: "Bookings",
         agenda: "Agenda",
         team: "Team",
+        config: "Settings",
         prospects: "Prospects",
         site: "Site",
         help: "Help",
@@ -503,6 +504,9 @@ export const translations = {
         confirmSaveQ: "Save changes?",
         deleteConfirmTitle: "Delete",
         cannotUndo: "This cannot be undone.",
+      },
+      config: {
+        subtitle: "Team access, permissions and security — admin only",
       },
       dashboard: {
         greeting: "Hello",
@@ -1301,6 +1305,7 @@ export const translations = {
         activity: "Actividad",
         bookings: "Reservas",
         team: "Equipo",
+        config: "Configuración",
         prospects: "Prospectos",
         site: "Sitio",
         help: "Ayuda",
@@ -1514,6 +1519,9 @@ export const translations = {
         confirmSaveQ: "¿Guardar los cambios?",
         deleteConfirmTitle: "Eliminar",
         cannotUndo: "Esta acción no se puede deshacer.",
+      },
+      config: {
+        subtitle: "Acceso del equipo, permisos y seguridad — solo administrador",
       },
       dashboard: {
         greeting: "Hola",

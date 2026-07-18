@@ -19,8 +19,6 @@ import type { Project, Payment, Expense, Task } from "@/src/types/project";
 type KpiType = "projects" | "budgeted" | "income" | "expenses" | "outstanding" | "cashflow";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
 import ProjectThumb from "@/src/components/ui/ProjectThumb";
-import UsersPanel from "@/src/components/ui/UsersPanel";
-import AdminSettings from "@/src/components/ui/AdminSettings";
 import { useVoice } from "@/src/context/VoiceContext";
 import { branding } from "@/src/config/branding";
 import { useAuth } from "@/src/context/AuthContext";
@@ -721,7 +719,6 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [kpiModal, setKpiModal] = useState<KpiType | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("en_obra");
-  const [allContacts, setAllContacts] = useState<{ id: string; name: string; specialty: string }[]>([]);
   const { setMeta } = useVoice();
   const { currentUser, isSuperAdmin, hasPermission } = useAuth();
   const { t, language } = useLanguage();
@@ -779,12 +776,6 @@ export default function DashboardPage() {
     return () => window.removeEventListener("kokivoice_saved", handler);
   }, [fetchData]);
 
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    supabase.from("contacts").select("id, name, specialty").order("name").then(({ data }) => {
-      if (data) setAllContacts(data);
-    });
-  }, [isSuperAdmin]);
 
   const handleDelete = useCallback(async (id: string) => {
     await supabase.from("projects").delete().eq("id", id);
@@ -963,19 +954,6 @@ export default function DashboardPage() {
           </div>
         );
       })()}
-
-      {isSuperAdmin && (
-        <>
-          <UsersPanel projects={projects} contacts={allContacts} />
-          <div className="mt-8">
-            <div className="mb-4">
-              <h2 className="text-base font-bold text-[var(--brand)]">{tp.dashboard.security}</h2>
-              <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{tp.dashboard.securityDesc}</p>
-            </div>
-            <AdminSettings />
-          </div>
-        </>
-      )}
 
       {toast && (
         <div className="fixed bottom-24 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-semibold text-white shadow-xl">
