@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { audio, language = "es" } = body;
+  // language ya no se usa: Whisper autodetecta el idioma (español o inglés)
+  const { audio } = body;
   if (!audio || !audio.startsWith("data:")) {
     return NextResponse.json({ error: "audio (data URI) required" }, { status: 400 });
   }
@@ -40,7 +41,10 @@ export async function POST(req: NextRequest) {
         input: {
           audio,
           task: "transcribe",
-          language: language === "en" ? "english" : "spanish",
+          // Sin forzar idioma: Whisper autodetecta, así el usuario puede hablar
+          // español o inglés sin importar el idioma de la app. (Antes se forzaba
+          // al idioma de la UI y transcribía mal el otro idioma.)
+          language: "None",
           batch_size: 8,
         },
       }),

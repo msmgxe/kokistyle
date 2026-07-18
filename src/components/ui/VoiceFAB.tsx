@@ -266,16 +266,6 @@ function pickVoice(lang: "en" | "es"): SpeechSynthesisVoice | null {
   return vs.find(v => v.lang.startsWith("es")) ?? null;
 }
 
-async function primeMic(): Promise<void> {
-  const android = IS_ANDROID();
-  try {
-    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-    await new Promise<void>(r => setTimeout(r, android ? 500 : 200));
-    s.getTracks().forEach(t => t.stop());
-    await new Promise<void>(r => setTimeout(r, android ? 300 : 100));
-  } catch { /* permission denied or already active */ }
-}
-
 async function tts(text: string, lang: "en" | "es"): Promise<void> {
   if (!("speechSynthesis" in window)) return;
   await loadVoices();
@@ -287,8 +277,10 @@ async function tts(text: string, lang: "en" | "es"): Promise<void> {
     utt.pitch  = 1.1;
     const voice = pickVoice(lang);
     if (voice) utt.voice = voice;
-    utt.onend   = () => { primeMic().then(() => setTimeout(resolve, IS_ANDROID() ? 700 : 400)); };
-    utt.onerror = () => setTimeout(resolve, 300);
+    // Continuar de inmediato al terminar de hablar: solo una pausa mínima para que
+    // el sintetizador suelte el audio (el reintento de recordOnce cubre el "ocupado").
+    utt.onend   = () => setTimeout(resolve, IS_ANDROID() ? 180 : 40);
+    utt.onerror = () => setTimeout(resolve, 120);
     window.speechSynthesis.speak(utt);
   });
 }
@@ -831,9 +823,10 @@ export default function VoiceFAB() {
 
     (async () => {
       try {
-        // Prueba de permiso + warm-up con los delays de primeMic: en Android el
-        // dispositivo no se libera al instante, y sin la pausa la grabación que
-        // viene justo después falla ("micrófono ocupado") al reactivar la sesión.
+        // Prueba de permiso + warm-up al ABRIR la sesión: en Android el dispositivo
+        // no se libera al instante, y sin la pausa la grabación que viene justo
+        // después falla ("micrófono ocupado") al reactivar. (Mid-conversación la
+        // continuación es inmediata — ver tts.)
         const android = IS_ANDROID();
         const s = await navigator.mediaDevices.getUserMedia({ audio: true });
         await new Promise<void>(r => setTimeout(r, android ? 500 : 200));
