@@ -825,6 +825,7 @@ function useFeatures(EN: boolean) {
         { t:"Check WHERE it will be saved", d:"The card always shows a <b>“Will save to: …”</b> strip. From the Dashboard, Katy proposes the <b>last project you used</b> — convenient, but check it. If it's red saying <b>“Pick a project”</b>, you can't confirm until you choose one." },
         { t:"Confirm by voice or by button", d:"Say <b>\"yes\"</b> / <b>\"go ahead\"</b> to save, <b>\"no\"</b> to discard — or tap the buttons. A long sentence like <b>\"yes but change the amount to 500\"</b> is treated as a correction, not a save." },
         { t:"Hands-free: keep going", d:"After saving, the session stays alive: <b>\"Saved in Miami Kitchen. Anything else?\"</b> — dictate the next one without touching the phone. Close with <b>\"done\"</b>, <b>\"that's all\"</b> or <b>\"thanks\"</b>." },
+        { t:"Wake her by voice: \"hey Katy\"", d:"Turn on the <b>green \"hey Katy\" pill</b> (bottom-right, over the mic) once per device. While the app is open, just say <b>\"hey Katy\"</b> and she starts listening — no tapping. It's opt-in per phone and only works with the app open on screen (a browser limit). Works best on Samsung/Chrome; on some Xiaomi/MIUI phones tap the mic instead." },
         { t:"Ask her things too — 8 kinds of question", d:"<b>Agenda (any day, past too):</b> \"What do I have today?\", \"What did I have yesterday?\", \"What was last week?\" · <b>Project sheet:</b> \"How's Brickell going?\", \"Whose project is this?\" · <b>Notes:</b> \"Read me the notes for Miami Kitchen\" · <b>Money (from the Estimate):</b> \"How much did I quote the client?\", \"How much is still owed?\", \"What did I spend it on?\" · <b>Tasks:</b> \"What's on for today?\" (all projects) or \"What's left in Brickell?\" · <b>Materials:</b> \"What's left to buy?\" · <b>Contacts:</b> \"What's Jorge's phone?\", \"Who are my plumbers?\" · <b>Gaps:</b> \"What am I missing on Brickell?\"" },
         { t:"Chain questions — she keeps the thread", d:"In one conversation Katy remembers which project you're on, so follow-ups don't repeat it: <b>\"How much have I collected on Jacuzzi? … and how much did I spend? … what's left to buy?\"</b> — three questions, no re-naming the project, and each answer comes faster because she reuses the context." },
         { t:"What she answers depends on your role", d:"Each lookup is permission-gated: a co-worker only hears what <b>their permissions</b> allow — no permission, no amounts. The agenda and the \"what am I missing\" audit need <b>admin level</b>: the superadmin, or a co-worker you've granted <b>all permissions</b> in the Team panel. Grant those and they get the same full voice as you. If she can't answer something, she tells you which tab to open instead of guessing." },
@@ -835,6 +836,7 @@ function useFeatures(EN: boolean) {
         { t:"Revisa DÓNDE se va a guardar", d:"La tarjeta siempre muestra la franja <b>“Se guardará en: …”</b>. Desde el Dashboard, Katy propone el <b>último proyecto que usaste</b> — cómodo, pero revísalo. Si sale en rojo diciendo <b>“Elige un proyecto”</b>, no podrás confirmar hasta escoger uno." },
         { t:"Confirma por voz o con el botón", d:"Di <b>\"sí\"</b> / <b>\"dale\"</b> para guardar, <b>\"no\"</b> para descartar — o toca los botones. Una frase larga como <b>\"sí pero cambia el monto a 500\"</b> se toma como corrección, no como guardado." },
         { t:"Manos libres: sigue dictando", d:"Después de guardar la sesión sigue viva: <b>\"Guardado en Cocina Miami. ¿Algo más?\"</b> — dicta el siguiente sin tocar el teléfono. Cierra con <b>\"listo\"</b>, <b>\"nada más\"</b> o <b>\"gracias\"</b>." },
+        { t:"Despiértala por voz: \"hey Katy\"", d:"Activa la <b>píldora verde \"hey Katy\"</b> (abajo a la derecha, sobre el micrófono) una vez por dispositivo. Con la app abierta, solo di <b>\"hey Katy\"</b> y empieza a escuchar — sin tocar nada. Es opcional por teléfono y solo funciona con la app abierta en pantalla (límite del navegador). Funciona mejor en Samsung/Chrome; en algunos Xiaomi/MIUI toca el micrófono." },
         { t:"También puedes preguntarle — 8 tipos de pregunta", d:"<b>Agenda (cualquier día, también pasado):</b> \"¿Qué tengo hoy?\", \"¿Qué tuve ayer?\", \"¿Qué hubo la semana pasada?\" · <b>Ficha del proyecto:</b> \"¿Cómo va Brickell?\", \"¿De quién es Cocina Miami?\" · <b>Notas:</b> \"Léeme las notas de Cocina Miami\" · <b>Dinero (sale del Estimate):</b> \"¿Cuánto le presupuesté al cliente?\", \"¿Cuánto falta por cobrar?\", \"¿En qué se fue el dinero?\" · <b>Tareas:</b> \"¿Qué hay para hoy?\" (todos los proyectos) o \"¿Qué falta en Brickell?\" · <b>Materiales:</b> \"¿Qué falta comprar?\" · <b>Contactos:</b> \"¿Cuál es el teléfono de Jorge?\", \"¿Qué plomeros tengo?\" · <b>Huecos:</b> \"¿Qué me falta en Brickell?\"" },
         { t:"Encadena preguntas — mantiene el hilo", d:"En una conversación Katy recuerda de qué proyecto hablan, así que las preguntas seguidas no lo repiten: <b>\"¿Cuánto llevo cobrado en Jacuzzi? … ¿y cuánto gasté? … ¿qué falta comprar?\"</b> — tres preguntas, sin volver a nombrar el proyecto, y cada respuesta sale más rápido porque reutiliza el contexto." },
         { t:"Lo que responde depende de tu rol", d:"Cada consulta está gateada por permisos: un co-worker solo escucha lo que <b>sus permisos</b> permiten — sin permiso, no hay montos. La agenda y la auditoría de \"¿qué me falta?\" piden <b>nivel admin</b>: el superadmin, o un co-worker a quien le diste <b>todos los permisos</b> en el panel de Equipo. Dáselos y tiene la misma voz completa que tú. Si no puede responder algo, te dice qué tab abrir en vez de adivinar." },
@@ -842,14 +844,16 @@ function useFeatures(EN: boolean) {
       tips: EN ? [
         "🗣 <b>Records 9 things:</b> project · income · expense · task · task status · material · budget line · contact · agenda entry.",
         "❓ <b>Answers 8 kinds of question:</b> agenda · project sheet · notes · money · tasks · materials · contacts · what's missing. All permission-gated.",
-        "🚫 <b>She can't:</b> wake on \"hey Katy\" or listen with the app closed (that's a browser limit, not a bug), delete anything, edit what's already saved (except task status), read a photo, or walk you through the Estimate line by line.",
+        "🎙 <b>Hands-free wake:</b> the <b>\"hey Katy\"</b> pill (opt-in per device) lets you start her by voice while the app is open — no tapping.",
+        "🚫 <b>She can't:</b> listen with the app closed or the screen off (that's a browser limit, not a bug), delete anything, edit what's already saved (except task status), read a photo, or walk you through the Estimate line by line.",
         "⚠️ <b>\"Outstanding\"</b> comes from the Estimate's Grand Total, which syncs when you open or save that tab — if you changed the estimate without opening it, the number may lag. She'll flag it rather than state it as fact.",
         "🔍 <b>\"What am I missing on Brickell?\"</b> audits the project: no estimate, no tasks, nobody assigned, approved but no income, tasks with no day, materials not bought, still to collect.",
         "📋 Every command (confirmed, cancelled or error) is <b>logged automatically</b> — there's always an audit trail. Nothing saves without your confirmation.",
       ] : [
         "🗣 <b>Registra 9 cosas:</b> proyecto · ingreso · egreso · tarea · estado de tarea · material · línea de presupuesto · contacto · entrada de agenda.",
         "❓ <b>Responde 8 tipos de pregunta:</b> agenda · ficha del proyecto · notas · dinero · tareas · materiales · contactos · qué te falta. Todas gateadas por permisos.",
-        "🚫 <b>No puede:</b> despertar con \"hey Katy\" ni escuchar con la app cerrada (es un límite del navegador, no un bug), borrar nada, editar lo ya guardado (salvo el estado de una tarea), ver una foto, ni leerte el Estimate línea por línea.",
+        "🎙 <b>Manos libres:</b> la píldora <b>\"hey Katy\"</b> (opcional por dispositivo) te deja iniciarla por voz con la app abierta — sin tocar nada.",
+        "🚫 <b>No puede:</b> escuchar con la app cerrada o la pantalla apagada (es un límite del navegador, no un bug), borrar nada, editar lo ya guardado (salvo el estado de una tarea), ver una foto, ni leerte el Estimate línea por línea.",
         "⚠️ El <b>\"por cobrar\"</b> sale del Grand Total del Estimate, que se sincroniza al abrir o guardar ese tab — si cambiaste el estimado sin abrirlo, el número puede ir atrasado. Katy lo advierte en vez de afirmarlo.",
         "🔍 <b>\"¿Qué me falta en Brickell?\"</b> audita el proyecto: sin estimado, sin tareas, sin equipo asignado, aprobado pero sin ingresos, tareas sin día, materiales sin comprar, y cuánto falta por cobrar.",
         "📋 Cada comando (confirmado, cancelado o con error) se <b>registra automáticamente</b> — siempre hay rastro. Nada se guarda sin tu confirmación.",
@@ -1116,6 +1120,17 @@ export default function HelpPage() {
   const [activeId, setActiveId] = useState("dashboard");
   const active = features.find(f => f.id === activeId) ?? features[0];
 
+  // Guía imprimible embebida por sección — evita un ítem de "Voz" duplicado en el
+  // sidebar: el único ítem de Voz es esta sección, y su guía se abre desde aquí.
+  const sectionGuide: Record<string, { href: string; label: string }> = {
+    voice: {
+      href: "/guias/guia-voz-katy.html",
+      label: EN ? "Open the printable Katy guide (share it with your team)"
+                : "Abrir la guía imprimible de Katy (compártela con tu equipo)",
+    },
+  };
+  const guide = sectionGuide[active.id];
+
   return (
     <div className="flex min-h-[calc(100vh-80px)] gap-0 overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-sm">
 
@@ -1168,7 +1183,6 @@ export default function HelpPage() {
         </div>
         {[
           { href: "/guias/guia-navegacion-luxaris.html", icon: "🧭", label: EN ? "New navigation" : "Nueva navegación" },
-          { href: "/guias/guia-voz-katy.html",           icon: "🎙", label: EN ? "Talk to Katy"   : "Habla con Katy" },
         ].map(g => (
           <a
             key={g.href}
@@ -1216,6 +1230,20 @@ export default function HelpPage() {
               {active.mockup}
             </div>
           </section>
+
+          {/* Guía imprimible de la sección (p.ej. Voz) — antes era un ítem aparte */}
+          {guide && (
+            <a
+              href={guide.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#111a2e] px-4 py-3 text-[var(--accent)] transition hover:brightness-95"
+            >
+              <span className="text-xl">🖨️</span>
+              <span className="text-[13px] font-bold">{guide.label}</span>
+              <span className="ml-auto text-[13px]">↗</span>
+            </a>
+          )}
 
           {/* Steps */}
           <section>

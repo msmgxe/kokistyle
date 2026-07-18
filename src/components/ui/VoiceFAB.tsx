@@ -1377,7 +1377,8 @@ export default function VoiceFAB() {
           type="button"
           onClick={startTextMode}
           aria-label="Escribir instrucción a Katy"
-          className="fixed bottom-6 right-[5.5rem] z-[150] grid size-10 place-items-center rounded-full bg-[var(--accent)] text-white shadow-xl transition-all duration-200 active:scale-95 hover:bg-[var(--accent-strong)]"
+          title="Escribir (teclado)"
+          className="fixed bottom-7 right-[7rem] z-[150] grid size-10 place-items-center rounded-full bg-[#C9822E] text-white shadow-xl ring-2 ring-white/70 transition-all duration-200 active:scale-95 hover:bg-[#B0741F]"
         >
           <Keyboard size={18} />
         </button>

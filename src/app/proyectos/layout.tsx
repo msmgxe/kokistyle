@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
@@ -12,31 +12,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
+import { ThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import VoiceFAB from "@/src/components/ui/VoiceFAB";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { branding } from "@/src/config/branding";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 const COLLAPSE_KEY = "luxaris-nav-collapsed";
-const ACCENT_KEY = "luxaris-accent";
-const THEME_KEY = "luxaris-theme"; // "dark" | "light" (default)
-const ACCENTS = [
-  { id: "luxaris",  label: "Luxaris",  dab: "#16323D" },
-  { id: "navy",     label: "Navy",     dab: "#2A4A7F" },
-  { id: "ocean",    label: "Ocean",    dab: "#2563EB" },
-  { id: "emerald",  label: "Emerald",  dab: "#0E7C57" },
-  { id: "graphite", label: "Graphite", dab: "#3A4859" },
-];
-
-function applyAccent(id: string) {
-  if (id === "luxaris") document.documentElement.removeAttribute("data-accent");
-  else document.documentElement.setAttribute("data-accent", id);
-}
-
-function applyTheme(isDark: boolean) {
-  if (isDark) document.documentElement.setAttribute("data-theme", "dark");
-  else document.documentElement.removeAttribute("data-theme");
-}
 
 function LangSwitch() {
   const { language, setLanguage } = useLanguage();
@@ -60,36 +42,12 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   const [unlockError, setUnlockError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [accent, setAccent] = useState("luxaris");
-  const [dark, setDark] = useState(false);
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
   useEffect(() => { try { setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1"); } catch { /* noop */ } }, []);
-  useEffect(() => {
-    try {
-      const a = localStorage.getItem(ACCENT_KEY);
-      if (a) { setAccent(a); applyAccent(a); }
-    } catch { /* noop */ }
-  }, []);
-  useEffect(() => {
-    // El <script> anti-flash en el <head> raíz ya aplicó el atributo antes del
-    // primer paint; aquí solo sincronizamos el estado de React con lo que quedó.
-    try { setDark(document.documentElement.getAttribute("data-theme") === "dark"); } catch { /* noop */ }
-  }, []);
   const toggleCollapse = () => setCollapsed(c => {
     const n = !c;
     try { localStorage.setItem(COLLAPSE_KEY, n ? "1" : "0"); } catch { /* noop */ }
-    return n;
-  });
-  const changeAccent = (id: string) => {
-    setAccent(id);
-    applyAccent(id);
-    try { localStorage.setItem(ACCENT_KEY, id); } catch { /* noop */ }
-  };
-  const toggleTheme = () => setDark(d => {
-    const n = !d;
-    applyTheme(n);
-    try { localStorage.setItem(THEME_KEY, n ? "dark" : "light"); } catch { /* noop */ }
     return n;
   });
 
@@ -157,6 +115,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   ];
 
   return (
+    <ThemeProvider>
     <VoiceProvider>
       <div className="min-h-screen bg-[#F7F3EB] dark:bg-[#0b1220] lg:flex">
 
@@ -196,11 +155,6 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="space-y-1 border-t border-white/10 px-3 py-3">
-            <ThemeGear
-              collapsed={collapsed} accent={accent} onPick={changeAccent}
-              label={t.panel.nav.appearance} themeLabel={t.panel.nav.theme}
-              dark={dark} onToggleDark={toggleTheme}
-            />
             <button
               onClick={toggleCollapse}
               title={collapsed ? "Expandir" : "Colapsar"}
@@ -270,13 +224,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               </nav>
 
               <div className="space-y-3 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
-                <button
-                  onClick={toggleTheme}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2.5 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"
-                >
-                  {dark ? <Sun size={14} /> : <Moon size={14} />}
-                  {dark ? "Modo claro" : "Modo oscuro"}
-                </button>
+                <MobileDarkToggle />
                 <LangSwitch />
                 <button onClick={logout}
                   className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2.5 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]">
@@ -291,6 +239,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
         <VoiceFAB />
       </div>
     </VoiceProvider>
+    </ThemeProvider>
   );
 }
 
@@ -331,65 +280,17 @@ function MobileTab({ item }: { item: NavItem }) {
   );
 }
 
-// Tuerca de configuración: cambia el tema de color del chrome (sidebar/drawer) vía tokens CSS
-// y el modo claro/oscuro de toda la app (fondo/superficie/texto vía data-theme).
-function ThemeGear({
-  collapsed, accent, onPick, label, themeLabel, dark, onToggleDark,
-}: {
-  collapsed: boolean; accent: string; onPick: (id: string) => void; label: string; themeLabel: string;
-  dark: boolean; onToggleDark: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
-
+// Toggle claro/oscuro del drawer móvil. El control completo de tema (color + modo)
+// vive ahora en /proyectos/config → tab Temas (ThemeContext).
+function MobileDarkToggle() {
+  const { dark, toggleDark } = useTheme();
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        title={label}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#A9C1BC] transition hover:bg-white/[0.08] hover:text-white ${collapsed ? "justify-center" : ""}`}
-      >
-        <Settings size={18} className="shrink-0" />
-        {!collapsed && <span>{label}</span>}
-      </button>
-      {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 w-56 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-3 shadow-xl">
-          <button
-            onClick={onToggleDark}
-            className="mb-3 flex w-full items-center justify-between rounded-lg border border-[#E6DDCB] dark:border-[#22304d] px-3 py-2 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#F0F3FA] dark:hover:bg-[#17233d]"
-          >
-            <span className="flex items-center gap-2">{dark ? <Moon size={14} /> : <Sun size={14} />} {dark ? "Oscuro" : "Claro"}</span>
-            <span className={`relative h-5 w-9 rounded-full transition ${dark ? "bg-[var(--accent)]" : "bg-[#D7CBB3]"}`}>
-              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${dark ? "left-[18px]" : "left-0.5"}`} />
-            </span>
-          </button>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#97A1A0] dark:text-[#728098]">{themeLabel}</div>
-          <div className="grid grid-cols-5 gap-2">
-            {ACCENTS.map(a => (
-              <button
-                key={a.id}
-                onClick={() => onPick(a.id)}
-                title={a.label}
-                aria-label={a.label}
-                aria-pressed={accent === a.id}
-                className={`h-9 rounded-lg border-2 transition ${accent === a.id ? "border-[var(--brand)] dark:border-[#e8edf7]" : "border-transparent hover:border-[#D5DEEF] dark:hover:border-[#22304d]"}`}
-                style={{ background: a.dab }}
-              />
-            ))}
-          </div>
-          <p className="mt-2.5 text-[10.5px] leading-snug text-[#97A1A0] dark:text-[#728098]">
-            Cambia el color del menú. El resto de la app se irá migrando a estos colores.
-          </p>
-        </div>
-      )}
-    </div>
+    <button
+      onClick={toggleDark}
+      className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2.5 text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"
+    >
+      {dark ? <Sun size={14} /> : <Moon size={14} />}
+      {dark ? "Modo claro" : "Modo oscuro"}
+    </button>
   );
 }

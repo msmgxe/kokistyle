@@ -507,6 +507,15 @@ export const translations = {
       },
       config: {
         subtitle: "Team access, permissions and security — admin only",
+        tabUsers: "Users",
+        tabSecurity: "Security",
+        tabThemes: "Themes",
+        usersDesc: "Co-workers and clients: access, permissions and assigned projects",
+        themesTitle: "Appearance",
+        themesDesc: "Menu color and light / dark mode for the whole panel",
+        modeLight: "Light",
+        modeDark: "Dark",
+        colorTheme: "Color theme",
       },
       dashboard: {
         greeting: "Hello",
@@ -1522,6 +1531,15 @@ export const translations = {
       },
       config: {
         subtitle: "Acceso del equipo, permisos y seguridad — solo administrador",
+        tabUsers: "Usuarios",
+        tabSecurity: "Seguridad",
+        tabThemes: "Temas",
+        usersDesc: "Co-workers y clientes: acceso, permisos y proyectos asignados",
+        themesTitle: "Apariencia",
+        themesDesc: "Color del menú y modo claro / oscuro de todo el panel",
+        modeLight: "Claro",
+        modeDark: "Oscuro",
+        colorTheme: "Tema de color",
       },
       dashboard: {
         greeting: "Hola",
