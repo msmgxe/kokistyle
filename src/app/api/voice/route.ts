@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateText, tool, jsonSchema, stepCountIs, type ToolSet } from "ai";
+import { generateText, tool, jsonSchema, stepCountIs, type ToolSet, type ModelMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { supabase } from "@/src/lib/supabase";
 import type { Permissions } from "@/src/types/auth";
@@ -741,9 +741,21 @@ export async function POST(req: NextRequest) {
 
     // Proveedor explícito → usa ANTHROPIC_API_KEY directo (el string "anthropic/..." iba
     // por el AI Gateway de Vercel, nunca configurado — Katy fallaba en cada comando)
+    // Prompt caching: el system + las 17 herramientas (~5000 tokens, idénticos
+    // entre pasos y entre comandos de la misma sesión) van como mensaje "system"
+    // con cacheControl. La 2ª llamada de cada consulta (redactar tras la tool) y
+    // los comandos siguientes en manos libres leen ese prefijo a ~10% del costo.
+    const chatMessages: ModelMessage[] = [
+      {
+        role: "system",
+        content: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects, memory, Object.keys(reads).length > 0),
+        providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+      },
+      ...messages,
+    ];
+
     const { text, toolCalls } = await generateText({
       model: anthropic("claude-haiku-4-5"),
-      system: SYSTEM(context, contacts, projectTitle, TODAY(), language, projects, memory, Object.keys(reads).length > 0),
       // Las de lectura ejecutan server-side y necesitan un paso extra para redactar
       // la respuesta con el dato ya en mano. Las de escritura no tienen execute:
       // el loop corta ahí y la tool call vuelve sin ejecutar.
@@ -751,7 +763,7 @@ export async function POST(req: NextRequest) {
       // 0 la hacía repetir la MISMA pregunta textual cuando el dictado fallaba.
       temperature: 0.5,
       tools,
-      messages,
+      messages: chatMessages,
     });
 
     const write = toolCalls.find(c => WRITE_ACTIONS.has(c.toolName));
