@@ -6,11 +6,11 @@ const ACCENT_KEY = "luxaris-accent";
 const THEME_KEY = "luxaris-theme"; // "dark" | "light" (default)
 
 export const ACCENTS = [
-  { id: "luxaris",  label: "Luxaris",  dab: "#16323D" },
-  { id: "navy",     label: "Navy",     dab: "#2A4A7F" },
-  { id: "ocean",    label: "Ocean",    dab: "#2563EB" },
-  { id: "emerald",  label: "Emerald",  dab: "#0E7C57" },
-  { id: "graphite", label: "Graphite", dab: "#3A4859" },
+  { id: "luxaris",  label: "Luxaris Teal & Emerald", dab: "#0d9488", desc: "Clásico · Sofisticado · Miami Modern" },
+  { id: "azure",    label: "Miami Azure & Sky",      dab: "#0284c7", desc: "Oceanfront · Azul Marino · Fresco" },
+  { id: "gold",     label: "Boca Gold & Obsidian",   dab: "#d97706", desc: "Oro Champagne · Ultra Premium" },
+  { id: "indigo",   label: "Royal Indigo & Violet",  dab: "#6366f1", desc: "Índigo Real · Arquitectónico" },
+  { id: "navy",     label: "Navy Classic",           dab: "#2A4A7F", desc: "Clásico Marina" },
 ];
 
 function applyAccent(id: string) {

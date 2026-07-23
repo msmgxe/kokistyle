@@ -103,46 +103,74 @@ function ThemesTab() {
   const { accent, dark, setAccent, toggleDark } = useTheme();
 
   return (
-    <section className="max-w-xl">
+    <section className="max-w-2xl">
       <div className="mb-4">
         <h2 className="text-base font-bold text-[var(--brand)]">{tc.themesTitle}</h2>
         <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{tc.themesDesc}</p>
       </div>
 
-      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-5">
-        <button
-          onClick={toggleDark}
-          className="flex w-full items-center justify-between rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-3 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#F0F3FA] dark:hover:bg-[#17233d]"
-        >
-          <span className="flex items-center gap-2">
-            {dark ? <Moon size={16} /> : <Sun size={16} />}
-            {dark ? tc.modeDark : tc.modeLight}
-          </span>
-          <span className={`relative h-6 w-11 rounded-full transition ${dark ? "bg-[var(--accent)]" : "bg-[#D7CBB3]"}`}>
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${dark ? "left-[22px]" : "left-0.5"}`} />
-          </span>
-        </button>
+      <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-5 space-y-6">
+        
+        {/* Toggle Dark / Light Mode */}
+        <div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#97A1A0] dark:text-[#728098]">
+            {tc.modeLight} / {tc.modeDark}
+          </div>
+          <button
+            onClick={toggleDark}
+            className="flex w-full items-center justify-between rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-3 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#F0F3FA] dark:hover:bg-[#17233d]"
+          >
+            <span className="flex items-center gap-2">
+              {dark ? <Moon size={16} className="text-amber-400" /> : <Sun size={16} className="text-amber-500" />}
+              {dark ? tc.modeDark : tc.modeLight}
+            </span>
+            <span className={`relative h-6 w-11 rounded-full transition ${dark ? "bg-[var(--accent)]" : "bg-[#D7CBB3]"}`}>
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${dark ? "left-[22px]" : "left-0.5"}`} />
+            </span>
+          </button>
+        </div>
 
-        <div className="mb-2 mt-5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#97A1A0] dark:text-[#728098]">
-          {tc.colorTheme}
+        {/* Color Palettes Grid */}
+        <div>
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#97A1A0] dark:text-[#728098]">
+            {tc.colorTheme} (Paletas de Lujo)
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ACCENTS.map(a => {
+              const isActive = accent === a.id;
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => setAccent(a.id)}
+                  aria-pressed={isActive}
+                  className={`p-3.5 rounded-xl border-2 text-left transition-all ${
+                    isActive
+                      ? "border-[var(--brand)] dark:border-[#e8edf7] bg-[#F0F3FA] dark:bg-[#17233d] shadow-sm"
+                      : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] hover:border-[var(--accent)]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-[var(--brand)] dark:text-[#e8edf7]">
+                      {a.label}
+                    </span>
+                    <span className="w-3.5 h-3.5 rounded-full border border-white/50 shadow-sm" style={{ background: a.dab }} />
+                  </div>
+                  
+                  <div className="flex h-2.5 rounded-full overflow-hidden mb-2 opacity-90">
+                    <div className="w-1/2 h-full" style={{ background: a.dab }} />
+                    <div className="w-1/2 h-full bg-slate-800" />
+                  </div>
+
+                  <p className="text-[10px] text-[#97A1A0] dark:text-[#728098]">
+                    {a.desc}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-5 gap-2.5">
-          {ACCENTS.map(a => (
-            <button
-              key={a.id}
-              onClick={() => setAccent(a.id)}
-              title={a.label}
-              aria-label={a.label}
-              aria-pressed={accent === a.id}
-              className={`h-12 rounded-xl border-2 transition ${
-                accent === a.id
-                  ? "border-[var(--brand)] dark:border-[#e8edf7]"
-                  : "border-transparent hover:border-[#D5DEEF] dark:hover:border-[#22304d]"
-              }`}
-              style={{ background: a.dab }}
-            />
-          ))}
-        </div>
+
       </div>
     </section>
   );

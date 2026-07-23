@@ -39,6 +39,10 @@
   --brand-strong: color-mix(in srgb, var(--brand) 78%, #000);   /* hover del primario */
   --accent-strong: color-mix(in srgb, var(--accent) 82%, #000); /* hover de la acción */
 }
+:root[data-accent="azure"]   { --brand: #0A192F; --accent: #0284c7; --brand-accent: #06b6d4; }
+:root[data-accent="gold"]    { --brand: #121212; --accent: #d97706; --brand-accent: #f59e0b; }
+:root[data-accent="indigo"]  { --brand: #1E1B4B; --accent: #6366f1; --brand-accent: #8b5cf6; }
+:root[data-accent="navy font"]    { --brand: #1B2E4D; --accent: #3E6FB0; --brand-accent: #6FA0DE; }
 :root[data-accent="navy"]     { --brand: #1B2E4D; --accent: #3E6FB0; --brand-accent: #6FA0DE; }
 :root[data-accent="ocean"]    { --brand: #14213D; --accent: #2563EB; --brand-accent: #4F86E8; }
 :root[data-accent="emerald"]  { --brand: #0B2A22; --accent: #0F766E; --brand-accent: #34B98C; }
