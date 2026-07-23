@@ -42,9 +42,10 @@ import {
   buildGanttScale, ganttBar, laneBg, isoOfDate, todayIsoLocal, ganttX, GanttHeader, TodayLine,
 } from "@/src/components/ui/GanttCalendar";
 import type {
-  Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment,
+  Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment, DepositEntry,
 } from "@/src/types/project";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
+import { computeEstimateTotals, type EstimateTotals } from "@/src/lib/estimateTotals";
 import { useVoice } from "@/src/context/VoiceContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -52,6 +53,7 @@ import EstimateTab from "@/src/components/ui/EstimateTab";
 import DayPlannerModal from "@/src/components/ui/DayPlannerModal";
 import ProjectPhotos from "@/src/components/ui/ProjectPhotos";
 import DesignTab from "@/src/components/ui/DesignTab";
+import ConfirmModal from "@/src/components/ui/ConfirmDialog";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface ProjectFull extends Project {
@@ -76,17 +78,6 @@ const TAB_SECTIONS: { id: SectionId; emoji: string; tabs: TabId[] }[] = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function StatusChipOnBlue({ status }: { status: string }) {
-  const { t } = useLanguage();
-  const statusLabels = t.panel.status;
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white">
-      <span className="size-1.5 rounded-full bg-white/70" />
-      {statusLabels[status as keyof typeof statusLabels] ?? status}
-    </span>
-  );
-}
-
 function useToast() {
   const [msg, setMsg] = useState("");
   const [visible, setVisible] = useState(false);
@@ -99,26 +90,6 @@ function useToast() {
 }
 
 // ─── Confirm modal ───────────────────────────────────────────────────────────
-function ConfirmModal({
-  title, body, label, onConfirm, onCancel, danger = true,
-}: {
-  title: string; body: string; label: string;
-  onConfirm: () => void; onCancel: () => void; danger?: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[var(--brand)]/55 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-[440px] rounded-t-[22px] bg-[#F7F3EA] dark:bg-[#0b1220] p-6 shadow-2xl sm:rounded-[20px]">
-        <h3 className="mb-1 text-lg font-bold text-[var(--brand)]">{title}</h3>
-        <p className="mb-5 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{body}</p>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 rounded-xl bg-[#ECE3D1] dark:bg-[#17233d] py-3 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">Cancelar</button>
-          <button onClick={onConfirm} className={`flex-1 rounded-xl py-3 font-bold text-white ${danger ? "bg-[#B0492F]" : "bg-[var(--brand)]"}`}>{label}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Editor modal genérico ───────────────────────────────────────────────────
 type FieldType = "text" | "number" | "date" | "select" | "textarea";
 interface Field { key: string; label: string; type: FieldType; value: string | number; options?: string[]; optionLabels?: Record<string, string> }
@@ -281,6 +252,7 @@ function MaterialesTab({
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting]     = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState(false);
 
   const toggleSelect = (id: string) =>
     setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -648,7 +620,7 @@ function MaterialesTab({
               {EN ? "Cancel" : "Cancelar"}
             </button>
             <button
-              onClick={bulkDelete}
+              onClick={() => setConfirmBulk(true)}
               disabled={deleting}
               className="rounded-xl bg-[#B0492F] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#8C3523] disabled:opacity-50"
             >
@@ -656,6 +628,16 @@ function MaterialesTab({
             </button>
           </div>
         </div>
+      )}
+
+      {confirmBulk && (
+        <ConfirmModal
+          title={EN ? "Delete materials" : "Eliminar materiales"}
+          body={EN ? `${selectedIds.size} item(s) will be deleted. ${tp.common.cannotUndo}` : `Se eliminarán ${selectedIds.size} ítem(s). ${tp.common.cannotUndo}`}
+          label={EN ? `Delete ${selectedIds.size}` : `Eliminar ${selectedIds.size}`}
+          onConfirm={() => { setConfirmBulk(false); bulkDelete(); }}
+          onCancel={() => setConfirmBulk(false)}
+        />
       )}
 
       <button
@@ -715,11 +697,12 @@ function ContactosTab({
   project: Project; contacts: Contact[]; allContacts: Contact[];
   onRefresh: () => void; toast: (m: string) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const tp = t.panel;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<{ id: string; name: string } | null>(null);
 
   const assignedIds = new Set(contacts.map((c) => c.id));
   const available = allContacts.filter(
@@ -798,7 +781,7 @@ function ContactosTab({
                 📞 {tp.contacts.call}
               </a>
               <button
-                onClick={() => remove(c.id)}
+                onClick={() => setConfirmRemove({ id: c.id, name: c.name })}
                 disabled={busy === c.id}
                 aria-label={tp.contacts.removeSpecialist}
                 className="grid size-8 flex-none place-items-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#B0492F] transition hover:bg-[#FBE9E7] disabled:opacity-50"
@@ -808,6 +791,16 @@ function ContactosTab({
             </div>
           ))}
         </div>
+      )}
+
+      {confirmRemove && (
+        <ConfirmModal
+          title={tp.contacts.removeSpecialist}
+          body={`${language === "en" ? "Remove" : "Quitar"} "${confirmRemove.name}"? ${tp.common.cannotUndo}`}
+          label={language === "en" ? "Remove" : "Quitar"}
+          onConfirm={() => { const id = confirmRemove.id; setConfirmRemove(null); remove(id); }}
+          onCancel={() => setConfirmRemove(null)}
+        />
       )}
 
       {pickerOpen && (
@@ -2040,12 +2033,16 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("presupuesto");
   const [editProjectOpen, setEditProjectOpen] = useState(false);
-  const [photoOpen, setPhotoOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
+  // Datos del hero (resumen): totales del estimate + schedule + últimas fotos
+  const [estTotals, setEstTotals] = useState<EstimateTotals | null>(null);
+  const [estDeposits, setEstDeposits] = useState<DepositEntry[]>([]);
+  const [heroPhotos, setHeroPhotos] = useState<{ url: string; tag: string; caption: string | null }[]>([]);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
   const { setMeta } = useVoice();
   const { currentUser, isSuperAdmin, hasPermission } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const tp = t.panel;
 
   const TABS: { id: TabId; label: string }[] = [
@@ -2110,6 +2107,36 @@ export default function ProjectDetailPage() {
     ? (project?.tasks ?? []).filter(task => task.assigned_contact_id === myContactId)
     : (project?.tasks ?? []);
 
+  // Resumen del hero: estimate (totales + schedule) y últimas fotos. Queries explícitas
+  // con .in() — evita los nested selects de 3 niveles que PostgREST devuelve null.
+  const loadHero = useCallback(async () => {
+    const { data: est } = await supabase
+      .from("project_estimates").select("id, discount_pct, deposit_schedule").eq("project_id", id).maybeSingle();
+    if (est) {
+      const { data: secs } = await supabase
+        .from("estimate_sections").select("id, section_total, is_material_type").eq("estimate_id", est.id);
+      const secIds = (secs ?? []).map((s) => s.id as string);
+      let items: { section_id: string; amount: number; cost: number; profit: number }[] = [];
+      if (secIds.length) {
+        const { data: its } = await supabase
+          .from("estimate_items").select("section_id, amount, cost, profit").in("section_id", secIds);
+        items = (its ?? []) as typeof items;
+      }
+      const sections = (secs ?? []).map((s) => ({
+        section_total: Number(s.section_total) || 0,
+        is_material_type: !!s.is_material_type,
+        items: items.filter((i) => i.section_id === s.id).map((i) => ({ amount: Number(i.amount) || 0, cost: Number(i.cost) || 0, profit: Number(i.profit) || 0 })),
+      }));
+      setEstTotals(computeEstimateTotals(sections, Number(est.discount_pct) || 0));
+      setEstDeposits((est.deposit_schedule as DepositEntry[]) ?? []);
+    } else {
+      setEstTotals(null); setEstDeposits([]);
+    }
+    const { data: ph } = await supabase
+      .from("project_photos").select("url, tag, caption").eq("project_id", id).order("taken_at", { ascending: false }).limit(8);
+    setHeroPhotos((ph as { url: string; tag: string; caption: string | null }[]) ?? []);
+  }, [id]);
+
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
       .from("projects")
@@ -2121,7 +2148,8 @@ export default function ProjectDetailPage() {
     const contacts = (data.project_contacts as { contacts: Contact }[]).map((pc) => pc.contacts);
     setProject({ ...data, contacts } as ProjectFull);
     setLoading(false);
-  }, [id, router]);
+    loadHero();
+  }, [id, router, loadHero]);
 
   useEffect(() => { fetchProject(); }, [fetchProject]);
 
@@ -2167,6 +2195,22 @@ export default function ProjectDetailPage() {
   }
   if (!project) return null;
 
+  // ── Hero: valores derivados ──
+  const grandTotal  = estTotals?.client ?? project.budget ?? 0;
+  const cobrado     = totalIncome(project.payments ?? []);
+  const cobradoPct  = grandTotal > 0 ? Math.min(Math.round((cobrado / grandTotal) * 100), 100) : 0;
+  const totalTasks  = (project.tasks ?? []).length;
+  const doneTasks   = (project.tasks ?? []).filter((t) => t.status === "done").length;
+  const avancePct   = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const featuredUrl = heroPhotos[0]?.url ?? project.photo_url ?? null;
+  const thumbs      = heroPhotos.slice(1, 5);
+  const goToTab = (tab: TabId) => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const hp = tp.project;   // etiquetas del hero (project.*)
+  // Permisos del hero: el resumen financiero solo si el usuario ya ve Estimate o Cash Flow.
+  // Costo y ganancia son datos internos → solo superadmin (nunca en vistas de cliente).
+  const canSeeMoney = isSuperAdmin || visibleTabIds.has("presupuesto") || visibleTabIds.has("pagos");
+  const canSeeCost  = isSuperAdmin;
+
   return (
     <div className="animate-in fade-in duration-300">
       {/* Back button */}
@@ -2174,57 +2218,160 @@ export default function ProjectDetailPage() {
         <ArrowLeft size={15} /> {tp.nav.dashboard}
       </button>
 
-      {/* Blue header */}
-      <div className="relative mb-2 overflow-hidden rounded-2xl bg-[var(--accent)]">
-        {/* Cover photo strip */}
-        {project.photo_url && (
-          <button
-            type="button"
-            onClick={() => setPhotoOpen(true)}
-            className="relative block h-36 w-full overflow-hidden"
-            aria-label={tp.project.photoView}
-          >
-            <img src={project.photo_url} alt="" className="h-full w-full object-cover opacity-70" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--accent)]/80 to-transparent" />
-            <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/30 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
-              <Camera size={10} /> {tp.project.photoView}
+      {/* ── Encabezado + hero split-screen (galería · finanzas en vivo) ── */}
+      <div className="mb-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-bookman text-2xl font-semibold text-[var(--brand)]">{project.title}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+              <span className="rounded-full bg-[#EDE3CF] dark:bg-[#17233d] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#7A6230] dark:text-[#e8edf7]">
+                {tp.status[project.status as keyof typeof tp.status] ?? project.status}
+              </span>
+              <span>· {project.client}</span>
             </div>
-          </button>
-        )}
-        <div className="px-6 py-5">
-          <h1 className="font-bookman text-xl font-semibold text-white pr-10">{project.title}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-[#B1C9EF]">
-            <StatusChipOnBlue status={project.status} />
-            <span>· {project.client}</span>
-            <span>· {money(project.budget)}</span>
           </div>
+          {isSuperAdmin && (
+            <button onClick={() => setEditProjectOpen(true)}
+              className="shrink-0 grid size-9 place-items-center rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[var(--brand)] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"
+              aria-label={hp.editProject}>
+              <Pencil size={15} />
+            </button>
+          )}
         </div>
-        {isSuperAdmin && (
-          <button
-            onClick={() => setEditProjectOpen(true)}
-            className="absolute right-4 top-4 grid size-8 place-items-center rounded-lg bg-white/15 text-white transition hover:bg-white/25"
-            aria-label="Editar proyecto"
-          >
-            <Pencil size={14} />
-          </button>
-        )}
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          {/* Izquierda — galería */}
+          <div className={`${canSeeMoney ? "lg:col-span-5" : "lg:col-span-12"} rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4`}>
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[var(--brand)]">{hp.galleryTitle}</h3>
+                <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{heroPhotos.length} {hp.photosCount}</p>
+              </div>
+              <button onClick={() => goToTab("fotos")}
+                className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[var(--accent-strong)]">
+                <Camera size={13} /> {hp.uploadPhoto}
+              </button>
+            </div>
+            {featuredUrl ? (
+              <>
+                <button onClick={() => setLightboxUrl(featuredUrl)} className="relative block h-52 w-full overflow-hidden rounded-xl bg-slate-900">
+                  <img src={featuredUrl} alt="" className="h-full w-full object-cover" />
+                  <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                    <ImageIcon size={11} /> {tp.project.photoView}
+                  </div>
+                </button>
+                {thumbs.length > 0 && (
+                  <div className="mt-2 grid grid-cols-4 gap-2">
+                    {thumbs.map((p, i) => (
+                      <button key={i} onClick={() => setLightboxUrl(p.url)} className="h-16 w-full overflow-hidden rounded-lg border border-[#E6DDCB] dark:border-[#22304d]">
+                        <img src={p.url} alt="" className="h-full w-full object-cover transition hover:opacity-90" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <button onClick={() => goToTab("fotos")} className="flex h-52 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098]">
+                <Camera size={26} />
+                <span className="text-xs font-semibold">{hp.noPhotos}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Derecha — resumen financiero (solo lectura). Gateado: solo quien ya ve
+              Estimate/Cash Flow; costo y ganancia son internos → solo superadmin. */}
+          {canSeeMoney && (
+          <div className="lg:col-span-7 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="rounded-full bg-[#EDF3FB] dark:bg-[#17233d] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--accent)]">{hp.financeSummary}</span>
+              <div className="flex gap-1.5">
+                {visibleTabIds.has("presupuesto") && (
+                  <button onClick={() => goToTab("presupuesto")} className="inline-flex items-center gap-1 rounded-lg bg-[#F0F3FA] dark:bg-[#17233d] px-2.5 py-1.5 text-[11px] font-bold text-[var(--brand)] transition hover:bg-[#E4EAF5]"><FileText size={13} /> {hp.openEstimate}</button>
+                )}
+                {visibleTabIds.has("pagos") && (
+                  <button onClick={() => goToTab("pagos")} className="inline-flex items-center gap-1 rounded-lg bg-[#DCEBDD] dark:bg-[#14261c] px-2.5 py-1.5 text-[11px] font-bold text-[#4F8A63] transition hover:brightness-95"><Plus size={13} /> {hp.addIncome}</button>
+                )}
+              </div>
+            </div>
+
+            {estTotals ? (
+              canSeeCost ? (
+                <div className="mb-4 grid grid-cols-3 gap-2.5">
+                  <div className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] p-3">
+                    <div className="text-[9.5px] font-bold uppercase text-[#97A1A0] dark:text-[#728098]">{hp.costReal}</div>
+                    <div className="mt-1 font-mono text-[15px] font-bold text-[var(--brand)]">{money(estTotals.cost)}</div>
+                  </div>
+                  <div className="rounded-xl border border-[#EAD9AC] bg-[#FBF5E6] dark:bg-[#17233d] p-3">
+                    <div className="text-[9.5px] font-bold uppercase text-[#B98A2F]">{hp.profit30}</div>
+                    <div className="mt-1 font-mono text-[15px] font-bold text-[#B98A2F]">+{money(estTotals.profit)}</div>
+                  </div>
+                  <div className="rounded-xl border border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#122a2c] p-3">
+                    <div className="text-[9.5px] font-bold uppercase text-[var(--accent)]">{hp.clientPrice}</div>
+                    <div className="mt-1 font-mono text-[15px] font-extrabold text-[var(--brand)]">{money(estTotals.client)}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 rounded-xl border border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#122a2c] p-3">
+                  <div className="text-[9.5px] font-bold uppercase text-[var(--accent)]">{hp.clientPrice}</div>
+                  <div className="mt-1 font-mono text-[17px] font-extrabold text-[var(--brand)]">{money(estTotals.client)}</div>
+                </div>
+              )
+            ) : (
+              <button onClick={() => goToTab("presupuesto")} className="mb-4 flex w-full items-center justify-between rounded-xl border border-dashed border-[#E6DDCB] dark:border-[#22304d] px-4 py-3 text-left">
+                <span className="text-[12.5px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">{hp.noEstimate}</span>
+                <span className="text-[11px] font-bold text-[var(--accent)]">{hp.openEstimate} →</span>
+              </button>
+            )}
+
+            <div className="mb-4 grid grid-cols-2 gap-4">
+              <div>
+                <div className="mb-1 flex justify-between text-[11px] font-semibold"><span className="text-[#5C6A6E] dark:text-[#9fb0cc]">{hp.workProgress}</span><span className="font-mono font-bold text-[var(--accent)]">{avancePct}%</span></div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F0EBE0] dark:bg-[#22304d]"><div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${avancePct}%` }} /></div>
+              </div>
+              <div>
+                <div className="mb-1 flex justify-between text-[11px] font-semibold"><span className="text-[#5C6A6E] dark:text-[#9fb0cc]">{hp.collected}</span><span className="font-mono font-bold text-[#4F8A63]">{money(cobrado)} · {cobradoPct}%</span></div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F0EBE0] dark:bg-[#22304d]"><div className="h-full rounded-full bg-[#4F8A63]" style={{ width: `${cobradoPct}%` }} /></div>
+              </div>
+            </div>
+
+            {estDeposits.length > 0 && (
+              <div>
+                <div className="mb-1.5 text-[10px] font-bold uppercase text-[#97A1A0] dark:text-[#728098]">{hp.paymentSchedule}</div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {estDeposits.slice(0, 6).map((d, i) => {
+                    const amt = d.mode === "amount" && d.fixed_amount != null ? d.fixed_amount : (Number(d.pct) || 0) * grandTotal / 100;
+                    const paid = !!d.received;
+                    const label = language === "en" ? d.label_en : d.label_es;
+                    return (
+                      <div key={i} className={`rounded-xl border p-2.5 text-[11px] ${paid ? "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20" : "border-amber-500/40 bg-amber-50 dark:bg-amber-950/20"}`}>
+                        <div className={`flex justify-between font-bold ${paid ? "text-[#4F8A63]" : "text-[#B98A2F]"}`}><span className="truncate">{label}</span><span>{Number(d.pct) || 0}%</span></div>
+                        <div className="mt-0.5 font-mono font-bold text-[var(--brand)]">{money(amt)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+          )}
+        </div>
       </div>
 
       {/* Photo lightbox */}
-      {photoOpen && project.photo_url && (
+      {lightboxUrl && (
         <div
           className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 backdrop-blur-sm"
-          onClick={() => setPhotoOpen(false)}
+          onClick={() => setLightboxUrl(null)}
         >
           <button
-            onClick={() => setPhotoOpen(false)}
+            onClick={() => setLightboxUrl(null)}
             className="absolute right-5 top-5 grid size-9 place-items-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/35"
             aria-label="Cerrar"
           >
             <X size={18} />
           </button>
           <img
-            src={project.photo_url}
+            src={lightboxUrl}
             alt={project.title}
             className="max-h-[88vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
             onClick={e => e.stopPropagation()}

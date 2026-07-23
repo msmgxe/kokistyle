@@ -24,6 +24,7 @@ import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
 import { openEstimatePdfInBrowser, getEstimatePdfBlob, exportInvoicePdf, openInvoicePdfInBrowser, getInvoicePdfBlob, type InvoiceData } from "@/src/lib/pdf";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
+import { computeGrandTotal } from "@/src/lib/estimateTotals";
 
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -501,21 +502,6 @@ function SortableSection({
       )}
     </div>
   );
-}
-
-function computeGrandTotal(
-  sections: Array<{ items: Array<{ amount: number }>; section_total: number; is_material_type: boolean }>,
-  discountPct: number,
-): number {
-  let all = 0, labor = 0;
-  for (const s of sections) {
-    const itemsSum = s.items.reduce((a, i) => a + i.amount, 0);
-    const st = itemsSum > 0 ? itemsSum : s.section_total;
-    all += st;
-    if (!s.is_material_type) labor += st;
-  }
-  const disc = Math.round(labor * (discountPct / 100) * 100) / 100;
-  return all - disc;
 }
 
 // ─── EstimateTab ──────────────────────────────────────────────────────────────
