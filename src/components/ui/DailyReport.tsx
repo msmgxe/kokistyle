@@ -81,7 +81,7 @@ export default function DailyReport({
   // Notas del día = agenda_events (globales, sin proyecto obligatorio) — solo superadmin
   const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
   const [noteModal, setNoteModal] = useState<
-    { mode: "create" | "edit"; iso: string; id?: string; title?: string; projectId?: string; date?: string } | null
+    { mode: "create" | "edit"; iso: string; id?: string; title?: string; projectId?: string; date?: string; time?: string } | null
   >(null);
   const [savingNote, setSavingNote] = useState(false);
 
@@ -104,11 +104,11 @@ export default function DailyReport({
       .then(({ data }) => { if (data) setDayNotes(data as DayNote[]); });
   }, [isSuperAdmin, from, to]);
 
-  const createNote = async (iso: string, title: string, projectId: string | null) => {
+  const createNote = async (iso: string, title: string, projectId: string | null, time: string) => {
     setSavingNote(true);
     const { data, error } = await supabase
       .from("agenda_events")
-      .insert({ event_type: "task", title, event_date: iso, project_id: projectId })
+      .insert({ event_type: "task", title, event_date: iso, event_time: time, project_id: projectId })
       .select("id, title, event_date, event_time, done, event_type, project_id")
       .single();
     setSavingNote(false);
@@ -131,14 +131,14 @@ export default function DailyReport({
     }
   };
 
-  const updateNote = async (id: string, title: string, projectId: string | null, newDate?: string) => {
+  const updateNote = async (id: string, title: string, projectId: string | null, newDate: string | undefined, time: string) => {
     setSavingNote(true);
-    const patch: { title: string; project_id: string | null; event_date?: string } = { title, project_id: projectId };
+    const patch: { title: string; project_id: string | null; event_time: string; event_date?: string } = { title, project_id: projectId, event_time: time };
     if (newDate) patch.event_date = newDate;
     const { error } = await supabase.from("agenda_events").update(patch).eq("id", id);
     setSavingNote(false);
     if (error) { toast(tr.noteError); return; }
-    setDayNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id: projectId, ...(newDate ? { event_date: newDate } : {}) } : n));
+    setDayNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id: projectId, event_time: time, ...(newDate ? { event_date: newDate } : {}) } : n));
     setNoteModal(null);
     toast(tr.noteUpdated);
   };
@@ -350,7 +350,7 @@ export default function DailyReport({
                           </span>
                           <span className="shrink-0 font-mono text-[10px] text-[#B98A2F]">{n.event_time?.slice(0, 5)}</span>
                           <button
-                            onClick={() => setNoteModal({ mode: "edit", iso, id: n.id, title: n.title, projectId: n.project_id ?? "", date: n.event_date })}
+                            onClick={() => setNoteModal({ mode: "edit", iso, id: n.id, title: n.title, projectId: n.project_id ?? "", date: n.event_date, time: n.event_time ?? "" })}
                             className="shrink-0 text-[#B98A2F]/60 transition hover:text-[#B98A2F] print:hidden"
                             aria-label={tr.noteEdit}
                           >
@@ -464,13 +464,14 @@ export default function DailyReport({
           initialTitle={noteModal.title}
           initialProjectId={noteModal.projectId}
           initialDate={noteModal.date}
+          initialTime={noteModal.time}
           projects={projects.map(p => ({ id: p.id, title: p.title }))}
           saving={savingNote}
           onCancel={() => setNoteModal(null)}
-          onSave={({ title, projectId, date: newDate }) =>
+          onSave={({ title, projectId, date: newDate, time }) =>
             noteModal.mode === "edit" && noteModal.id
-              ? updateNote(noteModal.id, title, projectId, newDate)
-              : createNote(noteModal.iso, title, projectId)
+              ? updateNote(noteModal.id, title, projectId, newDate, time)
+              : createNote(noteModal.iso, title, projectId, time)
           }
         />
       )}

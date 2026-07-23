@@ -67,7 +67,7 @@ export default function HoyPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
   const [noteModal, setNoteModal] = useState<
-    { mode: "create" | "edit"; id?: string; title?: string; projectId?: string; date?: string } | null
+    { mode: "create" | "edit"; id?: string; title?: string; projectId?: string; date?: string; time?: string } | null
   >(null);
   const [savingNote, setSavingNote] = useState(false);
   const [toast, setToast] = useState("");
@@ -156,11 +156,11 @@ export default function HoyPage() {
     }
   };
 
-  const createNote = async (title: string, projectId: string | null) => {
+  const createNote = async (title: string, projectId: string | null, time: string) => {
     setSavingNote(true);
     const { data, error } = await supabase
       .from("agenda_events")
-      .insert({ event_type: "task", title, event_date: date, project_id: projectId })
+      .insert({ event_type: "task", title, event_date: date, event_time: time, project_id: projectId })
       .select("id, title, event_date, event_time, done, event_type, project_id")
       .single();
     setSavingNote(false);
@@ -181,9 +181,9 @@ export default function HoyPage() {
     showToast(tr.noteDeleted);
   };
 
-  const updateNote = async (id: string, title: string, projectId: string | null, newDate?: string) => {
+  const updateNote = async (id: string, title: string, projectId: string | null, newDate: string | undefined, time: string) => {
     setSavingNote(true);
-    const patch: { title: string; project_id: string | null; event_date?: string } = { title, project_id: projectId };
+    const patch: { title: string; project_id: string | null; event_time: string; event_date?: string } = { title, project_id: projectId, event_time: time };
     if (newDate) patch.event_date = newDate;
     const { error } = await supabase.from("agenda_events").update(patch).eq("id", id);
     setSavingNote(false);
@@ -192,7 +192,7 @@ export default function HoyPage() {
     if (newDate && newDate !== date) {
       setNotes(prev => prev.filter(n => n.id !== id));
     } else {
-      setNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id: projectId } : n));
+      setNotes(prev => prev.map(n => n.id === id ? { ...n, title, project_id: projectId, event_time: time } : n));
     }
     setNoteModal(null);
     showToast(tr.noteUpdated);
@@ -295,8 +295,11 @@ export default function HoyPage() {
                   >
                     {n.done && <span className="text-[11px] font-bold leading-none text-white">✓</span>}
                   </button>
+                  {n.event_time && (
+                    <span className="shrink-0 font-mono text-[10px] font-bold text-[#B98A2F]">{n.event_time.slice(0, 5)}</span>
+                  )}
                   <button
-                    onClick={() => setNoteModal({ mode: "edit", id: n.id, title: n.title, projectId: n.project_id ?? "", date: n.event_date })}
+                    onClick={() => setNoteModal({ mode: "edit", id: n.id, title: n.title, projectId: n.project_id ?? "", date: n.event_date, time: n.event_time ?? "" })}
                     className={`min-w-0 flex-1 text-left text-[13px] ${n.done ? "text-[#97A1A0] dark:text-[#728098] line-through" : "font-semibold text-[#7A6230]"}`}
                   >
                     {n.title}
@@ -306,7 +309,7 @@ export default function HoyPage() {
                       </span>
                     )}
                   </button>
-                  <button onClick={() => setNoteModal({ mode: "edit", id: n.id, title: n.title, projectId: n.project_id ?? "", date: n.event_date })} aria-label={tr.noteEdit} className="shrink-0 text-[#B98A2F]/60 hover:text-[#B98A2F]">
+                  <button onClick={() => setNoteModal({ mode: "edit", id: n.id, title: n.title, projectId: n.project_id ?? "", date: n.event_date, time: n.event_time ?? "" })} aria-label={tr.noteEdit} className="shrink-0 text-[#B98A2F]/60 hover:text-[#B98A2F]">
                     <Pencil size={13} />
                   </button>
                   <button onClick={() => deleteNote(n.id)} aria-label={tr.noteDeleted} className="shrink-0 text-[#B0492F]/50 hover:text-[#B0492F]">
@@ -403,14 +406,15 @@ export default function HoyPage() {
           initialTitle={noteModal.title}
           initialProjectId={noteModal.projectId}
           initialDate={noteModal.date}
+          initialTime={noteModal.time}
           contextLabel={date === toIso(new Date()) ? th.todayBtn : date}
           projects={projectSelectOptions.map(p => ({ id: p.id, title: p.name }))}
           saving={savingNote}
           onCancel={() => setNoteModal(null)}
-          onSave={({ title, projectId, date: newDate }) =>
+          onSave={({ title, projectId, date: newDate, time }) =>
             noteModal.mode === "edit" && noteModal.id
-              ? updateNote(noteModal.id, title, projectId, newDate)
-              : createNote(title, projectId)
+              ? updateNote(noteModal.id, title, projectId, newDate, time)
+              : createNote(title, projectId, time)
           }
         />
       )}

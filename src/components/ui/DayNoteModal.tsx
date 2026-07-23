@@ -7,18 +7,19 @@ import { useLanguage } from "@/src/context/LanguageContext";
 // Modal compartido para crear/editar una "nota del día" (agenda_events) — mismo patrón visual
 // en el Reporte diario (Gantt G) y en la vista Hoy. Solo maneja el formulario; el padre persiste.
 export default function DayNoteModal({
-  mode, initialTitle = "", initialProjectId = "", initialDate, contextLabel,
+  mode, initialTitle = "", initialProjectId = "", initialDate, initialTime, contextLabel,
   projects, saving = false, onCancel, onSave,
 }: {
   mode: "create" | "edit";
   initialTitle?: string;
   initialProjectId?: string;
   initialDate?: string;                                   // YYYY-MM-DD — solo se edita en modo "edit"
+  initialTime?: string;                                   // HH:MM — hora de la actividad
   contextLabel?: string;                                  // p.ej. fecha "Hoy · 14 jul"
   projects: { id: string; title: string }[];
   saving?: boolean;
   onCancel: () => void;
-  onSave: (data: { title: string; projectId: string | null; date?: string }) => void;
+  onSave: (data: { title: string; projectId: string | null; date?: string; time: string }) => void;
 }) {
   const { t } = useLanguage();
   const tr = t.panel.dailyReport;
@@ -26,12 +27,13 @@ export default function DayNoteModal({
   const [title, setTitle] = useState(initialTitle);
   const [projectId, setProjectId] = useState(initialProjectId);
   const [date, setDate] = useState(initialDate ?? "");
+  const [time, setTime] = useState((initialTime ?? "10:00").slice(0, 5));
 
   const submit = () => {
     const clean = title.trim();
     if (!clean || saving) return;
-    // La fecha solo viaja en modo edición (crear siempre usa el día abierto)
-    onSave({ title: clean, projectId: projectId || null, date: mode === "edit" && date ? date : undefined });
+    // La fecha solo viaja en modo edición (crear siempre usa el día abierto); la hora en ambos
+    onSave({ title: clean, projectId: projectId || null, date: mode === "edit" && date ? date : undefined, time });
   };
 
   return (
@@ -58,15 +60,40 @@ export default function DayNoteModal({
           className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] placeholder:text-[#9CABB0] dark:placeholder:text-[#9fb0cc] focus:border-[#B98A2F] focus:outline-none"
         />
 
-        {mode === "edit" && (
+        {mode === "edit" ? (
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-[#97A1A0] dark:text-[#728098]">
+                {tr.noteDate}
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] focus:border-[#B98A2F] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-[#97A1A0] dark:text-[#728098]">
+                {tr.noteTime}
+              </label>
+              <input
+                type="time"
+                value={time}
+                onChange={e => setTime(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] focus:border-[#B98A2F] focus:outline-none"
+              />
+            </div>
+          </div>
+        ) : (
           <>
             <label className="mt-3 block text-[11px] font-bold uppercase tracking-wide text-[#97A1A0] dark:text-[#728098]">
-              {tr.noteDate}
+              {tr.noteTime}
             </label>
             <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
+              type="time"
+              value={time}
+              onChange={e => setTime(e.target.value)}
               className="mt-1 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3.5 py-3 text-[15px] text-[var(--brand)] focus:border-[#B98A2F] focus:outline-none"
             />
           </>
