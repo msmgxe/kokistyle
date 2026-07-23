@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es" class="dark theme-teal">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luxaris Design — 5 Opciones de Mejora UX/UI con Fotos de Obra</title>
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --accent: #0d9488;
+      --accent-hover: #0f766e;
+      --accent-light: rgba(13, 148, 136, 0.15);
+      --accent-border: rgba(13, 148, 136, 0.4);
+      --gradient-from: #0d9488;
+      --gradient-to: #10b981;
+      --brand-header: #0F172A;
+    }
+
+    .bg-accent-main { background-color: var(--accent); }
+    .text-accent-main { color: var(--accent); }
+    .border-accent-main { border-color: var(--accent-border); }
+    .bg-accent-soft { background-color: var(--accent-light); }
+    .bg-accent-gradient { background: linear-gradient(135deg, var(--gradient-from), var(--gradient-to)); }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 9999px; }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+    }
+    .dark .glass-panel {
+      background: rgba(17, 26, 46, 0.9);
+      backdrop-filter: blur(12px);
+    }
+    .img-zoom {
+      transition: transform 0.4s ease;
+    }
+    .img-zoom:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-[#F7F3EB] dark:bg-[#0b1220] text-slate-800 dark:text-slate-100 min-h-screen font-sans">
+
+  <!-- ========================================== -->
+  <!-- TOP 5 OPTIONS NAVIGATION BAR               -->
+  <!-- ========================================== -->
+  <header class="bg-[#0F172A] text-white sticky top-0 z-50 border-b border-slate-800 px-4 lg:px-8 py-3 shadow-xl">
+    <div class="max-w-7xl mx-auto flex flex-col xl:flex-row items-center justify-between gap-4">
+      
+      <!-- Brand title -->
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-accent-gradient flex items-center justify-center font-heading font-extrabold text-base text-white shadow-lg shadow-teal-900/40">
+          LD
+        </div>
+        <div>
+          <div class="font-heading font-bold text-base tracking-wide flex items-center gap-2">
+            LUXARIS <span class="text-teal-400 font-light text-xs uppercase tracking-widest">Design</span>
+          </div>
+          <div class="text-[10px] text-amber-400 font-bold uppercase tracking-widest">5 Opciones UX/UI con Fotos de Obra</div>
+        </div>
+      </div>
+
+      <!-- 5 Option Tabs Switcher -->
+      <div class="flex items-center gap-1.5 bg-slate-800/90 p-1.5 rounded-2xl border border-slate-700 w-full xl:w-auto overflow-x-auto no-scrollbar">
+        
+        <button onclick="selectUxOption(1)" id="opt-btn-1" 
+                class="flex-1 shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition bg-accent-main text-white shadow">
+          <i data-lucide="image" class="w-3.5 h-3.5"></i>
+          <span>1. Cards + Hero Photo</span>
+        </button>
+
+        <button onclick="selectUxOption(2)" id="opt-btn-2" 
+                class="flex-1 shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition">
+          <i data-lucide="layout-template" class="w-3.5 h-3.5"></i>
+          <span>2. Studio Split Screen</span>
+        </button>
+
+        <button onclick="selectUxOption(3)" id="opt-btn-3" 
+                class="flex-1 shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition">
+          <i data-lucide="kanban" class="w-3.5 h-3.5"></i>
+          <span>3. Visual Kanban</span>
+        </button>
+
+        <button onclick="selectUxOption(4)" id="opt-btn-4" 
+                class="flex-1 shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition">
+          <i data-lucide="table" class="w-3.5 h-3.5"></i>
+          <span>4. Matrix Table + Thumbs</span>
+        </button>
+
+        <button onclick="selectUxOption(5)" id="opt-btn-5" 
+                class="flex-1 shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+          <span>5. Field Mobile + Katy AI</span>
+        </button>
+
+      </div>
+
+      <!-- Theme Controls -->
+      <div class="hidden xl:flex items-center gap-2">
+        <button onclick="toggleDarkLight()" class="p-2 text-slate-300 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 transition" title="Cambiar Tema">
+          <i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
+
+    <!-- ================================================================= -->
+    <!-- OPCIÓN 1: ARCHITECTURAL COVER CARDS & FINANCIAL PILLARS          -->
+    <!-- ================================================================= -->
+    <div id="option-1-container" class="space-y-6">
+      
+      <!-- Option Description Banner -->
+      <div class="bg-gradient-to-r from-teal-900/80 to-slate-900/90 border border-teal-500/30 rounded-2xl p-5 text-white flex items-start gap-4">
+        <div class="p-3 bg-teal-500/20 text-teal-300 rounded-xl">
+          <i data-lucide="image" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-teal-400">Opción 1 de 5</div>
+          <h2 class="font-heading font-extrabold text-lg text-white">Tarjetas Arquitectónicas con Foto Portada HD & Tríptico Financiero</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Cada tarjeta cuenta con una **fotografía de portada en alta definición del render o avance real de obra**, badges de estado en vivo, porcentaje de avance Gantt, barra de recaudación de cobros y el desglose de 3 montos: **Costo Real | Ganancia (30%) | Precio Cliente**.
+          </p>
+        </div>
+      </div>
+
+      <!-- Project Cards Grid with HD Photos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- CARD 1: Miami Beach Penthouse -->
+        <div class="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-2xl hover:border-teal-500/60 transition-all duration-300 group flex flex-col">
+          
+          <!-- Hero Photo Banner -->
+          <div class="relative h-48 overflow-hidden bg-slate-900 cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80', 'Miami Beach Oceanfront Penthouse')">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" 
+                 alt="Miami Penthouse" 
+                 class="w-full h-full object-cover img-zoom">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+            
+            <div class="absolute top-3 left-3 flex items-center gap-2">
+              <span class="bg-emerald-500 text-slate-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
+                ● En Obra
+              </span>
+            </div>
+
+            <div class="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md text-slate-300 text-[10px] font-mono px-2 py-1 rounded-lg border border-slate-700">
+              #MIA-2026
+            </div>
+
+            <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+              <div>
+                <h3 class="font-heading font-extrabold text-base text-white drop-shadow">Miami Beach Penthouse</h3>
+                <p class="text-[11px] text-slate-300 flex items-center gap-1 drop-shadow">
+                  <i data-lucide="map-pin" class="w-3 h-3 text-teal-400"></i> Collins Ave, Miami Beach, FL
+                </p>
+              </div>
+              <span class="p-1.5 bg-white/20 hover:bg-white/40 text-white rounded-lg backdrop-blur-sm transition" title="Ver Foto HD">
+                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+              </span>
+            </div>
+          </div>
+
+          <!-- Card Financial Content -->
+          <div class="p-4 space-y-4 flex-1 flex flex-col justify-between">
+            
+            <!-- Tríptico Financiero -->
+            <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+              <div>
+                <div class="text-[9px] uppercase font-bold text-slate-400">Costo Real</div>
+                <div class="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">$85,000</div>
+              </div>
+              <div class="border-l border-slate-300 dark:border-slate-800 pl-2">
+                <div class="text-[9px] uppercase font-bold text-amber-500">Ganancia 30%</div>
+                <div class="font-mono text-xs font-bold text-amber-600">+$25,500</div>
+              </div>
+              <div class="border-l border-slate-300 dark:border-slate-800 pl-2">
+                <div class="text-[9px] uppercase font-bold text-teal-500">Cliente</div>
+                <div class="font-mono text-xs font-extrabold text-slate-900 dark:text-white">$110,500</div>
+              </div>
+            </div>
+
+            <!-- Avance Gantt & Cobrado -->
+            <div class="space-y-2">
+              <div>
+                <div class="flex justify-between text-xs mb-1 font-semibold">
+                  <span class="text-slate-600 dark:text-slate-400">Avance de Obra</span>
+                  <span class="text-teal-500 font-mono font-bold">68%</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-teal-500 h-full rounded-full" style="width: 68%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1 font-semibold">
+                  <span class="text-slate-600 dark:text-slate-400">Cobrado Cliente</span>
+                  <span class="text-emerald-600 dark:text-emerald-400 font-mono font-bold">$75,000 (67%)</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: 67%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-slate-400 text-[11px]">Cliente: Carlos Mendoza</span>
+              <button class="font-bold text-teal-500 hover:underline flex items-center gap-1">
+                Abrir Proyecto <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- CARD 2: Boca Raton Luxury Villa -->
+        <div class="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-2xl hover:border-teal-500/60 transition-all duration-300 group flex flex-col">
+          
+          <div class="relative h-48 overflow-hidden bg-slate-900 cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80', 'Boca Raton Luxury Villa')">
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80" 
+                 alt="Boca Raton Villa" 
+                 class="w-full h-full object-cover img-zoom">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+            
+            <div class="absolute top-3 left-3 flex items-center gap-2">
+              <span class="bg-amber-500 text-slate-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
+                ● Presupuesto
+              </span>
+            </div>
+
+            <div class="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md text-slate-300 text-[10px] font-mono px-2 py-1 rounded-lg border border-slate-700">
+              #BOCA-2026
+            </div>
+
+            <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+              <div>
+                <h3 class="font-heading font-extrabold text-base text-white drop-shadow">Boca Raton Villa Kitchen</h3>
+                <p class="text-[11px] text-slate-300 flex items-center gap-1 drop-shadow">
+                  <i data-lucide="map-pin" class="w-3 h-3 text-teal-400"></i> Royal Palm Way, Boca Raton, FL
+                </p>
+              </div>
+              <span class="p-1.5 bg-white/20 hover:bg-white/40 text-white rounded-lg backdrop-blur-sm transition">
+                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-4 flex-1 flex flex-col justify-between">
+            
+            <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+              <div>
+                <div class="text-[9px] uppercase font-bold text-slate-400">Costo Real</div>
+                <div class="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">$180,000</div>
+              </div>
+              <div class="border-l border-slate-300 dark:border-slate-800 pl-2">
+                <div class="text-[9px] uppercase font-bold text-amber-500">Ganancia 30%</div>
+                <div class="font-mono text-xs font-bold text-amber-600">+$54,000</div>
+              </div>
+              <div class="border-l border-slate-300 dark:border-slate-800 pl-2">
+                <div class="text-[9px] uppercase font-bold text-teal-500">Cliente</div>
+                <div class="font-mono text-xs font-extrabold text-slate-900 dark:text-white">$234,000</div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div>
+                <div class="flex justify-between text-xs mb-1 font-semibold">
+                  <span class="text-slate-600 dark:text-slate-400">Diseño & Permisos</span>
+                  <span class="text-amber-500 font-mono font-bold">15%</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-amber-500 h-full rounded-full" style="width: 15%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-slate-400 text-[11px]">Cliente: Robert Sterling</span>
+              <button class="font-bold text-teal-500 hover:underline flex items-center gap-1">
+                Ver Estimado <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- CARD 3: Brickell Skyscraper Condo -->
+        <div class="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-2xl hover:border-teal-500/60 transition-all duration-300 group flex flex-col">
+          
+          <div class="relative h-48 overflow-hidden bg-slate-900 cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80', 'Brickell Skyscraper Bath')">
+            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80" 
+                 alt="Brickell Condo" 
+                 class="w-full h-full object-cover img-zoom">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+            
+            <div class="absolute top-3 left-3 flex items-center gap-2">
+              <span class="bg-emerald-500 text-slate-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
+                ● En Obra
+              </span>
+            </div>
+
+            <div class="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md text-slate-300 text-[10px] font-mono px-2 py-1 rounded-lg border border-slate-700">
+              #BRK-2026
+            </div>
+
+            <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+              <div>
+                <h3 class="font-heading font-extrabold text-base text-white drop-shadow">Brickell Skyscraper Condo</h3>
+                <p class="text-[11px] text-slate-300 flex items-center gap-1 drop-shadow">
+                  <i data-lucide="map-pin" class="w-3 h-3 text-teal-400"></i> Brickell Ave, Miami, FL
+                </p>
+              </div>
+              <span class="p-1.5 bg-white/20 hover:bg-white/40 text-white rounded-lg backdrop-blur-sm transition">
+                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-4 flex-1 flex flex-col justify-between">
+            
+            <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+              <div>
+                <div class="text-[9px] uppercase font-bold text-slate-400">Costo Real</div>
+                <div class="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">$60,000</div>
+              </div>
+              <div class="border-l border-slate-300 dark:border-slate-800 pl-2">
+                <div class="text-[9px] uppercase font-bold text-amber-500">Ganancia 30%</div>
+                <div class="font-mono text-xs font-bold text-amber-600">+$18,000</div>
+              </div>
+              <div class="border-l border-slate-300 dark:border-slate-800 pl-2">
+                <div class="text-[9px] uppercase font-bold text-teal-500">Cliente</div>
+                <div class="font-mono text-xs font-extrabold text-slate-900 dark:text-white">$78,000</div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div>
+                <div class="flex justify-between text-xs mb-1 font-semibold">
+                  <span class="text-slate-600 dark:text-slate-400">Avance de Obra</span>
+                  <span class="text-teal-500 font-mono font-bold">82%</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-teal-500 h-full rounded-full" style="width: 82%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-slate-400 text-[11px]">Cliente: Elena Rostova</span>
+              <button class="font-bold text-teal-500 hover:underline flex items-center gap-1">
+                Abrir Proyecto <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- OPCIÓN 2: STUDIO SPLIT SCREEN (GALERÍA FOTOS + RESUMEN EN VIVO)   -->
+    <!-- ================================================================= -->
+    <div id="option-2-container" class="space-y-6 hidden">
+      
+      <div class="bg-gradient-to-r from-indigo-900/80 to-slate-900/90 border border-indigo-500/30 rounded-2xl p-5 text-white flex items-start gap-4">
+        <div class="p-3 bg-indigo-500/20 text-indigo-300 rounded-xl">
+          <i data-lucide="layout-template" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Opción 2 de 5</div>
+          <h2 class="font-heading font-extrabold text-lg text-white">Estudio Pantalla Dividida: Galería de Fotos & Control Financiero</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            **Lado Izquierdo**: Galería visual de fotos de avance de obra (Antes / Avance / Después). **Lado Derecho**: Resumen financiero en tiempo real, catálogo de ítems y timeline de cobro.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Photo Studio Gallery (5 cols) -->
+        <div class="lg:col-span-5 glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div>
+              <h3 class="font-heading font-extrabold text-base text-slate-900 dark:text-white">Galería de Avance de Obra</h3>
+              <p class="text-xs text-slate-500">Miami Beach Penthouse · 14 Fotos</p>
+            </div>
+            <button class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1">
+              <i data-lucide="camera" class="w-3.5 h-3.5"></i> + Subir Foto
+            </button>
+          </div>
+
+          <!-- Main Featured Photo -->
+          <div class="relative h-64 rounded-xl overflow-hidden bg-slate-900 group cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80', 'Impermeabilización & Tile Kohler')">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" 
+                 class="w-full h-full object-cover img-zoom">
+            <div class="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-md p-2.5 rounded-xl text-white text-xs flex justify-between items-center">
+              <div>
+                <div class="font-bold">Impermeabilización & Tile Kohler</div>
+                <div class="text-[10px] text-slate-400">Cargado ayer por Jorge (Plomero)</div>
+              </div>
+              <span class="bg-teal-500 text-slate-950 font-extrabold text-[9px] px-2 py-0.5 rounded">AVANCE</span>
+            </div>
+          </div>
+
+          <!-- Thumbnails grid -->
+          <div class="grid grid-cols-3 gap-2">
+            <img src="https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=400&q=80" class="h-20 w-full object-cover rounded-xl border border-slate-700 cursor-pointer hover:opacity-90" onclick="openPhotoModal('https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=80', 'Demolición Inicial')">
+            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=400&q=80" class="h-20 w-full object-cover rounded-xl border border-slate-700 cursor-pointer hover:opacity-90" onclick="openPhotoModal('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80', 'Instalación PEX Ducha')">
+            <img src="https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=400&q=80" class="h-20 w-full object-cover rounded-xl border border-slate-700 cursor-pointer hover:opacity-90" onclick="openPhotoModal('https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=1200&q=80', 'Vista Terraza Penthouse')">
+          </div>
+        </div>
+
+        <!-- Right: Live Financial & Estimate Panel (7 cols) -->
+        <div class="lg:col-span-7 glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[10px] font-bold uppercase bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded">Resumen Financiero Directo</span>
+              <h2 class="font-heading font-extrabold text-xl text-slate-900 dark:text-white mt-1">Miami Beach Penthouse Remodel</h2>
+            </div>
+            <button class="bg-emerald-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl">Exportar PDF</button>
+          </div>
+
+          <!-- 3 Financial Pillars -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Costo Real Directo</div>
+              <div class="font-mono text-lg font-bold text-slate-800 dark:text-slate-200 mt-1">$85,000.00</div>
+            </div>
+            <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-300 dark:border-amber-900">
+              <div class="text-[10px] text-amber-500 font-bold uppercase">Ganancia Neta (30%)</div>
+              <div class="font-mono text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">+$25,500.00</div>
+            </div>
+            <div class="p-3 bg-teal-500/20 rounded-xl border border-teal-500">
+              <div class="text-[10px] text-teal-400 font-bold uppercase">Precio Final Cliente</div>
+              <div class="font-mono text-lg font-extrabold text-slate-900 dark:text-white mt-1">$110,500.00</div>
+            </div>
+          </div>
+
+          <!-- Payment schedule hitos -->
+          <div class="space-y-2">
+            <div class="text-xs font-bold text-slate-400 uppercase">Schedule de Pagos Acordado</div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-3 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-xs">
+                <div class="flex justify-between font-bold text-emerald-400">
+                  <span>HITO 1 (30%)</span>
+                  <span>PAGADO</span>
+                </div>
+                <div class="font-mono font-bold text-white mt-1">$33,150.00</div>
+              </div>
+              <div class="p-3 rounded-xl border border-amber-500/40 bg-amber-950/20 text-xs">
+                <div class="flex justify-between font-bold text-amber-400">
+                  <span>HITO 3 (20%)</span>
+                  <span>PRÓXIMO</span>
+                </div>
+                <div class="font-mono font-bold text-white mt-1">$22,100.00</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- OPCIÓN 3: VISUAL KANBAN BOARD WITH PHOTO THUMBNAILS               -->
+    <!-- ================================================================= -->
+    <div id="option-3-container" class="space-y-6 hidden">
+      
+      <div class="bg-gradient-to-r from-emerald-900/80 to-slate-900/90 border border-emerald-500/30 rounded-2xl p-5 text-white flex items-start gap-4">
+        <div class="p-3 bg-emerald-500/20 text-emerald-300 rounded-xl">
+          <i data-lucide="kanban" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Opción 3 de 5</div>
+          <h2 class="font-heading font-extrabold text-lg text-white">Tablero Kanban Visual con Miniaturas de Fotos</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Organiza los proyectos por columnas de estado (*Prospectos*, *Presupuesto*, *En Obra*, *Terminado*). Cada tarjeta muestra la **foto principal de la propiedad**, el desglose de precio cliente y el indicador de progreso.
+          </p>
+        </div>
+      </div>
+
+      <!-- Kanban Columns Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto pb-4">
+        
+        <!-- Column 1: Presupuesto (1) -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs font-bold text-slate-300">
+            <span>PRESUPUESTO</span>
+            <span class="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-mono">1</span>
+          </div>
+
+          <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden space-y-3 p-3">
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80" class="h-32 w-full object-cover rounded-xl">
+            <div>
+              <h4 class="font-heading font-bold text-sm text-white">Boca Raton Luxury Villa</h4>
+              <p class="text-[11px] text-slate-400">Robert Sterling · Royal Palm Way</p>
+            </div>
+            <div class="flex justify-between items-center text-xs font-mono font-bold border-t border-slate-800 pt-2">
+              <span class="text-slate-400">Cliente:</span>
+              <span class="text-amber-400">$234,000</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: En Obra (2) -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs font-bold text-slate-300">
+            <span>EN OBRA (ACTIVOS)</span>
+            <span class="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded font-mono">2</span>
+          </div>
+
+          <!-- Card 1 -->
+          <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden space-y-3 p-3">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80" class="h-32 w-full object-cover rounded-xl">
+            <div>
+              <h4 class="font-heading font-bold text-sm text-white">Miami Beach Oceanfront Penthouse</h4>
+              <p class="text-[11px] text-slate-400">Carlos Mendoza · Collins Ave</p>
+            </div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div class="bg-teal-500 h-full rounded-full" style="width: 68%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs font-mono font-bold border-t border-slate-800 pt-2">
+              <span class="text-slate-400">68% Avanzado</span>
+              <span class="text-teal-400">$110,500</span>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden space-y-3 p-3">
+            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80" class="h-32 w-full object-cover rounded-xl">
+            <div>
+              <h4 class="font-heading font-bold text-sm text-white">Brickell Skyscraper Condo</h4>
+              <p class="text-[11px] text-slate-400">Elena Rostova · Brickell Ave</p>
+            </div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div class="bg-teal-500 h-full rounded-full" style="width: 82%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs font-mono font-bold border-t border-slate-800 pt-2">
+              <span class="text-slate-400">82% Avanzado</span>
+              <span class="text-teal-400">$78,000</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Column 3: Terminados (1) -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs font-bold text-slate-300">
+            <span>TERMINADOS</span>
+            <span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono">1</span>
+          </div>
+
+          <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden space-y-3 p-3 opacity-90">
+            <img src="https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=600&q=80" class="h-32 w-full object-cover rounded-xl">
+            <div>
+              <h4 class="font-heading font-bold text-sm text-white">Sunny Isles Penthouse Bath</h4>
+              <p class="text-[11px] text-slate-400">Michael Vance · Collins Ave</p>
+            </div>
+            <div class="flex justify-between items-center text-xs font-mono font-bold border-t border-slate-800 pt-2">
+              <span class="text-emerald-400">100% Entregado</span>
+              <span class="text-slate-300">$145,000</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- OPCIÓN 4: EXECUTIVE MATRIX TABLE WITH PHOTO THUMBNAILS            -->
+    <!-- ================================================================= -->
+    <div id="option-4-container" class="space-y-6 hidden">
+      
+      <div class="bg-gradient-to-r from-cyan-900/80 to-slate-900/90 border border-cyan-500/30 rounded-2xl p-5 text-white flex items-start gap-4">
+        <div class="p-3 bg-cyan-500/20 text-cyan-300 rounded-xl">
+          <i data-lucide="table" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Opción 4 de 5</div>
+          <h2 class="font-heading font-extrabold text-lg text-white">Matriz Ejecutiva con Miniaturas de Foto de Proyecto</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Vista tipo tabla compacta de alta densidad con **miniatura de foto de la propiedad a la izquierda**, columnas de Costo, Ganancia (30%), Precio Cliente y acciones rápidas.
+          </p>
+        </div>
+      </div>
+
+      <div class="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-900 text-slate-300 font-bold uppercase tracking-wider border-b border-slate-800">
+            <tr>
+              <th class="p-3.5">Foto / Proyecto</th>
+              <th class="p-3.5">Estado</th>
+              <th class="p-3.5">Costo Real</th>
+              <th class="p-3.5">Ganancia 30%</th>
+              <th class="p-3.5">Precio Cliente</th>
+              <th class="p-3.5">Avance</th>
+              <th class="p-3.5 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800">
+            
+            <tr class="hover:bg-slate-800/50 transition">
+              <td class="p-3.5 flex items-center gap-3">
+                <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=200&q=80" 
+                     class="w-12 h-12 rounded-xl object-cover border border-slate-700 cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80', 'Miami Penthouse')">
+                <div>
+                  <div class="font-bold text-white">Miami Beach Oceanfront Penthouse</div>
+                  <div class="text-[10px] text-slate-400">Carlos Mendoza · Collins Ave</div>
+                </div>
+              </td>
+              <td class="p-3.5">
+                <span class="bg-emerald-950 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded">En Obra</span>
+              </td>
+              <td class="p-3.5 font-mono text-slate-300">$85,000</td>
+              <td class="p-3.5 font-mono text-amber-400">+$25,500</td>
+              <td class="p-3.5 font-mono font-bold text-white">$110,500</td>
+              <td class="p-3.5 font-mono font-bold text-teal-400">68%</td>
+              <td class="p-3.5 text-right font-bold text-teal-400 hover:underline cursor-pointer">Ver ➔</td>
+            </tr>
+
+            <tr class="hover:bg-slate-800/50 transition">
+              <td class="p-3.5 flex items-center gap-3">
+                <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=200&q=80" 
+                     class="w-12 h-12 rounded-xl object-cover border border-slate-700 cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80', 'Boca Raton Villa')">
+                <div>
+                  <div class="font-bold text-white">Boca Raton Luxury Villa Kitchen</div>
+                  <div class="text-[10px] text-slate-400">Robert Sterling · Royal Palm Way</div>
+                </div>
+              </td>
+              <td class="p-3.5">
+                <span class="bg-amber-950 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">Presupuesto</span>
+              </td>
+              <td class="p-3.5 font-mono text-slate-300">$180,000</td>
+              <td class="p-3.5 font-mono text-amber-400">+$54,000</td>
+              <td class="p-3.5 font-mono font-bold text-white">$234,000</td>
+              <td class="p-3.5 font-mono font-bold text-amber-400">15%</td>
+              <td class="p-3.5 text-right font-bold text-teal-400 hover:underline cursor-pointer">Ver ➔</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- OPCIÓN 5: FIELD MOBILE MANAGER & KATY AI VOICE DOCK               -->
+    <!-- ================================================================= -->
+    <div id="option-5-container" class="space-y-6 hidden">
+      
+      <div class="bg-gradient-to-r from-purple-900/80 to-slate-900/90 border border-purple-500/30 rounded-2xl p-5 text-white flex items-start gap-4">
+        <div class="p-3 bg-purple-500/20 text-purple-300 rounded-xl">
+          <i data-lucide="smartphone" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-purple-400">Opción 5 de 5</div>
+          <h2 class="font-heading font-extrabold text-lg text-white">Gestor de Obra Móvil con Registro Visual & Katy AI</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Pensado para el superintendente en el sitio de construcción. Presenta el último avance fotográfico cargado en pantalla completa, checklist táctil de hoy y micrófono en vivo.
+          </p>
+        </div>
+      </div>
+
+      <div class="max-w-md mx-auto glass-panel rounded-3xl p-5 border border-slate-800 shadow-2xl space-y-5">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <div class="text-[10px] font-bold text-teal-400 uppercase">Superintendente de Obra</div>
+            <h3 class="font-heading font-extrabold text-lg text-white">Miami Beach Penthouse</h3>
+          </div>
+          <button onclick="toggleKatyModal()" class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-500 text-white flex items-center justify-center shadow-lg">
+            <i data-lucide="mic" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Latest Photo Feed -->
+        <div class="space-y-2">
+          <div class="text-xs font-bold text-slate-300">Último Avance Registrado:</div>
+          <div class="relative h-56 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80', 'Avance de Tile Ducha Master')">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover">
+            <div class="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-md p-2.5 rounded-xl text-white text-xs flex justify-between">
+              <span>Tile Ducha Master</span>
+              <span class="text-teal-400 font-bold">HOY 10:30 AM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Touch Checklist -->
+        <div class="space-y-2">
+          <div class="p-3 bg-emerald-950/40 rounded-xl border border-emerald-800 text-xs font-bold text-emerald-300 flex justify-between">
+            <span>Recepción Azulejos Calacatta</span>
+            <span>LISTO</span>
+          </div>
+          <div class="p-3 bg-slate-800 rounded-xl border border-slate-700 text-xs font-bold text-white flex justify-between">
+            <span>Prueba de Presión PEX</span>
+            <span class="text-amber-400 font-mono">2:00 PM</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- PHOTO PREVIEW MODAL                        -->
+  <!-- ========================================== -->
+  <div id="photoModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="max-w-4xl w-full space-y-3 relative">
+      <div class="flex items-center justify-between text-white">
+        <h4 id="photoModalTitle" class="font-heading font-extrabold text-lg">Foto de Avance de Obra</h4>
+        <button onclick="closePhotoModal()" class="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 max-h-[80vh]">
+        <img id="photoModalImg" src="" class="w-full h-full object-contain max-h-[80vh] mx-auto">
+      </div>
+    </div>
+  </div>
+
+  <!-- KATY AI MODAL -->
+  <div id="katyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full text-center space-y-4 text-white">
+      <div class="w-14 h-14 rounded-2xl bg-accent-gradient mx-auto flex items-center justify-center text-white">
+        <i data-lucide="mic" class="w-7 h-7"></i>
+      </div>
+      <h3 class="font-heading font-bold text-lg">Asistente Katy AI</h3>
+      <p class="text-xs text-slate-300">Escuchando comando de voz en vivo...</p>
+      <button onclick="toggleKatyModal()" class="bg-slate-800 text-xs font-bold px-4 py-2 rounded-xl">Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function selectUxOption(optNum) {
+      [1, 2, 3, 4, 5].forEach(n => {
+        const container = document.getElementById('option-' + n + '-container');
+        if (container) container.classList.add('hidden');
+
+        const btn = document.getElementById('opt-btn-' + n);
+        if (btn) {
+          btn.classList.remove('bg-accent-main', 'text-white', 'shadow');
+          btn.classList.add('text-slate-300', 'font-medium');
+        }
+      });
+
+      const selectedContainer = document.getElementById('option-' + optNum + '-container');
+      if (selectedContainer) selectedContainer.classList.remove('hidden');
+
+      const selectedBtn = document.getElementById('opt-btn-' + optNum);
+      if (selectedBtn) {
+        selectedBtn.classList.add('bg-accent-main', 'text-white', 'shadow');
+        selectedBtn.classList.remove('text-slate-300', 'font-medium');
+      }
+    }
+
+    function openPhotoModal(imgUrl, title) {
+      document.getElementById('photoModalImg').src = imgUrl;
+      document.getElementById('photoModalTitle').innerText = title;
+      document.getElementById('photoModal').classList.remove('hidden');
+    }
+
+    function closePhotoModal() {
+      document.getElementById('photoModal').classList.add('hidden');
+    }
+
+    function toggleDarkLight() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    function toggleKatyModal() {
+      document.getElementById('katyModal').classList.toggle('hidden');
+    }
+  </script>
+
+</body>
+</html>
