@@ -1521,39 +1521,58 @@ export default function EstimateTab({
     ════════════════════════════════════════════════════════════════════════ */}
     <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-md">
 
-      {/* ── HEADER BAND ─────────────────────────────────────────────────────── */}
-      <div className="bg-[var(--brand)] px-5 pb-0 pt-4">
-        {/* Top row: identity + actions */}
-        <div className="flex items-center gap-3 pb-3">
-          {/* Left: company · status · project title */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-1.5 text-[8.5px] font-bold uppercase tracking-[.15em] text-white/35">
-              {branding.companyName}
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <select
-                value={estimate.status}
-                onChange={e => setEstimate(p => p ? ({ ...p, status: e.target.value as EstimateRow["status"] }) : p)}
-                className={`shrink-0 cursor-pointer appearance-none rounded-md border-0 px-2.5 py-1 text-[10px] font-bold ${STATUS_STYLE[estimate.status]}`}
-              >
-                <option value="draft">{EN ? "Draft" : "Borrador"}</option>
-                <option value="sent">{EN ? "Sent" : "Enviado"}</option>
-                <option value="approved">{EN ? "Approved" : "Aprobado"}</option>
-                <option value="rejected">{EN ? "Rejected" : "Rechazado"}</option>
-              </select>
-              <span className="font-bookman truncate text-[17px] font-bold leading-tight text-white">
-                {project.title}
-              </span>
-            </div>
+      {/* ── HEADER BAND (claro — el nombre del proyecto ya está en el hero) ──── */}
+      <div className="border-b border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-5 pb-3 pt-4">
+        {/* Título + estado */}
+        <div className="mb-3 flex items-center gap-2.5">
+          <h3 className="text-[15px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
+            {EN ? "Professional estimate" : "Estimado profesional"}
+          </h3>
+          <select
+            value={estimate.status}
+            onChange={e => setEstimate(p => p ? ({ ...p, status: e.target.value as EstimateRow["status"] }) : p)}
+            className={`shrink-0 cursor-pointer appearance-none rounded-md border-0 px-2.5 py-1 text-[10px] font-bold ${STATUS_STYLE[estimate.status]}`}
+          >
+            <option value="draft">{EN ? "Draft" : "Borrador"}</option>
+            <option value="sent">{EN ? "Sent" : "Enviado"}</option>
+            <option value="approved">{EN ? "Approved" : "Aprobado"}</option>
+            <option value="rejected">{EN ? "Rejected" : "Rechazado"}</option>
+          </select>
+        </div>
+
+        {/* Sub-tabs (izquierda) + acciones (derecha) — al mismo nivel */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Sub-tabs con borde del color del tema */}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setEstimateSubTab("sections")}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition ${
+                estimateSubTab === "sections"
+                  ? "border-[var(--brand)] bg-[var(--brand)]/8 text-[var(--brand)] dark:text-[#e8edf7]"
+                  : "border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
+              }`}
+            >
+              📐 {EN ? "Sections" : "Secciones"}
+            </button>
+            <button
+              onClick={() => setEstimateSubTab("schedule")}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition ${
+                estimateSubTab === "schedule"
+                  ? "border-[var(--brand)] bg-[var(--brand)]/8 text-[var(--brand)] dark:text-[#e8edf7]"
+                  : "border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
+              }`}
+            >
+              💰 {EN ? "Payment Schedule" : "Calendario de Pagos"}
+            </button>
           </div>
 
-          {/* Right: action buttons */}
+          {/* Acciones */}
           <div className="flex shrink-0 items-center gap-2">
             {/* Copy */}
             <button
               onClick={openCopyModal}
               title={EN ? "Copy estimate to another project" : "Copiar estimado a otro proyecto"}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-bold text-white/80 transition hover:bg-white/18 hover:text-white"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#E4EAF5] dark:hover:bg-[#22304d]"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span className="hidden sm:inline">{EN ? "Copy" : "Copiar"}</span>
@@ -1573,7 +1592,7 @@ export default function EstimateTab({
             <button
               onClick={openInvoiceModal}
               title={EN ? "Generate invoice from the payment schedule" : "Generar factura desde el payment schedule"}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-bold text-white/90 transition hover:bg-white/18 hover:text-white"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#E4EAF5] dark:hover:bg-[#22304d]"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3h16v18l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
               <span className="hidden sm:inline">{EN ? "Invoice" : "Factura"}</span>
@@ -1595,7 +1614,7 @@ export default function EstimateTab({
               disabled={saving}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold transition disabled:opacity-50 ${
                 estimateSubTab === "sections"
-                  ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] hover:bg-[#F5E9DA] dark:hover:bg-[#17233d]"
+                  ? "bg-[var(--brand)] text-white hover:bg-[#0F2830]"
                   : "bg-[#F0A090] text-[#7B1838] hover:bg-[#FFB8A8]"
               }`}
             >
@@ -1613,29 +1632,6 @@ export default function EstimateTab({
           </div>
         </div>
 
-        {/* Tab row */}
-        <div className="flex items-end gap-1">
-          <button
-            onClick={() => setEstimateSubTab("sections")}
-            className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
-              estimateSubTab === "sections"
-                ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]"
-                : "text-white/40 hover:text-white/70"
-            }`}
-          >
-            📐 {EN ? "Sections" : "Secciones"}
-          </button>
-          <button
-            onClick={() => setEstimateSubTab("schedule")}
-            className={`inline-flex items-center gap-2 rounded-t-xl px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
-              estimateSubTab === "schedule"
-                ? "bg-white dark:bg-[#111a2e] text-[var(--brand)]"
-                : "text-white/40 hover:text-white/70"
-            }`}
-          >
-            💰 {EN ? "Payment Schedule" : "Calendario de Pagos"}
-          </button>
-        </div>
       </div>
 
       {/* ════════════════════════════════════════════════

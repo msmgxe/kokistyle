@@ -2369,7 +2369,7 @@ export default function ProjectDetailPage() {
 
       {/* Barra única de tabs: fondo del tema, el activo iluminado (scroll horizontal en móvil) */}
       {visibleTabs.length > 0 && (
-        <div className="mb-6 flex gap-1.5 overflow-x-auto rounded-2xl bg-[var(--brand)] px-2.5 py-2 [scrollbar-width:none]">
+        <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-2 [scrollbar-width:none]">
           {visibleTabs.map((tab) => {
             const Icon = TAB_ICONS[tab.id];
             const active = activeTab === tab.id;
@@ -2378,8 +2378,8 @@ export default function ProjectDetailPage() {
                 aria-current={active ? "page" : undefined}
                 className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-[13px] font-bold transition ${
                   active
-                    ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] dark:text-[#e8edf7] shadow-sm"
-                    : "text-[#A8C0BC] hover:bg-white/10 hover:text-white"
+                    ? "bg-[var(--brand)] text-white shadow-sm"
+                    : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F0F3FA] dark:hover:bg-[#17233d] hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
                 }`}>
                 <Icon size={15} className="shrink-0" />
                 {tab.label}
