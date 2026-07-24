@@ -19,6 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Save, Pencil,
+  Ruler, Wallet,
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
@@ -1552,7 +1553,7 @@ export default function EstimateTab({
                   : "border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
               }`}
             >
-              📐 {EN ? "Sections" : "Secciones"}
+              <Ruler size={13} /> {EN ? "Sections" : "Secciones"}
             </button>
             <button
               onClick={() => setEstimateSubTab("schedule")}
@@ -1562,7 +1563,7 @@ export default function EstimateTab({
                   : "border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
               }`}
             >
-              💰 {EN ? "Payment Schedule" : "Calendario de Pagos"}
+              <Wallet size={13} /> {EN ? "Payment Schedule" : "Calendario de Pagos"}
             </button>
           </div>
 
@@ -1639,48 +1640,6 @@ export default function EstimateTab({
       ════════════════════════════════════════════════ */}
       {estimateSubTab === "sections" && (
         <>
-          {/* Sub-band: totals summary */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-5 py-2.5">
-            <div>
-              <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
-                {EN ? "Labor subtotal" : "Subtotal mano de obra"}
-              </div>
-              <div className="text-[13px] font-black text-[var(--brand)]">{money(laborTotal)}</div>
-            </div>
-            {discountAmt > 0 && (
-              <>
-                <div className="text-[#C4B89A]">·</div>
-                <div>
-                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
-                    {EN ? "Grand Total" : "Total Final"}
-                  </div>
-                  <div className="text-[13px] font-black text-[var(--brand)]">{money(grandTotal)}</div>
-                </div>
-              </>
-            )}
-            {/* Discount badge — right */}
-            <div className="ml-auto flex items-center gap-2 rounded-lg border border-[#F0C8BC] bg-[#FDF5F3] dark:bg-[#2a1712] px-3 py-1.5">
-              <span className="text-[9px] font-bold uppercase tracking-wide text-[#B0492F]">
-                {EN ? "Discount" : "Descuento"}
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={estimate.discount_pct === 0 ? "" : String(estimate.discount_pct)}
-                onChange={e => {
-                  const raw = e.target.value.replace(/[^0-9.]/g, "");
-                  setEstimate(p => p ? ({ ...p, discount_pct: parseFloat(raw) || 0 }) : p);
-                }}
-                placeholder="0"
-                className="w-10 border-none bg-transparent text-center text-[12px] font-black text-[#B0492F] focus:outline-none"
-              />
-              <span className="text-[9px] font-bold text-[#B0492F]">%</span>
-              {discountAmt > 0 && (
-                <span className="font-mono text-[11px] font-black text-[#B0492F]">–{money(discountAmt)}</span>
-              )}
-            </div>
-          </div>
-
           <div className="space-y-3 p-4">
             {/* Customer info (collapsible) */}
             <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
@@ -1779,32 +1738,43 @@ export default function EstimateTab({
               <Plus size={14} /> {EN ? "Add section" : "Agregar sección"}
             </button>
 
-            {/* Totals footer row */}
+            {/* Totales — abajo a la derecha (el % de descuento sigue editable aquí) */}
             {estimate.sections.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-3">
-                <div className="flex items-center gap-6">
-                  {discountAmt > 0 && (
-                    <div>
-                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
-                        {EN ? "Labor subtotal" : "Subtotal M.O."}
-                      </div>
-                      <div className="font-mono text-[12px] font-bold text-[var(--brand)]">{money(laborTotal)}</div>
-                    </div>
-                  )}
-                  {discountAmt > 0 && (
-                    <div>
-                      <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
-                        {EN ? "Discount" : "Descuento"} {estimate.discount_pct}%
-                      </div>
-                      <div className="font-mono text-[12px] font-bold text-[#B0492F]">–{money(discountAmt)}</div>
-                    </div>
-                  )}
-                </div>
+              <div className="flex flex-wrap items-end justify-end gap-x-8 gap-y-3 px-1 py-3">
                 <div className="text-right">
-                  <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
+                  <div className="text-[9px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
+                    {EN ? "Labor subtotal" : "Subtotal mano de obra"}
+                  </div>
+                  <div className="font-mono text-[15px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">{money(laborTotal)}</div>
+                </div>
+
+                <div className="text-right">
+                  <div className="flex items-center justify-end gap-1 text-[9px] font-bold uppercase tracking-[.12em] text-[#B0492F]">
+                    {EN ? "Discount" : "Descuento"}
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={estimate.discount_pct === 0 ? "" : String(estimate.discount_pct)}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^0-9.]/g, "");
+                        setEstimate(p => p ? ({ ...p, discount_pct: parseFloat(raw) || 0 }) : p);
+                      }}
+                      placeholder="0"
+                      aria-label={EN ? "Discount percent" : "Porcentaje de descuento"}
+                      className="w-7 rounded border border-[#F0C8BC] bg-[#FDF5F3] dark:bg-[#2a1712] text-center text-[10px] font-black text-[#B0492F] focus:outline-none"
+                    />
+                    %
+                  </div>
+                  <div className="font-mono text-[15px] font-bold text-[#B0492F]">
+                    {discountAmt > 0 ? `−${money(discountAmt)}` : money(0)}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-[9px] font-bold uppercase tracking-[.12em] text-[var(--accent)]">
                     {EN ? "Grand Total" : "Total Final"}
                   </div>
-                  <div className="font-mono text-[17px] font-black text-[var(--brand)]">{money(grandTotal)}</div>
+                  <div className="font-mono text-[21px] font-black text-[var(--brand)] dark:text-[#e8edf7]">{money(grandTotal)}</div>
                 </div>
               </div>
             )}
