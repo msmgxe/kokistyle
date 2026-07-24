@@ -9,7 +9,11 @@ import {
   useEffect, useState, useCallback, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, Camera } from "lucide-react";
+import {
+  ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, Camera,
+  Calculator, Wallet, CalendarRange, BarChart3, ShoppingCart, Users, StickyNote, Wand2,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -69,13 +73,18 @@ interface ProjectFull extends Project {
 type TabId = "materiales" | "contactos" | "presupuesto" | "planner" | "pagos" | "plan" | "fotos" | "notas" | "design";
 type PaySubTab = "ingresos" | "egresos";
 
-// Menos tabs, más lógico: los 8 tabs se agrupan en 3 secciones (Finanzas · Obra · Info)
-type SectionId = "finance" | "work" | "info";
-const TAB_SECTIONS: { id: SectionId; emoji: string; tabs: TabId[] }[] = [
-  { id: "finance", emoji: "💰", tabs: ["presupuesto", "pagos"] },
-  { id: "work",    emoji: "🏗", tabs: ["planner", "plan", "materiales", "fotos"] },
-  { id: "info",    emoji: "📋", tabs: ["contactos", "notas", "design"] },
-];
+// Barra única de tabs (fondo del tema, el activo iluminado) — un ícono por tab
+const TAB_ICONS: Record<TabId, LucideIcon> = {
+  presupuesto: Calculator,
+  pagos:       Wallet,
+  planner:     CalendarRange,
+  plan:        BarChart3,
+  materiales:  ShoppingCart,
+  contactos:   Users,
+  fotos:       ImageIcon,
+  notas:       StickyNote,
+  design:      Wand2,
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function useToast() {
@@ -2075,31 +2084,7 @@ export default function ProjectDetailPage() {
   });
 
   // Agrupa los tabs visibles en las 3 secciones (Finanzas · Obra · Info); oculta secciones vacías
-  const tabLabel = Object.fromEntries(TABS.map(tab => [tab.id, tab.label])) as Record<TabId, string>;
   const visibleTabIds = new Set(visibleTabs.map(tab => tab.id));
-  const sections = TAB_SECTIONS
-    .map(s => ({ ...s, tabs: s.tabs.filter(id => visibleTabIds.has(id)) }))
-    .filter(s => s.tabs.length > 0);
-  const activeSection = sections.find(s => s.tabs.includes(activeTab)) ?? sections[0];
-
-  // Cronograma: Day Planner y Gantt son un solo tab con toggle (misma data, dos vistas)
-  const CRONO_TABS: TabId[] = ["planner", "plan"];
-  const cronoTargets = (activeSection?.tabs ?? []).filter(id => CRONO_TABS.includes(id));
-  const inCrono = CRONO_TABS.includes(activeTab);
-  const sectionPills: { key: string; label: string; active: boolean; onClick: () => void }[] = [];
-  let cronoDone = false;
-  for (const id of activeSection?.tabs ?? []) {
-    if (CRONO_TABS.includes(id)) {
-      if (cronoDone) continue;
-      cronoDone = true;
-      sectionPills.push({
-        key: "cronograma", label: tp.tabs.schedule, active: inCrono,
-        onClick: () => { if (!inCrono) setActiveTab(cronoTargets[0]); },
-      });
-    } else {
-      sectionPills.push({ key: id, label: tabLabel[id], active: activeTab === id, onClick: () => setActiveTab(id) });
-    }
-  }
 
   // For co-workers with "my tasks only", filter tasks to their assigned ones
   const myContactId = currentUser?.my_tasks_only ? (currentUser.contact_id ?? null) : null;
@@ -2382,51 +2367,25 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {/* Navegación en 2 niveles: sección (Finanzas · Obra · Info) → sub-tab */}
-      {sections.length > 0 && (
-        <div className="mb-6 space-y-2">
-          {/* Secciones */}
-          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[var(--brand)] px-3 py-2 [scrollbar-width:none]">
-            {sections.map((s) => {
-              const active = activeSection?.id === s.id;
-              return (
-                <button key={s.id}
-                  onClick={() => { if (!s.tabs.includes(activeTab)) setActiveTab(s.tabs[0]); }}
-                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-                    active ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] shadow-sm" : "text-[#A8C0BC] hover:text-white"
-                  }`}>
-                  <span className="mr-1">{s.emoji}</span>{tp.sections[s.id]}
-                </button>
-              );
-            })}
-          </div>
-          {/* Sub-tabs de la sección activa (Day Planner + Gantt colapsan en "Cronograma") */}
-          <div className="flex gap-2 overflow-x-auto rounded-2xl bg-[#F0F3FA] dark:bg-[#111a2e] px-4 py-2.5 [scrollbar-width:none]">
-            {sectionPills.map((p) => (
-              <button key={p.key} onClick={p.onClick}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-                  p.active
-                    ? "bg-[var(--accent)] text-white shadow-sm"
-                    : "text-[#628ECB] hover:text-[var(--accent)]"
+      {/* Barra única de tabs: fondo del tema, el activo iluminado (scroll horizontal en móvil) */}
+      {visibleTabs.length > 0 && (
+        <div className="mb-6 flex gap-1.5 overflow-x-auto rounded-2xl bg-[var(--brand)] px-2.5 py-2 [scrollbar-width:none]">
+          {visibleTabs.map((tab) => {
+            const Icon = TAB_ICONS[tab.id];
+            const active = activeTab === tab.id;
+            return (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                aria-current={active ? "page" : undefined}
+                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-[13px] font-bold transition ${
+                  active
+                    ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] dark:text-[#e8edf7] shadow-sm"
+                    : "text-[#A8C0BC] hover:bg-white/10 hover:text-white"
                 }`}>
-                {p.label}
+                <Icon size={15} className="shrink-0" />
+                {tab.label}
               </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Toggle Cronograma: Day Planner ↔ Gantt (dos vistas de la misma data) */}
-      {inCrono && cronoTargets.length > 1 && (
-        <div className="mb-4 inline-flex rounded-xl border border-[#D5DEEF] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#111a2e] p-1">
-          {cronoTargets.map((id) => (
-            <button key={id} onClick={() => setActiveTab(id)}
-              className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
-                activeTab === id ? "bg-white dark:bg-[#111a2e] text-[var(--brand)] shadow-sm" : "text-[#628ECB] hover:text-[var(--accent)]"
-              }`}>
-              {id === "planner" ? "📋 " : "📊 "}{tabLabel[id]}
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
 
