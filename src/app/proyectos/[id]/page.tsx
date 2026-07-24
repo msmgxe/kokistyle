@@ -1473,50 +1473,49 @@ function PlanTab({
 
   return (
     <div className="w-full">
-      {/* Gantt header */}
-      <div className="mb-4 rounded-2xl bg-[var(--brand)] px-5 py-3 flex items-center justify-between">
+      {/* Gantt header claro: título a la izquierda, controles a la derecha (mismo patrón que Estimate) */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-5 py-3">
         <div>
-          <h2 className="font-bookman text-base font-semibold text-white">{tp.tabs.plan}</h2>
-          <p className="text-[11px] text-white/50">{tp.plan.hint}</p>
+          <h2 className="font-bookman text-base font-semibold text-[var(--brand)] dark:text-[#e8edf7]">{tp.tabs.plan}</h2>
+          <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{tp.plan.hint}</p>
         </div>
-      </div>
 
-      {/* Controls: filter + assignee + gantt unit toggle */}
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        {/* Status filter */}
-        <div className="inline-flex rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
-          {([
-            { key: "all",  label: "All" },
-            { key: "pend", label: tp.workflow.colPend },
-            { key: "prog", label: tp.workflow.colProg },
-            { key: "done", label: tp.workflow.colDone },
-          ] as const).map(({ key, label }) => (
-            <button key={key} onClick={() => setFilterStatus(key)}
-              className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-        {/* Assignee filter */}
-        {contacts.length > 0 && (
-          <select
-            value={filterAssignee}
-            onChange={e => setFilterAssignee(e.target.value)}
-            className="rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1.5 text-[11px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
-          >
-            {assigneeOptions.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status filter */}
+          <div className="inline-flex rounded-lg border border-[#E6DDCB] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
+            {([
+              { key: "all",  label: "All" },
+              { key: "pend", label: tp.workflow.colPend },
+              { key: "prog", label: tp.workflow.colProg },
+              { key: "done", label: tp.workflow.colDone },
+            ] as const).map(({ key, label }) => (
+              <button key={key} onClick={() => setFilterStatus(key)}
+                className={`rounded-md px-3 py-1 text-[11px] font-bold transition ${filterStatus === key ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"}`}>
+                {label}
+              </button>
             ))}
-          </select>
-        )}
-        {/* Weeks / Days toggle */}
-        <div className="ml-auto inline-flex rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
-          {(["week", "day"] as const).map((u) => (
-            <button key={u} onClick={() => setGanttUnit(u)}
-              className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"}`}>
-              {u === "week" ? "Weeks" : "Days"}
-            </button>
-          ))}
+          </div>
+          {/* Assignee filter */}
+          {contacts.length > 0 && (
+            <select
+              value={filterAssignee}
+              onChange={e => setFilterAssignee(e.target.value)}
+              className="rounded-lg border border-[#E6DDCB] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1.5 text-[11px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
+            >
+              {assigneeOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          )}
+          {/* Weeks / Days toggle */}
+          <div className="inline-flex rounded-lg border border-[#E6DDCB] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
+            {(["week", "day"] as const).map((u) => (
+              <button key={u} onClick={() => setGanttUnit(u)}
+                className={`rounded-md px-3 py-1 text-[11px] font-bold capitalize transition ${ganttUnit === u ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"}`}>
+                {u === "week" ? "Weeks" : "Days"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
