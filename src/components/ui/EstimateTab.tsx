@@ -123,28 +123,28 @@ interface SortableItemProps {
 
 function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const numCls = "w-16 sm:w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] focus:border-b focus:border-[var(--accent)] focus:bg-white dark:focus:bg-[#111a2e] focus:outline-none";
+  const numCls = "w-16 sm:w-20 rounded bg-transparent px-1 py-0.5 text-right font-mono text-[10px] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220] focus:border-b focus:border-[var(--accent)] focus:bg-white dark:focus:bg-[#111a2e] focus:outline-none";
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className="group flex items-center gap-2 border-b border-[#F0EBE0] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-2 hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"
+      className="group flex items-center gap-2 border-b border-[#EEF0F3] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-2 hover:bg-[#F9FAFB] dark:hover:bg-[#111a2e]"
     >
       <button
         {...attributes} {...listeners}
         tabIndex={-1}
         aria-label="Drag to reorder"
-        className="shrink-0 cursor-grab touch-none p-0.5 text-[#D7CBB3] hover:text-[#5C6A6E] dark:hover:text-[#9fb0cc] active:cursor-grabbing"
+        className="shrink-0 cursor-grab touch-none p-0.5 text-[#D9DDE3] hover:text-[#5C6A6E] dark:hover:text-[#9fb0cc] active:cursor-grabbing"
       >
         <GripVertical size={12} />
       </button>
-      <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#C4B89A]" />
+      <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#AEB6C2]" />
       <input
         type="text"
         value={item.description}
         onChange={e => onUpdateLocal(sectionId, item.id, "description", e.target.value)}
         onBlur={()  => onSaveField(item.id)}
-        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[var(--brand)] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] focus:border-b focus:border-[var(--accent)] focus:bg-white dark:focus:bg-[#111a2e] focus:outline-none"
+        className="min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-[10px] text-[var(--brand)] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220] focus:border-b focus:border-[var(--accent)] focus:bg-white dark:focus:bg-[#111a2e] focus:outline-none"
       />
       <input
         type="number"
@@ -169,7 +169,7 @@ function SortableItem({ item, sectionId, onUpdateLocal, onSaveField, onDelete }:
       </span>
       <button
         onClick={() => onDelete(sectionId, item.id)}
-        className="shrink-0 rounded p-1 text-[#E6DDCB] opacity-0 transition hover:text-[#B0492F] group-hover:opacity-100"
+        className="shrink-0 rounded p-1 text-[#E7E9EE] opacity-0 transition hover:text-[#B0492F] group-hover:opacity-100"
       >
         <X size={12} />
       </button>
@@ -271,11 +271,11 @@ function SortableSection({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"
+      className="overflow-hidden rounded-2xl border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"
     >
       {/* ── Card header ── */}
       <div
-        className="flex cursor-pointer items-center justify-between px-4 py-3.5 transition hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"
+        className="flex cursor-pointer items-center justify-between px-4 py-3.5 transition hover:bg-[#F9FAFB] dark:hover:bg-[#111a2e]"
         onClick={onToggle}
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -284,7 +284,7 @@ function SortableSection({
             tabIndex={-1}
             aria-label="Drag to reorder section"
             onClick={e => e.stopPropagation()}
-            className="shrink-0 cursor-grab touch-none p-1 text-[#D7CBB3] hover:text-[#5C6A6E] dark:hover:text-[#9fb0cc] active:cursor-grabbing"
+            className="shrink-0 cursor-grab touch-none p-1 text-[#D9DDE3] hover:text-[#5C6A6E] dark:hover:text-[#9fb0cc] active:cursor-grabbing"
           >
             <GripVertical size={14} />
           </button>
@@ -367,16 +367,16 @@ function SortableSection({
 
       {/* ── Card body ── */}
       {isOpen && (
-        <div className="border-t border-[#F0EBE0] dark:border-[#22304d]">
+        <div className="border-t border-[#EEF0F3] dark:border-[#22304d]">
 
           {/* Settings row */}
-          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-[#F0EBE0] dark:border-[#22304d] bg-[#FAFAF8] dark:bg-[#17233d] px-4 py-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-[#EEF0F3] dark:border-[#22304d] bg-[#FAFAF8] dark:bg-[#17233d] px-4 py-2">
             <input
               type="text"
               value={section.note}
               placeholder={EN ? "Note (e.g. Material included)" : "Nota (ej. Material incluido)"}
               onChange={e => onUpdateField(section.id, "note", e.target.value)}
-              className="w-44 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
+              className="w-44 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc] focus:border-[var(--accent)] focus:outline-none"
             />
             <button
               onClick={() => onDelete(section.id)}
@@ -388,7 +388,7 @@ function SortableSection({
 
           {/* Column headers: costo | ganancia | cliente */}
           {section.items.length > 0 && (
-            <div className="flex items-center gap-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-4 py-1">
+            <div className="flex items-center gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F9FAFB] dark:bg-[#111a2e] px-4 py-1">
               <span className="w-[17px] shrink-0" />
               <span className="h-1.5 w-1.5 shrink-0" />
               <span className="min-w-0 flex-1" />
@@ -422,7 +422,7 @@ function SortableSection({
           </DndContext>
 
           {/* Section total — editable when no items have amounts */}
-          <div className="flex items-center gap-3 border-b border-[#F0EBE0] dark:border-[#22304d] px-4 py-2.5">
+          <div className="flex items-center gap-3 border-b border-[#EEF0F3] dark:border-[#22304d] px-4 py-2.5">
             <span className="flex-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
               {hasItemAmounts
                 ? (EN ? "Section total (sum of items):" : "Total de sección (suma de items):")
@@ -444,14 +444,14 @@ function SortableSection({
               className={`w-28 rounded-lg border px-3 py-1.5 text-right font-mono text-[13px] font-bold focus:outline-none ${
                 hasItemAmounts
                   ? "cursor-default border-transparent bg-transparent text-[#5C6A6E] dark:text-[#9fb0cc]"
-                  : "border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] text-[var(--brand)] focus:border-[var(--accent)]"
+                  : "border-[#E7E9EE] dark:border-[#22304d] bg-[#F9FAFB] dark:bg-[#111a2e] text-[var(--brand)] focus:border-[var(--accent)]"
               }`}
             />
           </div>
 
           {/* Add item form */}
           {addingItemTo === section.id ? (
-            <div className="flex items-center gap-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-2">
+            <div className="flex items-center gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-4 py-2">
               <input
                 autoFocus
                 type="text"
@@ -462,7 +462,7 @@ function SortableSection({
                   if (e.key === "Enter")  onAddItem(section.id);
                   if (e.key === "Escape") { setAddingItemTo(null); setNewItemDesc(""); setNewItemAmt(""); }
                 }}
-                className="flex-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                className="flex-1 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[12px] focus:border-[var(--accent)] focus:outline-none"
               />
               <input
                 type="number"
@@ -471,7 +471,7 @@ function SortableSection({
                 onKeyDown={e => { if (e.key === "Enter") onAddItem(section.id); }}
                 placeholder={EN ? "$0 cost" : "$0 costo"}
                 title={EN ? "Real cost — profit (30%) and client amount are computed" : "Costo real — la ganancia (30%) y el monto cliente se calculan"}
-                className="w-24 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-right font-mono text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                className="w-24 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-right font-mono text-[12px] focus:border-[var(--accent)] focus:outline-none"
               />
               {(parseFloat(newItemAmt) || 0) > 0 && (
                 <span className="shrink-0 whitespace-nowrap font-mono text-[10px] font-bold text-[var(--accent)]">
@@ -494,7 +494,7 @@ function SortableSection({
           ) : (
             <button
               onClick={() => { setAddingItemTo(section.id); setNewItemDesc(""); setNewItemAmt(""); }}
-              className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220] hover:text-[var(--brand)]"
+              className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220] hover:text-[var(--brand)]"
             >
               <Plus size={11} /> {EN ? "Add item" : "Agregar item"}
             </button>
@@ -1373,7 +1373,7 @@ export default function EstimateTab({
 
   if (!estimate) return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F3EA] dark:bg-[#0b1220]">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F8FA] dark:bg-[#0b1220]">
         <FileText size={28} className="text-[#5C6A6E] dark:text-[#9fb0cc]" />
       </div>
       <h3 className="mb-2 text-base font-bold text-[var(--brand)]">
@@ -1437,7 +1437,7 @@ export default function EstimateTab({
             {!isLast && <div className="w-0.5 flex-1 bg-[#DDD6CC]" />}
           </div>
           {/* Card */}
-          <div className="mb-0 flex-1 overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d]">
+          <div className="mb-0 flex-1 overflow-hidden rounded-xl border border-[#E7E9EE] dark:border-[#22304d]">
             <div className="flex h-[26px] items-center bg-[#EEE9E0] px-3">
               <span className="text-[9px] font-black uppercase tracking-[.14em] text-[#7A8278]">
                 {EN ? `Deposit ${depNum}` : `Cuota ${depNum}`}
@@ -1458,7 +1458,7 @@ export default function EstimateTab({
                 <span className="truncate text-[11px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] group-hover:text-[var(--accent)]">
                   {EN ? dep.label_en : dep.label_es}
                 </span>
-                <Pencil size={8} className="flex-shrink-0 text-[#C4B89A] group-hover:text-[var(--accent)]" />
+                <Pencil size={8} className="flex-shrink-0 text-[#AEB6C2] group-hover:text-[var(--accent)]" />
               </button>
               <div className="flex flex-shrink-0 items-center gap-1.5 self-stretch border-l border-[#EDE8DF] dark:border-[#22304d] px-2.5">
                 {isConfirmDelete ? (
@@ -1471,25 +1471,25 @@ export default function EstimateTab({
                       {EN ? "Yes" : "Sí"}
                     </button>
                     <button onClick={() => setConfirmDeleteDepositIdx(null)}
-                      className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
+                      className="rounded border border-[#E7E9EE] dark:border-[#22304d] px-1.5 py-0.5 text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
                       No
                     </button>
                   </div>
                 ) : (
                   <button onClick={() => setConfirmDeleteDepositIdx(i)}
-                    className="rounded p-1 text-[#C4B89A] transition hover:bg-[#FDE8E3] dark:hover:bg-[#2a1712] hover:text-[#B0492F]"
+                    className="rounded p-1 text-[#AEB6C2] transition hover:bg-[#FDE8E3] dark:hover:bg-[#2a1712] hover:text-[#B0492F]"
                     title={EN ? "Remove installment" : "Eliminar cuota"}>
                     <Trash2 size={11} />
                   </button>
                 )}
                 <button
                   onClick={() => { setDepositModal(i); setDepAmt(""); setDepConcept(""); setDepDate(new Date().toISOString().split("T")[0]); }}
-                  className="flex-shrink-0 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2.5 py-1.5 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]">
+                  className="flex-shrink-0 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2.5 py-1.5 text-[10px] font-bold text-[var(--accent)] transition hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]">
                   {EN ? "Detail" : "Detalle"}
                 </button>
               </div>
             </div>
-            <div className="border-t border-[#EDE8DF] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3 pb-2 pt-1.5">
+            <div className="border-t border-[#EDE8DF] dark:border-[#22304d] bg-[#F9FAFB] dark:bg-[#111a2e] px-3 pb-2 pt-1.5">
               <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-[#EDE8DF]">
                 <div className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${receivedPct}%`, background: paid ? "#4F8A63" : color }} />
@@ -1520,10 +1520,10 @@ export default function EstimateTab({
     {/* ════════════════════════════════════════════════════════════════════════
         MAIN ESTIMATE CARD
     ════════════════════════════════════════════════════════════════════════ */}
-    <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-md">
+    <div className="overflow-hidden rounded-2xl border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-md">
 
       {/* ── HEADER BAND (claro — el nombre del proyecto ya está en el hero) ──── */}
-      <div className="border-b border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-5 pb-3 pt-4">
+      <div className="border-b border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-5 pb-3 pt-4">
         {/* Título + estado */}
         <div className="mb-3 flex items-center gap-2.5">
           <h3 className="text-[15px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
@@ -1550,7 +1550,7 @@ export default function EstimateTab({
               className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition ${
                 estimateSubTab === "sections"
                   ? "border-[var(--brand)] bg-[var(--brand)]/8 text-[var(--brand)] dark:text-[#e8edf7]"
-                  : "border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
+                  : "border-[#E7E9EE] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
               }`}
             >
               <Ruler size={13} /> {EN ? "Sections" : "Secciones"}
@@ -1560,7 +1560,7 @@ export default function EstimateTab({
               className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition ${
                 estimateSubTab === "schedule"
                   ? "border-[var(--brand)] bg-[var(--brand)]/8 text-[var(--brand)] dark:text-[#e8edf7]"
-                  : "border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
+                  : "border-[#E7E9EE] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] hover:border-[var(--brand)]/50 hover:text-[var(--brand)] dark:hover:text-[#e8edf7]"
               }`}
             >
               <Wallet size={13} /> {EN ? "Payment Schedule" : "Calendario de Pagos"}
@@ -1573,7 +1573,7 @@ export default function EstimateTab({
             <button
               onClick={openCopyModal}
               title={EN ? "Copy estimate to another project" : "Copiar estimado a otro proyecto"}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#E4EAF5] dark:hover:bg-[#22304d]"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#E4EAF5] dark:hover:bg-[#22304d]"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span className="hidden sm:inline">{EN ? "Copy" : "Copiar"}</span>
@@ -1593,7 +1593,7 @@ export default function EstimateTab({
             <button
               onClick={openInvoiceModal}
               title={EN ? "Generate invoice from the payment schedule" : "Generar factura desde el payment schedule"}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#E4EAF5] dark:hover:bg-[#22304d]"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#E4EAF5] dark:hover:bg-[#22304d]"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3h16v18l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
               <span className="hidden sm:inline">{EN ? "Invoice" : "Factura"}</span>
@@ -1642,9 +1642,9 @@ export default function EstimateTab({
         <>
           <div className="space-y-3 p-4">
             {/* Customer info (collapsible) */}
-            <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
+            <div className="overflow-hidden rounded-2xl border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
               <button
-                className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"
+                className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-[#F9FAFB] dark:hover:bg-[#111a2e]"
                 onClick={() => setShowHeader(h => !h)}
               >
                 <div className="flex items-center gap-3">
@@ -1661,7 +1661,7 @@ export default function EstimateTab({
                 </div>
               </button>
               {showHeader && (
-                <div className="grid grid-cols-2 gap-3 border-t border-[#F0EBE0] dark:border-[#22304d] px-4 pb-4 pt-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 border-t border-[#EEF0F3] dark:border-[#22304d] px-4 pb-4 pt-3 sm:grid-cols-3">
                   {([
                     { key: "customer_name", label: EN ? "Customer" : "Cliente",  type: "text"  },
                     { key: "city",          label: EN ? "City" : "Ciudad",        type: "text"  },
@@ -1676,7 +1676,7 @@ export default function EstimateTab({
                         type={type}
                         value={(estimate as unknown as Record<string, string>)[key] ?? ""}
                         onChange={e => setEstimate(p => p ? ({ ...p, [key]: e.target.value }) : p)}
-                        className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3 py-1.5 text-[12px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+                        className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F9FAFB] dark:bg-[#111a2e] px-3 py-1.5 text-[12px] text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                       />
                     </label>
                   ))}
@@ -1733,7 +1733,7 @@ export default function EstimateTab({
             {/* Add section */}
             <button
               onClick={() => setShowAddSection(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] py-3 text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] py-3 text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               <Plus size={14} /> {EN ? "Add section" : "Agregar sección"}
             </button>
@@ -1797,7 +1797,7 @@ export default function EstimateTab({
       {estimateSubTab === "schedule" && (
         <>
           {/* Sub-band: quick stats */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-5 py-2.5">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-5 py-2.5">
             <div>
               <div className="text-[8px] font-bold uppercase tracking-[.12em] text-[#97A1A0] dark:text-[#728098]">
                 {EN ? "Installments" : "Cuotas"}
@@ -1823,7 +1823,7 @@ export default function EstimateTab({
 
           <div className="space-y-4 p-4">
             {/* Totals card: Labor → Discount (red) → Grand Total → Progress */}
-            <div className="overflow-hidden rounded-xl border border-[#E6DDCB] dark:border-[#22304d] shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-[#E7E9EE] dark:border-[#22304d] shadow-sm">
               <div className="flex items-center justify-between border-b border-[#F0EAE0] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-4 py-2.5">
                 <span className="flex items-center gap-2 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Labor subtotal" : "Subtotal mano de obra"}
@@ -1850,12 +1850,12 @@ export default function EstimateTab({
                 <span className="font-mono text-[18px] font-black text-white">{money(grandTotal)}</span>
               </div>
               {/* Received vs pending progress */}
-              <div className="border-t border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-2.5">
+              <div className="border-t border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-4 py-2.5">
                 <div className="mb-1.5 flex justify-between text-[9px] font-bold">
                   <span className="text-[#4F8A63]">{EN ? "Received" : "Recibido"} · {money(totalRec)} ({recvPct}%)</span>
                   <span className="text-[#B0492F]">{EN ? "Pending" : "Pendiente"} · {money(pending)}</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[#E6DDCB] dark:bg-[#17233d]">
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#E7E9EE] dark:bg-[#17233d]">
                   <div className="h-full rounded-full bg-[#4F8A63] transition-all duration-500" style={{ width: `${recvPct}%` }} />
                 </div>
               </div>
@@ -1902,12 +1902,12 @@ export default function EstimateTab({
                     <div>
                       <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Invoice #" : "Factura #"}</label>
                       <input value={invNo} onChange={e => setInvNo(e.target.value)} placeholder="001"
-                        className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                        className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                     </div>
                     <div>
                       <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Date" : "Fecha"}</label>
                       <input value={invDate} onChange={e => setInvDate(e.target.value)}
-                        className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                        className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                     </div>
                   </div>
 
@@ -1920,7 +1920,7 @@ export default function EstimateTab({
                         const st  = invLines[i] ?? { on: false, glosa: "" };
                         const amt = depositTarget(dep, totals.grandTotal);
                         return (
-                          <div key={i} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${st.on ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#17233d]" : "border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220]"}`}>
+                          <div key={i} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${st.on ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#17233d]" : "border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]"}`}>
                             <input type="checkbox" checked={st.on}
                               onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, on: e.target.checked } : x))}
                               className="mt-1 h-4 w-4 accent-[var(--accent)]" />
@@ -1932,7 +1932,7 @@ export default function EstimateTab({
                               <input value={st.glosa}
                                 onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, glosa: e.target.value } : x))}
                                 placeholder={EN ? "Description…" : "Descripción…"}
-                                className="w-full border-0 border-b border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                                className="w-full border-0 border-b border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
                             </div>
                           </div>
                         );
@@ -1948,23 +1948,23 @@ export default function EstimateTab({
                       {EN ? "Bill to (from project)" : "Facturar a (del proyecto)"}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
-                      <input value={estimate.customer_name} onChange={e => setHdr({ customer_name: e.target.value })} placeholder={EN ? "Name" : "Nombre"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
-                      <input value={estimate.customer_company ?? ""} onChange={e => setHdr({ customer_company: e.target.value })} placeholder={EN ? "Company" : "Empresa"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.customer_name} onChange={e => setHdr({ customer_name: e.target.value })} placeholder={EN ? "Name" : "Nombre"} className="h-9 w-full rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.customer_company ?? ""} onChange={e => setHdr({ customer_company: e.target.value })} placeholder={EN ? "Company" : "Empresa"} className="h-9 w-full rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                     </div>
-                    <input value={estimate.customer_address ?? ""} onChange={e => setHdr({ customer_address: e.target.value })} placeholder={EN ? "Address" : "Dirección"} className="mt-2 h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    <input value={estimate.customer_address ?? ""} onChange={e => setHdr({ customer_address: e.target.value })} placeholder={EN ? "Address" : "Dirección"} className="mt-2 h-9 w-full rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <input value={estimate.city} onChange={e => setHdr({ city: e.target.value })} placeholder={EN ? "City / State" : "Ciudad / Estado"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
-                      <input value={estimate.phone} onChange={e => setHdr({ phone: e.target.value })} placeholder={EN ? "Phone" : "Teléfono"} className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
-                      <input value={estimate.email} onChange={e => setHdr({ email: e.target.value })} placeholder="Email" className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
-                      <input value={estimate.customer_website ?? ""} onChange={e => setHdr({ customer_website: e.target.value })} placeholder="Website" className="h-9 w-full rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.city} onChange={e => setHdr({ city: e.target.value })} placeholder={EN ? "City / State" : "Ciudad / Estado"} className="h-9 w-full rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.phone} onChange={e => setHdr({ phone: e.target.value })} placeholder={EN ? "Phone" : "Teléfono"} className="h-9 w-full rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.email} onChange={e => setHdr({ email: e.target.value })} placeholder="Email" className="h-9 w-full rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                      <input value={estimate.customer_website ?? ""} onChange={e => setHdr({ customer_website: e.target.value })} placeholder="Website" className="h-9 w-full rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-2.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                     </div>
                     <p className="mt-1.5 text-[10px] text-[#97A1A0] dark:text-[#728098]">{EN ? "Saved with the estimate (Save)." : "Se guardan con el estimado (Guardar)."}</p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
-                  <button onClick={closeInvoiceModal} className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">{EN ? "Cancel" : "Cancelar"}</button>
-                  <button onClick={() => openInvoicePdfInBrowser(buildInvoiceData())} className="rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">{EN ? "Open" : "Abrir"}</button>
+                <div className="flex flex-wrap gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
+                  <button onClick={closeInvoiceModal} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Cancel" : "Cancelar"}</button>
+                  <button onClick={() => openInvoicePdfInBrowser(buildInvoiceData())} className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Open" : "Abrir"}</button>
                   <button onClick={() => exportInvoicePdf(buildInvoiceData())} className="inline-flex items-center gap-1.5 rounded-xl bg-[#7B1838] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#6a1530]"><FileText size={13} />PDF</button>
                   <button onClick={goInvoiceEmail} className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--accent-strong)]">✉️ Email</button>
                 </div>
@@ -1975,21 +1975,21 @@ export default function EstimateTab({
                   <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{EN ? "From" : "Desde"}: <span className="font-bold text-[var(--brand)] dark:text-[#e8edf7]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span></p>
                   <div>
                     <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "To" : "Para"} *</label>
-                    <input type="email" value={invEmailTo} onChange={e => setInvEmailTo(e.target.value)} placeholder="cliente@email.com" className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    <input type="email" value={invEmailTo} onChange={e => setInvEmailTo(e.target.value)} placeholder="cliente@email.com" className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                   </div>
                   <div>
                     <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Subject" : "Asunto"}</label>
-                    <input value={invEmailSub} onChange={e => setInvEmailSub(e.target.value)} className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    <input value={invEmailSub} onChange={e => setInvEmailSub(e.target.value)} className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                   </div>
                   <div>
                     <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Message" : "Mensaje"}</label>
-                    <textarea rows={5} value={invEmailMsg} onChange={e => setInvEmailMsg(e.target.value)} className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    <textarea rows={5} value={invEmailMsg} onChange={e => setInvEmailMsg(e.target.value)} className="w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                   </div>
                   <label className="block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "PDF preview" : "Vista previa del PDF"}</label>
-                  {invPreview && <iframe src={invPreview} title="Invoice preview" className="h-64 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220]" />}
+                  {invPreview && <iframe src={invPreview} title="Invoice preview" className="h-64 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]" />}
                 </div>
-                <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
-                  <button onClick={() => setInvView("build")} className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">← {EN ? "Back" : "Atrás"}</button>
+                <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
+                  <button onClick={() => setInvView("build")} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">← {EN ? "Back" : "Atrás"}</button>
                   <button onClick={sendInvoiceEmail} disabled={invSending || !invEmailTo.includes("@")} className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">{invSending ? (EN ? "Sending…" : "Enviando…") : (EN ? "Send invoice" : "Enviar factura")}</button>
                 </div>
               </>
@@ -2028,7 +2028,7 @@ export default function EstimateTab({
                 </label>
                 <input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)}
                   placeholder="cliente@email.com"
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                  className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div>
@@ -2036,7 +2036,7 @@ export default function EstimateTab({
                   {EN ? "Subject" : "Asunto"}
                 </label>
                 <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                  className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div>
@@ -2044,14 +2044,14 @@ export default function EstimateTab({
                   {EN ? "Message" : "Mensaje"}
                 </label>
                 <textarea rows={5} value={emailMsg} onChange={e => setEmailMsg(e.target.value)}
-                  className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
+                  className="w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
               </div>
 
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "PDF preview" : "Vista previa del PDF"}
                 </label>
-                <div className="inline-flex rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] p-0.5">
+                <div className="inline-flex rounded-lg border border-[#D9DDE3] dark:border-[#2c3c5e] bg-[#F7F8FA] dark:bg-[#0b1220] p-0.5">
                   {(["full", "summary"] as const).map(m => (
                     <button key={m} type="button"
                       onClick={() => { setEmailMode(m); refreshEmailPreview(m); }}
@@ -2067,14 +2067,14 @@ export default function EstimateTab({
                 <iframe
                   src={emailPreview}
                   title="PDF preview"
-                  className="h-64 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220]"
+                  className="h-64 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]"
                 />
               )}
             </div>
 
-            <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] p-4">
+            <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
               <button onClick={closeEmailModal}
-                className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
+                className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
                 {EN ? "Cancel" : "Cancelar"}
               </button>
               <button onClick={sendEmail} disabled={sendingEmail || !emailTo.includes("@")}
@@ -2098,7 +2098,7 @@ export default function EstimateTab({
             className="w-full max-w-sm overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] px-5 py-3.5">
+            <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-5 py-3.5">
               <span className="text-sm font-bold text-[var(--brand)]">
                 {EN ? "Add Section" : "Agregar Sección"}
               </span>
@@ -2114,7 +2114,7 @@ export default function EstimateTab({
                 <button
                   key={cat.id}
                   onClick={() => addSection(cat as EstimateSectionCatalog & { id: string })}
-                  className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-4 py-3 text-left transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]"
+                  className="w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-3 text-left transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e]"
                 >
                   <div className="flex items-center gap-2">
                     <span>{cat.is_material_type ? "📦" : sectionEmoji(cat.name_en)}</span>
@@ -2125,10 +2125,10 @@ export default function EstimateTab({
                   )}
                 </button>
               ))}
-              <div className="border-t border-[#E6DDCB] dark:border-[#22304d] pt-2">
+              <div className="border-t border-[#E7E9EE] dark:border-[#22304d] pt-2">
                 <button
                   onClick={() => addSection()}
-                  className="w-full rounded-xl border-2 border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] px-4 py-3 text-left text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[var(--accent)]"
+                  className="w-full rounded-xl border-2 border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] px-4 py-3 text-left text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:border-[var(--accent)] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[var(--accent)]"
                 >
                   {EN ? "+ Custom section" : "+ Sección personalizada"}
                 </button>
@@ -2158,7 +2158,7 @@ export default function EstimateTab({
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] bg-[var(--brand)] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] bg-[var(--brand)] px-5 py-4">
                 <div className="flex-1 min-w-0 pr-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
                     {EN ? "Payment Detail" : "Detalle de Pago"} · {money(target)}
@@ -2174,20 +2174,20 @@ export default function EstimateTab({
               </div>
 
               {/* Summary */}
-              <div className="grid grid-cols-3 gap-px bg-[#E6DDCB] dark:bg-[#17233d] border-b border-[#E6DDCB] dark:border-[#22304d]">
+              <div className="grid grid-cols-3 gap-px bg-[#E7E9EE] dark:bg-[#17233d] border-b border-[#E7E9EE] dark:border-[#22304d]">
                 {[
                   { label: EN ? "Target" : "Total a cobrar", value: money(target), color: "text-[var(--brand)]" },
                   { label: EN ? "Received" : "Recibido",     value: money(received), color: "text-[#4F8A63]" },
                   { label: EN ? "Remaining" : "Pendiente",   value: money(remaining), color: remaining > 0 ? "text-[#B0492F]" : "text-[#4F8A63]" },
                 ].map(c => (
-                  <div key={c.label} className="bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-3 text-center">
+                  <div key={c.label} className="bg-[#F7F8FA] dark:bg-[#0b1220] px-4 py-3 text-center">
                     <p className="text-[9px] font-bold uppercase tracking-wider text-[#5C6A6E] dark:text-[#9fb0cc]">{c.label}</p>
                     <p className={`mt-1 font-mono text-[15px] font-bold ${c.color}`}>{c.value}</p>
                   </div>
                 ))}
               </div>
               {/* Progress bar */}
-              <div className="h-1.5 bg-[#E6DDCB] dark:bg-[#17233d]">
+              <div className="h-1.5 bg-[#E7E9EE] dark:bg-[#17233d]">
                 <div className={`h-full transition-all ${pct >= 100 ? "bg-[#4F8A63]" : "bg-[var(--accent)]"}`} style={{ width: `${pct}%` }} />
               </div>
 
@@ -2215,27 +2215,27 @@ export default function EstimateTab({
                         const editAmt = parseFloat(editForm.amount) || 0;
                         const editWouldExceed = isEditing && editAmt > 0 && otherTotal + editAmt > target + 0.005;
                         return (
-                          <tr key={p.id} className={`border-t border-[#F0EBE0] dark:border-[#22304d] ${isEditing ? "bg-[#EDF3FB] dark:bg-[#111a2e]" : "hover:bg-[#FDFAF6] dark:hover:bg-[#111a2e]"}`}>
+                          <tr key={p.id} className={`border-t border-[#EEF0F3] dark:border-[#22304d] ${isEditing ? "bg-[#EDF3FB] dark:bg-[#111a2e]" : "hover:bg-[#F9FAFB] dark:hover:bg-[#111a2e]"}`}>
                             {isEditing ? (
                               <>
                                 <td className="px-2 py-1.5">
                                   <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
-                                    className="w-full rounded border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] focus:outline-none" />
+                                    className="w-full rounded border border-[#D9DDE3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] focus:outline-none" />
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <input type="text" value={editForm.concept} onChange={e => setEditForm(f => ({ ...f, concept: e.target.value }))}
                                     placeholder={EN ? "Concept" : "Concepto"}
-                                    className="w-full rounded border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] focus:outline-none" />
+                                    className="w-full rounded border border-[#D9DDE3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] focus:outline-none" />
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <select value={editForm.method} onChange={e => setEditForm(f => ({ ...f, method: e.target.value as Payment["method"] }))}
-                                    className="rounded border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1 py-1 text-[11px] focus:outline-none">
+                                    className="rounded border border-[#D9DDE3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-1 py-1 text-[11px] focus:outline-none">
                                     {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => <option key={m}>{m}</option>)}
                                   </select>
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <input type="number" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))}
-                                    className={`w-20 rounded border px-1.5 py-1 text-right text-[11px] font-mono focus:outline-none ${editWouldExceed ? "border-[#B0492F] bg-[#FDF0ED] dark:bg-[#2a1712]" : "border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e]"}`} />
+                                    className={`w-20 rounded border px-1.5 py-1 text-right text-[11px] font-mono focus:outline-none ${editWouldExceed ? "border-[#B0492F] bg-[#FDF0ED] dark:bg-[#2a1712]" : "border-[#D9DDE3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e]"}`} />
                                   {editWouldExceed && (
                                     <p className="mt-0.5 text-[9px] text-[#B0492F]">Máx: {money(Math.max(0, target - otherTotal))}</p>
                                   )}
@@ -2247,7 +2247,7 @@ export default function EstimateTab({
                                       {depSaving ? "…" : "✓"}
                                     </button>
                                     <button onClick={() => setEditingPayId(null)}
-                                      className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-2 py-1 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
+                                      className="rounded border border-[#E7E9EE] dark:border-[#22304d] px-2 py-1 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
                                       ✕
                                     </button>
                                   </div>
@@ -2269,18 +2269,18 @@ export default function EstimateTab({
                                       >{EN ? "Yes" : "Sí"}</button>
                                       <button
                                         onClick={() => setConfirmDeletePayId(null)}
-                                        className="rounded border border-[#E6DDCB] dark:border-[#22304d] px-2 py-0.5 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
+                                        className="rounded border border-[#E7E9EE] dark:border-[#22304d] px-2 py-0.5 text-[10px] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]"
                                       >{EN ? "No" : "No"}</button>
                                     </div>
                                   ) : (
                                     <div className="flex gap-1">
                                       <button
                                         onClick={() => { setEditingPayId(p.id); setEditForm({ amount: String(p.amount), date: p.date, method: p.method, concept: p.concept ?? "" }); }}
-                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[var(--accent)] transition"
+                                        className="rounded p-1 text-[#AEB6C2] hover:bg-[#EDF3FB] dark:hover:bg-[#111a2e] hover:text-[var(--accent)] transition"
                                       ><Pencil size={10} /></button>
                                       <button
                                         onClick={() => setConfirmDeletePayId(p.id)}
-                                        className="rounded p-1 text-[#C4B89A] hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] hover:text-[#B0492F] transition"
+                                        className="rounded p-1 text-[#AEB6C2] hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] hover:text-[#B0492F] transition"
                                       ><X size={11} /></button>
                                     </div>
                                   )}
@@ -2296,7 +2296,7 @@ export default function EstimateTab({
               </div>
 
               {/* Add payment form */}
-              <div className="border-t border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] p-4">
+              <div className="border-t border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] p-4">
                 {/* Overage warning when already exceeded */}
                 {received > target + 0.005 && (
                   <div className="mb-3 rounded-lg border border-[#F5C6B5] bg-[#FDF0ED] dark:bg-[#2a1712] px-3 py-2 text-[11px] text-[#B0492F]">
@@ -2320,7 +2320,7 @@ export default function EstimateTab({
                           <input
                             type="number" placeholder={EN ? "Amount" : "Monto"} value={depAmt}
                             onChange={e => setDepAmt(e.target.value)}
-                            className={`w-full rounded-lg border px-3 py-2 text-[12px] focus:outline-none ${wouldExceed ? "border-[#B0492F] bg-[#FDF0ED] dark:bg-[#2a1712] focus:border-[#B0492F]" : "border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] focus:border-[var(--accent)]"}`}
+                            className={`w-full rounded-lg border px-3 py-2 text-[12px] focus:outline-none ${wouldExceed ? "border-[#B0492F] bg-[#FDF0ED] dark:bg-[#2a1712] focus:border-[#B0492F]" : "border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] focus:border-[var(--accent)]"}`}
                           />
                           {wouldExceed && (
                             <p className="mt-1 text-[10px] text-[#B0492F]">
@@ -2331,12 +2331,12 @@ export default function EstimateTab({
                         <input
                           type="date" value={depDate}
                           onChange={e => setDepDate(e.target.value)}
-                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                          className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         />
                         <select
                           value={depMethod}
                           onChange={e => setDepMethod(e.target.value as Payment["method"])}
-                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                          className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         >
                           {["Transferencia","Efectivo","Zelle","Cheque","Tarjeta"].map(m => (
                             <option key={m} value={m}>{m}</option>
@@ -2345,7 +2345,7 @@ export default function EstimateTab({
                         <input
                           type="text" placeholder={EN ? "Comment (e.g. first deposit)" : "Comentario (ej. primer depósito)"}
                           value={depConcept} onChange={e => setDepConcept(e.target.value)}
-                          className="rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
+                          className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-3 py-2 text-[12px] focus:border-[var(--accent)] focus:outline-none"
                         />
                       </div>
                       {wouldExceed && (
@@ -2381,7 +2381,7 @@ export default function EstimateTab({
             className="w-full max-w-sm overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 border-b border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
+            <div className="flex items-center gap-3 border-b border-[#E7E9EE] dark:border-[#22304d] px-5 py-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDF0ED] dark:bg-[#2a1712] text-lg">
                 🗑
               </div>
@@ -2396,10 +2396,10 @@ export default function EstimateTab({
                   : <>La sección <strong className="text-[var(--brand)]">{confirmDeleteSection.name}</strong> y todos sus ítems serán eliminados permanentemente. Esta acción no se puede deshacer.</>}
               </p>
             </div>
-            <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
+            <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] px-5 py-4">
               <button
                 onClick={() => setConfirmDeleteSection(null)}
-                className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
+                className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]"
               >
                 {EN ? "Cancel" : "Cancelar"}
               </button>
@@ -2443,9 +2443,9 @@ export default function EstimateTab({
               </div>
 
               {/* Two-box value editor — active box gets color, secondary gets cream */}
-              <div className="grid grid-cols-2 divide-x divide-[#E6DDCB] border-b border-[#E6DDCB] dark:border-[#22304d]">
+              <div className="grid grid-cols-2 divide-x divide-[#E7E9EE] border-b border-[#E7E9EE] dark:border-[#22304d]">
                 {/* % box */}
-                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "pct" ? "" : "bg-[#F7F3EA] dark:bg-[#0b1220]"}`}
+                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "pct" ? "" : "bg-[#F7F8FA] dark:bg-[#0b1220]"}`}
                   style={editDepositLastChanged === "pct" ? { background: color } : {}}>
                   <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "pct" ? "text-white/60" : "text-[#97A1A0] dark:text-[#728098]"}`}>
                     {EN ? "Percentage" : "Porcentaje"}
@@ -2465,7 +2465,7 @@ export default function EstimateTab({
                   )}
                 </div>
                 {/* $ box */}
-                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "amount" ? "" : "bg-[#F7F3EA] dark:bg-[#0b1220]"}`}
+                <div className={`flex flex-col items-center px-5 py-5 transition-colors ${editDepositLastChanged === "amount" ? "" : "bg-[#F7F8FA] dark:bg-[#0b1220]"}`}
                   style={editDepositLastChanged === "amount" ? { background: color } : {}}>
                   <label className={`mb-1 text-[10px] font-bold uppercase tracking-widest ${editDepositLastChanged === "amount" ? "text-white/60" : "text-[#97A1A0] dark:text-[#728098]"}`}>
                     {EN ? "Amount" : "Monto"}
@@ -2487,7 +2487,7 @@ export default function EstimateTab({
               </div>
 
               {/* Remaining hint */}
-              <div className={`flex items-center justify-between px-5 py-2.5 text-[10px] font-bold ${Math.abs(currentAmt - remainAmt) < 0.02 ? "bg-[#DCEBDD] dark:bg-[#14261c]" : currentAmt > remainAmt ? "bg-[#FDE8E3] dark:bg-[#2a1712]" : "bg-[#F7F3EA] dark:bg-[#0b1220]"}`}>
+              <div className={`flex items-center justify-between px-5 py-2.5 text-[10px] font-bold ${Math.abs(currentAmt - remainAmt) < 0.02 ? "bg-[#DCEBDD] dark:bg-[#14261c]" : currentAmt > remainAmt ? "bg-[#FDE8E3] dark:bg-[#2a1712]" : "bg-[#F7F8FA] dark:bg-[#0b1220]"}`}>
                 <span className="text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "Available for this deposit:" : "Disponible para esta cuota:"}
                 </span>
@@ -2506,15 +2506,15 @@ export default function EstimateTab({
                   value={editDepositLabel}
                   onChange={e => setEditDepositLabel(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") saveDepositEdit(); if (e.key === "Escape") setEditDepositIdx(null); }}
-                  className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                   placeholder={EN ? "e.g. At sign contract" : "Ej. Al firmar contrato"}
                 />
               </div>
 
               {/* Footer */}
-              <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
+              <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] px-5 py-4">
                 <button onClick={() => setEditDepositIdx(null)}
-                  className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
+                  className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
                   {EN ? "Cancel" : "Cancelar"}
                 </button>
                 <button onClick={saveDepositEdit}
@@ -2531,15 +2531,15 @@ export default function EstimateTab({
       {/* ── PDF mode modal ─────────────────────────────────────────────────── */}
       {showPdfModal && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] bg-[var(--brand)] px-5 py-4 rounded-t-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] bg-[var(--brand)] px-5 py-4 rounded-t-2xl">
               <p className="text-sm font-bold text-white">{EN ? "Choose PDF format" : "Elige el formato PDF"}</p>
               <button onClick={() => setShowPdfModal(false)} className="text-white/60 hover:text-white"><X size={18} /></button>
             </div>
             <div className="flex flex-col gap-3 p-5">
               <button
                 onClick={() => handleOpenPdf("full")}
-                className="flex items-start gap-4 rounded-xl border-2 border-[var(--brand)] bg-[#F7F3EA] dark:bg-[#0b1220] p-4 text-left transition hover:bg-[#EDE8E0]"
+                className="flex items-start gap-4 rounded-xl border-2 border-[var(--brand)] bg-[#F7F8FA] dark:bg-[#0b1220] p-4 text-left transition hover:bg-[#EDE8E0]"
               >
                 <FileText size={28} className="mt-0.5 flex-none text-[var(--brand)]" />
                 <div>
@@ -2549,7 +2549,7 @@ export default function EstimateTab({
               </button>
               <button
                 onClick={() => handleOpenPdf("summary")}
-                className="flex items-start gap-4 rounded-xl border-2 border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4 text-left transition hover:border-[var(--accent)] hover:bg-[#F0F3FA] dark:hover:bg-[#111a2e]"
+                className="flex items-start gap-4 rounded-xl border-2 border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4 text-left transition hover:border-[var(--accent)] hover:bg-[#F0F3FA] dark:hover:bg-[#111a2e]"
               >
                 <FileText size={28} className="mt-0.5 flex-none text-[var(--accent)]" />
                 <div>
@@ -2604,7 +2604,7 @@ export default function EstimateTab({
                   : "Se copiarán todas las secciones e ítems. El nombre del cliente y el título del proyecto se actualizarán al proyecto destino."}
               </p>
               {copyProjects.length === 0 ? (
-                <p className="rounded-xl bg-[#F7F3EA] dark:bg-[#0b1220] px-4 py-3 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
+                <p className="rounded-xl bg-[#F7F8FA] dark:bg-[#0b1220] px-4 py-3 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">
                   {EN ? "No other projects found." : "No hay otros proyectos disponibles."}
                 </p>
               ) : (
@@ -2615,7 +2615,7 @@ export default function EstimateTab({
                   <select
                     value={copyTargetId}
                     onChange={e => onCopyTargetChange(e.target.value)}
-                    className="w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#FDFAF6] dark:bg-[#111a2e] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
+                    className="w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F9FAFB] dark:bg-[#111a2e] px-3 py-2.5 text-sm font-semibold text-[var(--brand)] focus:border-[var(--accent)] focus:outline-none"
                   >
                     {copyProjects.map(p => (
                       <option key={p.id} value={p.id}>
@@ -2639,10 +2639,10 @@ export default function EstimateTab({
             </div>
 
             {/* Footer */}
-            <div className="flex gap-2 border-t border-[#E6DDCB] dark:border-[#22304d] px-5 py-4">
+            <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] px-5 py-4">
               <button
                 onClick={() => setShowCopyModal(false)}
-                className="flex-1 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] py-2.5 text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
+                className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-semibold text-[#5C6A6E] dark:text-[#9fb0cc] transition hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]"
               >
                 {EN ? "Cancel" : "Cancelar"}
               </button>
