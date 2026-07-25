@@ -130,6 +130,7 @@ export interface ProjectPhoto {
   tag: PhotoTag;
   album: string | null;
   taken_at: string;
+  sort_order?: number | null;   // orden manual en la galería (null = por fecha)
   created_at?: string;
 }
 

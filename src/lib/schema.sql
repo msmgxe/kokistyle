@@ -465,3 +465,6 @@ CREATE POLICY anon_all ON project_photos FOR ALL TO anon USING (true) WITH CHECK
 
 -- Fotos: carpeta opcional para organizar (jul 2026)
 ALTER TABLE project_photos ADD COLUMN IF NOT EXISTS album TEXT;
+
+-- Fotos: orden manual de la galería (portada = projects.photo_url; jul 2026)
+ALTER TABLE project_photos ADD COLUMN IF NOT EXISTS sort_order INT;

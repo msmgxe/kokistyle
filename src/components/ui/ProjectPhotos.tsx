@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Star, MoveLeft, MoveRight } from "lucide-react";
 import CameraCapture from "@/src/components/ui/CameraCapture";
 import PhotoComposer from "@/src/components/ui/PhotoComposer";
 import { useGalleryPicker } from "@/src/components/ui/useGalleryPicker";
@@ -22,11 +22,13 @@ function toIso(d: Date): string {
 }
 
 export default function ProjectPhotos({
-  projectId, projects, toast,
+  projectId, projects, toast, coverUrl, onProjectChange,
 }: {
   projectId?: string;                                            // fijo → tab del proyecto
   projects?: { id: string; title: string; client?: string }[];   // selector → página global
   toast: (msg: string) => void;
+  coverUrl?: string | null;         // url de la portada actual (projects.photo_url) → muestra ★
+  onProjectChange?: () => void;      // refresca el proyecto padre (hero) al cambiar la portada
 }) {
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
@@ -68,13 +70,17 @@ export default function ProjectPhotos({
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = supabase
-      .from("project_photos")
-      .select("*")
-      .order("taken_at", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (activeProject !== "all") q = q.eq("project_id", activeProject);
-    const { data, error } = await q;
+    // Orden manual (sort_order) primero; las que no tienen, por fecha. Si la columna
+    // aún no existe (migración pendiente), reintenta solo por fecha.
+    const runQuery = (withOrder: boolean) => {
+      let q = supabase.from("project_photos").select("*");
+      if (withOrder) q = q.order("sort_order", { ascending: true, nullsFirst: false });
+      q = q.order("taken_at", { ascending: false }).order("created_at", { ascending: false });
+      if (activeProject !== "all") q = q.eq("project_id", activeProject);
+      return q;
+    };
+    let { data, error } = await runQuery(true);
+    if (error && /sort_order/.test(error.message)) ({ data, error } = await runQuery(false));
     if (error) {
       setPhotos([]);
       if (error.message.includes("does not exist") || error.code === "42P01") toast(tf.needsMigration);
@@ -144,6 +150,40 @@ export default function ProjectPhotos({
     setConfirmDel(false);
     setPhotos(prev => prev.filter(p => p.id !== photo.id));
     toast(tf.deleted);
+  };
+
+  /* ── Portada del proyecto (projects.photo_url) ─────────────────────────── */
+  const setCover = async (photo: ProjectPhoto) => {
+    if (activeProject === "all" || !activeProject) return;
+    const { error } = await supabase.from("projects").update({ photo_url: photo.url }).eq("id", activeProject);
+    if (error) { toast(tf.updateError); return; }
+    toast(tf.coverSet);
+    onProjectChange?.();
+  };
+
+  /* ── Reordenar (sort_order) — mover una foto antes/después ─────────────── */
+  const movePhoto = async (dir: -1 | 1) => {
+    if (viewIdx == null) return;
+    const target = viewIdx + dir;
+    if (target < 0 || target >= visible.length) return;
+    const cur = visible[viewIdx];
+    const nb  = visible[target];
+    const arr = [...photos];
+    const ci = arr.findIndex(p => p.id === cur.id);
+    const ni = arr.findIndex(p => p.id === nb.id);
+    if (ci < 0 || ni < 0) return;
+    [arr[ci], arr[ni]] = [arr[ni], arr[ci]];
+    // Renumera todo el set en su nuevo orden y persiste las filas que cambiaron
+    const renum = arr.map((p, i) => ({ ...p, sort_order: i }));
+    setPhotos(renum);
+    setViewIdx(target);
+    const changed = renum.filter((p, i) => photos.find(o => o.id === p.id)?.sort_order !== i);
+    for (const p of changed) {
+      const { error } = await supabase.from("project_photos").update({ sort_order: p.sort_order }).eq("id", p.id);
+      if (error) { toast(/sort_order/.test(error.message) ? tf.needsMigration : tf.updateError); load(); return; }
+    }
+    toast(tf.reorderDone);
+    onProjectChange?.();
   };
 
   /* ── Derivados ─────────────────────────────────────────────────────────── */
@@ -348,6 +388,11 @@ export default function ProjectPhotos({
                   📁
                 </span>
               )}
+              {coverUrl === p.url && (
+                <span className="absolute right-1.5 bottom-1.5 grid size-5 place-items-center rounded-full bg-[#4F8A63] text-white shadow" title={tf.isCover}>
+                  <Star size={11} className="fill-current" />
+                </span>
+              )}
               <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-2 pb-1 pt-4 text-left text-[9.5px] font-bold text-white">
                 {fmtDate(p.taken_at)}{activeProject === "all" ? ` · ${projTitle(p.project_id)}` : ""}
               </span>
@@ -455,6 +500,38 @@ export default function ProjectPhotos({
               >
                 {tagLabel(current.tag)}
               </span>
+              {activeProject !== "all" && (
+                <div className="space-y-2 px-5 pt-3">
+                  {coverUrl === current.url ? (
+                    <div className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#4F8A63]/20 py-2.5 text-[13px] font-bold text-[#8FD3A3]">
+                      <Star size={14} className="fill-current" /> {tf.isCover}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setCover(current)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-white/12 py-2.5 text-[13px] font-bold text-white transition hover:bg-white/20"
+                    >
+                      <Star size={14} /> {tf.setCover}
+                    </button>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => movePhoto(-1)}
+                      disabled={(viewIdx ?? 0) === 0}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/12 py-2.5 text-[12px] font-bold text-white transition hover:bg-white/20 disabled:opacity-30"
+                    >
+                      <MoveLeft size={14} /> {tf.moveEarlier}
+                    </button>
+                    <button
+                      onClick={() => movePhoto(1)}
+                      disabled={(viewIdx ?? 0) >= visible.length - 1}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/12 py-2.5 text-[12px] font-bold text-white transition hover:bg-white/20 disabled:opacity-30"
+                    >
+                      {tf.moveLater} <MoveRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
           <div className="flex gap-2.5 px-4 py-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom))" }}>

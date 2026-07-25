@@ -2116,8 +2116,12 @@ export default function ProjectDetailPage() {
     } else {
       setEstTotals(null); setEstDeposits([]);
     }
-    const { data: ph } = await supabase
-      .from("project_photos").select("url, tag, caption").eq("project_id", id).order("taken_at", { ascending: false }).limit(8);
+    // Respeta el orden manual (sort_order) si existe; si la columna no está, cae a fecha
+    const photoCols = "url, tag, caption";
+    let ph = (await supabase.from("project_photos").select(photoCols).eq("project_id", id)
+      .order("sort_order", { ascending: true, nullsFirst: false }).order("taken_at", { ascending: false }).limit(8)).data;
+    if (!ph) ph = (await supabase.from("project_photos").select(photoCols).eq("project_id", id)
+      .order("taken_at", { ascending: false }).limit(8)).data;
     setHeroPhotos((ph as { url: string; tag: string; caption: string | null }[]) ?? []);
   }, [id]);
 
@@ -2186,8 +2190,9 @@ export default function ProjectDetailPage() {
   const totalTasks  = (project.tasks ?? []).length;
   const doneTasks   = (project.tasks ?? []).filter((t) => t.status === "done").length;
   const avancePct   = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-  const featuredUrl = heroPhotos[0]?.url ?? project.photo_url ?? null;
-  const thumbs      = heroPhotos.slice(1, 5);
+  // La foto principal es la portada elegida (projects.photo_url); si no hay, la primera
+  const featuredUrl = project.photo_url ?? heroPhotos[0]?.url ?? null;
+  const thumbs      = heroPhotos.filter((p) => p.url !== featuredUrl).slice(0, 4);
   const goToTab = (tab: TabId) => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const hp = tp.project;   // etiquetas del hero (project.*)
   // Permisos del hero: el resumen financiero solo si el usuario ya ve Estimate o Cash Flow.
@@ -2398,7 +2403,7 @@ export default function ProjectDetailPage() {
         contacts={project.contacts} onRefresh={fetchProject} toast={showToast}
         onSubTabChange={(sub) => setMeta({ context: `project.pagos.${sub}`, projectId: project.id, projectTitle: project.title, contacts: project.contacts?.map((c) => c.name) ?? [] })}
       />}
-      {activeTab === "fotos"       && <ProjectPhotos projectId={project.id} projects={[{ id: project.id, title: project.title }]} toast={showToast} />}
+      {activeTab === "fotos"       && <ProjectPhotos projectId={project.id} projects={[{ id: project.id, title: project.title }]} toast={showToast} coverUrl={project.photo_url ?? null} onProjectChange={fetchProject} />}
       {activeTab === "plan"        && <PlanTab        project={project} tasks={filteredTasks} contacts={project.contacts} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "notas"       && <NotasTab       project={project} notes={project.project_notes ?? []} onRefresh={fetchProject} toast={showToast} />}
       {activeTab === "design"      && <DesignTab      project={project} toast={showToast} />}
