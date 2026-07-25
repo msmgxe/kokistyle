@@ -1127,14 +1127,63 @@ function PagosTab({
   const activePay = activePayId ? payItems.find((p) => p.id === activePayId) : null;
   const activeExp = activeExpId ? expItems.find((x) => x.id === activeExpId) : null;
 
+  const openAddIncome = () => setEditor({
+    title: tp.payments.newIncome, sub: tp.payments.newIncomeSub,
+    fields: [
+      { key: "amount", label: tp.payments.amount,  type: "number", value: 0 },
+      { key: "date",   label: tp.payments.date,    type: "date",   value: new Date().toISOString().split("T")[0] },
+      { key: "method", label: tp.payments.method,  type: "select", options: methodOptions, value: "Transferencia" },
+      { key: "type",   label: tp.payments.concept, type: "select", options: ["anticipo", "abono", "final"], value: "abono" },
+    ],
+    onSave: async (vals) => {
+      if (Number(vals.amount) <= 0) { toast(tp.payments.amountRequired); return; }
+      const { error } = await supabase.from("payments").insert({ project_id: project.id, ...vals });
+      if (error) { toast(tp.common.errorSaving + error.message); return; }
+      addProjectNote(project.id, language === "en"
+        ? `💵 Payment received: ${money(Number(vals.amount))} (${vals.method}) — ${noteDate("en")}`
+        : `💵 Ingreso recibido: ${money(Number(vals.amount))} (${vals.method}) — ${noteDate("es")}`);
+      onRefresh(); toast(tp.payments.incomeRecorded);
+    },
+  });
+
+  const openAddExpense = () => setEditor({
+    title: tp.payments.newExpense, sub: tp.payments.newExpenseSub,
+    fields: [
+      { key: "payee_name", label: tp.payments.paidTo,  type: "select", options: payeeOptions, value: payeeOptions[1] ?? tp.workflow.ownTeam },
+      { key: "concept",    label: tp.payments.concept,  type: "text",   value: "" },
+      { key: "amount",     label: tp.payments.amount,   type: "number", value: 0 },
+      { key: "date",       label: tp.payments.date,     type: "date",   value: new Date().toISOString().split("T")[0] },
+      { key: "method",     label: tp.payments.method,   type: "select", options: methodOptions, value: "Transferencia" },
+    ],
+    onSave: async (vals) => {
+      if (Number(vals.amount) <= 0) { toast(tp.payments.amountRequired); return; }
+      const { error } = await supabase.from("expenses").insert({ project_id: project.id, ...vals });
+      if (error) { toast(tp.common.errorSaving + error.message); return; }
+      onRefresh(); toast(tp.payments.expenseRecorded);
+    },
+  });
+
   return (
     <div className="w-full">
-      {/* KPIs */}
+      {/* Header: título + accesos directos +Ingreso / +Egreso */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-heading text-base font-bold text-[var(--brand)] dark:text-[#e8edf7]">{tp.payments.headerTitle}</h3>
+        <div className="flex gap-2">
+          <button onClick={openAddIncome} className="inline-flex items-center gap-1.5 rounded-xl bg-[#4F8A63] px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-[#437654]">
+            <Plus size={15} /> {tp.payments.quickIncome}
+          </button>
+          <button onClick={openAddExpense} className="inline-flex items-center gap-1.5 rounded-xl bg-[#B0492F] px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-[#8C3523]">
+            <Plus size={15} /> {tp.payments.quickExpense}
+          </button>
+        </div>
+      </div>
+
+      {/* KPIs — verde ingresos · rojo egresos · gris para el resto */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.income}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.expenses}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#B0492F]">{money(egr)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.outstanding}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(due)}</div></div>
-        <div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.cashFlow}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)]">{money(caja)}</div></div>
+        <div className="rounded-2xl border border-[#CDE7D3] dark:border-[#1f3a2c] bg-[#EAF4EC] dark:bg-[#14261c] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#4F8A63]">{tp.payments.income}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#4F8A63]">{money(inc)}</div></div>
+        <div className="rounded-2xl border border-[#F0C9C2] dark:border-[#3a1d17] bg-[#FBEDEA] dark:bg-[#2a1712] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#B0492F]">{tp.payments.expenses}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[#B0492F]">{money(egr)}</div></div>
+        <div className="rounded-2xl border border-[#E1E4E9] dark:border-[#22304d] bg-[#F2F4F7] dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.outstanding}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)] dark:text-[#e8edf7]">{money(due)}</div></div>
+        <div className="rounded-2xl border border-[#E1E4E9] dark:border-[#22304d] bg-[#F2F4F7] dark:bg-[#111a2e] p-4"><div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.payments.balance}</div><div className="mt-1.5 font-mono text-xl font-semibold text-[var(--brand)] dark:text-[#e8edf7]">{money(caja)}</div></div>
       </div>
       {paid && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#DCEBDD] dark:border-[#1f3a2c] bg-[#E7F1E6] px-4 py-3 text-sm font-semibold text-[#4F8A63]">🎉 {tp.payments.paidFull}</div>}
 
@@ -1195,24 +1244,7 @@ function PagosTab({
             )}
           </DragOverlay>
           <button
-            onClick={() => setEditor({
-              title: tp.payments.newIncome, sub: tp.payments.newIncomeSub,
-              fields: [
-                { key: "amount", label: tp.payments.amount,  type: "number", value: 0 },
-                { key: "date",   label: tp.payments.date,    type: "date",   value: new Date().toISOString().split("T")[0] },
-                { key: "method", label: tp.payments.method,  type: "select", options: methodOptions, value: "Transferencia" },
-                { key: "type",   label: tp.payments.concept, type: "select", options: ["anticipo", "abono", "final"], value: "abono" },
-              ],
-              onSave: async (vals) => {
-                if (Number(vals.amount) <= 0) { toast(tp.payments.amountRequired); return; }
-                const { error } = await supabase.from("payments").insert({ project_id: project.id, ...vals });
-                if (error) { toast(tp.common.errorSaving + error.message); return; }
-                addProjectNote(project.id, language === "en"
-                  ? `💵 Payment received: ${money(Number(vals.amount))} (${vals.method}) — ${noteDate("en")}`
-                  : `💵 Ingreso recibido: ${money(Number(vals.amount))} (${vals.method}) — ${noteDate("es")}`);
-                onRefresh(); toast(tp.payments.incomeRecorded);
-              },
-            })}
+            onClick={openAddIncome}
             className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
           >
             + {tp.payments.registerIncome}
@@ -1275,22 +1307,7 @@ function PagosTab({
             )}
           </DragOverlay>
           <button
-            onClick={() => setEditor({
-              title: tp.payments.newExpense, sub: tp.payments.newExpenseSub,
-              fields: [
-                { key: "payee_name", label: tp.payments.paidTo,  type: "select", options: payeeOptions, value: payeeOptions[1] ?? tp.workflow.ownTeam },
-                { key: "concept",    label: tp.payments.concept,  type: "text",   value: "" },
-                { key: "amount",     label: tp.payments.amount,   type: "number", value: 0 },
-                { key: "date",       label: tp.payments.date,     type: "date",   value: new Date().toISOString().split("T")[0] },
-                { key: "method",     label: tp.payments.method,   type: "select", options: methodOptions, value: "Transferencia" },
-              ],
-              onSave: async (vals) => {
-                if (Number(vals.amount) <= 0) { toast(tp.payments.amountRequired); return; }
-                const { error } = await supabase.from("expenses").insert({ project_id: project.id, ...vals });
-                if (error) { toast(tp.common.errorSaving + error.message); return; }
-                onRefresh(); toast(tp.payments.expenseRecorded);
-              },
-            })}
+            onClick={openAddExpense}
             className="mt-3 w-full rounded-[13px] border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
           >
             + {tp.payments.registerExpense}
