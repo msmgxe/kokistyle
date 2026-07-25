@@ -41,7 +41,8 @@ import {
   money, dateFmt, totalIncome, totalExpense, balanceDue, cashFlow,
   dShort, initials,
 } from "@/src/lib/utils";
-import { exportCotizacion, exportEstadoCuenta } from "@/src/lib/pdf";
+import { exportCotizacion, getEstadoCuentaBlob, getGanttPdfBlob, type GanttPdfRow } from "@/src/lib/pdf";
+import PdfPreviewModal from "@/src/components/ui/PdfPreviewModal";
 import {
   buildGanttScale, ganttBar, laneBg, isoOfDate, todayIsoLocal, ganttX, GanttHeader, TodayLine,
 } from "@/src/components/ui/GanttCalendar";
@@ -1026,6 +1027,7 @@ function PagosTab({
   const EN = language === "en";
   const tp = t.panel;
   const [subTab, setSubTab] = useState<PaySubTab>("ingresos");
+  const [pdfPreview, setPdfPreview] = useState<{ blob: Blob; filename: string } | null>(null);
   const changeSubTab = (t: PaySubTab) => { setSubTab(t); onSubTabChange?.(t); };
 
   const unmarkMaterial = async (x: Expense) => {
@@ -1197,7 +1199,7 @@ function PagosTab({
           ))}
         </div>
         <button
-          onClick={() => exportEstadoCuenta(project, payments, expenses)}
+          onClick={() => setPdfPreview(getEstadoCuentaBlob(project, payments, expenses))}
           className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-4 py-2 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
         >
           ↓ {tp.payments.exportStatement}
@@ -1316,6 +1318,7 @@ function PagosTab({
       )}
 
       {editor && <EditorModal opts={editor} onClose={() => setEditor(null)} />}
+      {pdfPreview && <PdfPreviewModal blob={pdfPreview.blob} filename={pdfPreview.filename} title={tp.payments.headerTitle} onClose={() => setPdfPreview(null)} />}
     </div>
   );
 }
@@ -1398,6 +1401,7 @@ function PlanTab({
   const [filterStatus, setFilterStatus] = useState<"all" | "pend" | "prog" | "done">("all");
   const [filterAssignee, setFilterAssignee] = useState("all");
   const [editTask, setEditTask] = useState<{ task: { task: Task; start: Date; end: Date; weekStart: number }; startDate: Date; endDate: Date } | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<{ blob: Blob; filename: string } | null>(null);
   const persist = usePersistOrder("tasks");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -1446,6 +1450,19 @@ function PlanTab({
       return r.task.assigned_contact_id === filterAssignee;
     });
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
+
+  const openGanttPdf = () => {
+    if (!filteredRows.length) { toast(language === "en" ? "No tasks to export" : "No hay tareas para exportar"); return; }
+    const pct: Record<string, number> = { done: 100, prog: 50, pend: 0 };
+    const pdfRows: GanttPdfRow[] = filteredRows.map((r) => ({
+      name: r.task.name,
+      start: isoOfDate(r.start),
+      end: isoOfDate(r.end),
+      status: r.task.status,
+      progress: pct[r.task.status] ?? 0,
+    }));
+    setPdfPreview(getGanttPdfBlob(project, pdfRows, language));
+  };
 
   // Escala calendario (columna real por día/semana) — rango desde todas las tareas
   let minIso = isoOfDate(projectStart);
@@ -1533,6 +1550,11 @@ function PlanTab({
               </button>
             ))}
           </div>
+          {/* PDF (landscape, con vista previa) */}
+          <button onClick={openGanttPdf}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6DDCB] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
+            <FileText size={13} /> PDF
+          </button>
         </div>
       </div>
 
@@ -1668,6 +1690,8 @@ function PlanTab({
           </div>
         </div>
       )}
+
+      {pdfPreview && <PdfPreviewModal blob={pdfPreview.blob} filename={pdfPreview.filename} title={tp.tabs.plan} onClose={() => setPdfPreview(null)} />}
     </div>
   );
 }

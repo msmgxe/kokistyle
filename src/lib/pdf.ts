@@ -146,7 +146,7 @@ export function exportCotizacion(project: Project, items: BudgetItem[]) {
   doc.save(filename);
 }
 
-export function exportEstadoCuenta(project: Project, payments: Payment[], expenses: Expense[]) {
+function buildEstadoCuenta(project: Project, payments: Payment[], expenses: Expense[]): { doc: jsPDF; filename: string } {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   let y = header(doc, "Estado de Cuenta", project);
@@ -266,7 +266,17 @@ export function exportEstadoCuenta(project: Project, payments: Payment[], expens
   doc.text(`Saldo por cobrar: ${money(due)}`, 20, y + 12);
 
   const filename = `EstadoCuenta_${project.title.replace(/\s+/g, "_")}.pdf`;
+  return { doc, filename };
+}
+
+export function exportEstadoCuenta(project: Project, payments: Payment[], expenses: Expense[]) {
+  const { doc, filename } = buildEstadoCuenta(project, payments, expenses);
   doc.save(filename);
+}
+
+export function getEstadoCuentaBlob(project: Project, payments: Payment[], expenses: Expense[]): { blob: Blob; filename: string } {
+  const { doc, filename } = buildEstadoCuenta(project, payments, expenses);
+  return { blob: doc.output("blob") as Blob, filename };
 }
 
 function buildEstimatePdf(
@@ -827,4 +837,180 @@ export function openInvoicePdfInBrowser(inv: InvoiceData) {
 export function getInvoicePdfBlob(inv: InvoiceData): Blob {
   const { doc } = buildInvoicePdf(inv);
   return doc.output("blob") as Blob;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  GANTT — cronograma en PDF horizontal (landscape). Una columna por día, cabecera
+//  mes/día, fin de semana teñido, línea de hoy y barra por estado con avance.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface GanttPdfRow {
+  name: string;
+  start: string;   // ISO yyyy-mm-dd
+  end: string;     // ISO yyyy-mm-dd (inclusivo)
+  status: string;  // 'done' | 'prog' | 'pend'
+  progress: number;
+  assignee?: string;
+}
+
+function hexRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function gParseIso(s: string): Date { return new Date(s + "T00:00:00"); }
+function gIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function gDiff(a: string, b: string): number {
+  return Math.round((gParseIso(b).getTime() - gParseIso(a).getTime()) / 86400000);
+}
+function gSnapMonday(s: string): string {
+  const d = gParseIso(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return gIso(d);
+}
+
+const GBAR: Record<string, string> = { done: "#4F8A63", prog: "#4E7A82", pend: "#C9BFA8" };
+const G_SAT = "#DCEBF7", G_SUN = "#FBE5D3", G_GRID = "#EFE9DD";
+
+function buildGanttPdf(project: Project, rows: GanttPdfRow[], language: "en" | "es"): { doc: jsPDF; filename: string } {
+  const EN = language === "en";
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+
+  let yTop = header(doc, EN ? "Project Schedule — Gantt" : "Cronograma del Proyecto — Gantt", project);
+  yTop += 2;
+
+  // Rango de fechas (padded a semana completa)
+  let minIso = rows.length ? rows[0].start : gIso(new Date());
+  let maxIso = rows.length ? rows[0].end : minIso;
+  rows.forEach(r => { if (r.start < minIso) minIso = r.start; if (r.end > maxIso) maxIso = r.end; });
+  const start = gSnapMonday(minIso);
+  const rawDays = Math.max(gDiff(start, maxIso) + 1, 14);
+  const totalDays = Math.ceil(rawDays / 7) * 7;
+
+  const ML = 12, LW = 62;              // margen izq + ancho columna de tareas
+  const x0 = ML + LW;                  // inicio del timeline
+  const TW = W - ML - x0;              // ancho del timeline
+  const colW = TW / totalDays;
+  const RH = 7.2;                      // alto de fila
+  const todayIso = gIso(new Date());
+
+  const MO = EN
+    ? ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
+    : ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+
+  const dayX = (iso: string) => x0 + Math.min(Math.max(gDiff(start, iso), 0), totalDays) * colW;
+
+  // Dibuja la cabecera del calendario (mes + nº día + fin de semana) y devuelve la Y de inicio de filas
+  const drawAxis = (y: number): number => {
+    const days: Date[] = [];
+    for (let i = 0; i < totalDays; i++) { const d = gParseIso(start); d.setDate(d.getDate() + i); days.push(d); }
+    // Banda de meses
+    doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+    let segStart = 0;
+    for (let i = 1; i <= days.length; i++) {
+      const changed = i === days.length || days[i].getMonth() !== days[segStart].getMonth();
+      if (changed) {
+        const sx = x0 + segStart * colW, wpx = (i - segStart) * colW;
+        doc.setFillColor(...hexRgb(ACCENT));
+        doc.rect(sx, y, wpx, 5, "F");
+        const lbl = `${MO[days[segStart].getMonth()]} ${days[segStart].getFullYear()}`;
+        if (wpx > 12) doc.text(lbl, sx + wpx / 2, y + 3.4, { align: "center" });
+        segStart = i;
+      }
+    }
+    // Etiqueta columna izquierda
+    doc.setFillColor(...hexRgb(INK)); doc.rect(ML, y, LW, 5, "F");
+    doc.setTextColor(255, 255, 255); doc.setFontSize(7);
+    doc.text(EN ? "TASK" : "TAREA", ML + 3, y + 3.4);
+    // Números de día + fin de semana
+    const dy = y + 5;
+    doc.setFontSize(5.6);
+    days.forEach((d, i) => {
+      const cx = x0 + i * colW; const wd = d.getDay();
+      if (wd === 6) { doc.setFillColor(...hexRgb(G_SAT)); doc.rect(cx, dy, colW, 4, "F"); }
+      else if (wd === 0) { doc.setFillColor(...hexRgb(G_SUN)); doc.rect(cx, dy, colW, 4, "F"); }
+      doc.setTextColor(...hexRgb(MUTED));
+      if (colW > 2.4) doc.text(String(d.getDate()), cx + colW / 2, dy + 2.8, { align: "center" });
+    });
+    doc.setDrawColor(...hexRgb(LINE)); doc.setLineWidth(0.2);
+    doc.line(ML, dy + 4, W - ML, dy + 4);
+    return dy + 4;
+  };
+
+  const paint = (rowsToDraw: GanttPdfRow[], y0: number) => {
+    const areaBottom = y0 + rowsToDraw.length * RH;
+    // Fin de semana a lo alto del área + grilla semanal
+    for (let i = 0; i < totalDays; i++) {
+      const d = gParseIso(start); d.setDate(d.getDate() + i);
+      const cx = x0 + i * colW; const wd = d.getDay();
+      if (wd === 6) { doc.setFillColor(...hexRgb(G_SAT)); doc.rect(cx, y0, colW, areaBottom - y0, "F"); }
+      else if (wd === 0) { doc.setFillColor(...hexRgb(G_SUN)); doc.rect(cx, y0, colW, areaBottom - y0, "F"); }
+      if (wd === 1) { doc.setDrawColor(...hexRgb(G_GRID)); doc.setLineWidth(0.15); doc.line(cx, y0, cx, areaBottom); }
+    }
+    // Línea de hoy
+    if (gDiff(start, todayIso) >= 0 && gDiff(start, todayIso) < totalDays) {
+      doc.setDrawColor(176, 73, 47); doc.setLineWidth(0.5);
+      doc.line(dayX(todayIso), y0, dayX(todayIso), areaBottom);
+    }
+    // Filas
+    rowsToDraw.forEach((r, i) => {
+      const ry = y0 + i * RH;
+      if (i % 2 === 0) { doc.setFillColor(250, 249, 246); doc.rect(ML, ry, W - 2 * ML, RH, "F"); }
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...hexRgb(INK));
+      doc.text(r.name.length > 42 ? r.name.slice(0, 41) + "…" : r.name, ML + 2, ry + RH / 2 + 1.4);
+      // Barra
+      const bx = dayX(r.start);
+      const bw = Math.max((gDiff(r.start, r.end) + 1) * colW, 1.5);
+      const bh = 3.4, by = ry + (RH - bh) / 2;
+      doc.setFillColor(...hexRgb(GBAR[r.status] ?? GBAR.pend));
+      doc.roundedRect(bx, by, bw, bh, 0.8, 0.8, "F");
+      const pw = Math.max(0, Math.min(1, (r.progress ?? 0) / 100)) * bw;
+      if (pw > 0.5) { doc.setFillColor(...hexRgb("#3C7350")); doc.roundedRect(bx, by, pw, bh, 0.8, 0.8, "F"); }
+    });
+    doc.setDrawColor(...hexRgb(LINE)); doc.setLineWidth(0.2);
+    doc.line(ML, areaBottom, W - ML, areaBottom);
+    return areaBottom;
+  };
+
+  // Paginación simple
+  const usable = H - 16;
+  let idx = 0;
+  let firstPage = true;
+  while (idx < rows.length || firstPage) {
+    const y = firstPage ? yTop : 12;
+    const axisBottom = drawAxis(y);
+    const perPage = Math.max(1, Math.floor((usable - axisBottom) / RH));
+    const slice = rows.slice(idx, idx + perPage);
+    paint(slice, axisBottom + 1);
+    idx += perPage;
+    firstPage = false;
+    if (idx < rows.length) doc.addPage();
+    else break;
+  }
+
+  // Leyenda
+  const ly = H - 6;
+  doc.setFontSize(6.5); doc.setFont("helvetica", "bold");
+  const legend: [string, string][] = [
+    [EN ? "Done" : "Terminado", GBAR.done],
+    [EN ? "In progress" : "En obra", GBAR.prog],
+    [EN ? "Pending" : "Pendiente", GBAR.pend],
+    [EN ? "Saturday" : "Sábado", "#9DC3E6"],
+    [EN ? "Sunday" : "Domingo", G_SUN],
+  ];
+  let lx = ML;
+  legend.forEach(([lbl, col]) => {
+    doc.setFillColor(...hexRgb(col)); doc.rect(lx, ly - 2.4, 3, 3, "F");
+    doc.setTextColor(...hexRgb(MUTED)); doc.text(lbl, lx + 4, ly);
+    lx += 6 + doc.getTextWidth(lbl) + 4;
+  });
+
+  const filename = `Gantt_${project.title.replace(/\s+/g, "_")}.pdf`;
+  return { doc, filename };
+}
+
+export function getGanttPdfBlob(project: Project, rows: GanttPdfRow[], language: "en" | "es"): { blob: Blob; filename: string } {
+  const { doc, filename } = buildGanttPdf(project, rows, language);
+  return { blob: doc.output("blob") as Blob, filename };
 }
