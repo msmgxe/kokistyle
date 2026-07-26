@@ -79,12 +79,14 @@ function KpiCard({
   sub,
   variant = "neutral",
   onClick,
+  money: isMoney = false,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   variant?: "up" | "down" | "neutral";
   onClick?: () => void;
+  money?: boolean;
 }) {
   const colors = {
     up: "text-[#4F8A63]",
@@ -99,7 +101,7 @@ function KpiCard({
       <div className="text-[11px] font-bold uppercase tracking-[0.05em] text-[#5C6A6E] dark:text-[#9fb0cc]">
         {label}
       </div>
-      <div className={`mt-2 font-mono text-2xl font-semibold tracking-tight ${colors[variant]}`}>
+      <div className={`mt-2 font-mono text-2xl font-semibold tracking-tight ${colors[variant]} ${isMoney ? "js-amount" : ""}`}>
         {value}
       </div>
       {sub && <div className="mt-1 text-[11px] text-[#5C6A6E] dark:text-[#9fb0cc]">{sub}</div>}
@@ -203,7 +205,7 @@ function ProjectCard({
         <StatusChip status={project.status} />
         <div className="flex items-center gap-2">
           <div className="flex flex-col items-end">
-            <span className="font-mono text-[17px] font-semibold text-[var(--brand)]">
+            <span className="js-amount font-mono text-[17px] font-semibold text-[var(--brand)]">
               {money(budget)}
             </span>
             <span className={`text-[9px] font-bold uppercase tracking-wide ${project.hasEstimate ? "text-[var(--accent)]" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>
@@ -831,12 +833,12 @@ export default function DashboardPage() {
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label={tp.dashboard.kpiProjects}    value={projects.length}   sub={tp.dashboard.kpiActive}          onClick={() => setKpiModal("projects")} />
-        <KpiCard label={tp.dashboard.kpiBudgeted}    value={money(totalBudget)} sub={tp.dashboard.kpiTotalContracted} onClick={() => setKpiModal("budgeted")} />
+        <KpiCard label={tp.dashboard.kpiBudgeted}    value={money(totalBudget)} sub={tp.dashboard.kpiTotalContracted} money onClick={() => setKpiModal("budgeted")} />
         {canSeePagos && <>
-          <KpiCard label={tp.dashboard.kpiIncome}      value={money(totalInc)}  sub={tp.dashboard.kpiCollected}     variant="up"   onClick={() => setKpiModal("income")} />
-          <KpiCard label={tp.dashboard.kpiExpenses}    value={money(totalExp)}  sub={tp.dashboard.kpiPaid}          variant="down" onClick={() => setKpiModal("expenses")} />
-          <KpiCard label={tp.dashboard.kpiOutstanding} value={money(totalDue)}  sub={tp.dashboard.kpiClientBalance}                onClick={() => setKpiModal("outstanding")} />
-          <KpiCard label={tp.dashboard.kpiCashFlow}    value={money(cashFlow(allPayments, allExpenses))} sub={tp.dashboard.kpiNetFlow} variant="up" onClick={() => setKpiModal("cashflow")} />
+          <KpiCard label={tp.dashboard.kpiIncome}      value={money(totalInc)}  sub={tp.dashboard.kpiCollected}     variant="up"   money onClick={() => setKpiModal("income")} />
+          <KpiCard label={tp.dashboard.kpiExpenses}    value={money(totalExp)}  sub={tp.dashboard.kpiPaid}          variant="down" money onClick={() => setKpiModal("expenses")} />
+          <KpiCard label={tp.dashboard.kpiOutstanding} value={money(totalDue)}  sub={tp.dashboard.kpiClientBalance}                money onClick={() => setKpiModal("outstanding")} />
+          <KpiCard label={tp.dashboard.kpiCashFlow}    value={money(cashFlow(allPayments, allExpenses))} sub={tp.dashboard.kpiNetFlow} variant="up" money onClick={() => setKpiModal("cashflow")} />
         </>}
       </div>
 
@@ -1011,7 +1013,7 @@ export default function DashboardPage() {
               <button onClick={() => setReportOpen(false)} className="grid size-9 place-items-center rounded-lg text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"><X size={16} /></button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-5">
-              <ReportBuilder projects={projects.map(p => ({ id: p.id, title: p.title, client: p.client }))} />
+              <ReportBuilder projects={projects.map(p => ({ id: p.id, title: p.title, client: p.client, status: p.status }))} />
             </div>
           </div>
         </div>

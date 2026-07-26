@@ -13,13 +13,13 @@ export default function ReportePage() {
   const { t } = useLanguage();
   const router = useRouter();
   const tr = t.panel.report;
-  const [projects, setProjects] = useState<{ id: string; title: string; client?: string | null }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; title: string; client?: string | null; status?: string }[]>([]);
 
   useEffect(() => { if (!isSuperAdmin) router.replace("/proyectos"); }, [isSuperAdmin, router]);
   useEffect(() => {
     if (!isSuperAdmin) return;
-    supabase.from("projects").select("id, title, client").neq("status", "terminado").order("title")
-      .then(({ data }) => { if (data) setProjects(data as { id: string; title: string; client?: string | null }[]); });
+    supabase.from("projects").select("id, title, client, status").order("title")
+      .then(({ data }) => { if (data) setProjects(data as { id: string; title: string; client?: string | null; status?: string }[]); });
   }, [isSuperAdmin]);
 
   if (!isSuperAdmin) return null;

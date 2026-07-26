@@ -8,7 +8,7 @@ import {
   LogOut, Menu, X, ChevronsLeft, Settings,
   LayoutDashboard, CalendarCheck2, Image as ImageIcon, BarChart3, Users,
   Sparkles, Globe, CalendarClock, Activity, CalendarDays, HelpCircle,
-  ClipboardList, Sun, Moon,
+  ClipboardList, Eye, EyeOff, Sun, Moon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
@@ -31,6 +31,32 @@ function LangSwitch() {
         </button>
       ))}
     </div>
+  );
+}
+
+// Toggle de privacidad: difumina los montos del panel (.js-amount) vía data-hide-amounts
+// en <html>. Persiste en localStorage. Útil para mostrar la pantalla a un cliente.
+const HIDE_AMOUNTS_KEY = "luxaris-hide-amounts";
+function PrivacyToggle({ labelHide, labelShow }: { labelHide: string; labelShow: string }) {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    try {
+      const on = localStorage.getItem(HIDE_AMOUNTS_KEY) === "1";
+      setHidden(on);
+      document.documentElement.toggleAttribute("data-hide-amounts", on);
+    } catch { /* noop */ }
+  }, []);
+  const toggle = () => setHidden(h => {
+    const n = !h;
+    document.documentElement.toggleAttribute("data-hide-amounts", n);
+    try { localStorage.setItem(HIDE_AMOUNTS_KEY, n ? "1" : "0"); } catch { /* noop */ }
+    return n;
+  });
+  return (
+    <button onClick={toggle} title={hidden ? labelShow : labelHide} aria-pressed={hidden}
+      className={`grid size-9 place-items-center rounded-lg border transition ${hidden ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#17233d] text-[var(--accent)]" : "border-[#D5DEEF] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"}`}>
+      {hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+    </button>
   );
 }
 
@@ -176,6 +202,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
               <span className="text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7]">{branding.companyShort}</span>
             </Link>
             <div className="flex-1" />
+            <PrivacyToggle labelHide={t.panel.nav.hideAmounts} labelShow={t.panel.nav.showAmounts} />
             <div className="hidden lg:block"><LangSwitch /></div>
             <button
               id="panel-logout-btn"

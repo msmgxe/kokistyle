@@ -116,3 +116,10 @@ img {
   .rpt-only { display: block !important; }
   .fixed { display: none !important; }
 }
+
+/* Privacidad: difuminar montos del panel con el toggle de ojo (data-hide-amounts en <html>) */
+:root[data-hide-amounts] .js-amount {
+  filter: blur(7px);
+  user-select: none;
+  pointer-events: none;
+}

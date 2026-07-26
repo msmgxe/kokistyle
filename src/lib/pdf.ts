@@ -1023,9 +1023,16 @@ export interface ReportGroup {
   title: string;
   client?: string;
   objectives: { text: string; done: boolean }[];
+  tasks: { name: string; date?: string }[];
   notes: { content: string; date: string }[];
 }
-export interface ReportOpts { includeObjectives: boolean; includeNotes: boolean; pendingOnly: boolean }
+export interface ReportOpts {
+  includeObjectives: boolean;
+  includeTasks: boolean;
+  includeNotes: boolean;
+  pendingOnly: boolean;
+  groupByProject: boolean;   // true = por proyecto; false = una lista única global
+}
 
 function buildPendientesReport(groups: ReportGroup[], opts: ReportOpts, language: "en" | "es"): { doc: jsPDF; filename: string } {
   const EN = language === "en";
@@ -1034,7 +1041,6 @@ function buildPendientesReport(groups: ReportGroup[], opts: ReportOpts, language
   const H = doc.internal.pageSize.getHeight();
   const ML = 14, MR = W - 14;
 
-  // Brand bar
   doc.setFillColor(22, 50, 61); doc.rect(0, 0, W, 20, "F");
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
   doc.text(branding.companyName, ML, 13);
@@ -1052,51 +1058,86 @@ function buildPendientesReport(groups: ReportGroup[], opts: ReportOpts, language
   y += 8;
 
   const ensure = (need: number) => { if (y + need > H - 14) { doc.addPage(); y = 20; } };
+  const sectionHead = (label: string) => { doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(ACCENT); doc.text(label, ML + 2, y); y += 5; };
+  const emptyLine = (txt: string) => { doc.setTextColor(MUTED); doc.setFont("helvetica", "italic"); doc.setFontSize(9.5); doc.text(txt, ML + 5, y); y += 6; };
 
-  for (const g of groups) {
-    ensure(16);
-    // Project title bar
-    doc.setFillColor(237, 227, 207); doc.roundedRect(ML, y - 5, MR - ML, 9, 1.5, 1.5, "F");
-    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(INK);
-    doc.text(g.title, ML + 3, y + 1.2);
-    if (g.client) { doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(MUTED); doc.text(g.client, MR - 3, y + 1.2, { align: "right" }); }
-    y += 10;
+  const drawObjective = (o: { text: string; done: boolean }, suffix?: string) => {
+    const txt = suffix ? `${o.text}  · ${suffix}` : o.text;
+    const lines = doc.splitTextToSize(txt, MR - ML - 12) as string[];
+    ensure(lines.length * 5 + 2);
+    doc.setDrawColor(o.done ? "#4F8A63" : "#B0492F"); doc.setLineWidth(0.4);
+    doc.roundedRect(ML + 4, y - 3.4, 3.6, 3.6, 0.6, 0.6);
+    if (o.done) { doc.setFontSize(7); doc.setTextColor("#4F8A63"); doc.setFont("helvetica", "bold"); doc.text("X", ML + 4.9, y - 0.7); }
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(o.done ? MUTED : INK);
+    doc.text(lines, ML + 10, y);
+    y += lines.length * 5 + 1;
+  };
+  const drawTask = (tk: { name: string; date?: string }, suffix?: string) => {
+    const txt = suffix ? `${tk.name}  · ${suffix}` : tk.name;
+    const lines = doc.splitTextToSize(txt, MR - ML - 14) as string[];
+    ensure(lines.length * 5 + 2);
+    doc.setFillColor(224, 138, 42); doc.circle(ML + 5.6, y - 1.4, 0.9, "F");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(INK);
+    doc.text(lines, ML + 10, y);
+    if (tk.date) { doc.setTextColor(MUTED); doc.setFontSize(8); doc.text(fmtDate(tk.date), MR - 3, y, { align: "right" }); }
+    y += lines.length * 5 + 1;
+  };
+  const drawNote = (n: { content: string; date: string }, suffix?: string) => {
+    const txt = suffix ? `${n.content}  · ${suffix}` : n.content;
+    const lines = doc.splitTextToSize(txt, MR - ML - 26) as string[];
+    ensure(Math.max(lines.length * 5, 5) + 4);
+    doc.setTextColor("#B98A2F"); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.text(fmtDate(n.date), ML + 4, y);
+    doc.setTextColor(INK); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    doc.text(lines, ML + 22, y);
+    y += Math.max(lines.length * 5, 5) + 1;
+  };
 
+  if (opts.groupByProject) {
+    for (const g of groups) {
+      ensure(16);
+      doc.setFillColor(237, 227, 207); doc.roundedRect(ML, y - 5, MR - ML, 9, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(INK);
+      doc.text(g.title, ML + 3, y + 1.2);
+      if (g.client) { doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(MUTED); doc.text(g.client, MR - 3, y + 1.2, { align: "right" }); }
+      y += 10;
+
+      if (opts.includeObjectives) {
+        const objs = opts.pendingOnly ? g.objectives.filter(o => !o.done) : g.objectives;
+        sectionHead(EN ? "OBJECTIVES" : "OBJETIVOS");
+        if (objs.length === 0) emptyLine(EN ? "— none" : "— ninguno"); else objs.forEach(o => drawObjective(o));
+        y += 2;
+      }
+      if (opts.includeTasks) {
+        sectionHead(EN ? "PENDING TASKS" : "TAREAS PENDIENTES");
+        if (g.tasks.length === 0) emptyLine(EN ? "— none" : "— ninguna"); else g.tasks.forEach(tk => drawTask(tk));
+        y += 2;
+      }
+      if (opts.includeNotes) {
+        sectionHead(EN ? "NOTES" : "NOTAS");
+        if (g.notes.length === 0) emptyLine(EN ? "— none" : "— ninguna"); else g.notes.forEach(n => drawNote(n));
+      }
+      y += 5;
+    }
+  } else {
+    // Lista única global: cada sección junta ítems de todos los proyectos con su nombre
     if (opts.includeObjectives) {
-      const objs = opts.pendingOnly ? g.objectives.filter(o => !o.done) : g.objectives;
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(ACCENT);
-      doc.text(EN ? "OBJECTIVES" : "OBJETIVOS", ML + 2, y); y += 5;
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
-      if (objs.length === 0) { doc.setTextColor(MUTED); doc.setFont("helvetica", "italic"); doc.text(EN ? "— none" : "— ninguno", ML + 5, y); y += 6; }
-      for (const o of objs) {
-        const lines = doc.splitTextToSize(o.text, MR - ML - 12) as string[];
-        ensure(lines.length * 5 + 2);
-        doc.setDrawColor(o.done ? "#4F8A63" : "#B0492F"); doc.setLineWidth(0.4);
-        doc.roundedRect(ML + 4, y - 3.4, 3.6, 3.6, 0.6, 0.6);
-        if (o.done) { doc.setFontSize(7); doc.setTextColor("#4F8A63"); doc.setFont("helvetica", "bold"); doc.text("X", ML + 4.9, y - 0.7); }
-        doc.setFont(o.done ? "helvetica" : "helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(o.done ? MUTED : INK);
-        doc.text(lines, ML + 10, y);
-        y += lines.length * 5 + 1;
-      }
-      y += 2;
+      sectionHead(EN ? "PENDING OBJECTIVES" : "OBJETIVOS PENDIENTES");
+      const all = groups.flatMap(g => (opts.pendingOnly ? g.objectives.filter(o => !o.done) : g.objectives).map(o => ({ o, p: g.title })));
+      if (!all.length) emptyLine(EN ? "— none" : "— ninguno"); else all.forEach(({ o, p }) => drawObjective(o, p));
+      y += 4;
     }
-
+    if (opts.includeTasks) {
+      sectionHead(EN ? "PENDING TASKS" : "TAREAS PENDIENTES");
+      const all = groups.flatMap(g => g.tasks.map(tk => ({ tk, p: g.title })));
+      if (!all.length) emptyLine(EN ? "— none" : "— ninguna"); else all.forEach(({ tk, p }) => drawTask(tk, p));
+      y += 4;
+    }
     if (opts.includeNotes) {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(ACCENT);
-      doc.text(EN ? "NOTES" : "NOTAS", ML + 2, y); y += 5;
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
-      if (g.notes.length === 0) { doc.setTextColor(MUTED); doc.setFont("helvetica", "italic"); doc.text(EN ? "— none" : "— ninguna", ML + 5, y); y += 6; }
-      for (const n of g.notes) {
-        const lines = doc.splitTextToSize(n.content, MR - ML - 14) as string[];
-        ensure(lines.length * 5 + 4);
-        doc.setTextColor("#B98A2F"); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
-        doc.text(fmtDate(n.date), ML + 4, y);
-        doc.setTextColor(INK); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
-        doc.text(lines, ML + 22, y);
-        y += Math.max(lines.length * 5, 5) + 1;
-      }
+      sectionHead(EN ? "NOTES" : "NOTAS");
+      const all = groups.flatMap(g => g.notes.map(n => ({ n, p: g.title })));
+      if (!all.length) emptyLine(EN ? "— none" : "— ninguna"); else all.forEach(({ n, p }) => drawNote(n, p));
     }
-    y += 5;
   }
 
   const filename = `Pendientes_${new Date().toISOString().split("T")[0]}.pdf`;
