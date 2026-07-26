@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, MapPin, User, X, Trash2, Pencil, Camera } from "lucide-react";
+import { Plus, MapPin, User, X, Trash2, Pencil, Camera, ClipboardList } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import {
   money,
@@ -18,6 +18,7 @@ import type { Project, Payment, Expense, Task } from "@/src/types/project";
 
 type KpiType = "projects" | "budgeted" | "income" | "expenses" | "outstanding" | "cashflow";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
+import ReportBuilder from "@/src/components/ui/ReportBuilder";
 import ProjectThumb from "@/src/components/ui/ProjectThumb";
 import { useVoice } from "@/src/context/VoiceContext";
 import { branding } from "@/src/config/branding";
@@ -718,6 +719,7 @@ export default function DashboardPage() {
   const [voicePrefill, setVoicePrefill] = useState<Partial<Project> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [kpiModal, setKpiModal] = useState<KpiType | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("en_obra");
   const { setMeta } = useVoice();
   const { currentUser, isSuperAdmin, hasPermission } = useAuth();
@@ -909,7 +911,18 @@ export default function DashboardPage() {
         })()}
 
         {/* Divider */}
-        {canCreateProj && <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />}
+        {(canCreateProj || isSuperAdmin) && <div className="h-5 w-px shrink-0 rounded-full bg-white/15" />}
+
+        {/* Reporte de pendientes */}
+        {isSuperAdmin && (
+          <button
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-white/18"
+            onClick={() => setReportOpen(true)}
+          >
+            <ClipboardList size={13} />
+            <span className="hidden sm:inline">{tp.report.openReport}</span>
+          </button>
+        )}
 
         {/* New project */}
         {canCreateProj && (
@@ -985,6 +998,23 @@ export default function DashboardPage() {
           projects={projects}
           onClose={() => setKpiModal(null)}
         />
+      )}
+
+      {reportOpen && (
+        <div className="fixed inset-0 z-[320] flex items-end justify-center bg-[var(--brand)]/55 p-3 backdrop-blur-sm sm:items-center" onClick={() => setReportOpen(false)}>
+          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-5 py-3.5">
+              <div>
+                <h3 className="text-[15px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">{tp.report.title}</h3>
+                <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{tp.report.subtitle}</p>
+              </div>
+              <button onClick={() => setReportOpen(false)} className="grid size-9 place-items-center rounded-lg text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#ECE3D1] dark:hover:bg-[#17233d]"><X size={16} /></button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              <ReportBuilder projects={projects.map(p => ({ id: p.id, title: p.title, client: p.client }))} />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

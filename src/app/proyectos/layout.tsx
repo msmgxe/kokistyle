@@ -8,7 +8,7 @@ import {
   LogOut, Menu, X, ChevronsLeft, Settings,
   LayoutDashboard, CalendarCheck2, Image as ImageIcon, BarChart3, Users,
   Sparkles, Globe, CalendarClock, Activity, CalendarDays, HelpCircle,
-  Sun, Moon,
+  ClipboardList, Sun, Moon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { VoiceProvider } from "@/src/context/VoiceContext";
@@ -104,6 +104,7 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   ];
   const moreLinks: NavItem[] = [
     ...(isSuperAdmin ? [
+      { href: "/proyectos/reporte",    icon: ClipboardList, label: t.panel.nav.report },
       { href: "/proyectos/config",     icon: Settings,      label: t.panel.nav.config },
       { href: "/proyectos/prospectos", icon: Sparkles,      label: t.panel.nav.prospects },
       { href: "/proyectos/sitio",      icon: Globe,         label: t.panel.nav.site },
