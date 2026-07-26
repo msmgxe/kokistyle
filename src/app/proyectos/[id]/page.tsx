@@ -1426,9 +1426,10 @@ function PlanTab({
       const start = hasScheduledDate
         ? new Date(`${t.scheduled_date}T00:00:00`)
         : new Date(projectStart.getTime() + cumDays * 86400000);
-      // Day Planner tasks (source estimate/planner) represent a single scheduled day
+      // Day Planner tasks (source estimate/planner) abarcan su duración en días (multi-día);
+      // por defecto 1. El resto usa duration_weeks × 7.
       const isFromPlanner = t.source === "estimate" || t.source === "planner";
-      const effectiveDays = isFromPlanner && hasScheduledDate ? 1 : t.duration_weeks * 7;
+      const effectiveDays = isFromPlanner && hasScheduledDate ? Math.max(1, t.duration_days ?? 1) : t.duration_weeks * 7;
       const end = new Date(start.getTime() + (effectiveDays - 1) * 86400000);
       const dayStart = Math.max(0, Math.round((start.getTime() - projectStart.getTime()) / 86400000));
       if (!hasScheduledDate) cumDays = dayStart + effectiveDays;

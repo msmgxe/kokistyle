@@ -77,6 +77,8 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual'
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_key TEXT;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_section TEXT;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;
+-- Day Planner: duración en días de una tarea (multi-día; 1 = un día)
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS duration_days INT NOT NULL DEFAULT 1;
 
 -- 6. Tabla de Líneas de Presupuesto
 CREATE TABLE IF NOT EXISTS budget_items (

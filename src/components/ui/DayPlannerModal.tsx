@@ -27,6 +27,7 @@ interface PlanItem {
   description: string;
   amount: number;
   hours: number;
+  days: number;            // duración en días (1 = un día); reparte horas por día
   dayIndex: number | null;
   taskId: string | null;
   isCustom: boolean;
@@ -163,6 +164,7 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
           description: item.description,
           amount: item.amount,
           hours: 2,
+          days: 1,
           dayIndex: null,
           taskId: null,
           isCustom: false,
@@ -181,6 +183,7 @@ function buildEstimateItems(estimate: EstimateForPlanner, EN: boolean): PlanItem
         description: EN ? sec.name_en : sec.name_es,
         amount: sec.section_total,
         hours: 4,
+        days: 1,
         dayIndex: null,
         taskId: null,
         isCustom: false,
@@ -204,7 +207,7 @@ function ItemCard({
   onAssign?: (itemId: string, contactId: string | null) => void;
   days?: { index: number; label: string; date: string }[];
   onJumpToDay?: (itemId: string, dayIndex: number | null) => void;
-  onEdit?: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
+  onEdit?: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount" | "days">>) => void;
   onToggleDone?: (itemId: string, done: boolean) => void;
 }) {
   // El overlay usa un id propio para no colisionar con el sortable real durante el arrastre
@@ -279,6 +282,9 @@ function ItemCard({
             {item.description}
           </span>
           <span className="shrink-0 font-mono text-[9px] text-[#5C6A6E] dark:text-[#9fb0cc]">{item.hours}h</span>
+          {item.days > 1 && (
+            <span className="shrink-0 rounded-full bg-[var(--accent)]/12 px-1.5 text-[8.5px] font-bold text-[var(--accent)]">{item.days}d</span>
+          )}
           {item.taskId && (
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4F8A63]" aria-label="saved" />
           )}
@@ -315,7 +321,7 @@ function ItemCard({
             </label>
           )}
 
-          {/* Horas + Monto */}
+          {/* Horas + Días + Monto */}
           {onEdit && (
             <div className="flex gap-2">
               <label className="flex-1">
@@ -326,6 +332,17 @@ function ItemCard({
                   type="number" min={0} step={0.5}
                   value={item.hours}
                   onChange={e => onEdit(item.id, { hours: Number(e.target.value) || 0 })}
+                  className="w-full rounded-md border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
+                />
+              </label>
+              <label className="w-14 shrink-0">
+                <span className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-[#9A907C]">
+                  {EN ? "Days" : "Días"}
+                </span>
+                <input
+                  type="number" min={1} step={1}
+                  value={item.days}
+                  onChange={e => onEdit(item.id, { days: Math.max(1, Math.round(Number(e.target.value) || 1)) })}
                   className="w-full rounded-md border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-1.5 py-1 text-[11px] text-[var(--brand)] outline-none focus:border-[var(--accent)]"
                 />
               </label>
@@ -341,6 +358,11 @@ function ItemCard({
                 />
               </label>
             </div>
+          )}
+          {onEdit && item.days > 1 && (
+            <p className="text-[9px] font-semibold text-[var(--accent)]">
+              {EN ? `Spans ${item.days} days · ${(item.hours / item.days).toFixed(1)}h/day` : `Ocupa ${item.days} días · ${(item.hours / item.days).toFixed(1)}h/día`}
+            </p>
           )}
 
           {/* Día programado */}
@@ -414,7 +436,7 @@ function ItemPool({
   onAssign: (itemId: string, contactId: string | null) => void;
   days: { index: number; label: string; date: string }[];
   onJumpToDay: (itemId: string, dayIndex: number | null) => void;
-  onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
+  onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount" | "days">>) => void;
   onToggleDone: (itemId: string, done: boolean) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "pool" });
@@ -458,10 +480,12 @@ function ItemPool({
 // ─── Day column ───────────────────────────────────────────────────────────────
 
 function DayColumn({
-  day, items, capacity, date, EN, onDateChange, contacts, onAssign, days, onJumpToDay, onEdit, onToggleDone,
+  day, items, ghosts, used, capacity, date, EN, onDateChange, contacts, onAssign, days, onJumpToDay, onEdit, onToggleDone,
 }: {
   day: number;
   items: PlanItem[];
+  ghosts: PlanItem[];          // tareas multi-día que continúan en este día (no arrancan aquí)
+  used: number;                // horas usadas ya repartidas por día (span)
   capacity: number;
   date: string;
   EN: boolean;
@@ -470,12 +494,11 @@ function DayColumn({
   onAssign: (itemId: string, contactId: string | null) => void;
   days: { index: number; label: string; date: string }[];
   onJumpToDay: (itemId: string, dayIndex: number | null) => void;
-  onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => void;
+  onEdit: (itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount" | "days">>) => void;
   onToggleDone: (itemId: string, done: boolean) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day}` });
   const dateRef = useRef<HTMLInputElement>(null);
-  const used = items.reduce((s, i) => s + i.hours, 0);
   const pct = capacity > 0 ? Math.min((used / capacity) * 100, 100) : 0;
   const over = used > capacity;
 
@@ -514,7 +537,7 @@ function DayColumn({
             )}
           </span>
           <span className={`text-[10px] font-semibold ${over ? "text-[#B0492F]" : "text-[#5C6A6E] dark:text-[#9fb0cc]"}`}>
-            {used}h / {capacity}h
+            {Number.isInteger(used) ? used : used.toFixed(1)}h / {capacity}h
           </span>
         </div>
 
@@ -555,6 +578,17 @@ function DayColumn({
         ref={setNodeRef}
         className={`flex min-h-[150px] flex-col gap-2 rounded-xl border-2 border-dashed p-2 transition ${dropCls}`}
       >
+        {/* Continuación de tareas multi-día (no draggable, solo referencia) */}
+        {ghosts.map(g => {
+          const partOf = g.dayIndex !== null ? day - g.dayIndex + 1 : 0;
+          return (
+            <div key={`ghost-${g.id}`} className="flex items-center gap-2 rounded-lg border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA]/60 dark:bg-[#0b1220]/60 px-2 py-1.5 text-[10px] text-[#97A1A0] dark:text-[#728098]">
+              <span className="shrink-0">↳</span>
+              <span className="truncate font-semibold">{g.description}</span>
+              <span className="ml-auto shrink-0 font-mono">{(g.hours / g.days).toFixed(1)}h · {partOf}/{g.days}</span>
+            </div>
+          );
+        })}
         <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
           {items.map(i => (
             <ItemCard
@@ -570,7 +604,7 @@ function DayColumn({
             />
           ))}
         </SortableContext>
-        {items.length === 0 && (
+        {items.length === 0 && ghosts.length === 0 && (
           <div className="flex flex-1 items-center justify-center text-[10px] text-[#C4B89A]">
             {EN ? "Drop items here" : "Arrastra aquí"}
           </div>
@@ -833,7 +867,7 @@ export default function DayPlannerModal({
       const [{ data: existingTasks }, { data: projectContacts }] = await Promise.all([
         supabase
           .from("tasks")
-          .select("id, source_key, scheduled_date, name, hours, amount, source, source_section, estimate_item_id, estimate_section_id, assigned_contact_id, sort_order, status")
+          .select("id, source_key, scheduled_date, name, hours, amount, duration_days, source, source_section, estimate_item_id, estimate_section_id, assigned_contact_id, sort_order, status")
           .eq("project_id", projectId)
           .or("source.eq.estimate,source.eq.planner")
           .order("sort_order", { ascending: true }),
@@ -890,6 +924,7 @@ export default function DayPlannerModal({
         return {
           ...item,
           taskId: task.id as string,
+          days: (task.duration_days as number) ?? item.days,
           dayIndex: task.scheduled_date ? (dateToIdx.get(task.scheduled_date as string) ?? null) : null,
           assignedContactId: (task.assigned_contact_id as string | null) ?? null,
           done: task.status === "done",
@@ -916,6 +951,7 @@ export default function DayPlannerModal({
           description: t.name as string,
           amount: (t.amount as number) ?? 0,
           hours: (t.hours as number) ?? 2,
+          days: (t.duration_days as number) ?? 1,
           dayIndex: t.scheduled_date ? (dateToIdx.get(t.scheduled_date as string) ?? null) : null,
           taskId: t.id as string,
           isCustom: true,
@@ -978,6 +1014,10 @@ export default function DayPlannerModal({
 
   const poolItems  = useMemo(() => items.filter(i => i.dayIndex === null), [items]);
   const getDay     = useCallback((d: number) => items.filter(i => i.dayIndex === d), [items]);
+  // Multi-día: una tarea de N días ocupa N columnas desde su día; reparte horas/N por día
+  const coversDay  = (i: PlanItem, d: number) => i.dayIndex !== null && i.dayIndex <= d && d <= i.dayIndex + Math.max(1, i.days) - 1;
+  const ghostsFor  = useCallback((d: number) => items.filter(i => coversDay(i, d) && i.dayIndex !== d), [items]);
+  const usedFor    = useCallback((d: number) => items.reduce((s, i) => s + (coversDay(i, d) ? i.hours / Math.max(1, i.days) : 0), 0), [items]);
   const activeItem = useMemo(() => items.find(i => i.id === activeId), [items, activeId]);
 
   const handleDragStart = ({ active }: DragStartEvent) => setActiveId(active.id as string);
@@ -1074,6 +1114,7 @@ export default function DayPlannerModal({
       description: fields.description,
       amount: fields.amount,
       hours: fields.hours,
+      days: 1,
       dayIndex: fields.dayIndex,
       taskId: null,
       isCustom: true,
@@ -1116,7 +1157,7 @@ export default function DayPlannerModal({
   }, []);
 
   // ── Inline edit of existing card fields (description / hours / amount) ────────
-  const handleEdit = useCallback((itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount">>) => {
+  const handleEdit = useCallback((itemId: string, patch: Partial<Pick<PlanItem, "description" | "hours" | "amount" | "days">>) => {
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, ...patch } : i));
   }, []);
 
@@ -1157,6 +1198,7 @@ export default function DayPlannerModal({
         name:                item.description,
         hours:               item.hours,
         duration_weeks:      1,
+        duration_days:       Math.max(1, item.days),
         status:              item.done ? "done" : "pend",
         sort_order:          orderOf(item),
         assigned_contact_id: item.assignedContactId,
@@ -1177,6 +1219,7 @@ export default function DayPlannerModal({
         name:                item.description,
         hours:               item.hours,
         amount:              item.amount,
+        duration_days:       Math.max(1, item.days),
         scheduled_date:      dayDates[item.dayIndex ?? 0] ?? null,
         sort_order:          orderOf(item),
         assigned_contact_id: item.assignedContactId,
@@ -1369,6 +1412,8 @@ export default function DayPlannerModal({
                     key={d}
                     day={d}
                     items={getDay(d)}
+                    ghosts={ghostsFor(d)}
+                    used={usedFor(d)}
                     capacity={dayCapacity}
                     date={dayDates[d] ?? ""}
                     EN={EN}

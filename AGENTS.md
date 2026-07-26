@@ -223,6 +223,7 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual'
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_key TEXT;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_section TEXT;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS duration_days INT NOT NULL DEFAULT 1;  -- Day Planner: tareas multi-día
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimate_section_id UUID REFERENCES estimate_sections(id) ON DELETE SET NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS tasks_project_source_key_idx
@@ -990,6 +991,8 @@ Costo estimado: ~$0.01 por render. Cuentas nuevas reciben créditos gratuitos.
 - Drag & drop: `@dnd-kit` (DndContext, useDraggable, useDroppable, DragOverlay)
 - Estado: pool de items sin asignar + columnas de días (hasta N días)
 - Fechas: cada columna tiene datepicker nativo (`<input type="date">` con overlay transparente). No se permiten dos días con la misma fecha (el reload reconstruye días desde fechas únicas de `scheduled_date` — duplicados se fusionarían)
+- **Tareas multi-día (jul 2026)**: cada ítem tiene un campo **Días** (`tasks.duration_days`, default 1). Una tarea de N días ocupa N columnas desde su día asignado y **reparte sus horas** (`hours/N`) en cada día para la capacidad — así una tarea de 32h en 2 días marca 16h/día en vez de sobrecargar un solo día. Las columnas siguientes muestran un **ghost de continuación** (↳ desc · h/día · parte/N, no draggable) y el chip compacto lleva un badge `Nd`. El **Gantt** abarca `duration_days` para los ítems del planner (antes forzaba 1 día). Migración: `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS duration_days INT NOT NULL DEFAULT 1;`
+- **Fecha real de inicio (jul 2026)**: un planner nuevo arranca en `project.start_date` (día 1 = inicio), no en el futuro. Cada día es editable a cualquier fecha (pasadas, fines de semana, no consecutivas) vía `showPicker()`.
 - **Días y fechas (jul 2026)**: al aumentar el stepper de días, los nuevos días continúan después de la **última** fecha existente saltando duplicados (antes se rellenaba `día1 + i`, lo que generaba fechas repetidas con días no consecutivos y los días 5+ "desaparecían" al recargar). Al disminuir, los items de días recortados vuelven al pool. La configuración de días (incluye días vacíos) se persiste en `localStorage` (`kokistyle-planner-days:<projectId>`) al guardar y se une con las fechas de tareas en el load — los días sin items sobreviven al reload en el mismo dispositivo
 - Capacidad: `workersPerDay × hoursPerWorker` por día → barra de progreso visual
 - Auto-assign: **phase-ordered + even-spread** — ordena por fase constructiva (Materiales → Demolición → Estructura → Plomería → Eléctrico → Tile/Piso → Handyman → Pintura → Otro), distribuye equitativamente entre todos los días configurados (`targetPerDay = ceil(n/numDays)`), y avanza de día en los límites de fase

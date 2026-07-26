@@ -39,6 +39,7 @@ export interface Task {
   name: string;
   hours: number;
   duration_weeks: number;
+  duration_days?: number | null;   // duración en días del Day Planner (1 = un día)
   status: "pend" | "prog" | "done";
   sort_order: number;
   assigned_contact_id: string | null;
