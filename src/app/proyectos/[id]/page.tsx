@@ -2065,6 +2065,7 @@ function PlannerTab({
       embedded
       estimate={estimate}
       projectId={project.id}
+      projectStart={project.start_date}
       onClose={() => {}}
       onGenerated={onRefresh}
       toast={toast}

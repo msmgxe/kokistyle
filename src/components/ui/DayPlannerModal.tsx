@@ -10,7 +10,7 @@ import {
 import {
   SortableContext, useSortable, arrayMove, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { X, Zap, CalendarDays, Plus, Save } from "lucide-react";
+import { X, Zap, CalendarDays, Plus, Save, Pencil } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -517,18 +517,20 @@ function DayColumn({
           </span>
         </div>
 
-        {/* Date picker row */}
+        {/* Date picker row — toca para poner el día real (cualquier fecha) */}
         <div className="mt-1.5 flex items-center gap-1.5">
           <CalendarDays size={11} className="shrink-0 text-[#5C6A6E] dark:text-[#9fb0cc]" />
           <div className="relative flex-1">
-            <span className="pointer-events-none text-[10px] font-semibold text-[var(--accent)]">
+            <span className="pointer-events-none flex items-center gap-1 text-[10px] font-semibold text-[var(--accent)] underline decoration-dotted underline-offset-2">
               {date ? formatDate(date, EN) : (EN ? "Pick date" : "Seleccionar fecha")}
+              <Pencil size={9} className="opacity-70" />
             </span>
             <input
               type="date"
               value={date}
               onChange={e => onDateChange(e.target.value)}
               className="absolute inset-0 cursor-pointer opacity-0"
+              title={EN ? "Set the real work date" : "Poner la fecha real de trabajo"}
             />
           </div>
         </div>
@@ -779,6 +781,7 @@ function CustomItemForm({
 export default function DayPlannerModal({
   estimate,
   projectId,
+  projectStart,
   onClose,
   onGenerated,
   toast,
@@ -786,6 +789,7 @@ export default function DayPlannerModal({
 }: {
   estimate: EstimateForPlanner;
   projectId: string;
+  projectStart?: string | null;   // fecha real de inicio del proyecto (base de los días)
   onClose: () => void;
   onGenerated: () => void;
   toast: (msg: string) => void;
@@ -849,14 +853,22 @@ export default function DayPlannerModal({
 
       const newNumDays = Math.max(4, allDates.length);
 
-      // Build dayDates: first from existing, fill remainder consecutively
+      // Build dayDates: primero las fechas existentes; el resto se rellena.
       const newDayDates: Record<number, string> = {};
       allDates.forEach((d, i) => { newDayDates[i] = d; });
-      const fillBase = allDates.length > 0
-        ? allDates[allDates.length - 1]
-        : todayIso();
-      for (let i = allDates.length; i < newNumDays; i++) {
-        newDayDates[i] = addDaysStr(fillBase, i - allDates.length + 1);
+      if (allDates.length > 0) {
+        // Continúa consecutivo tras la última fecha existente
+        const fillBase = allDates[allDates.length - 1];
+        for (let i = allDates.length; i < newNumDays; i++) {
+          newDayDates[i] = addDaysStr(fillBase, i - allDates.length + 1);
+        }
+      } else {
+        // Planner nuevo: arranca en la fecha REAL de inicio del proyecto (día 1 = inicio),
+        // no en el futuro. Cada día es editable a cualquier fecha (fines de semana, no consecutivos).
+        const base = projectStart || todayIso();
+        for (let i = 0; i < newNumDays; i++) {
+          newDayDates[i] = addDaysStr(base, i);
+        }
       }
 
       // date → day index
@@ -1321,9 +1333,16 @@ export default function DayPlannerModal({
             {/* Right: Day columns */}
             <div className="flex min-h-0 flex-col gap-2 lg:flex-1 lg:overflow-y-hidden">
               <div className="flex shrink-0 items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
-                  {EN ? "Schedule" : "Cronograma"} — {dayCapacity}h/{EN ? "day" : "día"} capacity
-                </span>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C6A6E] dark:text-[#9fb0cc]">
+                    {EN ? "Schedule" : "Cronograma"} — {dayCapacity}h/{EN ? "day" : "día"} capacity
+                  </span>
+                  <p className="text-[10px] text-[#97A1A0] dark:text-[#728098]">
+                    {EN
+                      ? "Tap each date to set the real work day — any date works (past, weekends, non-consecutive)."
+                      : "Toca la fecha de cada día para poner el día real de trabajo — vale cualquier fecha (pasadas, fines de semana, no consecutivas)."}
+                  </p>
+                </div>
                 {numDays > 3 && (
                   <div className="flex items-center gap-1">
                     <button
