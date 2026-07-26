@@ -474,6 +474,7 @@ function DayColumn({
   onToggleDone: (itemId: string, done: boolean) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day}` });
+  const dateRef = useRef<HTMLInputElement>(null);
   const used = items.reduce((s, i) => s + i.hours, 0);
   const pct = capacity > 0 ? Math.min((used / capacity) * 100, 100) : 0;
   const over = used > capacity;
@@ -520,19 +521,24 @@ function DayColumn({
         {/* Date picker row — toca para poner el día real (cualquier fecha) */}
         <div className="mt-1.5 flex items-center gap-1.5">
           <CalendarDays size={11} className="shrink-0 text-[#5C6A6E] dark:text-[#9fb0cc]" />
-          <div className="relative flex-1">
-            <span className="pointer-events-none flex items-center gap-1 text-[10px] font-semibold text-[var(--accent)] underline decoration-dotted underline-offset-2">
-              {date ? formatDate(date, EN) : (EN ? "Pick date" : "Seleccionar fecha")}
-              <Pencil size={9} className="opacity-70" />
-            </span>
-            <input
-              type="date"
-              value={date}
-              onChange={e => onDateChange(e.target.value)}
-              className="absolute inset-0 cursor-pointer opacity-0"
-              title={EN ? "Set the real work date" : "Poner la fecha real de trabajo"}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => { try { dateRef.current?.showPicker(); } catch { dateRef.current?.click(); } }}
+            title={EN ? "Set the real work date" : "Poner la fecha real de trabajo"}
+            className="flex flex-1 items-center gap-1 text-left text-[10px] font-semibold text-[var(--accent)] underline decoration-dotted underline-offset-2"
+          >
+            {date ? formatDate(date, EN) : (EN ? "Pick date" : "Seleccionar fecha")}
+            <Pencil size={9} className="opacity-70" />
+          </button>
+          <input
+            ref={dateRef}
+            type="date"
+            value={date}
+            onChange={e => onDateChange(e.target.value)}
+            className="pointer-events-none absolute h-0 w-0 opacity-0"
+            tabIndex={-1}
+            aria-hidden
+          />
         </div>
 
         {/* Capacity bar */}
