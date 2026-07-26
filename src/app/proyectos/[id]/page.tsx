@@ -2249,7 +2249,9 @@ export default function ProjectDetailPage() {
   const canSeeMoney = isSuperAdmin || visibleTabIds.has("presupuesto") || visibleTabIds.has("pagos");
   const canSeeCost  = isSuperAdmin;
 
-  // Objetivos: contador + toggle instantáneo del check
+  // Objetivos: contador + toggle instantáneo del check. Editar: superadmin y co-workers
+  // (los clientes solo ven y marcan). Marcar el check lo puede cualquiera con acceso.
+  const canEditObjectives = isSuperAdmin || currentUser?.user_type === "coworker";
   const objDone = objectives.filter((o) => o.done).length;
   const toggleObjective = async (o: ProjectObjective) => {
     setObjectives((prev) => prev.map((x) => x.id === o.id ? { ...x, done: !x.done } : x));
@@ -2411,12 +2413,12 @@ export default function ProjectDetailPage() {
                   <span className="rounded-full bg-[#EDE3CF] dark:bg-[#17233d] px-1.5 py-0.5 text-[10px] font-bold text-[#7A6230] dark:text-[#e8edf7]">{objDone}/{objectives.length}</span>
                 )}
               </div>
-              {isSuperAdmin && (
+              {canEditObjectives && (
                 <button onClick={() => setObjModalOpen(true)} className="shrink-0 text-[11px] font-bold text-[var(--accent)] hover:underline">{to.edit}</button>
               )}
             </div>
             {objectives.length === 0 ? (
-              isSuperAdmin ? (
+              canEditObjectives ? (
                 <button onClick={() => setObjModalOpen(true)} className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#E6DDCB] dark:border-[#22304d] py-6 text-[#97A1A0] dark:text-[#728098] transition hover:border-[var(--accent)]">
                   <Target size={22} /><span className="text-[11px] font-semibold">{to.empty}</span>
                 </button>

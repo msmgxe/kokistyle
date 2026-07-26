@@ -70,7 +70,7 @@ const ACTION_LABELS: Record<string, string> = {
   create_expense: "egreso",         create_task:    "tarea",
   create_material: "material",      create_budget_item: "línea de presupuesto",
   create_contact: "contacto",       update_task_status: "cambio de estado",
-  create_agenda_event: "entrada de agenda",
+  create_agenda_event: "entrada de agenda", create_objective: "objetivo",
 };
 
 const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "text" | "number" | "date" }>> = {
@@ -78,6 +78,7 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
   create_payment:     [{ key:"amount", label:"Monto", type:"number" }, { key:"method", label:"Método", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"date", label:"Fecha", type:"date" }],
   create_expense:     [{ key:"payee_name", label:"A quién", type:"text" }, { key:"amount", label:"Monto", type:"number" }, { key:"concept", label:"Concepto", type:"text" }, { key:"method", label:"Método", type:"text" }, { key:"date", label:"Fecha", type:"date" }],
   create_task:        [{ key:"name", label:"Actividad", type:"text" }],
+  create_objective:   [{ key:"text", label:"Objetivo", type:"text" }],
   create_material:    [{ key:"name", label:"Material", type:"text" }, { key:"cost", label:"Costo", type:"number" }, { key:"supplier", label:"Proveedor", type:"text" }],
   create_budget_item: [{ key:"description", label:"Descripción", type:"text" }, { key:"type", label:"Tipo", type:"text" }, { key:"amount", label:"Monto", type:"number" }],
   create_contact:     [{ key:"type", label:"Tipo", type:"text" }, { key:"name", label:"Nombre", type:"text" }, { key:"phone", label:"Teléfono", type:"text" }, { key:"specialty", label:"Especialidad", type:"text" }, { key:"rate", label:"Tarifa", type:"text" }, { key:"rate_type", label:"Por (hour/day)", type:"text" }],
@@ -88,7 +89,7 @@ const EDIT_FIELDS: Record<string, Array<{ key: string; label: string; type: "tex
 // Acciones que exigen proyecto — si no hay uno abierto, la tarjeta de confirmación ofrece elegirlo
 const PROJECT_ACTIONS = new Set([
   "create_payment", "create_expense", "create_task",
-  "create_material", "create_budget_item", "update_task_status",
+  "create_material", "create_budget_item", "update_task_status", "create_objective",
 ]);
 
 const fill = (tpl: string, x: string | number = "", y: string | number = "") =>
@@ -161,6 +162,14 @@ async function saveAction(action: string, data: Record<string, unknown>, meta: V
       });
       if (error) throw error;
       return fill(tv.okMaterial, String(data.name ?? "")) + inProj;
+    }
+    case "create_objective": {
+      if (!pid) throw new Error(tv.needProject);
+      const { error } = await supabase.from("project_objectives").insert({
+        project_id: pid, text: String(data.text ?? ""), done: false, sort_order: 9999,
+      });
+      if (error) throw error;
+      return fill(tv.okObjective, String(data.text ?? "")) + inProj;
     }
     case "create_budget_item": {
       if (!pid) throw new Error(tv.needProject);
@@ -471,6 +480,7 @@ function buildSummary(action: string, data: Record<string, unknown>): string {
     case "create_expense":     return `${fmt(Number(data.amount ?? 0))} a ${data.payee_name ?? ""} (${data.concept ?? ""})`;
     case "create_project":     return `"${data.title ?? ""}" para ${data.client ?? ""}, ${fmt(Number(data.budget ?? 0))}`;
     case "create_task":        return `"${data.name ?? ""}"`;
+    case "create_objective":   return `"${data.text ?? ""}"`;
     case "create_material":    return `${data.name ?? ""}, ${fmt(Number(data.cost ?? 0))} en ${data.supplier ?? ""}`;
     case "create_budget_item": return `${data.description ?? ""}, ${fmt(Number(data.amount ?? 0))}`;
     case "create_contact":     return `${data.name ?? ""} · ${data.type ?? "coworker"} · ${data.phone ?? ""}${data.specialty ? " · " + data.specialty : ""}`;

@@ -31,6 +31,7 @@ const METHODS: Record<Lang, string[]> = {
 const WRITE_ACTIONS = new Set([
   "create_project", "create_payment", "create_expense", "create_task", "create_material",
   "create_budget_item", "create_contact", "update_task_status", "create_agenda_event",
+  "create_objective",
 ]);
 
 // ── Herramientas de escritura ────────────────────────────────────────────────
@@ -183,6 +184,19 @@ function writeTools(lang: Lang, projectIds: string[]): ToolSet {
           project_id: pid,
         },
         required: ["name"],
+        additionalProperties: false,
+      }),
+    }),
+
+    create_objective: tool({
+      description: es ? "Agregar un objetivo/meta al proyecto (checklist del detalle)." : "Add an objective/goal to the project (detail checklist).",
+      inputSchema: jsonSchema<{ text: string; project_id?: string }>({
+        type: "object",
+        properties: {
+          text: { type: "string", description: es ? "El objetivo, p.ej. 'terminar el baño'" : "The objective, e.g. 'finish the bathroom'" },
+          project_id: pid,
+        },
+        required: ["text"],
         additionalProperties: false,
       }),
     }),

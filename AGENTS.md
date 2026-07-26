@@ -880,6 +880,7 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 |---|---|---|
 | `create_project` | "Create project Miami Kitchen" | "Crear proyecto Cocina Miami" |
 | `create_task` | "Add task install tile" | "Agregar tarea instalar tile" |
+| `create_objective` | "Add objective finish the bathroom" | "Agregar objetivo terminar el baño" |
 | `create_material` | "Add material tile $800" | "Agregar material tile $800" |
 | `create_budget_item` | "Add budget item plumbing $1200" | "Agregar item plomería $1200" |
 | `create_payment` | "Add payment $4000" | "Agregar pago $4000" |
