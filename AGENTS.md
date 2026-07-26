@@ -578,6 +578,21 @@ Componente compartido `src/components/ui/ProjectPhotos.tsx` (jul 2026):
 - **Galería**: grilla continua ordenada por `taken_at` desc — fluye izq→der y arriba→abajo (sin cortes por fecha; cada miniatura muestra fecha + etiqueta, y el proyecto en modo "Todos"), filtros por etiqueta con conteos, grid 3 col (6 en desktop), visor fullscreen con ‹ ›.
 - **Edición y organización (jul 2026)**: botón ✏️ Editar en el visor — comentario, etiqueta (chips conocidas **+ etiqueta custom** libre, color determinístico por hash via `photoTagColor()`) y **carpeta opcional** (`project_photos.album`, con datalist de carpetas existentes y fila de filtros 📁 cuando hay alguna). Eliminar con **pregunta de seguridad** (modal Sí/No; borra fila + archivo del Storage best-effort). `uploadProjectPhoto` reintenta sin `album` si la migración no corrió aún. Migración: `ALTER TABLE project_photos ADD COLUMN IF NOT EXISTS album TEXT;`
 - **Portada + orden manual (jul 2026)**: en el visor de `ProjectPhotos` (tab del proyecto), botón **★ Poner como foto principal** → setea `projects.photo_url` (portada; el hero del detalle la usa como foto destacada) y **Mover antes/después** reordena con `project_photos.sort_order` (renumera el set y persiste; carga y hero ordenan por `sort_order` con fallback a `taken_at` si la columna no existe). El visor muestra ★ en la miniatura portada. `ProjectPhotos` recibe `coverUrl` + `onProjectChange` (= `fetchProject`) para refrescar el hero. Migración: `ALTER TABLE project_photos ADD COLUMN IF NOT EXISTS sort_order INT;`
+
+### Objetivos del proyecto (hero del detalle, jul 2026)
+
+Tercera columna del hero (galería · finanzas · **objetivos**) en `src/app/proyectos/[id]/page.tsx`: checklist editable por proyecto. Tabla `project_objectives` (`id, project_id, text, done, sort_order`). Checkbox marca `done` al instante (optimista); el botón **Editar** (solo superadmin) abre `ObjectivesModal.tsx` (agregar/editar/eliminar con textarea que envuelve textos largos; guarda con diff — preserva `done`/ids, borra los quitados, inserta nuevos, `sort_order` = índice). Se cargan en `loadHero` y el contador muestra `hechos/total`. Migración (Bloque 8 de `schema.sql`):
+
+```sql
+CREATE TABLE IF NOT EXISTS project_objectives (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  text TEXT NOT NULL, done BOOLEAN NOT NULL DEFAULT false, sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE project_objectives ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON project_objectives FOR ALL TO anon USING (true) WITH CHECK (true);
+```
 - **Tres entradas**: página global `/proyectos/fotos` (selector de proyecto + opción "Todos" solo-ver con etiqueta del proyecto en cada miniatura), **tab `fotos`** en el detalle del proyecto (proyecto fijo), y **`QuickPhoto.tsx`** — botón 📷 en la cabecera de cada proyecto de la vista "Hoy" que abre la cámara y sube con modal (comentario+etiqueta) **siempre anclado a ese proyecto**. El tab se gatea con la sección de permisos `workflow` y está en `TAB_ACCESS_OPTIONS` (default coworker ✓, client ✓). Lógica compartida en `src/lib/photos.ts` (`compressImage`, `uploadProjectPhoto`, colores/orden de tags).
 - **Web Share Target (jul 2026)** — la vía a prueba de MIUI para fotos existentes: `manifest.json → share_target` (POST multipart, param `fotos`) + handler `fetch` en `public/sw.js` que guarda los archivos en Cache (`luxaris-shared-photos`) y redirige a **`/proyectos/compartir`**, donde se elige proyecto/etiqueta/comentario y se suben con `uploadProjectPhoto`. Flujo usuario: app Galería → seleccionar fotos → Compartir → Luxaris. Requiere la PWA instalada desde Chrome (WebAPK).
 - Migración SQL (Bloque 8 de `schema.sql`):

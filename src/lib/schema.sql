@@ -468,3 +468,16 @@ ALTER TABLE project_photos ADD COLUMN IF NOT EXISTS album TEXT;
 
 -- Fotos: orden manual de la galería (portada = projects.photo_url; jul 2026)
 ALTER TABLE project_photos ADD COLUMN IF NOT EXISTS sort_order INT;
+
+-- Objetivos del proyecto — checklist editable en el hero del detalle (jul 2026)
+CREATE TABLE IF NOT EXISTS project_objectives (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  text        TEXT NOT NULL,
+  done        BOOLEAN NOT NULL DEFAULT false,
+  sort_order  INT NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS project_objectives_project_idx ON project_objectives(project_id, sort_order);
+ALTER TABLE project_objectives ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON project_objectives FOR ALL TO anon USING (true) WITH CHECK (true);

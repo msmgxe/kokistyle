@@ -134,6 +134,15 @@ export interface ProjectPhoto {
   created_at?: string;
 }
 
+export interface ProjectObjective {
+  id: string;
+  project_id: string;
+  text: string;
+  done: boolean;
+  sort_order: number;
+  created_at?: string;
+}
+
 // ─── Estimate ─────────────────────────────────────────────────────────────────
 
 export interface DepositEntry {

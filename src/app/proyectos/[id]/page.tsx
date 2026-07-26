@@ -11,7 +11,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, Camera,
-  Calculator, Wallet, CalendarRange, BarChart3, ShoppingCart, Users, StickyNote, Wand2,
+  Calculator, Wallet, CalendarRange, BarChart3, ShoppingCart, Users, StickyNote, Wand2, Target, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -47,8 +47,9 @@ import {
   buildGanttScale, ganttBar, laneBg, isoOfDate, todayIsoLocal, ganttX, GanttHeader, TodayLine,
 } from "@/src/components/ui/GanttCalendar";
 import type {
-  Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment, DepositEntry,
+  Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment, DepositEntry, ProjectObjective,
 } from "@/src/types/project";
+import ObjectivesModal from "@/src/components/ui/ObjectivesModal";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
 import { computeEstimateTotals, type EstimateTotals } from "@/src/lib/estimateTotals";
 import { useVoice } from "@/src/context/VoiceContext";
@@ -2088,6 +2089,8 @@ export default function ProjectDetailPage() {
   const [estTotals, setEstTotals] = useState<EstimateTotals | null>(null);
   const [estDeposits, setEstDeposits] = useState<DepositEntry[]>([]);
   const [heroPhotos, setHeroPhotos] = useState<{ url: string; tag: string; caption: string | null }[]>([]);
+  const [objectives, setObjectives] = useState<ProjectObjective[]>([]);
+  const [objModalOpen, setObjModalOpen] = useState(false);
   const { msg: toastMsg, visible: toastVisible, show: showToast } = useToast();
   const { setMeta } = useVoice();
   const { currentUser, isSuperAdmin, hasPermission } = useAuth();
@@ -2164,6 +2167,11 @@ export default function ProjectDetailPage() {
     if (!ph) ph = (await supabase.from("project_photos").select(photoCols).eq("project_id", id)
       .order("taken_at", { ascending: false }).limit(8)).data;
     setHeroPhotos((ph as { url: string; tag: string; caption: string | null }[]) ?? []);
+
+    const { data: obj } = await supabase
+      .from("project_objectives").select("*").eq("project_id", id)
+      .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+    setObjectives((obj as ProjectObjective[]) ?? []);
   }, [id]);
 
   const fetchProject = useCallback(async () => {
@@ -2241,6 +2249,15 @@ export default function ProjectDetailPage() {
   const canSeeMoney = isSuperAdmin || visibleTabIds.has("presupuesto") || visibleTabIds.has("pagos");
   const canSeeCost  = isSuperAdmin;
 
+  // Objetivos: contador + toggle instantáneo del check
+  const objDone = objectives.filter((o) => o.done).length;
+  const toggleObjective = async (o: ProjectObjective) => {
+    setObjectives((prev) => prev.map((x) => x.id === o.id ? { ...x, done: !x.done } : x));
+    const { error } = await supabase.from("project_objectives").update({ done: !o.done }).eq("id", o.id);
+    if (error) setObjectives((prev) => prev.map((x) => x.id === o.id ? { ...x, done: o.done } : x));
+  };
+  const to = tp.objectives;
+
   return (
     <div className="animate-in fade-in duration-300">
       {/* Back button */}
@@ -2271,7 +2288,7 @@ export default function ProjectDetailPage() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           {/* Izquierda — galería */}
-          <div className={`${canSeeMoney ? "lg:col-span-5" : "lg:col-span-12"} rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4`}>
+          <div className={`${canSeeMoney ? "lg:col-span-4" : "lg:col-span-8"} rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4`}>
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-[var(--brand)]">{hp.galleryTitle}</h3>
@@ -2311,7 +2328,7 @@ export default function ProjectDetailPage() {
           {/* Derecha — resumen financiero (solo lectura). Gateado: solo quien ya ve
               Estimate/Cash Flow; costo y ganancia son internos → solo superadmin. */}
           {canSeeMoney && (
-          <div className="lg:col-span-7 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-5">
+          <div className="lg:col-span-5 rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-5">
             <div className="mb-4 flex items-center justify-between">
               <span className="rounded-full bg-[#EDF3FB] dark:bg-[#17233d] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--accent)]">{hp.financeSummary}</span>
               <div className="flex gap-1.5">
@@ -2384,6 +2401,44 @@ export default function ProjectDetailPage() {
             )}
           </div>
           )}
+
+          {/* Objetivos del proyecto (checklist editable) */}
+          <div className={`${canSeeMoney ? "lg:col-span-3" : "lg:col-span-4"} rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-4`}>
+            <div className="mb-2.5 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7]">
+                <Target size={15} className="text-[var(--accent)]" /> {to.colTitle}
+                {objectives.length > 0 && (
+                  <span className="rounded-full bg-[#EDE3CF] dark:bg-[#17233d] px-1.5 py-0.5 text-[10px] font-bold text-[#7A6230] dark:text-[#e8edf7]">{objDone}/{objectives.length}</span>
+                )}
+              </div>
+              {isSuperAdmin && (
+                <button onClick={() => setObjModalOpen(true)} className="shrink-0 text-[11px] font-bold text-[var(--accent)] hover:underline">{to.edit}</button>
+              )}
+            </div>
+            {objectives.length === 0 ? (
+              isSuperAdmin ? (
+                <button onClick={() => setObjModalOpen(true)} className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#E6DDCB] dark:border-[#22304d] py-6 text-[#97A1A0] dark:text-[#728098] transition hover:border-[var(--accent)]">
+                  <Target size={22} /><span className="text-[11px] font-semibold">{to.empty}</span>
+                </button>
+              ) : (
+                <p className="py-6 text-center text-[12px] italic text-[#97A1A0] dark:text-[#728098]">—</p>
+              )
+            ) : (
+              <div className="space-y-2">
+                {objectives.map((o) => (
+                  <div key={o.id} className="flex items-start gap-2.5">
+                    <button onClick={() => toggleObjective(o)} aria-pressed={o.done}
+                      className={`mt-0.5 grid size-[19px] shrink-0 place-items-center rounded-md border-2 transition ${o.done ? "border-[#4F8A63] bg-[#4F8A63]" : "border-[#C6BCA6] hover:border-[#4F8A63]"}`}>
+                      {o.done && <Check size={12} className="text-white" strokeWidth={3.5} />}
+                    </button>
+                    <button onClick={() => toggleObjective(o)} className={`flex-1 text-left text-[13px] leading-snug ${o.done ? "text-[#97A1A0] dark:text-[#728098] line-through" : "text-[var(--brand)] dark:text-[#e8edf7]"}`}>
+                      {o.text}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2450,6 +2505,17 @@ export default function ProjectDetailPage() {
       {activeTab === "design"      && <DesignTab      project={project} toast={showToast} />}
 
       {/* Editar proyecto */}
+      {objModalOpen && (
+        <ObjectivesModal
+          projectId={project.id}
+          projectTitle={project.title}
+          initial={objectives}
+          onSaved={loadHero}
+          onClose={() => setObjModalOpen(false)}
+          toast={showToast}
+        />
+      )}
+
       {editProjectOpen && (
         <EditorModal
           opts={{
