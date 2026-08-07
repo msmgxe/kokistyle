@@ -984,6 +984,10 @@ export const translations = {
         deleteQuestion: "Delete this photo? This cannot be undone.",
         yesDelete: "Yes, delete",
         noKeep: "No, keep it",
+        rotateHint: "Tap a photo to rotate it",
+        rotateSelected: "Photo",
+        rotateLeft: "Rotate left",
+        rotateRight: "Rotate right",
       },
       globalContacts: {
         title: "Contacts",
@@ -2071,6 +2075,10 @@ export const translations = {
         deleteQuestion: "¿Eliminar esta foto? No se puede deshacer.",
         yesDelete: "Sí, eliminar",
         noKeep: "No, conservar",
+        rotateHint: "Toca una foto para rotarla",
+        rotateSelected: "Foto",
+        rotateLeft: "Girar a la izquierda",
+        rotateRight: "Girar a la derecha",
       },
       globalContacts: {
         title: "Contactos",

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { RotateCcw, RotateCw } from "lucide-react";
 import { PHOTO_TAG_ORDER, photoTagColor } from "@/src/lib/photos";
 import { useLanguage } from "@/src/context/LanguageContext";
 import type { PhotoTag } from "@/src/types/project";
@@ -22,7 +23,8 @@ export default function PhotoComposer({
   headerAction?: React.ReactNode;                         // p.ej. botón "Desde galería" + inputs ocultos
   topSlot?: React.ReactNode;                              // p.ej. botón de respaldo MIUI
   onCancel: () => void;
-  onUpload: (data: { caption: string; tag: string; album: string }) => void;
+  // `rotations` va alineado a previews: grados horarios a hornear en cada archivo
+  onUpload: (data: { caption: string; tag: string; album: string; rotations: number[] }) => void;
 }) {
   const { t } = useLanguage();
   const tf = t.panel.fotos;
@@ -37,6 +39,20 @@ export default function PhotoComposer({
   const [tag, setTag] = useState<PhotoTag>("avance");
   const [customTag, setCustomTag] = useState<string | null>(null);  // null = chip conocido activo
   const [album, setAlbum] = useState("");
+  // Rotación por foto: se elige aquí y se hornea al subir (uploadProjectPhoto → rotate)
+  const [rotations, setRotations] = useState<Record<number, number>>({});
+  const [sel, setSel] = useState<number | null>(null);
+
+  // Al cambiar la selección de archivos (p.ej. "Del carrete" dentro del modal) se reinicia
+  useEffect(() => {
+    setRotations({});
+    setSel(previews.length === 1 ? 0 : null);
+  }, [previews]);
+
+  const rotateSel = (deg: number) => {
+    if (sel === null) return;
+    setRotations(r => ({ ...r, [sel]: (((r[sel] ?? 0) + deg) % 360 + 360) % 360 }));
+  };
 
   const effectiveTag = customTag !== null && customTag.trim() ? customTag.trim().toLowerCase() : tag;
 
@@ -53,11 +69,60 @@ export default function PhotoComposer({
 
         {topSlot}
 
-        <div className={`grid gap-2 ${previews.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
-          {previews.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={src} alt="" className={`w-full rounded-xl object-cover ${previews.length === 1 ? "max-h-[240px]" : "aspect-square"}`} />
-          ))}
+        {/* Cuadros cuadrados + object-contain: al girar 90° la foto sigue entrando entera */}
+        <div className={`grid justify-items-center gap-2 ${previews.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
+          {previews.map((src, i) => {
+            const deg = rotations[i] ?? 0;
+            return (
+              <button
+                key={i}
+                onClick={() => setSel(s => (s === i ? null : i))}
+                aria-pressed={sel === i}
+                aria-label={`${tf.rotateSelected} ${i + 1}`}
+                className={`relative aspect-square w-full overflow-hidden rounded-xl bg-[#F7F3EA] dark:bg-[#0b1220] transition ${
+                  previews.length === 1 ? "max-w-[280px]" : ""
+                } ${sel === i ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-white dark:ring-offset-[#111a2e]" : ""}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt=""
+                  style={{ transform: `rotate(${deg}deg)` }}
+                  className="h-full w-full object-contain transition-transform duration-200"
+                />
+                {deg !== 0 && (
+                  <span className="absolute left-1.5 top-1.5 rounded-full bg-[var(--brand)]/85 px-1.5 py-0.5 text-[9px] font-extrabold text-white">
+                    {deg}°
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Rotar de a una: se toca la foto y aparecen los giros */}
+        <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2">
+          <span className="min-w-0 truncate text-[12px] font-semibold text-[#5C6A6E] dark:text-[#9fb0cc]">
+            {sel === null ? tf.rotateHint : `${tf.rotateSelected} ${sel + 1}/${previews.length}`}
+          </span>
+          <div className="flex shrink-0 gap-1.5">
+            <button
+              onClick={() => rotateSel(-90)}
+              disabled={sel === null}
+              aria-label={tf.rotateLeft}
+              className="grid size-9 place-items-center rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] text-[var(--brand)] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d] active:scale-95 disabled:opacity-40"
+            >
+              <RotateCcw size={16} />
+            </button>
+            <button
+              onClick={() => rotateSel(90)}
+              disabled={sel === null}
+              aria-label={tf.rotateRight}
+              className="grid size-9 place-items-center rounded-lg border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] text-[var(--brand)] transition hover:bg-[#ECE3D1] dark:hover:bg-[#17233d] active:scale-95 disabled:opacity-40"
+            >
+              <RotateCw size={16} />
+            </button>
+          </div>
         </div>
 
         <input
@@ -120,7 +185,7 @@ export default function PhotoComposer({
             {tf.cancel}
           </button>
           <button
-            onClick={() => onUpload({ caption, tag: effectiveTag, album })}
+            onClick={() => onUpload({ caption, tag: effectiveTag, album, rotations: previews.map((_, i) => rotations[i] ?? 0) })}
             disabled={uploadStep > 0}
             className="flex-1 rounded-xl bg-[#4F8A63] py-3 text-[14px] font-bold text-white disabled:opacity-70"
           >

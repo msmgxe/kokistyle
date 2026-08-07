@@ -27,20 +27,29 @@ function isoLocal(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// Las fotos del teléfono pesan 5-15MB — se comprimen a máx 1600px JPEG antes de subir
-export async function compressImage(file: File): Promise<Blob> {
+// Las fotos del teléfono pesan 5-15MB — se comprimen a máx 1600px JPEG antes de subir.
+// `rotate` (0/90/180/270, en grados horarios) se hornea en el canvas: la foto queda
+// derecha en el Storage, sin depender de cómo la muestre cada visor.
+export async function compressImage(file: File, rotate = 0): Promise<Blob> {
+  const quarter = ((Math.round(rotate / 90) * 90) % 360 + 360) % 360;
   try {
     const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
     const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
     const w = Math.max(1, Math.round(bmp.width * scale));
     const h = Math.max(1, Math.round(bmp.height * scale));
+    const swap = quarter === 90 || quarter === 270;
     const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext("2d")!.drawImage(bmp, 0, 0, w, h);
+    canvas.width = swap ? h : w;
+    canvas.height = swap ? w : h;
+    const ctx = canvas.getContext("2d")!;
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    if (quarter) ctx.rotate((quarter * Math.PI) / 180);
+    ctx.drawImage(bmp, -w / 2, -h / 2, w, h);
     bmp.close();
     const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, "image/jpeg", 0.82));
-    return blob && blob.size < file.size ? blob : file;
+    if (!blob) return file;
+    // Con rotación siempre gana el canvas; sin ella, solo si de verdad pesa menos
+    return quarter || blob.size < file.size ? blob : file;
   } catch {
     return file;
   }
@@ -53,8 +62,9 @@ export async function uploadProjectPhoto(opts: {
   caption: string;
   tag: PhotoTag;
   album?: string;
+  rotate?: number;   // grados horarios elegidos en el compositor (0/90/180/270)
 }): Promise<ProjectPhoto> {
-  const blob = await compressImage(opts.file);
+  const blob = await compressImage(opts.file, opts.rotate ?? 0);
   const path = `project-photos/${opts.projectId}/${crypto.randomUUID()}.jpg`;
   const { error: upErr } = await supabase.storage
     .from(PHOTOS_BUCKET)

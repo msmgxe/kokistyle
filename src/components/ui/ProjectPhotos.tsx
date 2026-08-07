@@ -114,14 +114,14 @@ export default function ProjectPhotos({
     custom !== null && custom.trim() ? custom.trim().toLowerCase() : base;
 
   /* ── Subida (comprime + Storage + fila) ────────────────────────────────── */
-  const upload = async ({ caption, tag, album }: { caption: string; tag: string; album: string }) => {
+  const upload = async ({ caption, tag, album, rotations }: { caption: string; tag: string; album: string; rotations: number[] }) => {
     if (!pending.length || uploadStep > 0) return;
     let okCount = 0;
     for (let i = 0; i < pending.length; i++) {
       setUploadStep(i + 1);
       const file = pending[i];
       try {
-        await uploadProjectPhoto({ projectId: activeProject, file, caption, tag, album });
+        await uploadProjectPhoto({ projectId: activeProject, file, caption, tag, album, rotate: rotations[i] ?? 0 });
         okCount++;
       } catch {
         toast(tf.uploadError);

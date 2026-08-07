@@ -57,13 +57,13 @@ export default function QuickPhoto({
     setUploadStep(0);
   };
 
-  const upload = async ({ caption, tag, album }: { caption: string; tag: string; album: string }) => {
+  const upload = async ({ caption, tag, album, rotations }: { caption: string; tag: string; album: string; rotations: number[] }) => {
     if (!pending.length || uploadStep > 0) return;
     let ok = 0;
     for (let i = 0; i < pending.length; i++) {
       setUploadStep(i + 1);
       try {
-        await uploadProjectPhoto({ projectId, file: pending[i], caption, tag, album });
+        await uploadProjectPhoto({ projectId, file: pending[i], caption, tag, album, rotate: rotations[i] ?? 0 });
         ok++;
       } catch {
         toast(tf.uploadError);
