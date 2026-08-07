@@ -845,6 +845,9 @@ Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no 
 | `voz-design-movil.html` | Prototipo de **Voz universal + Design AI** (pendiente de aprobación): dictado de notas/tareas por proyecto con MediaRecorder real (plan producción: audio → Whisper en Replicate → /api/voice con Claude → tarjeta de confirmación — reemplaza a Web Speech API, roto en varios Android) + flujo Design "foto actual → visión del después (Nano Banana / gemini-2.5-flash-image, tier gratuito) → alcance sugerido → crear secciones del Estimate" |
 | `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
 | `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
+| `objetivos-3-opciones.html` | 3 opciones de presentación de los **objetivos del proyecto** (1: tercera columna del hero · 2: franja ancha bajo el hero · 3: tarjeta compacta bajo el título). Se implementó la **opción 1** — ver "Objetivos del proyecto" arriba |
+| `luxaris-app-simulacion.html` | **Simulación funcional** completa (dashboard + detalle + móvil): recorre hero, Estimate, Cash Flow, Day Planner, Gantt, Materials, Contacts, Fotos, Notes y Design en un solo archivo — referencia de UX de extremo a extremo |
+| `ux-master-unified-app.html` | **Master Unified V2** — simulación de la app con varios proyectos, selector de paleta de colores y asistente Katy; propuesta de UX unificada (pendiente de decisión) |
 
 ---
 
