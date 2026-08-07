@@ -6,11 +6,11 @@
 "use client";
 
 import {
-  useEffect, useState, useCallback, useRef,
+  useEffect, useState, useCallback, useMemo, useRef,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, Camera,
+  ArrowLeft, ChevronLeft, ChevronRight, GripVertical, Plus, X, Paperclip, Trash2, Pencil, FileText, Image as ImageIcon, Copy, Camera,
   Calculator, Wallet, CalendarRange, BarChart3, ShoppingCart, Users, StickyNote, Wand2, Target, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -2086,8 +2086,9 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("presupuesto");
   const [editProjectOpen, setEditProjectOpen] = useState(false);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const swipeX = useRef<number | null>(null);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   // Datos del hero (resumen): totales del estimate + schedule + últimas fotos
   const [estTotals, setEstTotals] = useState<EstimateTotals | null>(null);
@@ -2227,6 +2228,31 @@ export default function ProjectDetailPage() {
     return () => window.removeEventListener("kokivoice_saved", h);
   }, [fetchProject]);
 
+  // Fotos recorribles en el lightbox del hero: la portada primero aunque no esté
+  // entre las últimas cargadas, luego el resto en el orden de la galería
+  const galleryPhotos = useMemo(() => {
+    const cover = project?.photo_url ?? null;
+    if (!cover || heroPhotos.some((p) => p.url === cover)) return heroPhotos;
+    return [{ url: cover, tag: "", caption: null }, ...heroPhotos];
+  }, [project?.photo_url, heroPhotos]);
+
+  const stepLightbox = useCallback((dir: 1 | -1) => {
+    setLightboxIdx((i) => (i === null || galleryPhotos.length === 0
+      ? i
+      : (i + dir + galleryPhotos.length) % galleryPhotos.length));
+  }, [galleryPhotos.length]);
+
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIdx(null);
+      else if (e.key === "ArrowRight") stepLightbox(1);
+      else if (e.key === "ArrowLeft") stepLightbox(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIdx, stepLightbox]);
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -2246,6 +2272,8 @@ export default function ProjectDetailPage() {
   // La foto principal es la portada elegida (projects.photo_url); si no hay, la primera
   const featuredUrl = project.photo_url ?? heroPhotos[0]?.url ?? null;
   const thumbs      = heroPhotos.filter((p) => p.url !== featuredUrl).slice(0, 4);
+  const openLightbox = (url: string) => setLightboxIdx(Math.max(0, galleryPhotos.findIndex((p) => p.url === url)));
+  const lightboxPhoto = lightboxIdx !== null ? galleryPhotos[lightboxIdx] ?? null : null;
   // Lleva a la barra de tabs (no al tope): en móvil el hero es alto y el contenido
   // del tab queda fuera de pantalla, lo que hacía parecer que el botón no hacía nada.
   const goToTab = (tab: TabId) => {
@@ -2317,7 +2345,7 @@ export default function ProjectDetailPage() {
             </div>
             {featuredUrl ? (
               <>
-                <button onClick={() => setLightboxUrl(featuredUrl)} className="relative block h-52 w-full overflow-hidden rounded-xl bg-slate-900">
+                <button onClick={() => openLightbox(featuredUrl)} className="relative block h-52 w-full overflow-hidden rounded-xl bg-slate-900">
                   <img src={featuredUrl} alt="" className="h-full w-full object-cover" />
                   <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
                     <ImageIcon size={11} /> {tp.project.photoView}
@@ -2326,7 +2354,7 @@ export default function ProjectDetailPage() {
                 {thumbs.length > 0 && (
                   <div className="mt-2 grid grid-cols-4 gap-2">
                     {thumbs.map((p, i) => (
-                      <button key={i} onClick={() => setLightboxUrl(p.url)} className="h-16 w-full overflow-hidden rounded-lg border border-[#E6DDCB] dark:border-[#22304d]">
+                      <button key={i} onClick={() => openLightbox(p.url)} className="h-16 w-full overflow-hidden rounded-lg border border-[#E6DDCB] dark:border-[#22304d]">
                         <img src={p.url} alt="" className="h-full w-full object-cover transition hover:opacity-90" />
                       </button>
                     ))}
@@ -2464,28 +2492,55 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* Photo lightbox */}
-      {lightboxUrl && (
+      {/* Lightbox del hero — recorre las fotos con flechas, teclado o swipe */}
+      {lightboxPhoto && (
         <div
           className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 backdrop-blur-sm"
-          onClick={() => setLightboxUrl(null)}
+          onClick={() => setLightboxIdx(null)}
+          onTouchStart={e => { swipeX.current = e.touches[0]?.clientX ?? null; }}
+          onTouchEnd={e => {
+            const dx = (e.changedTouches[0]?.clientX ?? 0) - (swipeX.current ?? 0);
+            if (swipeX.current !== null && Math.abs(dx) > 50) stepLightbox(dx < 0 ? 1 : -1);
+            swipeX.current = null;
+          }}
         >
           <button
-            onClick={() => setLightboxUrl(null)}
+            onClick={() => setLightboxIdx(null)}
             className="absolute right-5 top-5 grid size-9 place-items-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/35"
-            aria-label="Cerrar"
+            aria-label={hp.photoClose}
           >
             <X size={18} />
           </button>
           <img
-            src={lightboxUrl}
-            alt={project.title}
+            src={lightboxPhoto.url}
+            alt={lightboxPhoto.caption ?? project.title}
             className="max-h-[88vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
             onClick={e => e.stopPropagation()}
           />
-          <p className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-[12px] font-semibold text-white backdrop-blur-sm">
-            {project.title}
-          </p>
+          {galleryPhotos.length > 1 && (
+            <>
+              <button
+                onClick={e => { e.stopPropagation(); stepLightbox(-1); }}
+                aria-label={hp.photoPrev}
+                className="absolute left-3 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition hover:bg-white/30 active:scale-95 sm:left-6"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); stepLightbox(1); }}
+                aria-label={hp.photoNext}
+                className="absolute right-3 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition hover:bg-white/30 active:scale-95 sm:right-6"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </>
+          )}
+          <div className="absolute bottom-6 left-1/2 flex max-w-[92vw] -translate-x-1/2 items-center gap-2 rounded-full bg-black/45 px-4 py-1.5 text-[12px] font-semibold text-white backdrop-blur-sm">
+            <span className="truncate">{lightboxPhoto.caption || project.title}</span>
+            {galleryPhotos.length > 1 && (
+              <span className="shrink-0 text-white/60">{(lightboxIdx ?? 0) + 1}/{galleryPhotos.length}</span>
+            )}
+          </div>
         </div>
       )}
 
