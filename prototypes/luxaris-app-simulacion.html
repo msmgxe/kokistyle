@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="es" class="theme-luxaris">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luxaris Design — Simulación funcional (Dashboard + Detalle + Móvil)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['Inter','sans-serif'], heading: ['Outfit','sans-serif'] } } }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root { --accent:#0d9488; --accent-strong:#0f766e; --grad-from:#0d9488; --grad-to:#10b981; }
+    :root.theme-azure  { --accent:#0284c7; --accent-strong:#0369a1; --grad-from:#0284c7; --grad-to:#0ea5e9; }
+    :root.theme-gold   { --accent:#d97706; --accent-strong:#b45309; --grad-from:#d97706; --grad-to:#f59e0b; }
+    :root.theme-indigo { --accent:#6366f1; --accent-strong:#4f46e5; --grad-from:#6366f1; --grad-to:#818cf8; }
+    :root.theme-navy   { --accent:#2A4A7F; --accent-strong:#1e3a5f; --grad-from:#2A4A7F; --grad-to:#3b5f9e; }
+
+    .bg-accent      { background-color: var(--accent); }
+    .bg-accent-hover:hover { background-color: var(--accent-strong); }
+    .text-accent    { color: var(--accent); }
+    .border-accent  { border-color: var(--accent); }
+    .ring-accent    { --tw-ring-color: var(--accent); }
+    .bg-accent-soft { background-color: color-mix(in srgb, var(--accent) 15%, transparent); }
+    .bg-accent-grad { background: linear-gradient(135deg, var(--grad-from), var(--grad-to)); }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(156,163,175,.35); border-radius: 9999px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+
+    .glass { background: rgba(255,255,255,.92); backdrop-filter: blur(12px); }
+    .dark .glass { background: rgba(17,26,46,.92); backdrop-filter: blur(12px); }
+    .img-zoom { transition: transform .4s ease; }
+    .img-zoom:hover { transform: scale(1.05); }
+    .force-hidden { display: none !important; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .tabpane { display: none; }
+    .tabpane.active { display: block; }
+    @keyframes ping2 { 75%,100% { transform: scale(2); opacity: 0; } }
+    .animate-ping2 { animation: ping2 1s cubic-bezier(0,0,.2,1) infinite; }
+  </style>
+</head>
+<body class="bg-[#F7F3EB] dark:bg-[#0b1220] text-slate-800 dark:text-slate-100 min-h-screen font-sans">
+
+<!-- ============================ TOP BAR ============================ -->
+<header class="bg-[#0F172A] text-white sticky top-0 z-40 border-b border-slate-800 px-4 lg:px-6 py-2.5 shadow-xl">
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 shrink-0">
+      <div class="w-9 h-9 rounded-xl bg-accent-grad flex items-center justify-center font-heading font-extrabold text-sm shadow-lg">LD</div>
+      <div>
+        <div class="font-heading font-bold text-sm tracking-wide flex items-center gap-2">LUXARIS <span class="text-accent font-light text-[11px] uppercase tracking-widest">Design</span></div>
+        <div class="text-[9px] text-amber-400 font-bold uppercase tracking-widest">Simulación funcional · Opc. 1 + 2 + 5</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Desktop / Mobile toggle -->
+      <div class="hidden sm:flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+        <button id="tg-desktop" onclick="setSurface('desktop')" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-accent text-white"><i data-lucide="monitor" class="w-3.5 h-3.5"></i> Escritorio</button>
+        <button id="tg-mobile" onclick="setSurface('mobile')" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Móvil</button>
+      </div>
+      <!-- Theme palette -->
+      <select id="paletteSel" onchange="setPalette(this.value)" title="Paleta de lujo" class="hidden md:block bg-slate-800 border border-slate-700 text-[11px] font-semibold rounded-lg px-2 py-1.5 focus:outline-none">
+        <option value="luxaris">Teal & Emerald</option>
+        <option value="azure">Miami Azure</option>
+        <option value="gold">Boca Gold</option>
+        <option value="indigo">Royal Indigo</option>
+        <option value="navy">Navy Classic</option>
+      </select>
+      <button onclick="toggleDark()" class="p-2 text-slate-300 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700" title="Claro / Oscuro"><i data-lucide="moon" class="w-4 h-4"></i></button>
+    </div>
+  </div>
+</header>
+
+<!-- ============================ DESKTOP SURFACE ============================ -->
+<div id="surface-desktop" class="lg:flex">
+
+  <!-- Sidebar -->
+  <aside class="hidden lg:flex sticky top-[53px] h-[calc(100vh-53px)] w-[220px] shrink-0 flex-col bg-[#16323D] text-white">
+    <nav class="flex-1 overflow-y-auto no-scrollbar px-3 py-3 space-y-0.5 text-[13px]">
+      <button onclick="showView('dashboard')" data-nav="dashboard" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold bg-white/10"><i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i> Dashboard</button>
+      <button onclick="setSurface('mobile')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="calendar-check-2" class="w-[18px] h-[18px]"></i> Hoy</button>
+      <button onclick="openProject('mia'); showTab('fotos')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="image" class="w-[18px] h-[18px]"></i> Fotos</button>
+      <button onclick="showView('gantt')" data-nav="gantt" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="bar-chart-3" class="w-[18px] h-[18px]"></i> Gantt G</button>
+      <button onclick="openProject('mia'); showTab('contactos')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="users" class="w-[18px] h-[18px]"></i> Contactos</button>
+      <div class="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-[#6E8480]">Más</div>
+      <button onclick="alert('Prototipo: Configuración (Usuarios · Seguridad · Temas)')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="settings" class="w-[18px] h-[18px]"></i> Configuración</button>
+      <button onclick="alert('Prototipo: Prospectos (leads del AI Design)')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="sparkles" class="w-[18px] h-[18px]"></i> Prospectos</button>
+      <button onclick="alert('Prototipo: Editor de la landing (CMS)')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="globe" class="w-[18px] h-[18px]"></i> Sitio</button>
+      <button onclick="alert('Prototipo: Agenda personal + recordatorios')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="calendar-clock" class="w-[18px] h-[18px]"></i> Agenda</button>
+      <button onclick="alert('Prototipo: Registro de actividad')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="activity" class="w-[18px] h-[18px]"></i> Actividad</button>
+      <button onclick="alert('Prototipo: Reservas online')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="calendar-days" class="w-[18px] h-[18px]"></i> Reservas</button>
+      <button onclick="alert('Prototipo: Ayuda bilingüe')" class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold text-[#A9C1BC] hover:bg-white/10 hover:text-white"><i data-lucide="help-circle" class="w-[18px] h-[18px]"></i> Ayuda</button>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0 p-4 lg:p-6 max-w-[1400px] mx-auto w-full">
+
+    <!-- =================== VIEW: DASHBOARD (Opción 1) =================== -->
+    <section id="view-dashboard" class="view active space-y-6">
+      <div class="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-widest text-accent">Dashboard</div>
+          <h1 class="font-heading font-extrabold text-2xl text-slate-900 dark:text-white">Hola, Marco</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Tus proyectos activos · sur de Florida</p>
+        </div>
+        <button onclick="openCreateProject()" class="bg-accent bg-accent-hover text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow"><i data-lucide="plus" class="w-4 h-4"></i> Nuevo proyecto</button>
+      </div>
+
+      <!-- KPI strip (clic → modal de detalle) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <button onclick="openKpi('proyectos')" class="text-left glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4 hover:border-accent transition">
+          <div class="text-[10px] font-bold uppercase text-slate-400 flex items-center justify-between">Proyectos <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></div>
+          <div class="font-heading font-extrabold text-2xl text-slate-900 dark:text-white">3</div>
+          <div class="text-[11px] text-slate-500">2 en obra · 1 presupuesto</div>
+        </button>
+        <button onclick="openKpi('contratado')" class="text-left glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4 hover:border-accent transition">
+          <div class="text-[10px] font-bold uppercase text-slate-400 flex items-center justify-between">Contratado <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></div>
+          <div class="font-heading font-extrabold text-2xl text-slate-900 dark:text-white">$422.5k</div>
+          <div class="text-[11px] text-slate-500">precio cliente total</div>
+        </button>
+        <button onclick="openKpi('cobrado')" class="text-left glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4 hover:border-accent transition">
+          <div class="text-[10px] font-bold uppercase text-slate-400 flex items-center justify-between">Cobrado <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></div>
+          <div class="font-heading font-extrabold text-2xl text-emerald-600 dark:text-emerald-400">$108k</div>
+          <div class="text-[11px] text-slate-500">de clientes</div>
+        </button>
+        <button onclick="openKpi('ganancia')" class="text-left glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4 hover:border-accent transition">
+          <div class="text-[10px] font-bold uppercase text-slate-400 flex items-center justify-between">Ganancia proyectada <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></div>
+          <div class="font-heading font-extrabold text-2xl text-amber-600 dark:text-amber-400">$97.5k</div>
+          <div class="text-[11px] text-slate-500">30% sobre costo</div>
+        </button>
+      </div>
+
+      <!-- Cards grid -->
+      <div id="cardsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- =================== VIEW: PROJECT DETAIL (Opción 2 + tabs) =================== -->
+    <section id="view-project" class="view space-y-5">
+      <button onclick="showView('dashboard')" class="text-xs font-bold text-slate-500 hover:text-accent flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Dashboard</button>
+
+      <!-- Header -->
+      <div class="flex items-start justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <span id="pStatus" class="bg-emerald-500 text-slate-950 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">● En Obra</span>
+          <div>
+            <h1 id="pTitle" class="font-heading font-extrabold text-2xl text-slate-900 dark:text-white">Miami Beach Penthouse</h1>
+            <p id="pLoc" class="text-xs text-slate-500 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3 text-accent"></i> Collins Ave, Miami Beach · Cliente: Carlos Mendoza</p>
+          </div>
+        </div>
+        <span id="pCode" class="font-mono text-[11px] text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">#MIA-2026</span>
+      </div>
+
+      <!-- OPCIÓN 2: Split screen (galería + finanzas) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Left: gallery -->
+        <div class="lg:col-span-5 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-heading font-extrabold text-sm text-slate-900 dark:text-white">Galería de avance</h3>
+              <p class="text-[11px] text-slate-500" id="pPhotoCount">14 fotos · antes · avance · después</p>
+            </div>
+            <button class="bg-accent bg-accent-hover text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="camera" class="w-3.5 h-3.5"></i> Subir</button>
+          </div>
+          <div id="pFeatured" class="relative h-56 rounded-xl overflow-hidden bg-slate-900 cursor-pointer" onclick="openPhotoModal(document.getElementById('pFeaturedImg').src,'Impermeabilización & Tile Kohler')">
+            <img id="pFeaturedImg" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80" class="w-full h-full object-cover img-zoom">
+            <div class="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-md p-2.5 rounded-xl text-white text-xs flex justify-between items-center">
+              <div><div class="font-bold">Tile ducha master</div><div class="text-[10px] text-slate-400">Ayer · Jorge (Plomero)</div></div>
+              <span class="bg-accent text-white font-extrabold text-[9px] px-2 py-0.5 rounded">AVANCE</span>
+            </div>
+          </div>
+          <div id="pThumbs" class="grid grid-cols-4 gap-2"></div>
+        </div>
+
+        <!-- Right: financials -->
+        <div class="lg:col-span-7 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase bg-accent-soft text-accent px-2 py-0.5 rounded">Resumen financiero en vivo</span>
+            <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-3 py-2 rounded-lg flex items-center gap-1"><i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF</button>
+          </div>
+          <!-- 3 pilares -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Costo real</div>
+              <div id="pCost" class="font-mono text-base font-bold text-slate-800 dark:text-slate-200 mt-1">$85,000</div>
+            </div>
+            <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-300 dark:border-amber-900">
+              <div class="text-[10px] text-amber-500 font-bold uppercase">Ganancia 30%</div>
+              <div id="pProfit" class="font-mono text-base font-bold text-amber-600 dark:text-amber-400 mt-1">+$25,500</div>
+            </div>
+            <div class="p-3 bg-accent-soft rounded-xl border border-accent">
+              <div class="text-[10px] text-accent font-bold uppercase">Precio cliente</div>
+              <div id="pClient" class="font-mono text-base font-extrabold text-slate-900 dark:text-white mt-1">$110,500</div>
+            </div>
+          </div>
+          <!-- progreso -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="flex justify-between text-[11px] mb-1 font-semibold"><span class="text-slate-500">Avance de obra</span><span id="pAvanceTxt" class="text-accent font-mono font-bold">68%</span></div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden"><div id="pAvanceBar" class="bg-accent h-full rounded-full" style="width:68%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1 font-semibold"><span class="text-slate-500">Cobrado cliente</span><span id="pCobradoTxt" class="text-emerald-600 dark:text-emerald-400 font-mono font-bold">67%</span></div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden"><div id="pCobradoBar" class="bg-emerald-500 h-full rounded-full" style="width:67%"></div></div>
+            </div>
+          </div>
+          <!-- schedule -->
+          <div class="space-y-2">
+            <div class="text-[11px] font-bold text-slate-400 uppercase">Schedule de pagos</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20 text-[11px]"><div class="flex justify-between font-bold text-emerald-600 dark:text-emerald-400"><span>Hito 1 · 30%</span><span>PAGADO</span></div><div class="font-mono font-bold mt-1">$33,150</div></div>
+              <div class="p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20 text-[11px]"><div class="flex justify-between font-bold text-emerald-600 dark:text-emerald-400"><span>Hito 2 · 30%</span><span>PAGADO</span></div><div class="font-mono font-bold mt-1">$33,150</div></div>
+              <div class="p-2.5 rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 text-[11px]"><div class="flex justify-between font-bold text-amber-600 dark:text-amber-400"><span>Hito 3 · 20%</span><span>PRÓXIMO</span></div><div class="font-mono font-bold mt-1">$22,100</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs (funciones existentes) -->
+      <div class="glass rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="flex gap-1 overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-2 py-2">
+          <button onclick="showTab('presupuesto')" data-tab="presupuesto" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="calculator" class="w-3.5 h-3.5"></i> Estimate</button>
+          <button onclick="showTab('pagos')" data-tab="pagos" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="wallet" class="w-3.5 h-3.5"></i> Cash Flow</button>
+          <button onclick="showTab('planner')" data-tab="planner" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="calendar-range" class="w-3.5 h-3.5"></i> Day Planner</button>
+          <button onclick="showTab('gantt')" data-tab="gantt" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Gantt</button>
+          <button onclick="showTab('materiales')" data-tab="materiales" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Materials</button>
+          <button onclick="showTab('contactos')" data-tab="contactos" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="users" class="w-3.5 h-3.5"></i> Contacts</button>
+          <button onclick="showTab('fotos')" data-tab="fotos" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="image" class="w-3.5 h-3.5"></i> Fotos</button>
+          <button onclick="showTab('notas')" data-tab="notas" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="sticky-note" class="w-3.5 h-3.5"></i> Notes</button>
+          <button onclick="showTab('design')" data-tab="design" class="tabbtn shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Design</button>
+        </div>
+
+        <div class="p-5">
+          <!-- ESTIMATE -->
+          <div id="tab-presupuesto" class="tabpane active space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Estimado profesional</h3>
+              <div class="flex gap-2 text-[11px] font-bold">
+                <button class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800">Copy</button>
+                <button class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800">PDF</button>
+                <button class="px-3 py-1.5 rounded-lg bg-[#395886] text-white">Email</button>
+                <button class="px-3 py-1.5 rounded-lg bg-accent text-white">Guardar</button>
+              </div>
+            </div>
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+              <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/60">
+                <span class="font-bold flex items-center gap-2"><span class="w-1.5 h-6 rounded bg-accent"></span> 💧 Plomería <span class="text-[9px] bg-emerald-500/20 text-emerald-600 px-1.5 rounded">Mat. incl.</span></span>
+                <span class="font-mono font-bold">$18,500</span>
+              </div>
+              <div class="flex items-center justify-between p-3 pl-6 text-slate-600 dark:text-slate-300"><span>Reubicación de tuberías PEX + drenaje</span><span class="font-mono">$8,200</span></div>
+              <div class="flex items-center justify-between p-3 pl-6 text-slate-600 dark:text-slate-300"><span>Instalación de grifería Kohler</span><span class="font-mono">$10,300</span></div>
+              <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/60">
+                <span class="font-bold flex items-center gap-2"><span class="w-1.5 h-6 rounded bg-accent"></span> 🎨 Pintura</span><span class="font-mono font-bold">$9,400</span>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/60">
+                <span class="font-bold flex items-center gap-2"><span class="w-1.5 h-6 rounded bg-red-500"></span> 📦 Materiales (mármol) <span class="text-[9px] bg-blue-500/20 text-blue-600 px-1.5 rounded">Excl. labor %</span></span><span class="font-mono font-bold">$32,000</span>
+              </div>
+            </div>
+            <div class="flex justify-end gap-6 text-sm pt-1">
+              <div class="text-right"><div class="text-[10px] uppercase text-slate-400 font-bold">Labor subtotal</div><div class="font-mono font-bold">$78,500</div></div>
+              <div class="text-right"><div class="text-[10px] uppercase text-red-500 font-bold">Descuento 5%</div><div class="font-mono font-bold text-red-500">−$3,000</div></div>
+              <div class="text-right"><div class="text-[10px] uppercase text-accent font-bold">Grand total</div><div class="font-mono font-extrabold text-lg">$110,500</div></div>
+            </div>
+            <div class="text-[10px] text-slate-400 italic">Cada ítem guarda 3 montos: costo / ganancia (30%) / precio cliente. El costo nunca aparece en el PDF del cliente.</div>
+          </div>
+
+          <!-- CASH FLOW -->
+          <div id="tab-pagos" class="tabpane space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Cash Flow — ingresos y egresos</h3>
+              <div class="flex gap-2 text-[11px] font-bold">
+                <button onclick="openPayment('ingreso')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Ingreso</button>
+                <button onclick="openPayment('egreso')" class="px-3 py-1.5 rounded-lg bg-red-600 text-white flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Egreso</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900"><div class="text-[10px] uppercase font-bold text-emerald-600">Ingresos</div><div class="font-mono font-extrabold text-emerald-600 text-lg">$66,300</div></div>
+              <div class="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900"><div class="text-[10px] uppercase font-bold text-red-500">Egresos</div><div class="font-mono font-extrabold text-red-500 text-lg">$41,900</div></div>
+              <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><div class="text-[10px] uppercase font-bold text-slate-400">Balance</div><div class="font-mono font-extrabold text-lg">+$24,400</div></div>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Anticipo cliente (Hito 1)</span><span class="font-mono font-bold text-emerald-600">+$33,150</span></div>
+              <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Abono cliente (Hito 2)</span><span class="font-mono font-bold text-emerald-600">+$33,150</span></div>
+              <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Pago a Jorge (plomería)</span><span class="font-mono font-bold text-red-500">−$8,200</span></div>
+              <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Compra mármol Calacatta</span><span class="font-mono font-bold text-red-500">−$32,000</span></div>
+            </div>
+          </div>
+
+          <!-- DAY PLANNER -->
+          <div id="tab-planner" class="tabpane space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Day Planner</h3>
+              <div class="text-[11px] text-slate-500">2 trabajadores × 8h · arrastra ítems entre días</div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2">
+                <div class="text-xs font-bold flex justify-between"><span>Lun 21 jul</span><span class="text-accent">14h / 16h</span></div>
+                <div class="p-2.5 rounded-lg bg-accent-soft border border-accent text-xs flex items-center justify-between"><span>Demolición baño</span><input type="checkbox" checked class="accent-current"></div>
+                <div class="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs flex items-center justify-between"><span>Reubicación PEX</span><input type="checkbox"></div>
+              </div>
+              <div class="rounded-xl border border-blue-300 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 p-3 space-y-2">
+                <div class="text-xs font-bold flex justify-between"><span>Sáb 26 jul</span><span class="text-blue-500">SÁB</span></div>
+                <div class="p-2.5 rounded-lg bg-white dark:bg-slate-800 text-xs flex items-center justify-between"><span>Instalación tile</span><input type="checkbox"></div>
+              </div>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2">
+                <div class="text-xs font-bold text-slate-400">Pool (sin asignar)</div>
+                <div class="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs">Sellado de juntas</div>
+                <div class="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs">Pintura final</div>
+                <button class="w-full text-[11px] font-bold text-accent py-1">+ Agregar item</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- GANTT (calendario estilo Excel — formato real de la app) -->
+          <div id="tab-gantt" class="tabpane space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Gantt — cronograma del proyecto</h3>
+              <div class="flex items-center gap-2">
+                <div class="flex rounded-full bg-slate-100 dark:bg-slate-800 p-0.5 text-[11px] font-bold">
+                  <button onclick="setProjUnit('day')" id="pgu-day" class="px-3 py-1 rounded-full bg-accent text-white">Días</button>
+                  <button onclick="setProjUnit('week')" id="pgu-week" class="px-3 py-1 rounded-full text-slate-500">Semanas</button>
+                </div>
+                <button onclick="alert('Prototipo: exportar PDF landscape del Gantt')" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center gap-1"><i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF</button>
+              </div>
+            </div>
+            <div id="projGantt" class="overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"></div>
+            <div class="flex flex-wrap gap-3 text-[10px] text-slate-500">
+              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#9DC3E6]"></span> Sábado</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#F4B183]"></span> Domingo</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-[14px] bg-[#B0492F]/70"></span> Hoy</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#4F8A63]/85"></span> Avance</span>
+            </div>
+          </div>
+
+          <!-- MATERIALS -->
+          <div id="tab-materiales" class="tabpane space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Materials</h3>
+              <button class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white">Importar del Estimado</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-center gap-3"><input type="checkbox" checked><div class="flex-1"><div class="font-bold">Mármol Calacatta <span class="text-[9px] bg-blue-500/20 text-blue-600 px-1.5 rounded">DEL EST</span></div><div class="text-[11px] text-slate-500">50 sq.ft · Home Depot · $32,000</div></div></div>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-center gap-3"><input type="checkbox"><div class="flex-1"><div class="font-bold">Grifería Kohler</div><div class="text-[11px] text-slate-500">3 unidades · Ferguson · $4,100</div></div></div>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-center gap-3"><input type="checkbox" checked><div class="flex-1"><div class="font-bold">Tubería PEX</div><div class="text-[11px] text-slate-500">120 ft · Lowe's · $560</div></div></div>
+            </div>
+          </div>
+
+          <!-- CONTACTS -->
+          <div id="tab-contactos" class="tabpane space-y-3">
+            <h3 class="font-heading font-bold text-slate-900 dark:text-white">Contacts — equipo del proyecto</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-center gap-3"><span class="w-9 h-9 rounded-full bg-accent text-white grid place-items-center font-bold">J</span><div><div class="font-bold">Jorge Ramírez</div><div class="text-[11px] text-slate-500">Plumbing · (786) 563-2531</div></div></div>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-center gap-3"><span class="w-9 h-9 rounded-full bg-amber-500 text-white grid place-items-center font-bold">M</span><div><div class="font-bold">María Torres</div><div class="text-[11px] text-slate-500">Painting · (305) 441-0099</div></div></div>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-center gap-3"><span class="w-9 h-9 rounded-full bg-indigo-500 text-white grid place-items-center font-bold">C</span><div><div class="font-bold">Carlos Mendoza</div><div class="text-[11px] text-slate-500">Cliente · (305) 222-1188</div></div></div>
+            </div>
+          </div>
+
+          <!-- FOTOS -->
+          <div id="tab-fotos" class="tabpane space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Fotos de obra</h3>
+              <div class="flex gap-1.5 text-[10px] font-bold">
+                <span class="px-2 py-1 rounded bg-slate-200 dark:bg-slate-700">Todos</span>
+                <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">Antes</span>
+                <span class="px-2 py-1 rounded bg-accent-soft text-accent">Avance</span>
+                <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">Después</span>
+              </div>
+            </div>
+            <div id="fotosGrid" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2"></div>
+          </div>
+
+          <!-- NOTES -->
+          <div id="tab-notas" class="tabpane space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Notes — con adjuntos</h3>
+              <button onclick="openEditNote()" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-accent text-white flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Nueva nota</button>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-start justify-between gap-2"><div><div class="font-bold">Cliente pidió cambiar color de grout a gris claro</div><div class="text-[11px] text-slate-500 mt-1">18 jul · 📎 2 adjuntos (foto muestra, PDF)</div></div><button onclick="openEditNote('Cliente pidió cambiar color de grout a gris claro')" class="shrink-0 text-slate-400 hover:text-accent"><i data-lucide="pencil" class="w-4 h-4"></i></button></div>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex items-start justify-between gap-2"><div><div class="font-bold">Inspección de plomería aprobada ✅</div><div class="text-[11px] text-slate-500 mt-1">16 jul · 📎 1 adjunto (permiso)</div></div><button onclick="openEditNote('Inspección de plomería aprobada')" class="shrink-0 text-slate-400 hover:text-accent"><i data-lucide="pencil" class="w-4 h-4"></i></button></div>
+            </div>
+          </div>
+
+          <!-- DESIGN -->
+          <div id="tab-design" class="tabpane space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="font-heading font-bold text-slate-900 dark:text-white">Design — AI Render Studio</h3>
+              <button class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-accent text-white flex items-center gap-1"><i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Generar render</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1"><div class="text-[10px] font-bold uppercase text-slate-400">Antes (foto real)</div><img src="https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=600&q=80" class="rounded-xl h-40 w-full object-cover"></div>
+              <div class="space-y-1"><div class="text-[10px] font-bold uppercase text-accent">Después (IA)</div><img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80" class="rounded-xl h-40 w-full object-cover"></div>
+            </div>
+            <div class="text-[11px] text-slate-500">💡 "Sugerir alcance" analiza la foto y crea secciones del Estimate con montos. Motor: Nano Banana (gratis) → Replicate.</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== VIEW: GANTT G (general) =================== -->
+    <section id="view-gantt" class="view space-y-4">
+      <!-- Dark control bar (como la app) -->
+      <div class="rounded-2xl bg-[#16323D] px-4 py-3 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-white/50">Gantt G</div>
+          <h1 class="font-heading font-extrabold text-lg text-white">Cronograma general</h1>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex rounded-full bg-white/10 p-0.5 text-[10.5px] font-bold">
+            <button onclick="setGView('gantt')" id="gv-gantt" class="px-3 py-1 rounded-full bg-white text-[#16323D]">Gantt</button>
+            <button onclick="setGView('reporte')" id="gv-reporte" class="px-3 py-1 rounded-full text-white/60 hover:text-white">Reporte diario</button>
+          </div>
+          <div class="flex rounded-full bg-white/10 p-0.5 text-[10.5px] font-bold">
+            <button onclick="setGUnit('day')" id="gu-day" class="px-3 py-1 rounded-full bg-white text-[#16323D]">Días</button>
+            <button onclick="setGUnit('week')" id="gu-week" class="px-3 py-1 rounded-full text-white/60 hover:text-white">Semanas</button>
+          </div>
+          <button onclick="alert('Prototipo: PDF landscape del Gantt G')" class="rounded-full bg-white text-[#16323D] px-3 py-1 text-[10.5px] font-bold flex items-center gap-1"><i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF</button>
+        </div>
+      </div>
+
+      <!-- Gantt calendar (proyectos) -->
+      <div id="genGanttWrap">
+        <div id="genGantt" class="overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]"></div>
+        <div class="flex flex-wrap gap-3 text-[10px] text-slate-500 mt-2">
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#9DC3E6]"></span> Sábado</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#F4B183]"></span> Domingo</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-[14px] bg-[#B0492F]/70"></span> Hoy</span>
+          <span class="text-slate-400">Solo lista proyectos con tareas · clic en una fila abre el proyecto</span>
+        </div>
+      </div>
+
+      <!-- Reporte diario (simplificado) -->
+      <div id="genReporte" class="hidden space-y-3">
+        <div class="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+          <div class="flex items-center justify-between mb-2"><h3 class="font-bold text-slate-900 dark:text-white text-sm">Lunes 21 jul</h3><button onclick="openEditNote()" class="text-[11px] font-bold text-accent">+ Nota del día</button></div>
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/60"><input type="checkbox" checked><span class="line-through text-slate-400">Miami Beach — Demolición baño</span><span class="ml-auto font-mono text-[11px] text-accent">08:00</span></div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/60"><input type="checkbox"><span>Brickell — Sellado de juntas</span><span class="ml-auto font-mono text-[11px] text-accent">10:00</span></div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-[#FBF5E6] dark:bg-[#17233d] border border-[#EAD9AC]"><span class="text-[#B98A2F]">📌</span><button onclick="openEditNote()" class="text-left flex-1 font-semibold text-[#7A6230]">Recibir cheque Pool Design</button><span class="font-mono text-[11px] text-[#B98A2F]">16:00</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================ MOBILE SURFACE (Opción 5) ============================ -->
+<div id="surface-mobile" class="force-hidden py-6 px-4">
+  <div class="max-w-[400px] mx-auto">
+    <div class="rounded-[2.2rem] border-[6px] border-slate-900 dark:border-slate-700 bg-[#0b1220] shadow-2xl overflow-hidden">
+      <!-- status bar -->
+      <div class="bg-slate-950 text-slate-400 text-[10px] flex justify-between px-5 py-1.5"><span>9:41</span><span class="flex gap-1 items-center"><i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i></span></div>
+
+      <div class="p-4 space-y-4 text-white">
+        <!-- header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div><div class="text-[10px] font-bold text-accent uppercase">Superintendente</div><h3 class="font-heading font-extrabold text-base">Miami Beach Penthouse</h3></div>
+          <button onclick="toggleKaty()" class="w-11 h-11 rounded-2xl bg-accent-grad flex items-center justify-center shadow-lg"><i data-lucide="mic" class="w-5 h-5"></i></button>
+        </div>
+
+        <!-- anillo progreso -->
+        <div class="flex items-center gap-3 bg-slate-900 rounded-2xl p-3 border border-slate-800">
+          <div class="relative w-14 h-14">
+            <svg viewBox="0 0 36 36" class="w-14 h-14"><path d="M18 2 a16 16 0 1 1 0 32 a16 16 0 1 1 0 -32" fill="none" stroke="#1e293b" stroke-width="4"/><path d="M18 2 a16 16 0 1 1 0 32 a16 16 0 1 1 0 -32" fill="none" stroke="var(--accent)" stroke-width="4" stroke-dasharray="68,100" stroke-linecap="round"/></svg>
+            <div class="absolute inset-0 grid place-items-center text-xs font-bold">68%</div>
+          </div>
+          <div class="text-xs"><div class="font-bold">Hoy · 24 jul</div><div class="text-slate-400">3 tareas · 1 nota</div></div>
+        </div>
+
+        <!-- último avance -->
+        <div class="space-y-1.5">
+          <div class="text-[11px] font-bold text-slate-300">Último avance registrado</div>
+          <div class="relative h-44 rounded-2xl overflow-hidden bg-slate-900 cursor-pointer" onclick="openPhotoModal('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80','Tile ducha master')">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover">
+            <div class="absolute bottom-2 left-2 right-2 bg-slate-950/80 backdrop-blur-md p-2 rounded-xl text-xs flex justify-between"><span>Tile ducha master</span><span class="text-accent font-bold">HOY 10:30</span></div>
+          </div>
+        </div>
+
+        <!-- checklist -->
+        <div class="space-y-2">
+          <div class="text-[11px] font-bold text-slate-300">Checklist de hoy</div>
+          <div class="p-3 bg-emerald-950/40 rounded-xl border border-emerald-800 text-xs font-bold text-emerald-300 flex justify-between items-center"><span>✓ Recepción azulejos Calacatta</span><span>LISTO</span></div>
+          <div class="p-3 bg-slate-800 rounded-xl border border-slate-700 text-xs font-bold flex justify-between items-center"><span>◻ Prueba de presión PEX</span><span class="text-amber-400 font-mono">14:00</span></div>
+          <div class="p-3 bg-slate-800 rounded-xl border border-slate-700 text-xs font-bold flex justify-between items-center"><span>◻ Recibir cheque Pool Design</span><span class="text-amber-400 font-mono">16:00</span></div>
+        </div>
+      </div>
+
+      <!-- bottom nav -->
+      <div class="grid grid-cols-4 border-t border-slate-800 bg-slate-950 text-[10px]">
+        <button class="py-2.5 flex flex-col items-center gap-1 text-accent"><i data-lucide="calendar-check-2" class="w-5 h-5"></i> Hoy</button>
+        <button onclick="showView('project'); setSurface('desktop')" class="py-2.5 flex flex-col items-center gap-1 text-slate-400"><i data-lucide="image" class="w-5 h-5"></i> Fotos</button>
+        <button onclick="toggleKaty()" class="py-2.5 flex flex-col items-center gap-1 text-slate-400"><i data-lucide="mic" class="w-5 h-5"></i> Katy</button>
+        <button class="py-2.5 flex flex-col items-center gap-1 text-slate-400"><i data-lucide="calendar-clock" class="w-5 h-5"></i> Agenda</button>
+      </div>
+    </div>
+    <p class="text-center text-[11px] text-slate-500 mt-3">Opción 5 · vista de obra. Toca <b>Fotos</b> para saltar al detalle en escritorio.</p>
+  </div>
+</div>
+
+<!-- ============================ MODALS ============================ -->
+<div id="photoModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+  <div class="max-w-4xl w-full space-y-3">
+    <div class="flex items-center justify-between text-white"><h4 id="photoModalTitle" class="font-heading font-extrabold text-lg">Foto</h4><button onclick="closePhotoModal()" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <div class="rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 max-h-[80vh]"><img id="photoModalImg" src="" class="w-full h-full object-contain max-h-[80vh] mx-auto"></div>
+  </div>
+</div>
+
+<div id="katyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 text-white">
+    <div class="w-16 h-16 rounded-2xl bg-accent-grad mx-auto flex items-center justify-center relative"><span class="absolute w-16 h-16 rounded-2xl bg-accent opacity-40 animate-ping2"></span><i data-lucide="mic" class="w-7 h-7 relative"></i></div>
+    <h3 class="font-heading font-bold text-lg">Katy — te escucho</h3>
+    <p class="text-xs text-slate-300">"Agrega un egreso de $500 a Jorge en Miami Beach"</p>
+    <div class="text-[11px] text-accent font-bold">→ Se guardará en: Miami Beach Penthouse</div>
+    <div class="flex gap-2"><button onclick="toggleKaty()" class="flex-1 bg-slate-800 text-xs font-bold py-2.5 rounded-xl">Cancelar</button><button onclick="toggleKaty()" class="flex-1 bg-accent text-xs font-bold py-2.5 rounded-xl">Confirmar</button></div>
+  </div>
+</div>
+
+<!-- Generic modal (KPI detail + crear/editar) -->
+<div id="genModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-3 hidden" onclick="if(event.target===this)closeGenModal()">
+  <div class="bg-white dark:bg-[#111a2e] w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-[#111a2e]">
+      <h3 id="genModalTitle" class="font-heading font-bold text-slate-900 dark:text-white"></h3>
+      <button onclick="closeGenModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div id="genModalBody" class="p-5"></div>
+  </div>
+</div>
+
+<!-- Floating Katy FAB (desktop) -->
+<button onclick="toggleKaty()" class="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-accent-grad text-white shadow-2xl grid place-items-center"><i data-lucide="mic" class="w-6 h-6"></i></button>
+
+<script>
+  // ---------- Simulated data ----------
+  const PHOTOS = [
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+    'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b',
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c',
+    'https://images.unsplash.com/photo-1600585152220-90363fe7e115',
+    'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0',
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d',
+  ];
+  const PROJECTS = {
+    mia: { title:'Miami Beach Penthouse', loc:'Collins Ave, Miami Beach · Cliente: Carlos Mendoza', code:'#MIA-2026', status:['● En Obra','bg-emerald-500 text-slate-950'], cost:'$85,000', profit:'+$25,500', client:'$110,500', avance:68, cobrado:67, cover:PHOTOS[0], photos:14 },
+    boca:{ title:'Boca Raton Villa Kitchen', loc:'Royal Palm Way, Boca Raton · Cliente: Robert Sterling', code:'#BOCA-2026', status:['● Presupuesto','bg-amber-500 text-slate-950'], cost:'$180,000', profit:'+$54,000', client:'$234,000', avance:15, cobrado:0, cover:PHOTOS[1], photos:6 },
+    brk: { title:'Brickell Skyscraper Condo', loc:'Brickell Ave, Miami · Cliente: Elena Rostova', code:'#BRK-2026', status:['● En Obra','bg-emerald-500 text-slate-950'], cost:'$60,000', profit:'+$18,000', client:'$78,000', avance:82, cobrado:90, cover:PHOTOS[2], photos:20 },
+  };
+
+  // ---------- Render dashboard cards (Opción 1) ----------
+  function cardHtml(id, p) {
+    return `
+    <div class="glass rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-2xl hover:border-accent transition-all group flex flex-col cursor-pointer" onclick="openProject('${id}')">
+      <div class="relative h-44 overflow-hidden bg-slate-900">
+        <img src="${p.cover}?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover img-zoom">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+        <span class="absolute top-3 left-3 ${p.status[1]} text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">${p.status[0]}</span>
+        <span class="absolute top-3 right-3 bg-slate-950/80 text-slate-300 text-[10px] font-mono px-2 py-1 rounded-lg border border-slate-700">${p.code}</span>
+        <div class="absolute bottom-3 left-3 right-3">
+          <h3 class="font-heading font-extrabold text-base text-white drop-shadow">${p.title}</h3>
+          <p class="text-[11px] text-slate-300 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3 text-accent"></i> ${p.loc.split('·')[0]}</p>
+        </div>
+      </div>
+      <div class="p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div><div class="text-[9px] uppercase font-bold text-slate-400">Costo</div><div class="font-mono text-xs font-bold">${p.cost}</div></div>
+          <div class="border-l border-slate-300 dark:border-slate-800 pl-2"><div class="text-[9px] uppercase font-bold text-amber-500">Gan. 30%</div><div class="font-mono text-xs font-bold text-amber-600">${p.profit}</div></div>
+          <div class="border-l border-slate-300 dark:border-slate-800 pl-2"><div class="text-[9px] uppercase font-bold text-accent">Cliente</div><div class="font-mono text-xs font-extrabold">${p.client}</div></div>
+        </div>
+        <div class="space-y-2">
+          <div><div class="flex justify-between text-[11px] mb-1 font-semibold"><span class="text-slate-500">Avance</span><span class="text-accent font-mono font-bold">${p.avance}%</span></div><div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-accent h-full rounded-full" style="width:${p.avance}%"></div></div></div>
+          <div><div class="flex justify-between text-[11px] mb-1 font-semibold"><span class="text-slate-500">Cobrado</span><span class="text-emerald-600 font-mono font-bold">${p.cobrado}%</span></div><div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full rounded-full" style="width:${p.cobrado}%"></div></div></div>
+        </div>
+        <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+          <span class="text-slate-400 text-[11px]">${p.loc.split('Cliente:')[1] ? 'Cliente:'+p.loc.split('Cliente:')[1] : ''}</span>
+          <span class="font-bold text-accent flex items-center gap-1">Abrir <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></span>
+        </div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('cardsGrid').innerHTML = Object.entries(PROJECTS).map(([id,p]) => cardHtml(id,p)).join('');
+
+  // thumbs + fotos grid
+  document.getElementById('pThumbs').innerHTML = PHOTOS.slice(1,5).map(u => `<img src="${u}?auto=format&fit=crop&w=300&q=80" class="h-16 w-full object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-90" onclick="openPhotoModal('${u}?auto=format&fit=crop&w=1000&q=80','Foto de obra')">`).join('');
+  document.getElementById('fotosGrid').innerHTML = PHOTOS.concat(PHOTOS).map(u => `<img src="${u}?auto=format&fit=crop&w=300&q=80" class="aspect-square w-full object-cover rounded-lg cursor-pointer hover:opacity-90" onclick="openPhotoModal('${u}?auto=format&fit=crop&w=1000&q=80','Foto de obra')">`).join('');
+
+  // ---------- Navigation ----------
+  function showView(v) {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-'+v).classList.add('active');
+    document.querySelectorAll('[data-nav]').forEach(b => { b.classList.toggle('bg-white/10', b.dataset.nav===v); b.classList.toggle('text-white', b.dataset.nav===v); });
+    window.scrollTo({top:0, behavior:'smooth'});
+    if (v==='gantt') renderGenGantt(genUnit);
+    lucide.createIcons();
+  }
+  function openProject(id) {
+    const p = PROJECTS[id];
+    document.getElementById('pTitle').textContent = p.title;
+    document.getElementById('pLoc').innerHTML = '<i data-lucide="map-pin" class="w-3 h-3 text-accent"></i> ' + p.loc;
+    document.getElementById('pCode').textContent = p.code;
+    const st = document.getElementById('pStatus'); st.textContent = p.status[0]; st.className = p.status[1] + ' text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider';
+    document.getElementById('pCost').textContent = p.cost;
+    document.getElementById('pProfit').textContent = p.profit;
+    document.getElementById('pClient').textContent = p.client;
+    document.getElementById('pAvanceTxt').textContent = p.avance+'%'; document.getElementById('pAvanceBar').style.width = p.avance+'%';
+    document.getElementById('pCobradoTxt').textContent = p.cobrado+'%'; document.getElementById('pCobradoBar').style.width = p.cobrado+'%';
+    document.getElementById('pFeaturedImg').src = p.cover+'?auto=format&fit=crop&w=1000&q=80';
+    document.getElementById('pPhotoCount').textContent = p.photos+' fotos · antes · avance · después';
+    showView('project'); showTab('presupuesto');
+  }
+  function showTab(t) {
+    document.querySelectorAll('.tabpane').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-'+t).classList.add('active');
+    document.querySelectorAll('.tabbtn').forEach(b => {
+      const on = b.dataset.tab===t;
+      b.classList.toggle('bg-accent', on); b.classList.toggle('text-white', on);
+      b.classList.toggle('text-slate-500', !on); b.classList.toggle('hover:bg-slate-100', !on); b.classList.toggle('dark:hover:bg-slate-800', !on);
+    });
+    if (t==='gantt') renderProjGantt(projUnit);
+    lucide.createIcons();
+  }
+
+  // ---------- Surface (desktop / mobile) ----------
+  function setSurface(s) {
+    document.getElementById('surface-desktop').classList.toggle('force-hidden', s!=='desktop');
+    document.getElementById('surface-mobile').classList.toggle('force-hidden', s!=='mobile');
+    document.getElementById('tg-desktop').className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ' + (s==='desktop'?'bg-accent text-white':'text-slate-300 hover:text-white font-medium');
+    document.getElementById('tg-mobile').className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ' + (s==='mobile'?'bg-accent text-white':'text-slate-300 hover:text-white font-medium');
+    window.scrollTo({top:0}); lucide.createIcons();
+  }
+
+  // ---------- Modals ----------
+  function openPhotoModal(u,t){ document.getElementById('photoModalImg').src=u; document.getElementById('photoModalTitle').textContent=t; document.getElementById('photoModal').classList.remove('hidden'); }
+  function closePhotoModal(){ document.getElementById('photoModal').classList.add('hidden'); }
+  function toggleKaty(){ document.getElementById('katyModal').classList.toggle('hidden'); }
+
+  // ---------- Theme ----------
+  function toggleDark(){ document.documentElement.classList.toggle('dark'); }
+  function setPalette(p){ document.documentElement.className = document.documentElement.className.replace(/theme-\w+/,'') + ' theme-'+p; }
+
+  // ============ GANTT (calendario estilo Excel — formato real de la app) ============
+  const DAY_MS = 86400000;
+  function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function parseIso(s){ return new Date(s+'T00:00:00'); }
+  function addDays(iso,n){ const d=parseIso(iso); d.setDate(d.getDate()+n); return isoOf(d); }
+  function diffDays(a,b){ return Math.round((parseIso(b)-parseIso(a))/DAY_MS); }
+  function snapMonday(iso){ const d=parseIso(iso); d.setDate(d.getDate()-((d.getDay()+6)%7)); return isoOf(d); }
+  const todayIso = isoOf(new Date());
+  function off(n){ return addDays(todayIso,n); }
+
+  const BAR  = { prospecto:'#D9DFE6', presupuesto:'#D7CBB3', aprobado:'#9DB6BC', en_obra:'#7FA0A8', terminado:'#8FBE9F' };
+  const PILL = { prospecto:'bg-[#E3E8EE] text-[#44586B]', presupuesto:'bg-[#EDE3CF] text-[#7A6230]', aprobado:'bg-[#DCE8E9] text-[#4E7A82]', en_obra:'bg-[#DCE8E9] text-[#4E7A82]', terminado:'bg-[#DCEBDD] text-[#4F8A63]' };
+
+  const GPROJECTS = [
+    { id:'brk',  title:'Brickell Skyscraper Condo', status:'en_obra',     statusLabel:'En obra',     s:-35, e:5,  pct:82 },
+    { id:'mia',  title:'Miami Beach Penthouse',      status:'en_obra',     statusLabel:'En obra',     s:-20, e:15, pct:68 },
+    { id:'boca', title:'Boca Raton Villa Kitchen',   status:'presupuesto', statusLabel:'Presupuesto', s:-3,  e:40, pct:15 },
+  ];
+  const GTASKS_MIA = [
+    { name:'Demolición',  status:'terminado',   s:-18, e:-14, pct:100 },
+    { name:'Plomería',    status:'en_obra',     s:-12, e:-4,  pct:80 },
+    { name:'Tile / piso', status:'en_obra',     s:-2,  e:6,   pct:35 },
+    { name:'Pintura',     status:'presupuesto', s:8,   e:14,  pct:0 },
+  ];
+
+  function ganttScale(minIso,maxIso,unit){
+    const start=snapMonday(minIso);
+    const rawDays=Math.max(diffDays(start,maxIso)+1,14);
+    const totalDays=Math.ceil(rawDays/7)*7;
+    const col=unit==='week'?46:30;
+    const totalCols=unit==='week'?totalDays/7:totalDays;
+    return {unit,start,totalDays,col,totalCols,laneWidth:totalCols*col};
+  }
+  function gX(sc,iso){ const i=Math.min(Math.max(diffDays(sc.start,iso),0),sc.totalDays); return sc.unit==='week'?(i/7)*sc.col:i*sc.col; }
+  function gBar(sc,s,e){ const left=gX(sc,s); const right=gX(sc,addDays(e>=s?e:s,1)); return {left,width:Math.max(right-left,8)}; }
+  function laneBgStyle(sc){
+    const c=sc.col;
+    const grid=`repeating-linear-gradient(90deg,transparent 0,transparent ${c-1}px,#EFE9DD ${c-1}px,#EFE9DD ${c}px)`;
+    if(sc.unit==='week') return `background-image:${grid}`;
+    const wk=`repeating-linear-gradient(90deg,transparent 0,transparent ${5*c}px,#DCEBF7 ${5*c}px,#DCEBF7 ${6*c}px,#FBE5D3 ${6*c}px,#FBE5D3 ${7*c}px)`;
+    return `background-image:${grid},${wk}`;
+  }
+  function todayLineHtml(sc){ if(diffDays(sc.start,todayIso)<0||diffDays(sc.start,todayIso)>=sc.totalDays) return ''; return `<span class="pointer-events-none absolute bottom-0 top-0 z-[5] w-[2px] bg-[#B0492F]/70" style="left:${gX(sc,todayIso)}px"></span>`; }
+  function ganttHeader(sc,LEFT,leftLabel){
+    const WD=['LU','MA','MI','JU','VI','SA','DO']; const MO=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const days=[]; for(let i=0;i<sc.totalDays;i++){ const d=parseIso(sc.start); d.setDate(d.getDate()+i); days.push(d); }
+    let segs=[]; days.forEach(d=>{ const l=MO[d.getMonth()]+' '+d.getFullYear(); const last=segs[segs.length-1]; if(last&&last.label===l) last.days++; else segs.push({label:l,days:1}); });
+    const pxpd=sc.laneWidth/sc.totalDays;
+    const month=segs.map(m=>`<span class="flex items-center justify-center overflow-hidden whitespace-nowrap border-r border-white/15 text-[9.5px] font-bold uppercase tracking-widest text-white" style="width:${m.days*pxpd}px">${m.label}</span>`).join('');
+    let sub='';
+    if(sc.unit==='day'){
+      const wdRow=days.map(d=>{ const w=d.getDay(); const cls=w===6?'bg-[#9DC3E6] text-[#16323D]':w===0?'bg-[#F4B183] text-[#7A3C12]':'bg-[#EDF3FB]'; const st=(w!==6&&w!==0)?'color:var(--accent)':''; return `<span class="flex items-center justify-center text-[8px] font-extrabold ${cls}" style="width:${sc.col}px;${st}">${WD[(w+6)%7]}</span>`; }).join('');
+      const dRow=days.map(d=>{ const w=d.getDay(); const cls=w===6?'bg-[#DCEBF7] font-bold text-[#16323D]':w===0?'bg-[#FBE5D3] font-bold text-[#7A3C12]':'text-[#5C6A6E]'; return `<span class="flex items-center justify-center border-r border-[#F0EBE0] font-mono text-[9px] ${cls}" style="width:${sc.col}px">${d.getDate()}</span>`; }).join('');
+      sub=`<div class="flex h-5">${wdRow}</div><div class="flex h-5 border-b border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">${dRow}</div>`;
+    } else {
+      const weeks=days.filter((_,i)=>i%7===0);
+      sub=`<div class="flex h-6 border-b border-[#E6DDCB] dark:border-[#22304d] bg-[#EDF3FB] dark:bg-[#111a2e]">${weeks.map((d,i)=>`<span class="flex items-center justify-center gap-1 border-r border-[#D5DEEF]" style="width:${sc.col}px"><span class="text-[8.5px] font-bold" style="color:var(--accent)">W${i+1}</span><span class="font-mono text-[8px] text-[#5C6A6E]">${d.getDate()}/${d.getMonth()+1}</span></span>`).join('')}</div>`;
+    }
+    return `<div class="flex" style="width:${LEFT+sc.laneWidth}px">
+      <div class="sticky left-0 z-20 shrink-0 self-stretch bg-[#16323D] flex items-center px-3 text-[10px] font-bold uppercase tracking-widest text-white" style="width:${LEFT}px">${leftLabel}</div>
+      <div class="shrink-0" style="width:${sc.laneWidth}px"><div class="flex h-6 bg-accent">${month}</div>${sub}</div>
+    </div>`;
+  }
+  function renderGantt(el, rows, unit, LEFT, leftLabel){
+    const minIso=rows.reduce((m,r)=>r.startIso<m?r.startIso:m, rows[0].startIso);
+    const maxIso=rows.reduce((m,r)=>r.endIso>m?r.endIso:m, rows[0].endIso);
+    const sc=ganttScale(minIso,maxIso,unit);
+    const lane=laneBgStyle(sc);
+    const rowsHtml=rows.map(r=>{
+      const bar=gBar(sc,r.startIso,r.endIso); const color=BAR[r.status]||'#D7CBB3';
+      return `<div class="flex border-b border-[#F0EBE0] dark:border-[#22304d]" style="width:${LEFT+sc.laneWidth}px">
+        <div class="sticky left-0 z-10 shrink-0 bg-white dark:bg-[#111a2e] border-r border-[#E6DDCB] dark:border-[#22304d]" style="width:${LEFT}px">${r.leftHtml}</div>
+        <div class="relative shrink-0" style="width:${sc.laneWidth}px;height:46px;${lane}">
+          ${todayLineHtml(sc)}
+          <span class="absolute top-1/2 -translate-y-1/2 h-[15px] rounded-[5px] shadow-sm overflow-hidden flex items-center" style="left:${bar.left}px;width:${bar.width}px;background:${color}">
+            <span class="h-full bg-[#4F8A63]/85 rounded-l-[5px]" style="width:${r.pct}%"></span>
+          </span>
+        </div>
+      </div>`;
+    }).join('');
+    el.innerHTML=`<div style="width:${LEFT+sc.laneWidth}px">${ganttHeader(sc,LEFT,leftLabel)}${rowsHtml}</div>`;
+    el.scrollLeft=Math.max(0, gX(sc,todayIso)-200);
+    lucide.createIcons();
+  }
+  let genUnit='day', projUnit='day', genView='gantt';
+  function renderGenGantt(unit){
+    const rows=GPROJECTS.map((p,i)=>({
+      status:p.status, pct:p.pct, startIso:off(p.s), endIso:off(p.e),
+      leftHtml:`<div class="grid h-full items-center" style="grid-template-columns:34px 1fr">
+        <div class="flex h-full items-center justify-center bg-[#F2EFE7] dark:bg-[#17233d] font-mono text-[13px] font-bold text-[#16323D] dark:text-[#e8edf7]">${i+1}</div>
+        <button onclick="openProject('${p.id}')" class="flex flex-col justify-center h-full px-2 py-1.5 text-left hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]">
+          <span class="text-[12px] font-bold text-slate-900 dark:text-white truncate">${p.title}</span>
+          <span class="flex items-center gap-1.5 mt-0.5">
+            <span class="rounded-full px-2 py-0.5 text-[9px] font-bold ${PILL[p.status]}">${p.statusLabel}</span>
+            <span class="h-1.5 w-14 overflow-hidden rounded-full bg-[#F0EBE0]"><span class="block h-full rounded-full bg-[#4F8A63]" style="width:${p.pct}%"></span></span>
+            <span class="text-[9px] font-mono text-slate-400">${p.pct}%</span>
+          </span>
+        </button></div>`
+    }));
+    renderGantt(document.getElementById('genGantt'), rows, unit, 230, 'Proyecto');
+  }
+  function renderProjGantt(unit){
+    const rows=GTASKS_MIA.map(tk=>({
+      status:tk.status, pct:tk.pct, startIso:off(tk.s), endIso:off(tk.e),
+      leftHtml:`<div class="flex flex-col justify-center h-full px-3 py-1.5">
+        <span class="text-[12px] font-semibold text-slate-900 dark:text-white truncate">${tk.name}</span>
+        <span class="rounded-full px-2 py-0.5 text-[9px] font-bold w-fit mt-0.5 ${PILL[tk.status]}">${tk.pct}%</span></div>`
+    }));
+    renderGantt(document.getElementById('projGantt'), rows, unit, 170, 'Tarea');
+  }
+  function darkPill(el, on){ el.className='px-3 py-1 rounded-full '+(on?'bg-white text-[#16323D]':'text-white/60 hover:text-white'); }
+  function setGUnit(u){ genUnit=u; darkPill(document.getElementById('gu-day'),u==='day'); darkPill(document.getElementById('gu-week'),u==='week'); renderGenGantt(u); }
+  function setGView(v){ genView=v; document.getElementById('genGanttWrap').classList.toggle('hidden', v!=='gantt'); document.getElementById('genReporte').classList.toggle('hidden', v!=='reporte'); darkPill(document.getElementById('gv-gantt'),v==='gantt'); darkPill(document.getElementById('gv-reporte'),v==='reporte'); if(v==='gantt') renderGenGantt(genUnit); }
+  function setProjUnit(u){ projUnit=u; document.getElementById('pgu-day').className='px-3 py-1 rounded-full '+(u==='day'?'bg-accent text-white':'text-slate-500'); document.getElementById('pgu-week').className='px-3 py-1 rounded-full '+(u==='week'?'bg-accent text-white':'text-slate-500'); renderProjGantt(u); }
+
+  // ============ MODALES (KPI + crear/editar) ============
+  const INP='w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-accent';
+  const LBL='block text-[10px] font-bold uppercase tracking-wide text-slate-400';
+  function openGenModal(title, html){ document.getElementById('genModalTitle').textContent=title; document.getElementById('genModalBody').innerHTML=html; document.getElementById('genModal').classList.remove('hidden'); lucide.createIcons(); }
+  function closeGenModal(){ document.getElementById('genModal').classList.add('hidden'); }
+  function toast(msg){ const t=document.createElement('div'); t.className='fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-[#16323D] text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-2xl'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(()=>t.remove(),400); },1600); }
+  function fakeSave(msg){ closeGenModal(); toast(msg); }
+
+  function openKpi(k){
+    const rowP=(n,s,c)=>`<div class="flex justify-between items-center p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60"><span class="text-sm">${n}</span><span class="text-[11px] font-bold ${c}">${s}</span></div>`;
+    const M={
+      proyectos:['Proyectos activos', `<div class="space-y-2">${rowP('Miami Beach Penthouse','En obra','text-emerald-600')}${rowP('Brickell Skyscraper Condo','En obra','text-emerald-600')}${rowP('Boca Raton Villa Kitchen','Presupuesto','text-amber-600')}</div><div class="mt-3 text-[11px] text-slate-400">Pipeline: Prospecto → Presupuesto → Aprobado → En obra → Terminado</div>`],
+      contratado:['Contratado — precio cliente', `<div class="space-y-2">${rowP('Miami Beach Penthouse','$110,500','text-slate-900 dark:text-white font-mono')}${rowP('Boca Raton Villa Kitchen','$234,000','text-slate-900 dark:text-white font-mono')}${rowP('Brickell Skyscraper Condo','$78,000','text-slate-900 dark:text-white font-mono')}</div><div class="flex justify-between mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 font-bold"><span>Total</span><span class="font-mono text-accent">$422,500</span></div>`],
+      cobrado:['Cobrado de clientes', `<div class="space-y-2">${rowP('Miami — Hito 1 + 2','$66,300','text-emerald-600 font-mono')}${rowP('Brickell — 90%','$70,200','text-emerald-600 font-mono')}${rowP('Boca — sin cobros','$0','text-slate-400 font-mono')}</div><div class="flex justify-between mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 font-bold"><span>Total cobrado</span><span class="font-mono text-emerald-600">$136,500</span></div>`],
+      ganancia:['Ganancia proyectada (30%)', `<div class="space-y-2">${rowP('Miami Beach Penthouse','+$25,500','text-amber-600 font-mono')}${rowP('Boca Raton Villa Kitchen','+$54,000','text-amber-600 font-mono')}${rowP('Brickell Skyscraper Condo','+$18,000','text-amber-600 font-mono')}</div><div class="flex justify-between mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 font-bold"><span>Total</span><span class="font-mono text-amber-600">+$97,500</span></div>`],
+    };
+    openGenModal(M[k][0], M[k][1]);
+  }
+  function projOptions(){ return '<option>Sin proyecto</option><option>Miami Beach Penthouse</option><option>Boca Raton Villa Kitchen</option><option>Brickell Skyscraper Condo</option>'; }
+  function footer(saveLabel, saveMsg, color){ return `<div class="flex gap-2 pt-1"><button onclick="closeGenModal()" class="flex-1 rounded-xl bg-slate-100 dark:bg-slate-800 py-2.5 text-sm font-bold text-slate-500">Cancelar</button><button onclick="fakeSave('${saveMsg}')" class="flex-1 rounded-xl ${color||'bg-accent'} text-white py-2.5 text-sm font-bold">${saveLabel}</button></div>`; }
+
+  function openCreateProject(){
+    openGenModal('Nuevo proyecto', `<div class="space-y-3">
+      <div><label class="${LBL}">Nombre del proyecto</label><input class="${INP} mt-1" placeholder="Cocina Miami"></div>
+      <div class="grid grid-cols-2 gap-2.5"><div><label class="${LBL}">Cliente</label><input class="${INP} mt-1" placeholder="Carlos Mendoza"></div><div><label class="${LBL}">Ciudad</label><input class="${INP} mt-1" placeholder="Miami Beach, FL"></div></div>
+      <div class="grid grid-cols-2 gap-2.5"><div><label class="${LBL}">Estado</label><select class="${INP} mt-1"><option>Prospecto</option><option>Presupuesto</option><option>Aprobado</option><option>En obra</option><option>Terminado</option></select></div><div><label class="${LBL}">Presupuesto</label><input class="${INP} mt-1" placeholder="$0.00"></div></div>
+      ${footer('Crear proyecto','Proyecto creado')}</div>`);
+  }
+  function openPayment(kind){
+    const ing=kind==='ingreso';
+    openGenModal(ing?'Nuevo ingreso':'Nuevo egreso', `<div class="space-y-3">
+      <div><label class="${LBL}">Monto</label><input class="${INP} mt-1" placeholder="$0.00"></div>
+      <div><label class="${LBL}">${ing?'Método':'Proveedor'}</label>${ing?`<select class="${INP} mt-1"><option>Zelle</option><option>Efectivo</option><option>Cheque</option><option>Transferencia</option></select>`:`<input class="${INP} mt-1" placeholder="Jorge (plomero)">`}</div>
+      <div class="grid grid-cols-2 gap-2.5"><div><label class="${LBL}">Fecha</label><input type="date" value="${todayIso}" class="${INP} mt-1"></div><div><label class="${LBL}">Proyecto</label><select class="${INP} mt-1">${projOptions().replace('Sin proyecto','Miami Beach Penthouse')}</select></div></div>
+      <div><label class="${LBL}">Nota</label><input class="${INP} mt-1" placeholder="Concepto..."></div>
+      ${footer(ing?'Guardar ingreso':'Guardar egreso', ing?'Ingreso guardado':'Egreso guardado', ing?'bg-emerald-600':'bg-red-600')}</div>`);
+  }
+  function openEditNote(title){
+    openGenModal(title?'Editar nota':'Nueva nota', `<div class="space-y-3">
+      <input class="${INP}" placeholder="Descripción de la nota" value="${title?title.replace(/"/g,'&quot;'):''}">
+      <div class="grid grid-cols-2 gap-2.5"><div><label class="${LBL}">Fecha</label><input type="date" value="${todayIso}" class="${INP} mt-1"></div><div><label class="${LBL}">Hora</label><input type="time" value="10:00" class="${INP} mt-1"></div></div>
+      <div><label class="${LBL}">Proyecto vinculado (opcional)</label><select class="${INP} mt-1">${projOptions()}</select></div>
+      ${footer('Guardar','Nota guardada','bg-[#B98A2F]')}</div>`);
+  }
+
+  // init tab button base style
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.add('text-slate-500'));
+  showTab('presupuesto');
+  document.addEventListener('keydown', e => { if(e.key==='Escape'){ closePhotoModal(); closeGenModal(); document.getElementById('katyModal').classList.add('hidden'); } });
+  lucide.createIcons();
+</script>
+</body>
+</html>
