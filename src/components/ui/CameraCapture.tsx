@@ -7,12 +7,13 @@ import { useLanguage } from "@/src/context/LanguageContext";
 // Cámara in-app via getUserMedia — no depende del picker/intent del sistema,
 // roto en varios Android (MIUI/OEM). El permiso se pide como prompt web del sitio.
 export default function CameraCapture({
-  open, onClose, onCapture, toast,
+  open, onClose, onCapture, toast, onUnavailable,
 }: {
   open: boolean;
   onClose: () => void;
   onCapture: (file: File) => void;
   toast: (msg: string) => void;
+  onUnavailable?: () => void;  // la cámara no arrancó → el host ofrece otra vía (archivos)
 }) {
   const { t } = useLanguage();
   const tf = t.panel.fotos;
@@ -49,6 +50,7 @@ export default function CameraCapture({
           : `${tf.camError}${name ? ` (${name})` : ""}`
         );
         onClose();
+        onUnavailable?.();
       }
     })();
     return () => { cancelled = true; stop(); };

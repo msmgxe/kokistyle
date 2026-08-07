@@ -58,6 +58,7 @@ import { useLanguage } from "@/src/context/LanguageContext";
 import EstimateTab from "@/src/components/ui/EstimateTab";
 import DayPlannerModal from "@/src/components/ui/DayPlannerModal";
 import ProjectPhotos from "@/src/components/ui/ProjectPhotos";
+import QuickPhoto from "@/src/components/ui/QuickPhoto";
 import DesignTab from "@/src/components/ui/DesignTab";
 import ConfirmModal from "@/src/components/ui/ConfirmDialog";
 
@@ -2086,6 +2087,7 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState<TabId>("presupuesto");
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   // Datos del hero (resumen): totales del estimate + schedule + últimas fotos
   const [estTotals, setEstTotals] = useState<EstimateTotals | null>(null);
@@ -2244,7 +2246,12 @@ export default function ProjectDetailPage() {
   // La foto principal es la portada elegida (projects.photo_url); si no hay, la primera
   const featuredUrl = project.photo_url ?? heroPhotos[0]?.url ?? null;
   const thumbs      = heroPhotos.filter((p) => p.url !== featuredUrl).slice(0, 4);
-  const goToTab = (tab: TabId) => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  // Lleva a la barra de tabs (no al tope): en móvil el hero es alto y el contenido
+  // del tab queda fuera de pantalla, lo que hacía parecer que el botón no hacía nada.
+  const goToTab = (tab: TabId) => {
+    setActiveTab(tab);
+    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
   const hp = tp.project;   // etiquetas del hero (project.*)
   // Permisos del hero: el resumen financiero solo si el usuario ya ve Estimate o Cash Flow.
   // Costo y ganancia son datos internos → solo superadmin (nunca en vistas de cliente).
@@ -2298,10 +2305,15 @@ export default function ProjectDetailPage() {
                 <h3 className="text-sm font-bold text-[var(--brand)]">{hp.galleryTitle}</h3>
                 <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{heroPhotos.length} {hp.photosCount}</p>
               </div>
-              <button onClick={() => goToTab("fotos")}
-                className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[var(--accent-strong)]">
+              <QuickPhoto
+                projectId={project.id}
+                projectTitle={project.title}
+                toast={showToast}
+                onUploaded={loadHero}
+                className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[var(--accent-strong)] active:scale-95"
+              >
                 <Camera size={13} /> {hp.uploadPhoto}
-              </button>
+              </QuickPhoto>
             </div>
             {featuredUrl ? (
               <>
@@ -2322,10 +2334,16 @@ export default function ProjectDetailPage() {
                 )}
               </>
             ) : (
-              <button onClick={() => goToTab("fotos")} className="flex h-52 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098]">
+              <QuickPhoto
+                projectId={project.id}
+                projectTitle={project.title}
+                toast={showToast}
+                onUploaded={loadHero}
+                className="flex h-52 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#E6DDCB] dark:border-[#22304d] text-[#97A1A0] dark:text-[#728098] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              >
                 <Camera size={26} />
                 <span className="text-xs font-semibold">{hp.noPhotos}</span>
-              </button>
+              </QuickPhoto>
             )}
           </div>
 
@@ -2473,7 +2491,7 @@ export default function ProjectDetailPage() {
 
       {/* Barra única de tabs: fondo del tema, el activo iluminado (scroll horizontal en móvil) */}
       {visibleTabs.length > 0 && (
-        <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-2 [scrollbar-width:none]">
+        <div ref={tabsRef} className="mb-4 flex gap-1.5 overflow-x-auto rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-2 scroll-mt-4 [scrollbar-width:none]">
           {visibleTabs.map((tab) => {
             const Icon = TAB_ICONS[tab.id];
             const active = activeTab === tab.id;

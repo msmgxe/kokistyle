@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Camera, Images } from "lucide-react";
 import { logActivity } from "@/src/lib/activity";
 import { uploadProjectPhoto } from "@/src/lib/photos";
@@ -12,11 +12,14 @@ import { useAuth } from "@/src/context/AuthContext";
 
 // Botón 📷 compacto que sube fotos SIEMPRE ancladas al proyecto que lo renderiza
 export default function QuickPhoto({
-  projectId, projectTitle, toast,
+  projectId, projectTitle, toast, className, children, onUploaded,
 }: {
   projectId: string;
   projectTitle: string;
   toast: (msg: string) => void;
+  className?: string;        // estilo del disparador cuando el host lo necesita distinto
+  children?: ReactNode;      // contenido del disparador (default: ícono 📷)
+  onUploaded?: () => void;    // refresca la vista que lo renderiza tras subir
 }) {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
@@ -26,7 +29,6 @@ export default function QuickPhoto({
   const [previews, setPreviews] = useState<string[]>([]);
   const [uploadStep, setUploadStep] = useState(0);
   const [camOpen, setCamOpen] = useState(false);
-  const fallbackRef = useRef<HTMLInputElement>(null);
   const {
     imgInputRef, anyInputRef, openGallery, openFileManager, fallbackVisible, dismissFallback,
   } = useGalleryPicker(() => toast(tf.pickerBlocked));
@@ -37,6 +39,15 @@ export default function QuickPhoto({
     previews.forEach(URL.revokeObjectURL);
     setPending(arr);
     setPreviews(arr.map(f => URL.createObjectURL(f)));
+  };
+
+  // En escritorio "subir" es elegir un archivo: la cámara in-app existe por los Android
+  // (MIUI) donde el intent del sistema está roto, y en una laptop pide la webcam o
+  // se cierra sin más. Puntero grueso = teléfono/tableta → cámara; si no, archivos.
+  const openCapture = () => {
+    const handheld = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+    if (handheld && typeof navigator.mediaDevices?.getUserMedia === "function") { setCamOpen(true); return; }
+    openGallery();
   };
 
   const close = () => {
@@ -66,6 +77,7 @@ export default function QuickPhoto({
         entity_name: `${ok} ${tf.photosWord}`, project_id: projectId,
       });
       toast(`✓ ${ok} ${tf.uploaded} — ${projectTitle}`);
+      onUploaded?.();
     }
     close();
   };
@@ -74,21 +86,23 @@ export default function QuickPhoto({
     <>
       {/* Cámara in-app (getUserMedia) — el picker/intent del sistema está roto en varios Android (MIUI) */}
       <button
-        onClick={() => {
-          if (typeof navigator.mediaDevices?.getUserMedia === "function") setCamOpen(true);
-          else fallbackRef.current?.click();
-        }}
+        onClick={openCapture}
         aria-label={`${tf.takePhoto} — ${projectTitle}`}
-        className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#B0492F] transition hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] active:scale-95"
+        className={className ?? "grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-[#B0492F] transition hover:bg-[#FDF0ED] dark:hover:bg-[#2a1712] active:scale-95"}
       >
-        <Camera size={16} />
+        {children ?? <Camera size={16} />}
       </button>
-      <input ref={fallbackRef} type="file" accept="image/*" className="sr-only"
-        onChange={e => { pick(e.target.files); e.target.value = ""; }} />
+      {/* Los inputs viven fuera del compositor: openGallery() se usa también como
+          disparador inicial (escritorio) y necesita el input montado desde el inicio. */}
+      <input ref={imgInputRef} type="file" accept="image/*" multiple className="sr-only"
+        onChange={e => { pick(e.target.files); e.target.value = ""; dismissFallback(); }} />
+      <input ref={anyInputRef} type="file" multiple className="sr-only"
+        onChange={e => { pick(e.target.files); e.target.value = ""; dismissFallback(); }} />
       <CameraCapture
         open={camOpen}
         onClose={() => setCamOpen(false)}
         onCapture={file => pick([file])}
+        onUnavailable={openGallery}
         toast={toast}
       />
 
@@ -101,18 +115,12 @@ export default function QuickPhoto({
           onCancel={close}
           onUpload={upload}
           headerAction={
-            <>
-              <button
-                onClick={openGallery}
-                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-[12px] font-bold text-[var(--brand)]"
-              >
-                <Images size={14} /> {tf.fromGallery}
-              </button>
-              <input ref={imgInputRef} type="file" accept="image/*" multiple className="sr-only"
-                onChange={e => { pick(e.target.files); e.target.value = ""; dismissFallback(); }} />
-              <input ref={anyInputRef} type="file" multiple className="sr-only"
-                onChange={e => { pick(e.target.files); e.target.value = ""; dismissFallback(); }} />
-            </>
+            <button
+              onClick={openGallery}
+              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-[12px] font-bold text-[var(--brand)]"
+            >
+              <Images size={14} /> {tf.fromGallery}
+            </button>
           }
           topSlot={fallbackVisible && (
             <button
