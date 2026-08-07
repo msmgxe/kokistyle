@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luxaris Design — Índice de prototipos</title>
+<style>
+  :root{
+    --brand:#16323D; --cream:#F5E9DA; --card:#F7F3EA; --border:#E6DDCB;
+    --soft:#5C6A6E; --muted:#97A1A0; --navy:#395886; --green:#4F8A63;
+    --red:#B0492F; --gold:#B98A2F; --burgundy:#7B1838;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--cream); color:var(--brand);
+    font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .bookman{font-family:"Bookman Old Style","Book Antiqua",Palatino,Georgia,serif}
+  .wrap{max-width:1100px; margin:0 auto; padding:28px 20px 64px}
+
+  header{background:var(--brand); color:#fff; padding:34px 20px 30px}
+  header .wrap{padding:0; max-width:1100px}
+  .eyebrow{font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#A8C0BC}
+  h1{margin:8px 0 6px; font-size:30px; font-weight:600; letter-spacing:.01em}
+  header p{margin:0; font-size:14px; color:#C9D8D4; max-width:70ch}
+  .stats{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+  .stat{background:rgba(255,255,255,.10); border-radius:10px; padding:6px 11px; font-size:12px; font-weight:700}
+
+  .legend{display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin:22px 0 6px; font-size:12px; color:var(--soft)}
+  .badge{display:inline-block; border-radius:999px; padding:2px 9px; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap}
+  .b-prod{background:#DCEBDD; color:#33613F}
+  .b-prop{background:#E4EAF5; color:#2C4470}
+  .b-ref{background:#ECE3D1; color:#7A6230}
+
+  h2{
+    margin:34px 0 4px; font-size:15px; font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--brand);
+    border-bottom:2px solid var(--border); padding-bottom:8px;
+  }
+  h2 span{color:var(--muted); font-weight:700; letter-spacing:0; text-transform:none; font-size:12px}
+
+  .grid{display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); margin-top:16px}
+  .card{
+    display:block; background:#fff; border:1px solid var(--border); border-radius:16px;
+    padding:15px 16px; text-decoration:none; color:inherit; transition:.16s ease;
+    border-left:4px solid var(--border);
+  }
+  .card:hover{transform:translateY(-2px); box-shadow:0 8px 22px rgba(22,50,61,.11); border-left-color:var(--navy)}
+  .card.prod{border-left-color:var(--green)}
+  .card.prop{border-left-color:var(--navy)}
+  .card.ref{border-left-color:var(--gold)}
+  .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+  .card h3{margin:0; font-size:15px; font-weight:700; line-height:1.3}
+  .card .file{
+    display:block; margin-top:3px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px; color:var(--navy); word-break:break-all;
+  }
+  .card p{margin:9px 0 0; font-size:13px; color:var(--soft)}
+  .meta{margin-top:9px; font-size:11px; color:var(--muted); font-weight:600}
+
+  footer{margin-top:44px; border-top:1px solid var(--border); padding-top:18px; font-size:12.5px; color:var(--soft)}
+  footer code{background:#fff; border:1px solid var(--border); border-radius:6px; padding:2px 6px; font-size:11.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Luxaris Design LLC</div>
+    <h1 class="bookman">Índice de prototipos</h1>
+    <p>Prototipos HTML standalone de la plataforma. Cada uno abre en su propia pestaña y funciona sin servidor — son archivos independientes del código de producción.</p>
+    <div class="stats">
+      <span class="stat">37 prototipos</span>
+      <span class="stat">jun – jul 2026</span>
+      <span class="stat">carpeta <code style="background:none;border:none;color:#fff">prototypes/</code></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="legend">
+    <span><span class="badge b-prod">En producción</span> el diseño ya está implementado en la app</span>
+    <span><span class="badge b-prop">Propuesta</span> pendiente de decisión</span>
+    <span><span class="badge b-ref">Referencia</span> exploración de diseño / histórico</span>
+  </div>
+
+  <!-- ══════════ ESTIMATE ══════════ -->
+  <h2>Estimate &amp; PDF <span>· cotización, cuotas, exportación</span></h2>
+  <div class="grid">
+
+    <a class="card prod" href="./payment-schedule-sidebar.html" target="_blank">
+      <div class="card-top"><h3>Estimate — Diseño final</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">payment-schedule-sidebar.html</span>
+      <p>La "Opción A" que hoy vive en <b>EstimateTab</b>: cabecera oscura con acciones, sub-tabs 📐 Sections y 💰 Payment Schedule, y la banda de totales con descuento y Grand Total.</p>
+      <div class="meta">02 jul 2026 · 25 KB</div>
+    </a>
+
+    <a class="card ref" href="./payment-schedule-prototypes.html" target="_blank">
+      <div class="card-top"><h3>Payment Schedule — 3 propuestas</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">payment-schedule-prototypes.html</span>
+      <p>Primera ronda de diseño del calendario de pagos: tres formas de presentar cuotas, porcentajes y saldo pendiente.</p>
+      <div class="meta">02 jul 2026 · 22 KB</div>
+    </a>
+
+    <a class="card ref" href="./payment-schedule-v2.html" target="_blank">
+      <div class="card-top"><h3>Payment Schedule V2</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">payment-schedule-v2.html</span>
+      <p>Segunda ronda: combina lo mejor de las tres propuestas anteriores antes de aterrizar en el diseño final.</p>
+      <div class="meta">02 jul 2026 · 30 KB</div>
+    </a>
+
+    <a class="card ref" href="./section-icons-prototype.html" target="_blank">
+      <div class="card-top"><h3>Íconos de sección</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">section-icons-prototype.html</span>
+      <p>Opciones de estilo para los íconos por tipo de sección (plomería, eléctrico, pintura…). Derivó en <code>sectionEmoji()</code>.</p>
+      <div class="meta">03 jul 2026 · 10 KB</div>
+    </a>
+
+    <a class="card prod" href="./pdf-options/a.html" target="_blank">
+      <div class="card-top"><h3>PDF Opción A — Classic Two-Column</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">pdf-options/a.html</span>
+      <p>La opción elegida para el PDF del estimado: cabecera centrada, bloque PROPOSAL a dos columnas, Payment Schedule izquierda / Grand Total derecha. Implementada en <code>src/lib/pdf.ts</code>.</p>
+      <div class="meta">29 jun 2026 · 16 KB</div>
+    </a>
+
+    <a class="card ref" href="./pdf-options/b.html" target="_blank">
+      <div class="card-top"><h3>PDF Opción B — Modern Dark Header</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">pdf-options/b.html</span>
+      <p>Variante descartada con cabecera oscura a sangre completa.</p>
+      <div class="meta">29 jun 2026 · 14 KB</div>
+    </a>
+
+    <a class="card ref" href="./pdf-options/c.html" target="_blank">
+      <div class="card-top"><h3>PDF Opción C — Compact Single-Page</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">pdf-options/c.html</span>
+      <p>Variante descartada que comprime todo el estimado en una sola página.</p>
+      <div class="meta">29 jun 2026 · 18 KB</div>
+    </a>
+
+    <a class="card ref" href="./estimate-workflow-prototype.html" target="_blank">
+      <div class="card-top"><h3>Estimate → Workflow</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">estimate-workflow-prototype.html</span>
+      <p>El puente original entre el estimado y las tareas. Hoy ese flujo es el <b>Day Planner</b> (los items del estimado se arrastran a días).</p>
+      <div class="meta">29 jun 2026 · 34 KB</div>
+    </a>
+
+  </div>
+
+  <!-- ══════════ PLANIFICACIÓN ══════════ -->
+  <h2>Planificación &amp; reportes <span>· Gantt, status, reporte diario</span></h2>
+  <div class="grid">
+
+    <a class="card prod" href="./gantt-report-print.html" target="_blank">
+      <div class="card-top"><h3>Reporte diario de actividades</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">gantt-report-print.html</span>
+      <p>Reporte imprimible por rango de fechas agrupado día → proyecto → tareas. Implementado como <code>DailyReport.tsx</code> (vista "Reporte diario" del Gantt G).</p>
+      <div class="meta">13 jul 2026 · 22 KB</div>
+    </a>
+
+    <a class="card prod" href="./status-gantt-days.html" target="_blank">
+      <div class="card-top"><h3>Status Gantt por días</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">status-gantt-days.html</span>
+      <p>Calendario estilo Excel con columna real por día, fines de semana coloreados y línea de hoy — la base de <code>GanttCalendar.tsx</code>.</p>
+      <div class="meta">12 jul 2026 · 19 KB</div>
+    </a>
+
+    <a class="card ref" href="./status-report-prototype.html" target="_blank">
+      <div class="card-top"><h3>Reporte de status — v1</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">status-report-prototype.html</span>
+      <p>Primera versión del reporte de status de proyectos, previa al Gantt G.</p>
+      <div class="meta">12 jul 2026 · 22 KB</div>
+    </a>
+
+    <a class="card ref" href="./status-report-hybrid.html" target="_blank">
+      <div class="card-top"><h3>Reporte de status — timeline con acordeón</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">status-report-hybrid.html</span>
+      <p>Variante híbrida: timeline vertical con acordeón por proyecto.</p>
+      <div class="meta">12 jul 2026 · 18 KB</div>
+    </a>
+
+    <a class="card prod" href="./objetivos-3-opciones.html" target="_blank">
+      <div class="card-top"><h3>Objetivos del proyecto — 3 opciones</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">objetivos-3-opciones.html</span>
+      <p>Tres formas de presentar los objetivos: tercera columna del hero · franja ancha bajo el hero · tarjeta compacta bajo el título. Se implementó la <b>opción 1</b>.</p>
+      <div class="meta">25 jul 2026 · 14 KB</div>
+    </a>
+
+  </div>
+
+  <!-- ══════════ MÓVIL ══════════ -->
+  <h2>Móvil, PWA &amp; fotos de obra <span>· lo que se usa en la calle</span></h2>
+  <div class="grid">
+
+    <a class="card prod" href="./vista-hoy-movil.html" target="_blank">
+      <div class="card-top"><h3>Vista "Hoy" móvil</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">vista-hoy-movil.html</span>
+      <p>Checklist del día por proyecto con checkbox grande y anillo de progreso. Implementado como <code>/proyectos/hoy</code>.</p>
+      <div class="meta">13 jul 2026 · 17 KB</div>
+    </a>
+
+    <a class="card prod" href="./fotos-obra-movil.html" target="_blank">
+      <div class="card-top"><h3>Fotos de obra</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">fotos-obra-movil.html</span>
+      <p>Captura con cámara, etiquetas de color y galería filtrable. Implementado como <code>ProjectPhotos.tsx</code> (<code>/proyectos/fotos</code> + tab del proyecto).</p>
+      <div class="meta">13 jul 2026 · 17 KB</div>
+    </a>
+
+    <a class="card prop" href="./app-android-shell.html" target="_blank">
+      <div class="card-top"><h3>App Android (APK)</h3><span class="badge b-prop">Propuesta</span></div>
+      <span class="file">app-android-shell.html</span>
+      <p>Comparativa TWA (Bubblewrap, recomendada — empaqueta la PWA existente) vs Capacitor vs nativa, más una shell ligera con tabs Hoy · Fotos · Katy · Agenda.</p>
+      <div class="meta">14 jul 2026 · 15 KB</div>
+    </a>
+
+    <a class="card prop" href="./voz-design-movil.html" target="_blank">
+      <div class="card-top"><h3>Voz universal + Design AI</h3><span class="badge b-prop">Propuesta</span></div>
+      <span class="file">voz-design-movil.html</span>
+      <p>Dictado por proyecto con MediaRecorder real (audio → Whisper → Claude) y el flujo "foto actual → visión del después → alcance sugerido → secciones del Estimate". El fallback de voz ya está en producción.</p>
+      <div class="meta">13 jul 2026 · 23 KB</div>
+    </a>
+
+  </div>
+
+  <!-- ══════════ AGENDA / ACTIVIDAD ══════════ -->
+  <h2>Agenda, actividad &amp; reservas</h2>
+  <div class="grid">
+
+    <a class="card prod" href="./agenda-admin-prototype.html" target="_blank">
+      <div class="card-top"><h3>Agenda personal del admin</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">agenda-admin-prototype.html</span>
+      <p>Captura por voz de citas/tasks/reuniones y tres opciones de notificación. Implementado como <code>/proyectos/agenda</code> + avisos push.</p>
+      <div class="meta">06 jul 2026 · 45 KB</div>
+    </a>
+
+    <a class="card prod" href="./activity-log-prototype.html" target="_blank">
+      <div class="card-top"><h3>Activity Log</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">activity-log-prototype.html</span>
+      <p>Auditoría con KPIs, filtros y avatar por usuario. Implementado como <code>/proyectos/activity</code>.</p>
+      <div class="meta">02 jul 2026 · 17 KB</div>
+    </a>
+
+    <a class="card prod" href="./online-booking-prototype.html" target="_blank">
+      <div class="card-top"><h3>Reserva de consulta online</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">online-booking-prototype.html</span>
+      <p>Formulario público de reserva. Implementado como <code>/reservas</code> + tabla <code>bookings</code> y su admin en <code>/proyectos/reservas</code>.</p>
+      <div class="meta">02 jul 2026 · 47 KB</div>
+    </a>
+
+  </div>
+
+  <!-- ══════════ EQUIPO ══════════ -->
+  <h2>Equipo &amp; accesos</h2>
+  <div class="grid">
+
+    <a class="card prod" href="./user-access-prototype.html" target="_blank">
+      <div class="card-top"><h3>Acceso por usuario</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">user-access-prototype.html</span>
+      <p>Permisos granulares por colaborador: tabs visibles, CRUD por sección y proyectos asignados. Implementado en <code>UsersPanel.tsx</code> (<code>tab_access</code> + <code>permissions</code>).</p>
+      <div class="meta">02 jul 2026 · 39 KB</div>
+    </a>
+
+    <a class="card prod" href="./coworkers-grid-prototype.html" target="_blank">
+      <div class="card-top"><h3>Co-workers — 3 opciones</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">coworkers-grid-prototype.html</span>
+      <p>Tres formas de cruzar co-workers × proyectos. Se implementó la <b>matriz de asignación</b> con montos y fechas en <code>TeamPanel.tsx</code>.</p>
+      <div class="meta">10 jul 2026 · 21 KB</div>
+    </a>
+
+  </div>
+
+  <!-- ══════════ UX ══════════ -->
+  <h2>Propuestas de UX / navegación <span>· jul 2026, pendientes de decisión</span></h2>
+  <div class="grid">
+
+    <a class="card prop" href="./ux-master-unified-app.html" target="_blank">
+      <div class="card-top"><h3>Master Unified V2</h3><span class="badge b-prop">Propuesta</span></div>
+      <span class="file">ux-master-unified-app.html</span>
+      <p>La simulación más completa de la propuesta unificada: varios proyectos, selector de paleta de colores y asistente Katy integrado.</p>
+      <div class="meta">23 jul 2026 · 50 KB</div>
+    </a>
+
+    <a class="card prop" href="./luxaris-app-simulacion.html" target="_blank">
+      <div class="card-top"><h3>Simulación funcional completa</h3><span class="badge b-prop">Propuesta</span></div>
+      <span class="file">luxaris-app-simulacion.html</span>
+      <p>Recorrido de extremo a extremo — dashboard, detalle y móvil — pasando por hero, Estimate, Cash Flow, Day Planner, Gantt, Materials, Contacts, Fotos, Notes y Design.</p>
+      <div class="meta">23 jul 2026 · 73 KB</div>
+    </a>
+
+    <a class="card prop" href="./ux-proposal-v2.html" target="_blank">
+      <div class="card-top"><h3>Executive Workspace V2</h3><span class="badge b-prop">Propuesta</span></div>
+      <span class="file">ux-proposal-v2.html</span>
+      <p>Navegación con sidebar y variantes de paleta para el panel privado.</p>
+      <div class="meta">23 jul 2026 · 34 KB</div>
+    </a>
+
+    <a class="card prop" href="./ux-5-options-showcase.html" target="_blank">
+      <div class="card-top"><h3>5 opciones de mejora UX/UI</h3><span class="badge b-prop">Propuesta</span></div>
+      <span class="file">ux-5-options-showcase.html</span>
+      <p>Cinco direcciones de rediseño usando fotos de obra reales como material visual.</p>
+      <div class="meta">23 jul 2026 · 43 KB</div>
+    </a>
+
+    <a class="card prop" href="./ux-3-options-showcase.html" target="_blank">
+      <div class="card-top"><h3>3 opciones de mejora UX/UI</h3><span class="badge b-prop">Propuesta</span></div>
+      <span class="file">ux-3-options-showcase.html</span>
+      <p>Primera terna de direcciones de rediseño, previa a la de 5 opciones.</p>
+      <div class="meta">23 jul 2026 · 25 KB</div>
+    </a>
+
+    <a class="card ref" href="./nav-design-lab.html" target="_blank">
+      <div class="card-top"><h3>Laboratorio de navegación</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">nav-design-lab.html</span>
+      <p>Banco de pruebas de barras de navegación, tabs y componentes sueltos del panel.</p>
+      <div class="meta">15 jul 2026 · 59 KB</div>
+    </a>
+
+  </div>
+
+  <!-- ══════════ DISEÑO AI ══════════ -->
+  <h2>Diseño AI <span>· exploración de motores de render, jun–jul 2026</span></h2>
+  <div class="grid">
+
+    <a class="card prod" href="./05-replicate-render.html" target="_blank">
+      <div class="card-top"><h3>Replicate img2img</h3><span class="badge b-prod">En producción</span></div>
+      <span class="file">05-replicate-render.html</span>
+      <p>El motor que quedó: img2img sobre la foto real. Hoy es el respaldo de <code>/api/design-render</code> (motor preferido: Nano Banana / Gemini).</p>
+      <div class="meta">01 jul 2026 · 40 KB</div>
+    </a>
+
+    <a class="card ref" href="./06-imagen4-render.html" target="_blank">
+      <div class="card-top"><h3>Imagen 4 Vision</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">06-imagen4-render.html</span>
+      <p>Prueba del motor de Google Imagen 4 para el render de interiores.</p>
+      <div class="meta">01 jul 2026 · 41 KB</div>
+    </a>
+
+    <a class="card ref" href="./04-render-studio.html" target="_blank">
+      <div class="card-top"><h3>AI Render Studio v4</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">04-render-studio.html</span>
+      <p>Estudio de render con slider antes/después — la base visual del tab <b>Design</b>.</p>
+      <div class="meta">01 jul 2026 · 59 KB</div>
+    </a>
+
+    <a class="card ref" href="./03-design-architect.html" target="_blank">
+      <div class="card-top"><h3>Design Architect</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">03-design-architect.html</span>
+      <p>Tercera exploración: brief de diseño guiado por cuarto y estilo.</p>
+      <div class="meta">01 jul 2026 · 65 KB</div>
+    </a>
+
+    <a class="card ref" href="./02-quick-render.html" target="_blank">
+      <div class="card-top"><h3>Quick Render</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">02-quick-render.html</span>
+      <p>Versión mínima: subir foto y generar sin configuración.</p>
+      <div class="meta">01 jul 2026 · 34 KB</div>
+    </a>
+
+    <a class="card ref" href="./01-vision-studio.html" target="_blank">
+      <div class="card-top"><h3>Vision Studio</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">01-vision-studio.html</span>
+      <p>Primera exploración del estudio de diseño con IA.</p>
+      <div class="meta">01 jul 2026 · 35 KB</div>
+    </a>
+
+  </div>
+
+  <!-- ══════════ MARKETING ══════════ -->
+  <h2>Landing, marketing &amp; misceláneos</h2>
+  <div class="grid">
+
+    <a class="card ref" href="./propuesta-valor.html" target="_blank">
+      <div class="card-top"><h3>Propuesta de valor</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">propuesta-valor.html</span>
+      <p>Página standalone que explica qué resuelve la plataforma — material para vender el producto a otras empresas.</p>
+      <div class="meta">02 jul 2026 · 37 KB</div>
+    </a>
+
+    <a class="card ref" href="./arquitectura-infografia.html" target="_blank">
+      <div class="card-top"><h3>Arquitectura &amp; propuesta de valor</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">arquitectura-infografia.html</span>
+      <p>Infografía de la arquitectura técnica: capas, servicios y cómo se conectan.</p>
+      <div class="meta">10 jul 2026 · 19 KB</div>
+    </a>
+
+    <a class="card ref" href="./index02.html" target="_blank">
+      <div class="card-top"><h3>Prototipo 02 (KokiStyle)</h3><span class="badge b-ref">Referencia</span></div>
+      <span class="file">index02.html</span>
+      <p>Landing temprana. Se conserva por el patrón de <code>SpeechRecognition</code> que se reutilizó en el tab Design.</p>
+      <div class="meta">25 jun 2026 · 67 KB</div>
+    </a>
+
+  </div>
+
+  <footer>
+    <p><b>Cómo usarlo:</b> abre este archivo con doble clic (<code>prototypes/index.html</code>) y navega desde acá. Todos los enlaces son relativos, así que funcionan sin servidor y sin internet — salvo los prototipos que cargan Tailwind por CDN, que necesitan conexión para verse con estilos.</p>
+    <p style="margin-bottom:0">Para abrirlo desde el teléfono en la misma red: <code>python3 -m http.server 8080</code> dentro de <code>prototypes/</code> y entra a <code>http://&lt;ip-de-tu-mac&gt;:8080</code>.</p>
+  </footer>
+
+</div>
+</body>
+</html>
