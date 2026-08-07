@@ -830,7 +830,9 @@ El modal de instalamentos del Estimate (`deposit_schedule`) tiene un detalle exp
 
 ## Prototypes
 
-Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no en `src/`):
+Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no en `src/`).
+
+> **Índice navegable:** `prototypes/index.html` — abre ese archivo en el navegador y enlaza a los 37 prototipos agrupados por tema, con badge de estado (En producción · Propuesta · Referencia). Al agregar un prototipo nuevo, sumar su tarjeta ahí además de esta tabla.
 
 | Archivo | Descripción |
 |---|---|
