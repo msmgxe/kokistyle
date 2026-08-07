@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X, Trash2, Star, MoveLeft, MoveRight } from "lucide-react";
+import { X, Trash2, Star, MoveLeft, MoveRight, RotateCcw, RotateCw } from "lucide-react";
 import CameraCapture from "@/src/components/ui/CameraCapture";
 import PhotoComposer from "@/src/components/ui/PhotoComposer";
 import { useGalleryPicker } from "@/src/components/ui/useGalleryPicker";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
 import {
-  PHOTOS_BUCKET, PHOTO_TAG_ORDER, photoTagColor, uploadProjectPhoto,
+  PHOTOS_BUCKET, PHOTO_TAG_ORDER, photoTagColor, uploadProjectPhoto, compressImage,
 } from "@/src/lib/photos";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
@@ -55,9 +55,14 @@ export default function ProjectPhotos({
   const [viewIdx, setViewIdx] = useState<number | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({ caption: "", tag: "avance", customTag: null as string | null, album: "" });
+  const [editData, setEditData] = useState({ caption: "", tag: "avance", customTag: null as string | null, album: "", rotate: 0 });
+  const [saving, setSaving] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
   const camFallbackRef = useRef<HTMLInputElement>(null);
+  // Al previsualizar un giro de 90°/270° la foto queda cruzada: se achica para que entre
+  const imgBoxRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [rotScale, setRotScale] = useState(1);
   const {
     imgInputRef, anyInputRef, openGallery, openFileManager, fallbackVisible, dismissFallback,
   } = useGalleryPicker(() => toast(tf.pickerBlocked));
@@ -211,23 +216,68 @@ export default function ProjectPhotos({
       tag: isKnown ? p.tag : "avance",
       customTag: isKnown ? null : p.tag,
       album: p.album ?? "",
+      rotate: 0,
     });
     setEditMode(true);
   };
 
+  // Girar una foto ya subida: se re-encodea con el giro horneado y se sube como
+  // archivo nuevo (el CDN cachea por ruta, así que reusar la misma serviría la vieja).
+  const rotateStored = async (p: ProjectPhoto, deg: number): Promise<string | null> => {
+    try {
+      const res = await fetch(p.url);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const rotated = await compressImage(new File([blob], "foto.jpg", { type: blob.type || "image/jpeg" }), deg);
+      const path = `project-photos/${p.project_id}/${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage.from(BUCKET).upload(path, rotated, { contentType: "image/jpeg" });
+      if (error) return null;
+      return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    } catch {
+      return null;
+    }
+  };
+
   const saveEdit = async (p: ProjectPhoto) => {
+    if (saving) return;
+    setSaving(true);
     const newTag = effectiveTag(editData.tag, editData.customTag);
-    const patch = {
+    const patch: Partial<ProjectPhoto> = {
       caption: editData.caption.trim() || null,
       tag: newTag,
       album: editData.album.trim() || null,
     };
+    const deg = ((editData.rotate % 360) + 360) % 360;
+    const oldUrl = p.url;
+    if (deg) {
+      const newUrl = await rotateStored(p, deg);
+      if (!newUrl) { toast(tf.rotateError); setSaving(false); return; }
+      patch.url = newUrl;
+    }
     const { error } = await supabase.from("project_photos").update(patch).eq("id", p.id);
+    setSaving(false);
     if (error) { toast(tf.updateError); return; }
     setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, ...patch } : x));
+    if (patch.url) {
+      // La portada apunta a la url vieja: hay que moverla antes de borrar el archivo
+      if (coverUrl === oldUrl && activeProject !== "all") {
+        await supabase.from("projects").update({ photo_url: patch.url }).eq("id", activeProject);
+        onProjectChange?.();
+      }
+      const path = oldUrl.split(`/${BUCKET}/`)[1];
+      if (path) supabase.storage.from(BUCKET).remove([decodeURIComponent(path)]).then(() => {});
+    }
     setEditMode(false);
     toast(tf.updated);
   };
+
+  useEffect(() => {
+    const quarter = ((editData.rotate % 360) + 360) % 360;
+    if (!editMode || (quarter !== 90 && quarter !== 270)) { setRotScale(1); return; }
+    const box = imgBoxRef.current, img = imgRef.current;
+    if (!box || !img || !img.clientWidth || !img.clientHeight) return;
+    setRotScale(Math.min(box.clientWidth / img.clientHeight, box.clientHeight / img.clientWidth, 1));
+  }, [editMode, editData.rotate, viewIdx]);
 
   const fmtDate = (iso: string) => {
     const today = toIso(new Date());
@@ -427,13 +477,38 @@ export default function ProjectPhotos({
               <X size={18} />
             </button>
           </div>
-          <div className="flex min-h-0 flex-1 items-center justify-center px-3">
+          <div ref={imgBoxRef} className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={current.url} alt={current.caption ?? ""} className="max-h-full max-w-full rounded-xl object-contain" />
+            <img
+              ref={imgRef}
+              src={current.url}
+              alt={current.caption ?? ""}
+              style={editMode ? { transform: `rotate(${editData.rotate}deg) scale(${rotScale})` } : undefined}
+              className="max-h-full max-w-full rounded-xl object-contain transition-transform duration-200"
+            />
           </div>
           {editMode ? (
-            /* ── Edición: comentario, etiqueta (con custom) y carpeta ── */
+            /* ── Edición: giro, comentario, etiqueta (con custom) y carpeta ── */
             <div className="space-y-2 px-5 pt-3">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2">
+                <span className="text-[12px] font-bold text-white/85">{tf.rotateLabel}</span>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setEditData(d => ({ ...d, rotate: ((d.rotate - 90) % 360 + 360) % 360 }))}
+                    aria-label={tf.rotateLeft}
+                    className="grid size-9 place-items-center rounded-lg bg-white/15 text-white transition hover:bg-white/25 active:scale-95"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                  <button
+                    onClick={() => setEditData(d => ({ ...d, rotate: (d.rotate + 90) % 360 }))}
+                    aria-label={tf.rotateRight}
+                    className="grid size-9 place-items-center rounded-lg bg-white/15 text-white transition hover:bg-white/25 active:scale-95"
+                  >
+                    <RotateCw size={16} />
+                  </button>
+                </div>
+              </div>
               <input
                 value={editData.caption}
                 onChange={e => setEditData(d => ({ ...d, caption: e.target.value }))}
@@ -484,9 +559,10 @@ export default function ProjectPhotos({
               </datalist>
               <button
                 onClick={() => saveEdit(current)}
-                className="w-full rounded-xl bg-[#4F8A63] py-3 text-[14px] font-bold text-white"
+                disabled={saving}
+                className="w-full rounded-xl bg-[#4F8A63] py-3 text-[14px] font-bold text-white disabled:opacity-70"
               >
-                {tf.saveChanges}
+                {saving ? (editData.rotate ? tf.rotating : `${tf.saveChanges}…`) : tf.saveChanges}
               </button>
             </div>
           ) : (
@@ -514,21 +590,27 @@ export default function ProjectPhotos({
                       <Star size={14} /> {tf.setCover}
                     </button>
                   )}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => movePhoto(-1)}
-                      disabled={(viewIdx ?? 0) === 0}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/12 py-2.5 text-[12px] font-bold text-white transition hover:bg-white/20 disabled:opacity-30"
-                    >
-                      <MoveLeft size={14} /> {tf.moveEarlier}
-                    </button>
-                    <button
-                      onClick={() => movePhoto(1)}
-                      disabled={(viewIdx ?? 0) >= visible.length - 1}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/12 py-2.5 text-[12px] font-bold text-white transition hover:bg-white/20 disabled:opacity-30"
-                    >
-                      {tf.moveLater} <MoveRight size={14} />
-                    </button>
+                  {/* Reordenar ≠ navegar: la etiqueta lo separa de ‹ Foto anterior / Foto siguiente › */}
+                  <div className="rounded-xl border border-white/15 px-2.5 pb-2 pt-1.5">
+                    <div className="mb-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-white/45">
+                      {tf.orderLabel} · {(viewIdx ?? 0) + 1}/{visible.length}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => movePhoto(-1)}
+                        disabled={(viewIdx ?? 0) === 0}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/12 py-2.5 text-[12px] font-bold text-white transition hover:bg-white/20 disabled:opacity-30"
+                      >
+                        <MoveLeft size={14} /> {tf.moveEarlier}
+                      </button>
+                      <button
+                        onClick={() => movePhoto(1)}
+                        disabled={(viewIdx ?? 0) >= visible.length - 1}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/12 py-2.5 text-[12px] font-bold text-white transition hover:bg-white/20 disabled:opacity-30"
+                      >
+                        {tf.moveLater} <MoveRight size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
