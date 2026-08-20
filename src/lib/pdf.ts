@@ -853,8 +853,27 @@ export function changeOrderTotals(co: Pick<ChangeOrderData, "lines" | "priorCont
 /** Monto con signo explícito, sin U+2212 (helvetica no lo dibuja). */
 const signed = (n: number) => (n < 0 ? "-" : "+") + money(Math.abs(n));
 
-function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: string } {
+/** Rejilla del documento: la normal y una compacta que se usa sólo si la orden
+ *  no entra en una página — la corta se lee grande y la larga cabe igual. */
+function coGrid(compact: boolean) {
+  return compact
+    ? { band: 27, coFs: 11.5, titleFs: 15, subFs: 7.8, coY: 10, titleY: 19, subY: 24.2, pillY: 6.6, pillH: 7.4, pillFs: 7, pillY2: 11.5,
+        top: 6, kpiH: 13.5, kpiValFs: 12, kpiLabelY: 5, kpiValY: 11, gapKpi: 4, gap: 3.5,
+        reasonFs: 7.6, reasonLf: 1.24, reasonPad: 8.4, reasonY: 8.2,
+        bodyFs: 7.6, secFs: 6.2, amtFs: 8, lineH: 3.25, secH: 4.1, sepH: 2.2, headH: 5.8, footH: 7,
+        schedFs: 6.5, schedRow: 3, schedMin: 25, schedBand: 7,
+        noteFs: 7, noteLine: 3.2, sigGap: 3, sigImgH: 13 }
+    : { band: 33, coFs: 13, titleFs: 17, subFs: 8.5, coY: 11.5, titleY: 22.5, subY: 29, pillY: 8, pillH: 8, pillFs: 7.5, pillY2: 13.4,
+        top: 8, kpiH: 17, kpiValFs: 14, kpiLabelY: 6, kpiValY: 13.5, gapKpi: 6, gap: 5,
+        reasonFs: 8.4, reasonLf: 1.32, reasonPad: 9.4, reasonY: 9.2,
+        bodyFs: 8.4, secFs: 6.6, amtFs: 8.6, lineH: 3.7, secH: 4.6, sepH: 2.8, headH: 6.4, footH: 7.8,
+        schedFs: 7, schedRow: 3.2, schedMin: 29, schedBand: 8,
+        noteFs: 7.5, noteLine: 3.5, sigGap: 3, sigImgH: 18 };
+}
+
+function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF; filename: string } {
   const EN  = co.language === "en";
+  const G   = coGrid(compact);
   const doc = latin1Doc(new jsPDF({ unit: "mm", format: "a4" }));
   const W   = doc.internal.pageSize.getWidth();
   const ML  = 10, MR = W - 10, CW = MR - ML, CX = W / 2;
@@ -877,28 +896,27 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   };
 
   // ── Banda superior oscura ──
-  const bandH = 33;
   doc.setFillColor(22, 50, 61);
-  doc.rect(0, 0, W, bandH, "F");
-  doc.setFont("times", "bolditalic"); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
-  doc.text("Luxaris Design LLC.", ML, 11.5);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(17);
-  doc.text(`${EN ? "CHANGE ORDER" : "ORDEN DE CAMBIO"} ${co.orderNo}`.trim(), ML, 22.5);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(183, 203, 199);
+  doc.rect(0, 0, W, G.band, "F");
+  doc.setFont("times", "bolditalic"); doc.setFontSize(G.coFs); doc.setTextColor(255, 255, 255);
+  doc.text("Luxaris Design LLC.", ML, G.coY);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(G.titleFs);
+  doc.text(`${EN ? "CHANGE ORDER" : "ORDEN DE CAMBIO"} ${co.orderNo}`.trim(), ML, G.titleY);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(G.subFs); doc.setTextColor(183, 203, 199);
   const sub = [co.projectTitle, co.client.name, `${EN ? "Issued" : "Emitida"} ${co.date}`]
     .filter(Boolean).join("   ·   ");
-  doc.text(sub, ML, 29, { maxWidth: CW - 52 });
+  doc.text(sub, ML, G.subY, { maxWidth: CW - 52 });
 
-  const pillW = 46, pillH = 8;
+  const pillW = 46;
   doc.setFillColor(240, 160, 144);
-  doc.roundedRect(MR - pillW, 8, pillW, pillH, 4, 4, "F");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(123, 24, 56);
-  doc.text(EN ? "AWAITING SIGNATURE" : "PENDIENTE DE FIRMA", MR - pillW / 2, 13.4, { align: "center" });
+  doc.roundedRect(MR - pillW, G.pillY, pillW, G.pillH, 4, 4, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(G.pillFs); doc.setTextColor(123, 24, 56);
+  doc.text(EN ? "AWAITING SIGNATURE" : "PENDIENTE DE FIRMA", MR - pillW / 2, G.pillY2, { align: "center" });
 
-  let y = bandH + 8;
+  let y = G.band + G.top;
 
   // ── Tres cifras: anterior → cambio → nuevo ──
-  const kpiW = 58, gap = (CW - kpiW * 3) / 2, kpiH = 17;
+  const kpiW = 58, gap = (CW - kpiW * 3) / 2, kpiH = G.kpiH;
   const kpi = (x: number, label: string, value: string, kind: "plain" | "delta" | "now") => {
     if (kind === "now") { doc.setFillColor(22, 50, 61); doc.setDrawColor(22, 50, 61); }
     else if (kind === "delta") { doc.setFillColor(237, 243, 238); doc.setDrawColor(79, 138, 99); }
@@ -907,10 +925,10 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
     doc.roundedRect(x, y, kpiW, kpiH, 2, 2, "FD");
     doc.setFont("helvetica", "bold"); doc.setFontSize(6.8);
     doc.setTextColor(...(kind === "now" ? [155, 182, 177] : [150, 150, 150]) as [number, number, number]);
-    doc.text(label, x + 5, y + 6);
-    doc.setFontSize(14);
+    doc.text(label, x + 5, y + G.kpiLabelY);
+    doc.setFontSize(G.kpiValFs);
     doc.setTextColor(...(kind === "now" ? [255, 255, 255] : kind === "delta" ? [61, 113, 80] : [22, 50, 61]) as [number, number, number]);
-    doc.text(value, x + 5, y + 13.5);
+    doc.text(value, x + 5, y + G.kpiValY);
   };
   const arrow = (x: number) => {
     doc.setFillColor(185, 176, 160);
@@ -922,23 +940,23 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   kpi(ML + kpiW + gap, EN ? "THIS CHANGE" : "ESTE CAMBIO", signed(net), "delta");
   arrow(ML + (kpiW + gap) * 2 - gap / 2);
   kpi(ML + (kpiW + gap) * 2, EN ? "NEW CONTRACT" : "CONTRATO NUEVO", money(newContract), "now");
-  y += kpiH + 6;
+  y += kpiH + G.gapKpi;
 
   // ── Motivo del cambio ──
   if (co.reason.trim()) {
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8.4);
-    doc.setLineHeightFactor(1.32);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(G.reasonFs);
+    doc.setLineHeightFactor(G.reasonLf);
     const rl = doc.splitTextToSize(co.reason.trim(), CW - 10) as string[];
-    const lh = 8.4 * 1.32 / doc.internal.scaleFactor;
-    const rh = 9.4 + rl.length * lh;
+    const lh = G.reasonFs * G.reasonLf / doc.internal.scaleFactor;
+    const rh = G.reasonPad + rl.length * lh;
     doc.setFillColor(247, 243, 234); doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3);
     doc.roundedRect(ML, y, CW, rh, 2, 2, "FD");
     doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
     doc.text(EN ? "REASON FOR CHANGE" : "MOTIVO DEL CAMBIO", ML + 5, y + 5);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8.4); doc.setTextColor(45, 45, 45);
-    doc.text(rl, ML + 5, y + 9.2, { align: "justify", maxWidth: CW - 10 });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(G.reasonFs); doc.setTextColor(45, 45, 45);
+    doc.text(rl, ML + 5, y + G.reasonY, { align: "justify", maxWidth: CW - 10 });
     doc.setLineHeightFactor(1.15);
-    y += rh + 5;
+    y += rh + G.gap;
   }
 
   const adds    = co.lines.filter(l => l.kind === "add");
@@ -950,7 +968,7 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   // Un bloque a ancho completo por grupo que fluye línea a línea de página en
   // página — los alcances largos ya no se salen de la hoja.
   {
-    const PAD = 5, HEAD_H = 6.4, FOOT_H = 7.8, LINE_H = 3.7, SEC_H = 4.6, SEP_H = 2.8;
+    const PAD = 5, HEAD_H = G.headH, FOOT_H = G.footH, LINE_H = G.lineH, SEC_H = G.secH, SEP_H = G.sepH;
     const PAGE_BOT = 262, PAGE_TOP = 20;
     const amtW  = showAmounts ? 26 : 0;
     const descW = CW - PAD * 2 - amtW;
@@ -960,7 +978,7 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
     const atomsOf = (list: ChangeOrderLine[]): Atom[] => {
       const out: Atom[] = [];
       list.forEach((l, i) => {
-        doc.setFont("helvetica", "normal"); doc.setFontSize(8.4);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(G.bodyFs);
         const wrapped = wrapDesc(l.description, descW);
         if (l.section) out.push({ h: SEC_H, sec: l.section, amount: showAmounts ? l.amount : undefined });
         wrapped.forEach((ln, j) => out.push({
@@ -979,14 +997,14 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
         return;
       }
       if (a.sec) {
-        doc.setFont("helvetica", "bold"); doc.setFontSize(6.6); doc.setTextColor(150, 150, 150);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(G.secFs); doc.setTextColor(150, 150, 150);
         doc.text(a.sec.toUpperCase(), ML + PAD, top + 3.2, { maxWidth: descW });
       } else {
-        doc.setFont("helvetica", "normal"); doc.setFontSize(8.4); doc.setTextColor(45, 45, 45);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(G.bodyFs); doc.setTextColor(45, 45, 45);
         doc.text(a.t ?? "", ML + PAD + (a.ind ?? 0), top + 3);
       }
       if (a.amount != null) {
-        doc.setFont("helvetica", "bold"); doc.setFontSize(8.6);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(G.amtFs);
         doc.setTextColor(...(isCredit ? [176, 73, 47] : [61, 113, 80]) as [number, number, number]);
         doc.text((isCredit ? "-" : "+") + money(a.amount), MR - PAD, top + 3.2, { align: "right" });
       }
@@ -1039,7 +1057,7 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
           doc.setFontSize(9.5);
           doc.text((isCredit ? "-" : "") + money(subtotal), MR - PAD, fy + 5.4, { align: "right" });
         }
-        y += boxH + 5;
+        y += boxH + G.gap;
         part++;
       }
     };
@@ -1055,7 +1073,7 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
       doc.text(EN ? "SCOPE OF THIS CHANGE" : "ALCANCE DE ESTE CAMBIO", ML + PAD, y + 4.7);
       doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
       doc.text(EN ? "No lines in this change order." : "Sin líneas en esta orden de cambio.", ML + PAD, y + 12);
-      y += 21;
+      y += 16 + G.gap;
     } else if (!showAmounts) {
       // Sin montos por línea: el total del cambio cierra el alcance.
       if (PAGE_BOT - y < 14) { doc.addPage(); y = PAGE_TOP; }
@@ -1065,7 +1083,7 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
       doc.text(EN ? "TOTAL OF THIS CHANGE" : "TOTAL DE ESTE CAMBIO", ML + PAD, y + 6.1);
       doc.setFontSize(10);
       doc.text(signed(net), MR - PAD, y + 6.1, { align: "right" });
-      y += 14.4;
+      y += 9.4 + G.gap;
     }
   }
 
@@ -1075,30 +1093,52 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
 
   // Las glosas de cuota son largas: se miden envueltas para que el alto de la
   // caja y el de cada fila las respeten y nunca pisen al monto.
-  doc.setFont("helvetica", "normal"); doc.setFontSize(7);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(G.schedFs);
   const amtColW  = 30;
   const schedRows = co.schedule.map(r => ({
     ...r,
     changed: Math.round(r.now) !== Math.round(r.was),
     lines: doc.splitTextToSize(`${r.label} · ${r.pct}%`, boxW - amtColW - 8) as string[],
   }));
-  const rowsH  = schedRows.reduce((acc, r) => acc + Math.max(5, r.lines.length * 3.2 + 1.8), 0);
-  const totalBandH = 8;
-  const schedH = hasSched ? Math.max(29, 10.5 + rowsH + totalBandH + 1.5) : 29;
-  if (y + schedH > 252) { doc.addPage(); y = 20; }
+  const rowsH  = schedRows.reduce((acc, r) => acc + Math.max(G.schedRow + 1.8, r.lines.length * G.schedRow + 1.8), 0);
+  const totalBandH = G.schedBand;
+  const schedH = hasSched ? Math.max(G.schedMin, 10.5 + rowsH + totalBandH + 1.5) : G.schedMin;
+
+  const note = (EN
+    ? "Once signed by both parties, this change order becomes part of the original contract. "
+    : "Esta orden de cambio forma parte del contrato original una vez firmada por ambas partes. ")
+    + (co.schedule.length
+        ? (co.addToLast
+            ? (EN ? "The net amount is added to the final installment." : "El neto de esta orden se suma a la última cuota del calendario de pagos.")
+            : (EN ? "The net amount is spread across every installment by its percentage." : "El neto de esta orden se reparte en todas las cuotas según su porcentaje."))
+        : "");
+  doc.setFont("helvetica", "normal"); doc.setFontSize(G.noteFs);
+  const noteLines = doc.splitTextToSize(note, CW) as string[];
+  const closing = EN
+    ? "This Change Order constitutes additional work outside the original proposal and will be added to the original contract amount upon customer approval."
+    : "Esta orden de cambio constituye trabajo adicional fuera de la propuesta original y se sumará al monto del contrato original una vez aprobada por el cliente.";
+  doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+  const closingLines = doc.splitTextToSize(closing, CW - 36) as string[];
+
+  // Cronograma, nota y firmas viajan juntos: si el cierre no cabe detrás del
+  // cronograma, el grupo entero pasa a la hoja siguiente — nunca una hoja con
+  // sólo las firmas.
+  const closeH = schedH + G.gap + noteLines.length * G.noteLine
+               + G.sigGap + G.sigImgH + 21 + (closingLines.length - 1) * 3.8;
+  if (y + closeH > 278) { doc.addPage(); y = 20; }
 
   doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255);
   doc.roundedRect(ML, y, boxW, schedH, 2, 2, "FD");
   doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
   doc.text(EN ? "SCHEDULE" : "CRONOGRAMA", ML + 5, y + 6);
-  doc.setFontSize(13); doc.setTextColor(22, 50, 61);
-  doc.text(co.extraDays > 0 ? `+${co.extraDays} ${EN ? "days" : "días"}` : (EN ? "No change" : "Sin cambios"), ML + 5, y + 14);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(92, 106, 110);
+  doc.setFontSize(compact ? 11.5 : 13); doc.setTextColor(22, 50, 61);
+  doc.text(co.extraDays > 0 ? `+${co.extraDays} ${EN ? "days" : "días"}` : (EN ? "No change" : "Sin cambios"), ML + 5, y + (compact ? 12.5 : 14));
+  doc.setFont("helvetica", "normal"); doc.setFontSize(G.noteFs); doc.setTextColor(92, 106, 110);
   doc.text(
     co.extraDays > 0
       ? (EN ? "Delivery date shifts by the days above." : "La fecha de entrega se corre los días indicados.")
       : (EN ? "Delivery date holds." : "La fecha de entrega se mantiene."),
-    ML + 5, y + 19.5, { maxWidth: boxW - 10 });
+    ML + 5, y + (compact ? 17.5 : 19.5), { maxWidth: boxW - 10 });
 
   if (hasSched) {
     const bx = ML + boxW + 6;
@@ -1109,12 +1149,12 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
 
     let sy = y + 10.5;
     schedRows.forEach((r, i) => {
-      const rh = Math.max(5, r.lines.length * 3.2 + 1.8);
+      const rh = Math.max(G.schedRow + 1.8, r.lines.length * G.schedRow + 1.8);
       if (i % 2 === 1) { doc.setFillColor(250, 248, 243); doc.rect(bx + 0.4, sy - 3.2, boxW - 0.8, rh, "F"); }
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(60, 60, 60);
-      r.lines.forEach((ln, j) => doc.text(ln, bx + 5, sy + j * 3.2));
+      doc.setFont("helvetica", "normal"); doc.setFontSize(G.schedFs); doc.setTextColor(60, 60, 60);
+      r.lines.forEach((ln, j) => doc.text(ln, bx + 5, sy + j * G.schedRow));
       const amtStr = money(r.now);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(G.amtFs);
       const amtW = doc.getTextWidth(amtStr);   // medido con la fuente en que se dibuja
       doc.setTextColor(...(r.changed ? [61, 113, 80] : [22, 50, 61]) as [number, number, number]);
       doc.text(amtStr, bx + boxW - 5, sy, { align: "right" });
@@ -1137,26 +1177,21 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
     doc.setFontSize(9.5);
     doc.text(money(newContract), bx + boxW - 5, tby + 5.6, { align: "right" });
   }
-  y += schedH + 5;
+  y += schedH + G.gap;
 
   // ── Nota ──
-  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(80, 80, 80);
-  const note = (EN
-    ? "Once signed by both parties, this change order becomes part of the original contract. "
-    : "Esta orden de cambio forma parte del contrato original una vez firmada por ambas partes. ")
-    + (co.schedule.length
-        ? (co.addToLast
-            ? (EN ? "The net amount is added to the final installment." : "El neto de esta orden se suma a la última cuota del calendario de pagos.")
-            : (EN ? "The net amount is spread across every installment by its percentage." : "El neto de esta orden se reparte en todas las cuotas según su porcentaje."))
-        : "");
-  const noteLines = doc.splitTextToSize(note, CW) as string[];
-  noteLines.forEach((ln, i) => doc.text(ln, ML, y + i * 3.5));
-  y += noteLines.length * 3.5;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(G.noteFs); doc.setTextColor(80, 80, 80);
+  noteLines.forEach((ln, i) => doc.text(ln, ML, y + i * G.noteLine));
+  y += noteLines.length * G.noteLine;
 
   // ── Firmas ──
-  const sigImgW = 21, sigImgH = 18;
-  let sigLineY = Math.max(y + 14, 236);
-  if (sigLineY > 254) { doc.addPage(); sigLineY = 60; }
+  const sigImgW = 21, sigImgH = G.sigImgH;
+  // La firma escaneada cuelga sobre la línea (hay que reservarle su alto) y por
+  // debajo van nombres, fecha y cláusula: todo eso tiene que caber sobre el pie.
+  const tailH   = 21 + (closingLines.length - 1) * 3.8;
+  const sigMaxY = 278 - tailH;
+  let sigLineY = Math.max(y + G.sigGap + sigImgH, compact ? 230 : 236);
+  if (sigLineY > sigMaxY) { doc.addPage(); sigLineY = 60; }
   const sigW = 72;
   const slx1 = ML + 8, slx2 = slx1 + sigW;
   const srx2 = MR - 8, srx1 = srx2 - sigW;
@@ -1179,12 +1214,8 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   doc.text(`${EN ? "Date" : "Fecha"}: ______________`, (srx1 + srx2) / 2, sigLineY + 15.5, { align: "center" });
 
   // ── Cláusula de cierre, centrada al pie del documento ──
-  const closing = EN
-    ? "This Change Order constitutes additional work outside the original proposal and will be added to the original contract amount upon customer approval."
-    : "Esta orden de cambio constituye trabajo adicional fuera de la propuesta original y se sumará al monto del contrato original una vez aprobada por el cliente.";
   doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
-  const closingLines = doc.splitTextToSize(closing, CW - 36) as string[];
-  const closingY = Math.min(sigLineY + 21, 276 - (closingLines.length - 1) * 3.8);
+  const closingY = sigLineY + 21;
   closingLines.forEach((ln, i) => doc.text(ln, CX, closingY + i * 3.8, { align: "center" }));
 
   // ── Pie de página ──
@@ -1195,6 +1226,15 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
 
   const filename = `ChangeOrder_${(co.orderNo || "Luxaris").replace(/\s+/g, "-")}.pdf`;
   return { doc, filename };
+}
+
+/** Si la orden no entra en una página se vuelve a componer con la rejilla
+ *  compacta; sólo se queda con ella si de verdad ahorra páginas. */
+function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: string } {
+  const normal = renderChangeOrder(co, false);
+  if (normal.doc.getNumberOfPages() === 1) return normal;
+  const tight = renderChangeOrder(co, true);
+  return tight.doc.getNumberOfPages() < normal.doc.getNumberOfPages() ? tight : normal;
 }
 
 export function exportChangeOrderPdf(co: ChangeOrderData) {
