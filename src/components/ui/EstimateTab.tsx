@@ -687,6 +687,7 @@ export default function EstimateTab({
   const [coEmailSub,   setCoEmailSub]   = useState("");
   const [coEmailMsg,   setCoEmailMsg]   = useState("");
   const [coPreview,    setCoPreview]    = useState<string | null>(null);
+  const [coPreviewOn,  setCoPreviewOn]  = useState(false);
   const [coSending,    setCoSending]    = useState(false);
 
   // ── Estimate sub-tabs ─────────────────────────────────────────────────────
@@ -1788,6 +1789,7 @@ export default function EstimateTab({
   const closeCoModal = useCallback(() => {
     setShowCoModal(false);
     setCoConfirmClose(false);
+    setCoPreviewOn(false);
     setCoPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
   }, []);
 
@@ -1801,6 +1803,13 @@ export default function EstimateTab({
     refreshCoPreview(coMode);
     setCoView("email");
   }, [refreshCoPreview, coMode]);
+
+  // La vista previa sigue al formulario: lo que se ve es lo que se imprime.
+  useEffect(() => {
+    if (!showCoModal || coView !== "build" || !coPreviewOn) return;
+    const t = setTimeout(() => refreshCoPreview(coMode), 400);
+    return () => clearTimeout(t);
+  }, [showCoModal, coView, coPreviewOn, refreshCoPreview, coMode]);
 
   const sendCoEmail = useCallback(async () => {
     if (!coEmailTo.includes("@")) return;
@@ -2940,6 +2949,21 @@ export default function EstimateTab({
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  <div>
+                    <button type="button" onClick={() => { setCoPreviewOn(v => !v); if (!coPreviewOn) refreshCoPreview(coMode); }}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--accent)] hover:underline">
+                      👁 {coPreviewOn ? (EN ? "Hide PDF preview" : "Ocultar vista previa") : (EN ? "Show PDF preview" : "Ver vista previa del PDF")}
+                    </button>
+                    {coPreviewOn && coPreview && (
+                      <iframe src={coPreview} title="Change order preview" className="mt-2 h-72 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]" />
+                    )}
+                    <p className="mt-1.5 text-[10px] leading-snug text-[#97A1A0] dark:text-[#728098]">
+                      {EN
+                        ? "The preview follows what you type — it is the exact PDF that gets printed and emailed."
+                        : "La vista previa sigue lo que escribes — es el PDF exacto que se imprime y se envía."}
+                    </p>
                   </div>
 
                   {(estimate.deposit_schedule?.length ?? 0) > 0 && (
