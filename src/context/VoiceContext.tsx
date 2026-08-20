@@ -37,18 +37,3 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 }
 
 export const useVoice = () => useContext(VoiceContext);
-
-/**
- * Evento personalizado que el VoiceFAB dispara cuando Claude
- * ha parseado un comando de voz. Las páginas escuchan con:
- *   window.addEventListener("kokivoice", handler)
- */
-export interface VoiceAction {
-  action: string;
-  data: Record<string, unknown>;
-  confirmMessage: string;
-}
-
-export function dispatchVoiceAction(va: VoiceAction) {
-  window.dispatchEvent(new CustomEvent("kokivoice", { detail: va }));
-}

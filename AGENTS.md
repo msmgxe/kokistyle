@@ -308,6 +308,17 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
 - Env vars requeridas (en `.env.local` y Vercel): `YAHOO_EMAIL` + `YAHOO_APP_PASSWORD` (generar en Yahoo → Account Security → App passwords; la contraseña normal NO funciona)
 - Errores de credenciales devuelven mensaje claro ("Yahoo rechazó las credenciales…"); todo se reporta con toast
 
+### Change Order (orden de cambio) — `EstimateTab.tsx` + `pdf.ts`
+
+Botón **Change Order / Orden de cambio** en la cabecera oscura del Estimate, junto a Factura. Emite una orden de cambio sobre el contrato vigente con el mismo patrón del Invoice: modal con vista `build` → vista `email` (preview del PDF en iframe), más **Abrir** y **PDF**.
+
+- **Diseño del documento — "delta visual"** (opción 2 del prototipo `change-order-3-opciones.html`): banda oscura con nº de orden y badge *Pendiente de firma*, tres cifras (**contrato anterior → este cambio → contrato nuevo**), motivo del cambio, columnas **Se agrega** (verde) / **Se acredita** (rojo), cronograma (+N días), cuotas recalculadas y firmas contratista/cliente con `CONTRACTOR_SIGNATURE`.
+- **Con detalle / Sin detalle** (`mode: "full" | "summary"`, mismo enum que el PDF del Estimate): `full` muestra el monto de cada línea y los subtotales; `summary` muestra el alcance en viñetas **sin montos por línea** — solo el cambio total y el contrato nuevo. El toggle está en la vista `build` (afecta Abrir/PDF/Email) y se repite junto al preview en la vista `email`.
+- **Contrato anterior**: campo editable prellenado con el grand total del estimado. Si ya se aprobaron órdenes previas, se edita a mano — **no hay tabla `change_orders`**, la orden es *stateless* igual que la factura (no persiste ni modifica el estimado).
+- **Cuotas**: `Sumar el neto a la última cuota` (default) mantiene las primeras cuotas y ajusta la última; desmarcado recalcula todas por su porcentaje. Solo aparece si el estimado tiene `deposit_schedule`.
+- **Envío**: `POST /api/estimate/send-email` (mismo endpoint SMTP Yahoo del estimado y la factura) con adjunto `Change Order <nº> - <proyecto>.pdf`, y deja nota en `project_notes` con el neto y el contrato nuevo.
+- API en `src/lib/pdf.ts`: `ChangeOrderData` · `changeOrderTotals()` · `exportChangeOrderPdf()` · `openChangeOrderPdfInBrowser()` · `getChangeOrderPdfBlob()`.
+
 ### Módulo Materials — Import desde Estimate
 
 - Botón azul **"Import from Estimate / Importar del Estimado"** en la parte superior del tab Materials.
@@ -400,7 +411,7 @@ Editor visual de la página de inicio — el diferencial "vendible" a otras empr
 - **Editable:** Hero (antetítulo, titular, descripción, 2 botones con label+enlace, 2 imágenes, badge) · Before/After (encabezado + N tarjetas con imagen antes/después, nombre y ciudad; agregar/quitar) · Visibilidad on/off de 6 secciones (beforeAfter, aiDesign, process, tours, reviews, faq). Todo bilingüe EN/ES (campos lado a lado). Imágenes por **subida** a `kokistyle-files/site/` o pegando URL.
 - **Bug evitado:** los sub-componentes `BiText`/`ImageField` están a **nivel de módulo** (no dentro del componente) para no perder el foco del input al escribir; `ImageField` es autónomo (sube y maneja su propio estado).
 
-> **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing; su link "Estimate" del navbar se reemplazó (jul 2026) por AI Design · Process · Reviews · FAQ, y el CTA "Get Estimate" del Hero por "Try Free AI Design" (→ `#ai-design`). El archivo `src/components/estimate/EstimateBuilder.tsx` puede eliminarse si no hay otras referencias.
+> **Eliminado (jun 2026):** El bloque `EstimateBuilder` (cotizador público con PDF/QR) fue removido de la landing; su link "Estimate" del navbar se reemplazó (jul 2026) por AI Design · Process · Reviews · FAQ, y el CTA "Get Estimate" del Hero por "Try Free AI Design" (→ `#ai-design`).
 
 ---
 
@@ -828,28 +839,17 @@ El modal de instalamentos del Estimate (`deposit_schedule`) tiene un detalle exp
 
 ---
 
-## Prototypes
+## Prototipos (fuera del repo)
 
-Prototipos HTML standalone en la carpeta `prototypes/` en la raíz del repo (no en `src/`).
+Los 37 prototipos HTML standalone y las fotos de referencia se movieron **fuera del proyecto** (ago 2026) para aligerar el repo:
 
-> **Índice navegable:** `prototypes/index.html` — abre ese archivo en el navegador y enlaza a los 37 prototipos agrupados por tema, con badge de estado (En producción · Propuesta · Referencia). Al agregar un prototipo nuevo, sumar su tarjeta ahí además de esta tabla.
-
-| Archivo | Descripción |
+| Carpeta | Contenido |
 |---|---|
-| `activity-log-prototype.html` | Prototipo visual del Activity Log con Tailwind CDN y datos de ejemplo |
-| `payment-schedule-sidebar.html` | Prototipo "Opción A" del layout de Estimate — cabecera dark + sub-tabs (referencia del diseño implementado) |
-| `agenda-admin-prototype.html` | Prototipo de la Agenda personal — captura por voz + 3 opciones de notificación (referencia del diseño implementado) |
-| `index02.html` | Prototipo 02 — referencia del patrón SpeechRecognition usado en Design tab (movido desde la raíz) |
-| `gantt-report-print.html` | Prototipo del **reporte diario de actividades** — implementado en producción como `src/components/ui/DailyReport.tsx` (vista "Reporte diario" del Gantt G, jul 2026) |
-| `vista-hoy-movil.html` | Prototipo de la **vista "Hoy" móvil** — implementado en producción como `/proyectos/hoy` (jul 2026) |
-| `fotos-obra-movil.html` | Prototipo de **Fotos de obra** — implementado en producción como `ProjectPhotos.tsx` (página `/proyectos/fotos` + tab Photos del proyecto, jul 2026) |
-| `app-android-shell.html` | Prototipo del **APK Android** (pendiente de decisión): comparativa TWA (Bubblewrap, recomendada — empaqueta la PWA existente, cero código duplicado) vs Capacitor vs nativa, + shell ligera con tabs Hoy·Fotos·Katy·Agenda sincronizada con la web |
-| `voz-design-movil.html` | Prototipo de **Voz universal + Design AI** (pendiente de aprobación): dictado de notas/tareas por proyecto con MediaRecorder real (plan producción: audio → Whisper en Replicate → /api/voice con Claude → tarjeta de confirmación — reemplaza a Web Speech API, roto en varios Android) + flujo Design "foto actual → visión del después (Nano Banana / gemini-2.5-flash-image, tier gratuito) → alcance sugerido → crear secciones del Estimate" |
-| `propuesta-valor.html` | Página standalone de propuesta de valor (movida desde public/) |
-| `pdf-options/a·b·c.html` | Prototipos de las 3 opciones de diseño del PDF del estimado (movidos desde public/) |
-| `objetivos-3-opciones.html` | 3 opciones de presentación de los **objetivos del proyecto** (1: tercera columna del hero · 2: franja ancha bajo el hero · 3: tarjeta compacta bajo el título). Se implementó la **opción 1** — ver "Objetivos del proyecto" arriba |
-| `luxaris-app-simulacion.html` | **Simulación funcional** completa (dashboard + detalle + móvil): recorre hero, Estimate, Cash Flow, Day Planner, Gantt, Materials, Contacts, Fotos, Notes y Design en un solo archivo — referencia de UX de extremo a extremo |
-| `ux-master-unified-app.html` | **Master Unified V2** — simulación de la app con varios proyectos, selector de paleta de colores y asistente Katy; propuesta de UX unificada (pendiente de decisión) |
+| `../kokistyle-archivo/prototypes/` | 37 prototipos HTML + `index.html` navegable + `pdf-options/` |
+| `../kokistyle-archivo/prototipos-public/` | `factura-lab.html` (antes en `public/prototipos/`) |
+| `../kokistyle-archivo/imagenes/` | fotos de obra de referencia (Piscina, Sophya, Sunny Isle, Vickys) |
+
+Siguen versionados en el historial de git hasta el commit `6d97e2f`. Al crear un prototipo nuevo, guardarlo ahí y sumar su tarjeta a `index.html`.
 
 ---
 
@@ -889,7 +889,7 @@ Para agregar texto nuevo: añadir la clave en **ambos** objetos `en` y `es` en `
 | `create_task` | "Add task install tile" | "Agregar tarea instalar tile" |
 | `create_objective` | "Add objective finish the bathroom" | "Agregar objetivo terminar el baño" |
 | `create_material` | "Add material tile $800" | "Agregar material tile $800" |
-| `create_budget_item` | "Add budget item plumbing $1200" | "Agregar item plomería $1200" |
+| `create_budget_item` | "Add budget item plumbing $1200" | "Agregar item plomería $1200" | ⚠️ escribe en `budget_items`, tabla **sin lectura en la UI** desde que se eliminó el tab Presupuesto legacy (ago 2026) — el Estimate real vive en `estimate_sections`/`estimate_items` |
 | `create_payment` | "Add payment $4000" | "Agregar pago $4000" |
 | `create_expense` | "Add expense $500 Jorge" | "Agregar egreso $500 Jorge" |
 | `create_contact` | "Add contact Jorge plumber" | "Agregar contacto Jorge plomero" |

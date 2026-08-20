@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
-import { openEstimatePdfInBrowser, getEstimatePdfBlob, exportInvoicePdf, openInvoicePdfInBrowser, getInvoicePdfBlob, type InvoiceData } from "@/src/lib/pdf";
+import { openEstimatePdfInBrowser, getEstimatePdfBlob, exportInvoicePdf, openInvoicePdfInBrowser, getInvoicePdfBlob, exportChangeOrderPdf, openChangeOrderPdfInBrowser, getChangeOrderPdfBlob, type InvoiceData, type ChangeOrderData } from "@/src/lib/pdf";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
 import { computeGrandTotal } from "@/src/lib/estimateTotals";
 
@@ -33,6 +33,14 @@ import { branding } from "@/src/config/branding";
 import DayPlannerModal from "./DayPlannerModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface CoLineRow {
+  id: string;
+  kind: "add" | "credit";
+  section: string;
+  description: string;
+  amount: string;
+}
 
 interface ItemRow {
   id: string;
@@ -582,6 +590,23 @@ export default function EstimateTab({
   const [invEmailMsg,  setInvEmailMsg]  = useState("");
   const [invPreview,   setInvPreview]   = useState<string | null>(null);
   const [invSending,   setInvSending]   = useState(false);
+
+  // ── Change Order modal (orden de cambio — delta visual) ───────────────────
+  const [showCoModal,  setShowCoModal]  = useState(false);
+  const [coView,       setCoView]       = useState<"build" | "email">("build");
+  const [coNo,         setCoNo]         = useState("");
+  const [coDate,       setCoDate]       = useState("");
+  const [coReason,     setCoReason]     = useState("");
+  const [coDays,       setCoDays]       = useState("0");
+  const [coPrior,      setCoPrior]      = useState("0");
+  const [coMode,       setCoMode]       = useState<"full" | "summary">("full");
+  const [coAddToLast,  setCoAddToLast]  = useState(true);
+  const [coLines,      setCoLines]      = useState<CoLineRow[]>([]);
+  const [coEmailTo,    setCoEmailTo]    = useState("");
+  const [coEmailSub,   setCoEmailSub]   = useState("");
+  const [coEmailMsg,   setCoEmailMsg]   = useState("");
+  const [coPreview,    setCoPreview]    = useState<string | null>(null);
+  const [coSending,    setCoSending]    = useState(false);
 
   // ── Estimate sub-tabs ─────────────────────────────────────────────────────
   const [estimateSubTab,   setEstimateSubTab]   = useState<"sections" | "schedule">("sections");
@@ -1280,6 +1305,138 @@ export default function EstimateTab({
     } finally { setInvSending(false); }
   }, [invEmailTo, invEmailSub, invEmailMsg, buildInvoiceData, project.title, EN, toast, closeInvoiceModal]);
 
+
+  // ── Change Order (orden de cambio) — delta sobre el contrato vigente ───────
+  const newCoLine = useCallback((kind: "add" | "credit" = "add"): CoLineRow => ({
+    id: `co${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    kind, section: "", description: "", amount: "",
+  }), []);
+
+  const coTotals = useMemo(() => {
+    const num = (v: string) => Math.max(0, parseFloat(v) || 0);
+    const added    = coLines.filter(l => l.kind === "add").reduce((s, l) => s + num(l.amount), 0);
+    const credited = coLines.filter(l => l.kind === "credit").reduce((s, l) => s + num(l.amount), 0);
+    const prior    = Math.max(0, parseFloat(coPrior) || 0);
+    const net      = added - credited;
+    return { added, credited, net, prior, newContract: prior + net };
+  }, [coLines, coPrior]);
+
+  const coSchedule = useCallback(() => {
+    const deps = estimate?.deposit_schedule ?? [];
+    if (!deps.length) return [];
+    const { prior, newContract } = coTotals;
+    const rows = deps.map(d => ({
+      label: (EN ? d.label_en : d.label_es) || "",
+      pct:   d.pct,
+      was:   depositTarget(d, prior),
+      now:   coAddToLast ? depositTarget(d, prior) : depositTarget(d, newContract),
+    }));
+    if (coAddToLast) {
+      const head = rows.slice(0, -1).reduce((s, r) => s + r.now, 0);
+      rows[rows.length - 1].now = newContract - head;
+    }
+    return rows;
+  }, [estimate, coTotals, coAddToLast, depositTarget, EN]);
+
+  const buildCoData = useCallback((mode: "full" | "summary"): ChangeOrderData => ({
+    orderNo: coNo.trim(),
+    date:    coDate.trim(),
+    language, mode,
+    projectTitle: project.title,
+    reason:    coReason.trim(),
+    extraDays: Math.max(0, parseInt(coDays, 10) || 0),
+    priorContract: coTotals.prior,
+    addToLast: coAddToLast,
+    client: {
+      name:    estimate?.customer_name ?? "",
+      company: estimate?.customer_company ?? "",
+      address: estimate?.customer_address ?? "",
+      city:    estimate?.city ?? "",
+      phone:   estimate?.phone ?? "",
+      email:   estimate?.email ?? "",
+    },
+    lines: coLines
+      .filter(l => l.description.trim() !== "" || (parseFloat(l.amount) || 0) > 0)
+      .map(l => ({
+        description: l.description.trim(),
+        section:     l.section.trim() || undefined,
+        kind:        l.kind,
+        amount:      Math.max(0, parseFloat(l.amount) || 0),
+      })),
+    schedule: coSchedule(),
+  }), [coNo, coDate, language, project.title, coReason, coDays, coTotals, coAddToLast, estimate, coLines, coSchedule]);
+
+  const refreshCoPreview = useCallback((mode: "full" | "summary") => {
+    const url = URL.createObjectURL(getChangeOrderPdfBlob(buildCoData(mode)));
+    setCoPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
+  }, [buildCoData]);
+
+  const openCoModal = useCallback(() => {
+    if (!estimate) return;
+    const now = new Date();
+    const mEN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const mES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+    const mm  = (EN ? mEN : mES)[now.getMonth()];
+    setCoDate(EN ? `${mm}. ${String(now.getDate()).padStart(2,"0")}, ${now.getFullYear()}`
+                 : `${String(now.getDate()).padStart(2,"0")} ${mm}. ${now.getFullYear()}`);
+    setCoNo("CO-001");
+    setCoReason("");
+    setCoDays("0");
+    setCoPrior(String(Math.round(totals.grandTotal * 100) / 100));
+    setCoMode("full");
+    setCoAddToLast(true);
+    setCoLines([newCoLine("add")]);
+    setCoView("build");
+    setCoEmailTo(estimate.email?.trim() ?? "");
+    setCoEmailSub(`${EN ? "Change Order" : "Orden de cambio"} — ${project.title}`);
+    setCoEmailMsg(EN
+      ? `Hello${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nPlease find attached the change order for "${project.title}".\nPlease reply with your approval so we can proceed.\n\nBest regards,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`
+      : `Hola${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nAdjunto encontrará la orden de cambio de "${project.title}".\nQuedo atento a su aprobación para continuar.\n\nSaludos cordiales,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`);
+    setShowCoModal(true);
+  }, [estimate, EN, project.title, totals.grandTotal, newCoLine]);
+
+  const closeCoModal = useCallback(() => {
+    setShowCoModal(false);
+    setCoPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
+  }, []);
+
+  const goCoEmail = useCallback(() => {
+    refreshCoPreview(coMode);
+    setCoView("email");
+  }, [refreshCoPreview, coMode]);
+
+  const sendCoEmail = useCallback(async () => {
+    if (!coEmailTo.includes("@")) return;
+    setCoSending(true);
+    try {
+      const blob = getChangeOrderPdfBlob(buildCoData(coMode));
+      const pdfBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(String(reader.result).split(",")[1] ?? "");
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const res = await fetch("/api/estimate/send-email", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: coEmailTo.trim(), subject: coEmailSub.trim(), message: coEmailMsg,
+          fileName: `Change Order ${coNo.trim()} - ${project.title}.pdf`, pdfBase64,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast(EN ? `Change order sent to ${coEmailTo.trim()} ✓` : `Orden de cambio enviada a ${coEmailTo.trim()} ✓`);
+        addProjectNote(project.id, EN
+          ? `📝 Change order${coNo.trim() ? " " + coNo.trim() : ""} (${money(coTotals.net)}) emailed to ${coEmailTo.trim()} — new contract ${money(coTotals.newContract)} — ${noteDate("en")}`
+          : `📝 Orden de cambio${coNo.trim() ? " " + coNo.trim() : ""} (${money(coTotals.net)}) enviada a ${coEmailTo.trim()} — contrato nuevo ${money(coTotals.newContract)} — ${noteDate("es")}`);
+        closeCoModal();
+      }
+      else toast((EN ? "Send failed: " : "Error al enviar: ") + (data.error ?? ""));
+    } catch {
+      toast(EN ? "Send failed — check your connection" : "Error al enviar — revisa tu conexión");
+    } finally { setCoSending(false); }
+  }, [coEmailTo, coEmailSub, coEmailMsg, buildCoData, coMode, coNo, coTotals, project.id, project.title, EN, toast, closeCoModal]);
+
   // ── Copy estimate to another project ─────────────────────────────────────
   const openCopyModal = useCallback(async () => {
     const { data } = await supabase
@@ -1597,6 +1754,16 @@ export default function EstimateTab({
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3h16v18l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
               <span className="hidden sm:inline">{EN ? "Invoice" : "Factura"}</span>
+            </button>
+
+            {/* Change Order / Orden de cambio */}
+            <button
+              onClick={openCoModal}
+              title={EN ? "Issue a change order over the current contract" : "Emitir una orden de cambio sobre el contrato vigente"}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-[#F0F3FA] dark:bg-[#17233d] px-3 py-2 text-[10px] font-bold text-[var(--brand)] dark:text-[#e8edf7] transition hover:bg-[#E4EAF5] dark:hover:bg-[#22304d]"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M12 12v6"/></svg>
+              <span className="hidden sm:inline">{EN ? "Change Order" : "Orden de cambio"}</span>
             </button>
 
             {/* PDF */}
@@ -1991,6 +2158,211 @@ export default function EstimateTab({
                 <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
                   <button onClick={() => setInvView("build")} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">← {EN ? "Back" : "Atrás"}</button>
                   <button onClick={sendInvoiceEmail} disabled={invSending || !invEmailTo.includes("@")} className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">{invSending ? (EN ? "Sending…" : "Enviando…") : (EN ? "Send invoice" : "Enviar factura")}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+
+      {/* ── Change Order modal (orden de cambio — delta visual) ────────────── */}
+      {showCoModal && estimate && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center" onClick={closeCoModal}>
+          <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between bg-[var(--brand)] px-5 py-3.5">
+              <span className="text-sm font-bold text-white">
+                📝 {coView === "email"
+                  ? (EN ? "Send change order by email" : "Enviar orden de cambio por correo")
+                  : (EN ? "Change Order" : "Orden de cambio")}
+              </span>
+              <button onClick={closeCoModal} className="text-white/60 hover:text-white"><X size={16} /></button>
+            </div>
+
+            {coView === "build" ? (
+              <>
+                <div className="flex-1 space-y-4 overflow-y-auto p-5">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Order #" : "Orden #"}</label>
+                      <input value={coNo} onChange={e => setCoNo(e.target.value)} placeholder="CO-001"
+                        className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Date" : "Fecha"}</label>
+                      <input value={coDate} onChange={e => setCoDate(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Extra days" : "Días extra"}</label>
+                      <input type="number" min={0} value={coDays} onChange={e => setCoDays(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Reason for change" : "Motivo del cambio"}</label>
+                    <textarea rows={3} value={coReason} onChange={e => setCoReason(e.target.value)}
+                      placeholder={EN ? "What the customer approved and why…" : "Qué aprobó el cliente y por qué…"}
+                      className="w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Change lines" : "Líneas del cambio"}</label>
+                    <div className="space-y-2">
+                      {coLines.map((l, i) => (
+                        <div key={l.id} className={`rounded-xl border px-3 py-2.5 ${l.kind === "add"
+                          ? "border-[#4F8A63]/50 bg-[#4F8A63]/10"
+                          : "border-[#B0492F]/50 bg-[#B0492F]/10"}`}>
+                          <div className="mb-1.5 flex items-center gap-2">
+                            <button type="button"
+                              onClick={() => setCoLines(ls => ls.map((x, j) => j === i ? { ...x, kind: x.kind === "add" ? "credit" : "add" } : x))}
+                              title={EN ? "Switch between adds and credit" : "Cambiar entre agrega y acredita"}
+                              className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white ${l.kind === "add" ? "bg-[#4F8A63]" : "bg-[#B0492F]"}`}>
+                              {l.kind === "add" ? (EN ? "Adds" : "Agrega") : (EN ? "Credit" : "Acredita")}
+                            </button>
+                            <input list="co-sections" value={l.section}
+                              onChange={e => setCoLines(ls => ls.map((x, j) => j === i ? { ...x, section: e.target.value } : x))}
+                              placeholder={EN ? "Section" : "Sección"}
+                              className="h-7 min-w-0 flex-1 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#0b1220] px-2 text-[11px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                            <input type="number" min={0} step={10} value={l.amount}
+                              onChange={e => setCoLines(ls => ls.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))}
+                              placeholder="0"
+                              className="h-7 w-24 shrink-0 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#0b1220] px-2 text-right text-[12px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                            <button onClick={() => setCoLines(ls => ls.filter((_, j) => j !== i))}
+                              className="shrink-0 text-[#97A1A0] hover:text-[#B0492F]" title={EN ? "Remove line" : "Eliminar línea"}>
+                              <X size={13} />
+                            </button>
+                          </div>
+                          <input value={l.description}
+                            onChange={e => setCoLines(ls => ls.map((x, j) => j === i ? { ...x, description: e.target.value } : x))}
+                            placeholder={EN ? "Describe the work…" : "Describe el trabajo…"}
+                            className="w-full border-0 border-b border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                        </div>
+                      ))}
+                    </div>
+                    <datalist id="co-sections">
+                      {estimate.sections.map(sec => (
+                        <option key={sec.id} value={(EN ? sec.name_en : sec.name_es) || sec.name_en} />
+                      ))}
+                    </datalist>
+                    <div className="mt-2 flex gap-2">
+                      <button onClick={() => setCoLines(ls => [...ls, newCoLine("add")])}
+                        className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[#4F8A63]/60 px-3 py-1.5 text-[11px] font-bold text-[#4F8A63] hover:bg-[#4F8A63]/10">
+                        <Plus size={12} />{EN ? "Adds" : "Agrega"}
+                      </button>
+                      <button onClick={() => setCoLines(ls => [...ls, newCoLine("credit")])}
+                        className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[#B0492F]/60 px-3 py-1.5 text-[11px] font-bold text-[#B0492F] hover:bg-[#B0492F]/10">
+                        <Plus size={12} />{EN ? "Credit" : "Acredita"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-xl border border-[#E7E9EE] dark:border-[#22304d]">
+                    <div className="flex items-center justify-between gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2">
+                      <span className="text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Prior contract" : "Contrato anterior"}</span>
+                      <input type="number" min={0} value={coPrior} onChange={e => setCoPrior(e.target.value)}
+                        className="h-8 w-32 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+                      <span>{EN ? "Additions subtotal" : "Subtotal agrega"}</span>
+                      <b className="text-[#4F8A63]">{money(coTotals.added)}</b>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+                      <span>{EN ? "Credits subtotal" : "Subtotal acredita"}</span>
+                      <b className="text-[#B0492F]">-{money(coTotals.credited)}</b>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#17233d] px-3 py-2 text-[12.5px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
+                      <span>{EN ? "Net of this order" : "Neto de esta orden"}</span>
+                      <span>{coTotals.net >= 0 ? "+" : "-"}{money(Math.abs(coTotals.net))}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-[var(--brand)] px-3 py-2.5 text-sm font-bold text-white">
+                      <span>{EN ? "New contract sum" : "Nuevo monto del contrato"}</span>
+                      <span>{money(coTotals.newContract)}</span>
+                    </div>
+                  </div>
+                  <p className="-mt-2 text-[10px] text-[#97A1A0] dark:text-[#728098]">
+                    {EN
+                      ? "Prior contract is prefilled with the estimate grand total — edit it if previous change orders were already approved."
+                      : "El contrato anterior viene del total del estimado — edítalo si ya se aprobaron órdenes de cambio previas."}
+                  </p>
+
+                  <div className="flex items-start justify-between gap-3 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2.5">
+                    <div className="min-w-0">
+                      <span className="block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Amount detail" : "Detalle de montos"}</span>
+                      <p className="mt-0.5 text-[10.5px] leading-snug text-[#97A1A0] dark:text-[#728098]">
+                        {coMode === "full"
+                          ? (EN ? "The PDF shows the amount of every line." : "El PDF muestra el monto de cada línea.")
+                          : (EN ? "The PDF shows the scope without per-line amounts — only the total change." : "El PDF muestra el alcance sin montos por línea — solo el cambio total.")}
+                      </p>
+                    </div>
+                    <div className="inline-flex shrink-0 rounded-lg border border-[#D9DDE3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] p-0.5">
+                      {(["full", "summary"] as const).map(m => (
+                        <button key={m} type="button" onClick={() => setCoMode(m)}
+                          className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition ${
+                            coMode === m ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"
+                          }`}>
+                          {m === "full" ? (EN ? "With detail" : "Con detalle") : (EN ? "No detail" : "Sin detalle")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(estimate.deposit_schedule?.length ?? 0) > 0 && (
+                    <label className="flex items-start gap-2.5 text-[11.5px] leading-snug text-[#5C6A6E] dark:text-[#9fb0cc]">
+                      <input type="checkbox" checked={coAddToLast} onChange={e => setCoAddToLast(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-[#4F8A63]" />
+                      <span>{EN
+                        ? "Add the net to the last installment. Unchecked, every installment is recalculated by its percentage."
+                        : "Sumar el neto a la última cuota. Si lo desmarcas, se recalculan todas las cuotas por su porcentaje."}</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
+                  <button onClick={closeCoModal} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Cancel" : "Cancelar"}</button>
+                  <button onClick={() => openChangeOrderPdfInBrowser(buildCoData(coMode))} className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Open" : "Abrir"}</button>
+                  <button onClick={() => exportChangeOrderPdf(buildCoData(coMode))} className="inline-flex items-center gap-1.5 rounded-xl bg-[#7B1838] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#6a1530]"><FileText size={13} />PDF</button>
+                  <button onClick={goCoEmail} className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--accent-strong)]">✉️ Email</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex-1 space-y-3 overflow-y-auto p-5">
+                  <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{EN ? "From" : "Desde"}: <span className="font-bold text-[var(--brand)] dark:text-[#e8edf7]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span></p>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "To" : "Para"} *</label>
+                    <input type="email" value={coEmailTo} onChange={e => setCoEmailTo(e.target.value)} placeholder="cliente@email.com"
+                      className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Subject" : "Asunto"}</label>
+                    <input value={coEmailSub} onChange={e => setCoEmailSub(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "Message" : "Mensaje"}</label>
+                    <textarea rows={5} value={coEmailMsg} onChange={e => setCoEmailMsg(e.target.value)}
+                      className="w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2 text-sm leading-relaxed text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "PDF preview" : "Vista previa del PDF"}</label>
+                    <div className="inline-flex rounded-lg border border-[#D9DDE3] dark:border-[#2c3c5e] bg-[#F7F8FA] dark:bg-[#0b1220] p-0.5">
+                      {(["full", "summary"] as const).map(m => (
+                        <button key={m} type="button" onClick={() => { setCoMode(m); refreshCoPreview(m); }}
+                          className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition ${
+                            coMode === m ? "bg-[var(--accent)] text-white" : "text-[#5C6A6E] dark:text-[#9fb0cc] hover:text-[var(--brand)]"
+                          }`}>
+                          {m === "full" ? (EN ? "With detail" : "Con detalle") : (EN ? "No detail" : "Sin detalle")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {coPreview && <iframe src={coPreview} title="Change order preview" className="h-64 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]" />}
+                </div>
+                <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
+                  <button onClick={() => setCoView("build")} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">← {EN ? "Back" : "Atrás"}</button>
+                  <button onClick={sendCoEmail} disabled={coSending || !coEmailTo.includes("@")} className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">{coSending ? (EN ? "Sending…" : "Enviando…") : (EN ? "Send change order" : "Enviar orden de cambio")}</button>
                 </div>
               </>
             )}
@@ -2419,14 +2791,12 @@ export default function EstimateTab({
 
       {/* ── Edit installment modal ────────────────────────────────────────── */}
       {editDepositIdx !== null && estimate && (() => {
-        const dep         = estimate.deposit_schedule[editDepositIdx];
         const color       = DEPOSIT_PALETTE[editDepositIdx % DEPOSIT_PALETTE.length];
         const gt          = totals.grandTotal;
         const sumOthersAmt = estimate.deposit_schedule.filter((_, j) => j !== editDepositIdx).reduce((s, d) => s + depositTarget(d, gt), 0);
         const remainAmt   = Math.max(0, Math.round((gt - sumOthersAmt) * 100) / 100);
         const remainPct   = gt > 0 ? Math.round(remainAmt / gt * 1000) / 10 : 0;
         const currentAmt  = editDepositLastChanged === "amount" ? (parseFloat(editDepositAmt) || 0) : Math.round(gt * (parseFloat(editDepositPct) || 0) / 100 * 100) / 100;
-        const currentPct  = gt > 0 ? Math.round(currentAmt / gt * 1000) / 10 : 0;
         const isLast      = editDepositIdx === estimate.deposit_schedule.length - 1;
         return (
           <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"

@@ -1,9 +1,9 @@
 /**
  * PDF export utilities using jsPDF.
- * Generates cotización (budget quote) and estado de cuenta (account statement).
+ * Generates estado de cuenta, estimate, invoice, Gantt and pending-items reports.
  */
 import jsPDF from "jspdf";
-import type { BudgetItem, Payment, Expense, Project, ProjectEstimate } from "@/src/types/project";
+import type { Payment, Expense, Project, ProjectEstimate } from "@/src/types/project";
 import { money } from "./utils";
 import { branding } from "@/src/config/branding";
 import { CONTRACTOR_SIGNATURE } from "@/src/config/signature";
@@ -84,66 +84,6 @@ function divider(doc: jsPDF, y: number) {
   doc.setLineWidth(0.2);
   doc.line(14, y, W - 14, y);
   return y + 3;
-}
-
-export function exportCotizacion(project: Project, items: BudgetItem[]) {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const W = doc.internal.pageSize.getWidth();
-  let y = header(doc, "Cotización", project);
-
-  y = colHeader(doc, y, [
-    { x: 14,      label: "DESCRIPCIÓN" },
-    { x: 120,     label: "TIPO" },
-    { x: W - 14,  label: "MONTO (USD)", align: "right" },
-  ]);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-
-  let mano = 0, mat = 0;
-  items.forEach((b) => {
-    if (b.type === "mano") mano += b.amount; else mat += b.amount;
-
-    doc.setTextColor(INK);
-    doc.text(b.description, 14, y, { maxWidth: 100 });
-    doc.setTextColor(b.type === "mano" ? ACCENT : MUTED);
-    doc.text(b.type === "mano" ? "Mano de obra" : "Material", 120, y);
-    doc.setTextColor(INK);
-    doc.text(money(b.amount), W - 14, y, { align: "right" });
-    y += 7;
-    if (y > 270) { doc.addPage(); y = 20; }
-  });
-
-  y = divider(doc, y);
-
-  // Subtotals
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(MUTED);
-  doc.text("Subtotal mano de obra", 120, y + 5);
-  doc.text(money(mano), W - 14, y + 5, { align: "right" });
-  doc.text("Subtotal materiales", 120, y + 11);
-  doc.text(money(mat), W - 14, y + 11, { align: "right" });
-
-  // Total bar
-  y += 18;
-  doc.setFillColor(22, 50, 61);
-  doc.roundedRect(14, y, W - 28, 14, 3, 3, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(255, 255, 255);
-  doc.text("Total presupuestado", 20, y + 9);
-  doc.text(money(items.reduce((s, b) => s + b.amount, 0)), W - 20, y + 9, { align: "right" });
-
-  // Footer
-  y += 24;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8);
-  doc.setTextColor(MUTED);
-  doc.text("Este presupuesto tiene validez de 30 días. Precios en USD.", 14, y);
-
-  const filename = `Cotizacion_${project.title.replace(/\s+/g, "_")}.pdf`;
-  doc.save(filename);
 }
 
 function buildEstadoCuenta(project: Project, payments: Payment[], expenses: Expense[]): { doc: jsPDF; filename: string } {
@@ -267,11 +207,6 @@ function buildEstadoCuenta(project: Project, payments: Payment[], expenses: Expe
 
   const filename = `EstadoCuenta_${project.title.replace(/\s+/g, "_")}.pdf`;
   return { doc, filename };
-}
-
-export function exportEstadoCuenta(project: Project, payments: Payment[], expenses: Expense[]) {
-  const { doc, filename } = buildEstadoCuenta(project, payments, expenses);
-  doc.save(filename);
 }
 
 export function getEstadoCuentaBlob(project: Project, payments: Payment[], expenses: Expense[]): { blob: Blob; filename: string } {
@@ -654,19 +589,6 @@ function buildEstimatePdf(
   return { doc, filename };
 }
 
-export function exportEstimatePdf(
-  estimate: ProjectEstimate,
-  grandTotal: number,
-  laborTotal: number,
-  discountAmt: number,
-  language: "en" | "es" = "en",
-  projectTitle?: string,
-  mode: "full" | "summary" = "full",
-) {
-  const { doc, filename } = buildEstimatePdf(estimate, grandTotal, laborTotal, discountAmt, language, projectTitle, mode);
-  doc.save(filename);
-}
-
 export function openEstimatePdfInBrowser(
   estimate: ProjectEstimate,
   grandTotal: number,
@@ -836,6 +758,320 @@ export function openInvoicePdfInBrowser(inv: InvoiceData) {
 }
 export function getInvoicePdfBlob(inv: InvoiceData): Blob {
   const { doc } = buildInvoicePdf(inv);
+  return doc.output("blob") as Blob;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CHANGE ORDER (orden de cambio) — "Delta visual": contrato anterior → cambio →
+//  contrato nuevo, con el detalle de líneas opcional (mode "full" | "summary").
+// ═══════════════════════════════════════════════════════════════════════════════
+export interface ChangeOrderLine {
+  description: string;
+  section?: string;
+  kind: "add" | "credit";
+  amount: number;
+}
+
+export interface ChangeOrderData {
+  orderNo: string;
+  date: string;                 // texto a mostrar (ej. "20 AGO. 2026")
+  language: "en" | "es";
+  mode: "full" | "summary";     // full = montos por línea · summary = solo el cambio total
+  projectTitle: string;
+  reason: string;
+  extraDays: number;
+  priorContract: number;
+  addToLast: boolean;
+  client: { name: string; company?: string; address?: string; city?: string; phone?: string; email?: string };
+  lines: ChangeOrderLine[];
+  schedule: { label: string; pct: number; was: number; now: number }[];
+}
+
+export function changeOrderTotals(co: Pick<ChangeOrderData, "lines" | "priorContract">) {
+  const added   = co.lines.filter(l => l.kind === "add").reduce((s, l) => s + l.amount, 0);
+  const credited = co.lines.filter(l => l.kind === "credit").reduce((s, l) => s + l.amount, 0);
+  const net = added - credited;
+  return { added, credited, net, newContract: co.priorContract + net };
+}
+
+/** Monto con signo explícito, sin U+2212 (helvetica no lo dibuja). */
+const signed = (n: number) => (n < 0 ? "-" : "+") + money(Math.abs(n));
+
+function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: string } {
+  const EN  = co.language === "en";
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W   = doc.internal.pageSize.getWidth();
+  const ML  = 10, MR = W - 10, CW = MR - ML, CX = W / 2;
+  const { added, credited, net, newContract } = changeOrderTotals(co);
+
+  // ── Banda superior oscura ──
+  const bandH = 36;
+  doc.setFillColor(22, 50, 61);
+  doc.rect(0, 0, W, bandH, "F");
+  doc.setFont("times", "bolditalic"); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+  doc.text("Luxaris Design LLC.", ML, 12);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+  doc.text(`${EN ? "CHANGE ORDER" : "ORDEN DE CAMBIO"} ${co.orderNo}`.trim(), ML, 24);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(183, 203, 199);
+  const sub = [co.projectTitle, co.client.name, `${EN ? "Issued" : "Emitida"} ${co.date}`]
+    .filter(Boolean).join("   ·   ");
+  doc.text(sub, ML, 31, { maxWidth: CW - 52 });
+
+  const pillW = 46, pillH = 8;
+  doc.setFillColor(240, 160, 144);
+  doc.roundedRect(MR - pillW, 9, pillW, pillH, 4, 4, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(123, 24, 56);
+  doc.text(EN ? "AWAITING SIGNATURE" : "PENDIENTE DE FIRMA", MR - pillW / 2, 14.4, { align: "center" });
+
+  let y = bandH + 9;
+
+  // ── Tres cifras: anterior → cambio → nuevo ──
+  const kpiW = 58, gap = (CW - kpiW * 3) / 2, kpiH = 19;
+  const kpi = (x: number, label: string, value: string, kind: "plain" | "delta" | "now") => {
+    if (kind === "now") { doc.setFillColor(22, 50, 61); doc.setDrawColor(22, 50, 61); }
+    else if (kind === "delta") { doc.setFillColor(237, 243, 238); doc.setDrawColor(79, 138, 99); }
+    else { doc.setFillColor(255, 255, 255); doc.setDrawColor(230, 221, 203); }
+    doc.setLineWidth(0.3);
+    doc.roundedRect(x, y, kpiW, kpiH, 2, 2, "FD");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(6.8);
+    doc.setTextColor(...(kind === "now" ? [155, 182, 177] : [150, 150, 150]) as [number, number, number]);
+    doc.text(label, x + 5, y + 6.5);
+    doc.setFontSize(15);
+    doc.setTextColor(...(kind === "now" ? [255, 255, 255] : kind === "delta" ? [61, 113, 80] : [22, 50, 61]) as [number, number, number]);
+    doc.text(value, x + 5, y + 14.5);
+  };
+  const arrow = (x: number) => {
+    doc.setFillColor(185, 176, 160);
+    const cy = y + kpiH / 2;
+    doc.triangle(x - 2, cy - 2.4, x - 2, cy + 2.4, x + 2.2, cy, "F");
+  };
+  kpi(ML, EN ? "PRIOR CONTRACT" : "CONTRATO ANTERIOR", money(co.priorContract), "plain");
+  arrow(ML + kpiW + gap / 2);
+  kpi(ML + kpiW + gap, EN ? "THIS CHANGE" : "ESTE CAMBIO", signed(net), "delta");
+  arrow(ML + (kpiW + gap) * 2 - gap / 2);
+  kpi(ML + (kpiW + gap) * 2, EN ? "NEW CONTRACT" : "CONTRATO NUEVO", money(newContract), "now");
+  y += kpiH + 7;
+
+  // ── Motivo del cambio ──
+  if (co.reason.trim()) {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    const rl = doc.splitTextToSize(co.reason.trim(), CW - 10) as string[];
+    const rh = 9 + rl.length * 3.9;
+    doc.setFillColor(247, 243, 234); doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3);
+    doc.roundedRect(ML, y, CW, rh, 2, 2, "FD");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
+    doc.text(EN ? "REASON FOR CHANGE" : "MOTIVO DEL CAMBIO", ML + 5, y + 5);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(45, 45, 45);
+    rl.forEach((ln, i) => doc.text(ln, ML + 5, y + 9.6 + i * 3.9));
+    y += rh + 6;
+  }
+
+  const adds    = co.lines.filter(l => l.kind === "add");
+  const credits = co.lines.filter(l => l.kind === "credit");
+
+  if (co.mode === "full") {
+    // ── Dos columnas con montos por línea ──
+    const colW = (CW - 6) / 2;
+    const measure = (list: ChangeOrderLine[]) => {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      const rows = list.map(l => ({
+        line: l,
+        wrapped: doc.splitTextToSize(l.description || "—", colW - 32) as string[],
+      }));
+      const body = rows.reduce((s, r) => s + Math.max(9, 5.5 + r.wrapped.length * 3.6), 0);
+      return { rows, h: 6.5 + (list.length ? body : 10) + 7 };
+    };
+    const mA = measure(adds), mC = measure(credits);
+    const colH = Math.max(mA.h, mC.h);
+    if (y + colH > 250) { doc.addPage(); y = 20; }
+
+    const drawCol = (x: number, kind: "add" | "credit", m: ReturnType<typeof measure>, subtotal: number) => {
+      const isCredit = kind === "credit";
+      doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(x, y, colW, colH, 2, 2, "FD");
+      if (isCredit) doc.setFillColor(176, 73, 47); else doc.setFillColor(79, 138, 99);
+      doc.rect(x + 0.3, y + 0.3, colW - 0.6, 6.2, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+      doc.text(isCredit ? (EN ? "CREDITED TO OWNER" : "SE ACREDITA AL CLIENTE")
+                        : (EN ? "ADDED TO SCOPE" : "SE AGREGA AL ALCANCE"), x + 4, y + 4.5);
+
+      let ry = y + 6.5;
+      if (!m.rows.length) {
+        doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+        doc.text(EN ? "No lines in this column." : "Sin líneas en esta columna.", x + 4, ry + 6);
+        ry += 10;
+      }
+      m.rows.forEach(r => {
+        const rh = Math.max(9, 5.5 + r.wrapped.length * 3.6);
+        if (r.line.section) {
+          doc.setFont("helvetica", "bold"); doc.setFontSize(6.3); doc.setTextColor(150, 150, 150);
+          doc.text(r.line.section.toUpperCase(), x + 4, ry + 4, { maxWidth: colW - 32 });
+        }
+        doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+        doc.setTextColor(...(isCredit ? [176, 73, 47] : [61, 113, 80]) as [number, number, number]);
+        doc.text((isCredit ? "-" : "+") + money(r.line.amount), x + colW - 4, ry + 4, { align: "right" });
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(45, 45, 45);
+        r.wrapped.forEach((ln, i) => doc.text(ln, x + 4, ry + (r.line.section ? 7.8 : 4) + i * 3.6));
+        ry += rh;
+        doc.setDrawColor(240, 235, 224); doc.setLineWidth(0.2);
+        doc.line(x + 3, ry, x + colW - 3, ry);
+      });
+
+      const fy = y + colH - 7;
+      doc.setFillColor(247, 243, 234);
+      doc.rect(x + 0.3, fy, colW - 0.6, 6.7, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(22, 50, 61);
+      doc.text(isCredit ? (EN ? "Credits subtotal" : "Subtotal acredita")
+                        : (EN ? "Additions subtotal" : "Subtotal agrega"), x + 4, fy + 4.5);
+      doc.text((isCredit ? "-" : "") + money(subtotal), x + colW - 4, fy + 4.5, { align: "right" });
+    };
+    drawCol(ML, "add", mA, added);
+    drawCol(ML + colW + 6, "credit", mC, credited);
+    y += colH + 7;
+  } else {
+    // ── Resumen: el alcance sin montos por línea ──
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    const block = (title: string, list: ChangeOrderLine[]) =>
+      list.map(l => ({ title, wrapped: doc.splitTextToSize("•  " + (l.description || "—"), CW - 14) as string[] }));
+    const groups: { head: string; rows: { wrapped: string[] }[] }[] = [];
+    if (adds.length)    groups.push({ head: EN ? "ADDED TO SCOPE" : "SE AGREGA AL ALCANCE", rows: block("", adds) });
+    if (credits.length) groups.push({ head: EN ? "CREDITED TO OWNER" : "SE ACREDITA AL CLIENTE", rows: block("", credits) });
+
+    const bodyH = groups.reduce((s, g) => s + 6 + g.rows.reduce((ss, r) => ss + r.wrapped.length * 4, 0) + 3, 0);
+    const boxH  = 8 + (groups.length ? bodyH : 8);
+    if (y + boxH > 250) { doc.addPage(); y = 20; }
+    doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255);
+    doc.roundedRect(ML, y, CW, boxH, 2, 2, "FD");
+    doc.setFillColor(22, 50, 61);
+    doc.rect(ML + 0.3, y + 0.3, CW - 0.6, 6.2, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+    doc.text(EN ? "SCOPE OF THIS CHANGE" : "ALCANCE DE ESTE CAMBIO", ML + 4, y + 4.5);
+
+    let ry = y + 10.5;
+    groups.forEach(g => {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
+      doc.text(g.head, ML + 5, ry);
+      ry += 4.5;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(45, 45, 45);
+      g.rows.forEach(r => { r.wrapped.forEach(ln => { doc.text(ln, ML + 6, ry); ry += 4; }); });
+      ry += 3;
+    });
+    if (!groups.length) {
+      doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+      doc.text(EN ? "No lines in this change order." : "Sin líneas en esta orden de cambio.", ML + 5, ry);
+    }
+    y += boxH + 7;
+  }
+
+  // ── Cronograma + cuotas ──
+  const hasSched = co.schedule.length > 0;
+  const boxW = hasSched ? (CW - 6) / 2 : CW;
+  const schedH = hasSched ? Math.max(26, 15 + (co.schedule.length + 1) * 4.6) : 26;
+  if (y + schedH > 258) { doc.addPage(); y = 20; }
+
+  doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255);
+  doc.roundedRect(ML, y, boxW, schedH, 2, 2, "FD");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
+  doc.text(EN ? "SCHEDULE" : "CRONOGRAMA", ML + 5, y + 6);
+  doc.setFontSize(13); doc.setTextColor(22, 50, 61);
+  doc.text(co.extraDays > 0 ? `+${co.extraDays} ${EN ? "days" : "días"}` : (EN ? "No change" : "Sin cambios"), ML + 5, y + 13.5);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(92, 106, 110);
+  doc.text(
+    co.extraDays > 0
+      ? (EN ? "Delivery date shifts by the days above." : "La fecha de entrega se corre los días indicados.")
+      : (EN ? "Delivery date holds." : "La fecha de entrega se mantiene."),
+    ML + 5, y + 19, { maxWidth: boxW - 10 });
+
+  if (hasSched) {
+    const bx = ML + boxW + 6;
+    doc.setDrawColor(230, 221, 203); doc.setFillColor(255, 255, 255);
+    doc.roundedRect(bx, y, boxW, schedH, 2, 2, "FD");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
+    doc.text(EN ? "UPDATED INSTALLMENTS" : "CUOTAS ACTUALIZADAS", bx + 5, y + 6);
+    let sy = y + 11.5;
+    co.schedule.forEach(r => {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(60, 60, 60);
+      doc.text(`${r.label} · ${r.pct}%`, bx + 5, sy, { maxWidth: boxW - 46 });
+      doc.setFont("helvetica", "bold");
+      const changed = Math.round(r.now) !== Math.round(r.was);
+      doc.setTextColor(...(changed ? [61, 113, 80] : [22, 50, 61]) as [number, number, number]);
+      doc.text(money(r.now), bx + boxW - 5, sy, { align: "right" });
+      if (changed) {
+        doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(150, 150, 150);
+        doc.text(money(r.was), bx + boxW - 5 - doc.getTextWidth(money(r.now)) - 2.5, sy, { align: "right" });
+      }
+      sy += 4.6;
+    });
+    doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.2);
+    doc.line(bx + 4, sy - 3, bx + boxW - 4, sy - 3);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(22, 50, 61);
+    doc.text(EN ? "NEW CONTRACT" : "CONTRATO NUEVO", bx + 5, sy + 1);
+    doc.text(money(newContract), bx + boxW - 5, sy + 1, { align: "right" });
+  }
+  y += schedH + 6;
+
+  // ── Nota ──
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(80, 80, 80);
+  const note = (EN
+    ? "Once signed by both parties, this change order becomes part of the original contract. "
+    : "Esta orden de cambio forma parte del contrato original una vez firmada por ambas partes. ")
+    + (co.schedule.length
+        ? (co.addToLast
+            ? (EN ? "The net amount is added to the final installment." : "El neto de esta orden se suma a la última cuota del calendario de pagos.")
+            : (EN ? "The net amount is spread across every installment by its percentage." : "El neto de esta orden se reparte en todas las cuotas según su porcentaje."))
+        : "");
+  const noteLines = doc.splitTextToSize(note, CW) as string[];
+  noteLines.forEach((ln, i) => doc.text(ln, ML, y + i * 3.6));
+  y += noteLines.length * 3.6;
+
+  // ── Firmas ──
+  const sigImgW = 28, sigImgH = 24;
+  let sigLineY = Math.max(y + 26, 244);
+  if (sigLineY > 262) { doc.addPage(); sigLineY = 60; }
+  const sigW = 72;
+  const slx1 = ML + 8, slx2 = slx1 + sigW;
+  const srx2 = MR - 8, srx1 = srx2 - sigW;
+  if (CONTRACTOR_SIGNATURE) {
+    const fmt = /^data:image\/jpe?g/i.test(CONTRACTOR_SIGNATURE) ? "JPEG" : "PNG";
+    try {
+      doc.addImage(CONTRACTOR_SIGNATURE, fmt, (slx1 + slx2) / 2 - sigImgW / 2, sigLineY - sigImgH - 0.5, sigImgW, sigImgH);
+    } catch { /* firma inválida → se omite */ }
+  }
+  doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
+  doc.line(slx1, sigLineY, slx2, sigLineY);
+  doc.line(srx1, sigLineY, srx2, sigLineY);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(92, 106, 110);
+  doc.text(EN ? "CONTRACTOR" : "CONTRATISTA", (slx1 + slx2) / 2, sigLineY + 5, { align: "center" });
+  doc.text(EN ? "CUSTOMER" : "CLIENTE", (srx1 + srx2) / 2, sigLineY + 5, { align: "center" });
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(22, 50, 61);
+  doc.text(branding.contractor.toUpperCase(), (slx1 + slx2) / 2, sigLineY + 10, { align: "center" });
+  doc.text((co.client.name || "—").toUpperCase(), (srx1 + srx2) / 2, sigLineY + 10, { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
+  doc.text(`${EN ? "Date" : "Fecha"}: ______________`, (srx1 + srx2) / 2, sigLineY + 15.5, { align: "center" });
+
+  // ── Pie de página ──
+  doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3);
+  doc.line(ML, 282, MR, 282);
+  doc.setFont("helvetica", "italic"); doc.setFontSize(7); doc.setTextColor(22, 50, 61);
+  doc.text(`${branding.companyName}  ·  ${branding.phone}  ·  ${branding.email}`, CX, 287, { align: "center" });
+
+  const filename = `ChangeOrder_${(co.orderNo || "Luxaris").replace(/\s+/g, "-")}.pdf`;
+  return { doc, filename };
+}
+
+export function exportChangeOrderPdf(co: ChangeOrderData) {
+  const { doc, filename } = buildChangeOrderPdf(co);
+  doc.save(filename);
+}
+export function openChangeOrderPdfInBrowser(co: ChangeOrderData) {
+  const { doc } = buildChangeOrderPdf(co);
+  const url = URL.createObjectURL(doc.output("blob") as Blob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+export function getChangeOrderPdfBlob(co: ChangeOrderData): Blob {
+  const { doc } = buildChangeOrderPdf(co);
   return doc.output("blob") as Blob;
 }
 

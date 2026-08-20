@@ -5,7 +5,7 @@ import { Plus, X, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-r
 import { supabase } from "@/src/lib/supabase";
 import type { AppUser, Permissions, PermissionSection, PermissionAction, UserType } from "@/src/types/auth";
 import {
-  DEFAULT_PERMISSIONS, DEFAULT_CLIENT_PERMISSIONS, FULL_PERMISSIONS,
+  DEFAULT_PERMISSIONS, DEFAULT_CLIENT_PERMISSIONS,
   SECTION_LABELS, TAB_ACCESS_OPTIONS, DEFAULT_COWORKER_TAB_ACCESS, DEFAULT_CLIENT_TAB_ACCESS,
 } from "@/src/types/auth";
 import type { Project } from "@/src/types/project";
@@ -125,8 +125,8 @@ function TabAccessGrid({
 
 // ── Project assignment ────────────────────────────────────────────────────────
 function ProjectAssign({
-  userId, projects, assigned, onToggle,
-}: { userId: string; projects: Project[]; assigned: Set<string>; onToggle: (id: string, add: boolean) => void }) {
+  projects, assigned, onToggle,
+}: { projects: Project[]; assigned: Set<string>; onToggle: (id: string, add: boolean) => void }) {
   return (
     <div className="space-y-1.5">
       {projects.length === 0 && (
@@ -474,7 +474,7 @@ function UserRow({
 
             {/* ── Projects ── */}
             {editTab === "projects" && (
-              <ProjectAssign userId={user.id} projects={projects} assigned={assigned} onToggle={toggleProject} />
+              <ProjectAssign projects={projects} assigned={assigned} onToggle={toggleProject} />
             )}
           </div>
         )}
@@ -503,8 +503,8 @@ function UserRow({
 
 // ── Create user form ──────────────────────────────────────────────────────────
 function CreateUserForm({
-  projects, contacts, onCreated, onCancel,
-}: { projects: Project[]; contacts: Contact[]; onCreated: (u: AppUser) => void; onCancel: () => void }) {
+  contacts, onCreated, onCancel,
+}: { contacts: Contact[]; onCreated: (u: AppUser) => void; onCancel: () => void }) {
   const [userType,    setUserType]    = useState<UserType>("coworker");
   const [name,        setName]        = useState("");
   const [pin,         setPin]         = useState("");
@@ -717,7 +717,6 @@ export default function UsersPanel({ projects, contacts }: { projects: Project[]
       {showCreate && (
         <div className="mb-4">
           <CreateUserForm
-            projects={projects}
             contacts={contacts}
             onCreated={u => { setUsers(prev => [...prev, u]); setShowCreate(false); }}
             onCancel={() => setShowCreate(false)}

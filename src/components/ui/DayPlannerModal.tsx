@@ -12,7 +12,6 @@ import {
 } from "@dnd-kit/sortable";
 import { X, Zap, CalendarDays, Plus, Save, Pencil } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
-import { money } from "@/src/lib/utils";
 import { useLanguage } from "@/src/context/LanguageContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

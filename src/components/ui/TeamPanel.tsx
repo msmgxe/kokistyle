@@ -144,7 +144,7 @@ export default function TeamPanel() {
         </div>
       ) : subTab === "matrix" ? (
         <MatrixView
-          coworkers={coworkers} projects={projects} bySpecialty={bySpecialty}
+          projects={projects} bySpecialty={bySpecialty}
           assigns={assigns} language={language} tt={tt}
           rowTotal={rowTotal} colTotal={colTotal} grandTotal={grandTotal}
           onAssign={assign} onUnassign={unassign} onPatch={patchAssign}
@@ -170,10 +170,10 @@ export default function TeamPanel() {
 type TeamT = ReturnType<typeof useLanguage>["t"]["panel"]["team"];
 
 function MatrixView({
-  coworkers, projects, bySpecialty, assigns, language, tt,
+  projects, bySpecialty, assigns, language, tt,
   rowTotal, colTotal, grandTotal, onAssign, onUnassign, onPatch,
 }: {
-  coworkers: Contact[]; projects: ProjRow[]; bySpecialty: [string, Contact[]][];
+  projects: ProjRow[]; bySpecialty: [string, Contact[]][];
   assigns: Map<string, ProjectAssignment>; language: string; tt: TeamT;
   rowTotal: (cid: string) => number; colTotal: (pid: string) => number; grandTotal: number;
   onAssign: (pid: string, cid: string) => void;

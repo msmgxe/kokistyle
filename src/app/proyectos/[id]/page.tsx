@@ -41,13 +41,13 @@ import {
   money, dateFmt, totalIncome, totalExpense, balanceDue, cashFlow,
   dShort, initials,
 } from "@/src/lib/utils";
-import { exportCotizacion, getEstadoCuentaBlob, getGanttPdfBlob, type GanttPdfRow } from "@/src/lib/pdf";
+import { getEstadoCuentaBlob, getGanttPdfBlob, type GanttPdfRow } from "@/src/lib/pdf";
 import PdfPreviewModal from "@/src/components/ui/PdfPreviewModal";
 import {
   buildGanttScale, ganttBar, laneBg, isoOfDate, todayIsoLocal, ganttX, GanttHeader, TodayLine,
 } from "@/src/components/ui/GanttCalendar";
 import type {
-  Project, Task, Material, BudgetItem, Payment, Expense, Contact, ProjectNote, NoteAttachment, DepositEntry, ProjectObjective,
+  Project, Task, Material, Payment, Expense, Contact, ProjectNote, NoteAttachment, DepositEntry, ProjectObjective,
 } from "@/src/types/project";
 import ObjectivesModal from "@/src/components/ui/ObjectivesModal";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
@@ -66,7 +66,6 @@ import ConfirmModal from "@/src/components/ui/ConfirmDialog";
 interface ProjectFull extends Project {
   tasks: Task[];
   materials: Material[];
-  budget_items: BudgetItem[];
   payments: Payment[];
   expenses: Expense[];
   contacts: Contact[];
@@ -863,154 +862,6 @@ function ContactosTab({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// TAB: PRESUPUESTO con DnD
-// ═══════════════════════════════════════════════════════════════════════════════
-function PresupuestoTab({
-  project, budgetItems, onRefresh, toast,
-}: {
-  project: Project; budgetItems: BudgetItem[];
-  onRefresh: () => void; toast: (m: string) => void;
-}) {
-  const { t } = useLanguage();
-  const tp = t.panel;
-  const [items, setItems]   = useState<BudgetItem[]>(budgetItems);
-  const [editor, setEditor] = useState<EditorOpts | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const [activeId, setActiveId]     = useState<string | null>(null);
-
-  useEffect(() => { setItems(budgetItems); }, [budgetItems]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
-  const handleDragEnd   = (e: DragEndEvent) => {
-    setActiveId(null);
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const next = arrayMove(items, items.findIndex((b) => b.id === active.id), items.findIndex((b) => b.id === over.id));
-    setItems(next);
-  };
-
-  const sum = items.reduce((s, b) => s + b.amount, 0);
-  const approved = project.status !== "presupuesto";
-  const activeBudget = activeId ? items.find((b) => b.id === activeId) : null;
-
-  const openEdit = (b: BudgetItem) => {
-    setEditor({
-      title: tp.budget.editLine,
-      fields: [
-        { key: "description", label: tp.budget.description, type: "text",   value: b.description },
-        { key: "type",        label: tp.budget.type,         type: "select", options: ["mano", "material"], value: b.type },
-        { key: "amount",      label: tp.budget.amount,       type: "number", value: b.amount },
-      ],
-      onSave: async (vals) => {
-        const { error } = await supabase.from("budget_items").update({ description: vals.description, type: vals.type, amount: vals.amount }).eq("id", b.id);
-        if (error) { toast(tp.common.errorSaving + error.message); return; }
-        onRefresh(); toast(tp.budget.lineUpdated);
-      },
-      onDelete: async () => {
-        const { error } = await supabase.from("budget_items").delete().eq("id", b.id);
-        if (error) { toast(tp.common.errorDeleting + error.message); return; }
-        onRefresh(); toast(tp.budget.lineDeleted);
-      },
-    });
-  };
-
-  const approveProject = async () => {
-    await supabase.from("projects").update({ status: "en_obra" }).eq("id", project.id);
-    setConfirming(false); onRefresh(); toast(tp.budget.approved);
-  };
-
-  return (
-    <div className="w-full">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <SortableContext items={items.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-          <div className="overflow-hidden rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e]">
-            {items.map((b) => (
-              <SortableRow key={b.id} id={b.id}>
-                {({ listeners, attributes }, isDragging) => (
-                  <div
-                    {...listeners} {...attributes}
-                    onClick={() => openEdit(b)}
-                    className={`flex cursor-pointer select-none items-center border-b border-[#E6DDCB] dark:border-[#22304d] last:border-0 transition ${isDragging ? "bg-[#F7F3EA] dark:bg-[#0b1220] shadow-md" : "hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"}`}
-                  >
-                    <DragHandle />
-                    <div className="flex flex-1 items-center justify-between gap-2 py-3 pr-4">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] ${b.type === "mano" ? "bg-[#DCE8E9] dark:bg-[#122a2c] text-[#4E7A82]" : "bg-[#DCE6E6] dark:bg-[#122a2c] text-[#0E2630] dark:text-[#e8edf7]"}`}>
-                          {b.type === "mano" ? tp.budget.labor : tp.budget.material}
-                        </span>
-                        <span className="truncate text-sm font-medium text-[var(--brand)]">{b.description}</span>
-                      </div>
-                      <span className="font-mono text-sm font-semibold text-[var(--brand)]">{money(b.amount)}</span>
-                    </div>
-                  </div>
-                )}
-              </SortableRow>
-            ))}
-          </div>
-        </SortableContext>
-
-        <DragOverlay dropAnimation={dropAnimation}>
-          {activeBudget && (
-            <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--brand)] bg-white dark:bg-[#111a2e] px-4 py-3 shadow-2xl">
-              <span className="text-sm font-medium text-[var(--brand)]">{activeBudget.description}</span>
-              <span className="font-mono text-sm font-semibold text-[var(--brand)]">{money(activeBudget.amount)}</span>
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
-
-      <div className="mt-3 flex items-center justify-between rounded-2xl bg-[var(--brand)] px-5 py-4">
-        <span className="text-sm font-semibold text-white/80">{tp.budget.total}</span>
-        <span className="font-mono text-xl font-semibold text-white">{money(sum)}</span>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {approved ? (
-          <div className="inline-flex items-center gap-2 rounded-xl bg-[#DCEBDD] dark:bg-[#14261c] px-4 py-3 text-sm font-semibold text-[#4F8A63]">✓ {tp.budget.approvedByClient}</div>
-        ) : (
-          <button onClick={() => setConfirming(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#4E7A82] bg-[#DCE8E9] dark:bg-[#122a2c] px-4 py-3 text-sm font-bold text-[#4E7A82] transition hover:bg-[#c8dfe0]">
-            {tp.budget.markApproved}
-          </button>
-        )}
-        <button
-          onClick={() => setEditor({
-            title: tp.budget.newLine,
-            fields: [
-              { key: "description", label: tp.budget.description, type: "text",   value: "" },
-              { key: "type",        label: tp.budget.type,         type: "select", options: ["mano", "material"], value: "material" },
-              { key: "amount",      label: tp.budget.amount,       type: "number", value: 0 },
-            ],
-            onSave: async (vals) => {
-              const { error } = await supabase.from("budget_items").insert({ project_id: project.id, description: vals.description || tp.budget.description, type: vals.type, amount: vals.amount || 0 });
-              if (error) { toast(tp.common.errorSaving + error.message); return; }
-              onRefresh(); toast(tp.budget.lineAdded);
-            },
-          })}
-          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#D7CBB3] dark:border-[#2c3c5e] bg-[#ECE3D1] dark:bg-[#17233d] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand)]"
-        >
-          + {tp.budget.addLine}
-        </button>
-        <button
-          onClick={() => exportCotizacion(project, items)}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] bg-white dark:bg-[#111a2e] px-4 py-3 text-sm font-bold text-[var(--brand)] transition hover:bg-[#F7F3EA] dark:hover:bg-[#0b1220]"
-        >
-          ↓ {tp.budget.export}
-        </button>
-      </div>
-
-      {confirming && <ConfirmModal title={tp.budget.approveTitle} body={tp.budget.approveBody} label={tp.budget.approve} danger={false} onConfirm={approveProject} onCancel={() => setConfirming(false)} />}
-      {editor && <EditorModal opts={editor} onClose={() => setEditor(null)} />}
     </div>
   );
 }
@@ -2182,7 +2033,7 @@ export default function ProjectDetailPage() {
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
       .from("projects")
-      .select(`*, tasks(*), materials(*), budget_items(*), payments(*), expenses(*), project_contacts(contact_id, contacts(*)), project_notes(*)`)
+      .select(`*, tasks(*), materials(*), payments(*), expenses(*), project_contacts(contact_id, contacts(*)), project_notes(*)`)
       .eq("id", id)
       .single();
 

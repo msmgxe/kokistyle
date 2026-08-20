@@ -62,19 +62,3 @@ export const addDays = (iso: string, n: number): Date => {
 /** Format date to dd/mm */
 export const dShort = (d: Date): string =>
   ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2);
-
-/** Status labels in Spanish */
-export const STATUS_LABELS: Record<string, string> = {
-  prospecto: "Prospecto",
-  presupuesto: "Estimado",
-  aprobado: "Aprobado",
-  en_obra: "En obra",
-  terminado: "Terminado",
-};
-
-/** Payment type labels */
-export const PAYMENT_TYPE_LABELS: Record<string, string> = {
-  anticipo: "Anticipo",
-  abono: "Abono",
-  final: "Final",
-};

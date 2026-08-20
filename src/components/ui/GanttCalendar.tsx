@@ -17,8 +17,6 @@ export interface GanttScale {
 
 const DAY_MS = 86400000;
 
-export const WEEKEND_SAT = "#9DC3E6";
-export const WEEKEND_SUN = "#F4B183";
 const SAT_SOFT = "#DCEBF7";
 const SUN_SOFT = "#FBE5D3";
 const GRID_LINE = "#EFE9DD";

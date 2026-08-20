@@ -55,15 +55,6 @@ export interface Task {
   assigned_contact_name?: string; 
 }
 
-export interface BudgetItem {
-  id: string;
-  project_id: string;
-  type: "mano" | "material";
-  description: string;
-  amount: number;
-  created_at?: string;
-}
-
 export interface Material {
   id: string;
   project_id: string;
