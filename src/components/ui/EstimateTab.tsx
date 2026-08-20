@@ -93,7 +93,7 @@ interface ChangeOrderRow {
   total_override?: number | null;
   /** Las líneas `kind` que no son "add"/"credit" son centinelas de monto manual
    *  (total de la orden y subtotal por grupo) — respaldo sin migración. */
-  lines: { kind: "add" | "credit" | "total" | "add_total" | "credit_total"; section?: string; description?: string; amount?: number }[];
+  lines: { kind: "add" | "credit" | "total" | "add_total" | "credit_total" | "sched"; section?: string; description?: string; amount?: number }[];
   created_at: string;
 }
 
@@ -690,6 +690,7 @@ export default function EstimateTab({
   const [coTotal,      setCoTotal]      = useState("");   // "" = suma de las líneas
   const [coAddTotal,   setCoAddTotal]   = useState("");   // "" = suma de las líneas que agregan
   const [coCredTotal,  setCoCredTotal]  = useState("");   // "" = suma de las líneas que acreditan
+  const [coSched,      setCoSched]      = useState<string[]>([]);   // cuota fijada a mano por índice
   const [coAddToLast,  setCoAddToLast]  = useState(true);
   const [coLines,      setCoLines]      = useState<CoLineRow[]>([]);
   const [coEmailTo,    setCoEmailTo]    = useState("");
@@ -1582,7 +1583,14 @@ export default function EstimateTab({
     set: (v: string) => void, tone: string, sign: string, dim = false,
   ) => (
     <div className={`flex items-center justify-between gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc] ${dim ? "opacity-45" : ""}`}>
-      <span>{label}</span>
+      <span className="flex items-center gap-1.5">
+        {label}
+        {raw.trim() !== "" && (
+          <span className="rounded bg-[#F0A090]/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#7B1838]">
+            {EN ? "Manual" : "Manual"}
+          </span>
+        )}
+      </span>
       {raw.trim() === "" ? (
         <span className="flex items-center gap-2">
           <b style={{ color: tone }}>{sign}{money(value)}</b>
@@ -1615,12 +1623,19 @@ export default function EstimateTab({
       was:   wasAmts[i],
       now:   coAddToLast ? wasAmts[i] : nowAmts[i],
     }));
-    if (coAddToLast) {
+    if (coAddToLast && rows.length) {
       const head = rows.slice(0, -1).reduce((s, r) => s + r.now, 0);
       rows[rows.length - 1].now = newContract - head;
     }
-    return rows;
-  }, [estimate, coTotals, coAddToLast, depAmountsAt, EN]);
+    // Una cuota escrita a mano manda sobre el recálculo.
+    return rows.map((r, i) => {
+      const manual = (coSched[i] ?? "").trim();
+      return manual === "" ? r : { ...r, now: parseFloat(manual) || 0 };
+    });
+  }, [estimate, coTotals, coAddToLast, depAmountsAt, coSched, EN]);
+
+  /** Las cuotas tal como van a imprimirse, para la vista del formulario. */
+  const coSchedRows = useMemo(() => coSchedule(), [coSchedule]);
 
   const buildCoData = useCallback((mode: "full" | "summary"): ChangeOrderData => ({
     orderNo: coNo.trim(),
@@ -1660,9 +1675,9 @@ export default function EstimateTab({
 
   /** Huella del formulario para saber si hay cambios sin guardar. */
   const coSnapshot = useCallback(() => JSON.stringify({
-    coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coAddTotal, coCredTotal,
+    coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coAddTotal, coCredTotal, coSched,
     lines: coLines.map(l => [l.kind, l.section, l.description, l.amount]),
-  }), [coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coAddTotal, coCredTotal, coLines]);
+  }), [coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coAddTotal, coCredTotal, coSched, coLines]);
 
   const coDirty = useCallback(() => coSnapshot() !== coSavedSnap.current, [coSnapshot]);
 
@@ -1708,7 +1723,7 @@ export default function EstimateTab({
     setCoId(null); setCoStatus("draft");
     setCoNo(no); setCoDate(coToday()); setCoReason(""); setCoDays("0");
     setCoPrior(String(prior)); setCoMode("full"); setCoAddToLast(true);
-    setCoTotal(""); setCoAddTotal(""); setCoCredTotal("");
+    setCoTotal(""); setCoAddTotal(""); setCoCredTotal(""); setCoSched([]);
     setCoLines([newCoLine("add")]);
     setCoConfirmClose(false);
     setCoView("build");
@@ -1735,6 +1750,12 @@ export default function EstimateTab({
     const credManual = coGroupTotal(row, "credit_total");
     setCoAddTotal(addManual   == null ? "" : String(addManual));
     setCoCredTotal(credManual == null ? "" : String(credManual));
+    const sched: string[] = [];
+    (row.lines ?? []).filter(l => l.kind === "sched").forEach(l => {
+      const idx = parseInt(l.section ?? "", 10);
+      if (!Number.isNaN(idx)) sched[idx] = String(l.amount ?? 0);
+    });
+    setCoSched(sched);
     setCoAddToLast(row.add_to_last !== false);
     setCoLines(lines.length ? lines : [newCoLine("add")]);
     setCoConfirmClose(false);
@@ -1765,6 +1786,9 @@ export default function EstimateTab({
           })),
         ...(coTotals.addOverride    != null ? [{ kind: "add_total",    section: "", description: "", amount: coTotals.addOverride }] : []),
         ...(coTotals.creditOverride != null ? [{ kind: "credit_total", section: "", description: "", amount: coTotals.creditOverride }] : []),
+        ...coSched.flatMap((v, i) => (v ?? "").trim() === ""
+          ? []
+          : [{ kind: "sched", section: String(i), description: "", amount: parseFloat(v) || 0 }]),
       ],
       updated_at: new Date().toISOString(),
     };
@@ -1801,7 +1825,7 @@ export default function EstimateTab({
     if (!silent) toast(EN ? "Change order saved ✓" : "Orden de cambio guardada ✓");
     return id;
   }, [project.id, project.title, coNo, coDate, coReason, coDays, coTotals, coAddToLast, coMode,
-      coStatus, coLines, coId, loadCoList, toast, coMissingMsg, EN, currentUser, coSnapshot]);
+      coStatus, coLines, coSched, coId, loadCoList, toast, coMissingMsg, EN, currentUser, coSnapshot]);
 
   const deleteCo = useCallback(async (row: ChangeOrderRow) => {
     const { error } = await supabase.from("change_orders").delete().eq("id", row.id);
@@ -2888,9 +2912,8 @@ export default function EstimateTab({
                             <input type="number" min={0} step={10} value={l.amount}
                               onChange={e => setCoLines(ls => ls.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))}
                               placeholder="0"
-                              disabled={coTotals.override != null || (l.kind === "add" ? coTotals.addOverride != null : coTotals.creditOverride != null)}
                               title={EN ? "Amount of this line" : "Monto de esta línea"}
-                              className="h-8 w-28 shrink-0 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#0b1220] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none disabled:opacity-40" />
+                              className="h-8 w-28 shrink-0 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#0b1220] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
                             <button onClick={() => setCoLines(ls => ls.filter((_, j) => j !== i))}
                               className="shrink-0 text-[#97A1A0] hover:text-[#B0492F]" title={EN ? "Remove line" : "Eliminar línea"}>
                               <X size={13} />
@@ -3021,6 +3044,65 @@ export default function EstimateTab({
                         : "La vista previa sigue lo que escribes — es el PDF exacto que se imprime y se envía."}
                     </p>
                   </div>
+
+                  {coSchedRows.length > 0 && (() => {
+                    const schedSum = coSchedRows.reduce((sum, r) => sum + r.now, 0);
+                    const off = Math.abs(schedSum - coTotals.newContract) > 0.5;
+                    return (
+                      <div className="overflow-hidden rounded-xl border border-[#E7E9EE] dark:border-[#22304d]">
+                        <div className="flex items-center justify-between gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
+                            {EN ? "Updated installments — as printed" : "Cuotas actualizadas — como salen impresas"}
+                          </span>
+                          {coSched.some(v => (v ?? "").trim() !== "") && (
+                            <button type="button" onClick={() => setCoSched([])}
+                              className="shrink-0 text-[10px] font-bold text-[var(--accent)] hover:underline">
+                              ↺ {EN ? "Recalculate" : "Recalcular"}
+                            </button>
+                          )}
+                        </div>
+                        {coSchedRows.map((r, i) => {
+                          const manual = (coSched[i] ?? "").trim() !== "";
+                          return (
+                            <div key={i} className="flex items-center gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2">
+                              <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-[#5C6A6E] dark:text-[#9fb0cc]">
+                                {r.label} · {r.pct}%
+                              </span>
+                              {Math.round(r.was) !== Math.round(r.now) && (
+                                <span className="shrink-0 text-[10.5px] text-[#97A1A0] line-through dark:text-[#728098]">{money(r.was)}</span>
+                              )}
+                              <input type="number" step={10}
+                                value={coSched[i] ?? String(Math.round(r.now * 100) / 100)}
+                                onChange={e => setCoSched(prev => {
+                                  const next = [...prev];
+                                  while (next.length < coSchedRows.length) next.push("");
+                                  next[i] = e.target.value;
+                                  return next;
+                                })}
+                                className={`h-8 w-28 shrink-0 rounded-lg border bg-white dark:bg-[#111a2e] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:outline-none ${
+                                  manual ? "border-[var(--accent)]" : "border-[#E7E9EE] dark:border-[#22304d] focus:border-[var(--accent)]"}`} />
+                              <button type="button" onClick={() => setCoSched(prev => { const next = [...prev]; next[i] = ""; return next; })}
+                                title={EN ? "Back to the calculated amount" : "Volver al monto calculado"}
+                                className={`shrink-0 ${manual ? "text-[#97A1A0] hover:text-[#B0492F]" : "invisible"}`}>
+                                <X size={13} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                        <div className="flex items-center justify-between bg-[var(--brand)] px-3 py-2.5 text-sm font-bold text-white">
+                          <span>{EN ? "New contract" : "Contrato nuevo"}</span>
+                          <span>{money(coTotals.newContract)}</span>
+                        </div>
+                        {off && (
+                          <p className="bg-[#FDF5F3] dark:bg-[#2a1a1a] px-3 py-2 text-[10.5px] leading-snug text-[#B0492F]">
+                            {EN
+                              ? `The installments add up to ${money(schedSum)} — ${money(Math.abs(schedSum - coTotals.newContract))} off the new contract.`
+                              : `Las cuotas suman ${money(schedSum)} — ${money(Math.abs(schedSum - coTotals.newContract))} de diferencia con el contrato nuevo.`}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {(estimate.deposit_schedule?.length ?? 0) > 0 && (
                     <label className="flex items-start gap-2.5 text-[11.5px] leading-snug text-[#5C6A6E] dark:text-[#9fb0cc]">
