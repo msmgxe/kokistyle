@@ -310,6 +310,35 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
 - Env vars requeridas (en `.env.local` y Vercel): `YAHOO_EMAIL` + `YAHOO_APP_PASSWORD` (generar en Yahoo → Account Security → App passwords; la contraseña normal NO funciona)
 - Errores de credenciales devuelven mensaje claro ("Yahoo rechazó las credenciales…"); todo se reporta con toast
 
+### Factura (Invoice) — `EstimateTab.tsx` + `pdf.ts` + tabla `invoices` (ago 2026)
+
+Botón **Factura** de la cabecera oscura del Estimate. Mismo patrón de tres vistas que la orden de cambio: `list` (histórico) → `build` (armado) → `email` (envío con preview).
+
+- **Montos visibles y editables antes de imprimir**: la vista `build` lista **exactamente** las líneas que salen en el PDF — descripción editable, **monto editable** (`<input type="number">`), checkbox para incluir/excluir, `✕` para quitar y **+ Agregar línea** para conceptos libres. El total a pagar se recalcula en vivo en la banda oscura y es el que imprime el PDF. `↺ Calendario de pagos` vuelve a sembrar las cuotas con su monto vigente (`depositAmounts`).
+- **Facturas parciales**: como cada monto es editable y se pueden añadir líneas sueltas, se factura lo que se va cobrando sin tocar el calendario del estimado.
+- **Vista previa del PDF embebida**: botón *Ver vista previa* → iframe con el PDF real, que se regenera solo (debounce 400 ms) mientras se editan líneas, número o fecha — lo que se ve es lo que se imprime.
+- **Histórico (`invoices`)**: cada factura se guarda por proyecto con nº correlativo, fecha, estado (`draft` | `sent` | `paid`), líneas en JSONB y total. La lista permite **abrir/editar**, **eliminar** (confirmación en línea), **marcar cobrada** (✓ verde) y muestra el acumulado *facturado / cobrado*. Enviar por correo guarda la factura y la marca `sent`; cerrar con cambios sin guardar pregunta *Seguir editando · Descartar · Guardar y cerrar*.
+- Si la tabla no existe, la UI avisa y sigue permitiendo armar, imprimir y enviar (solo no guarda). Acciones auditadas en `activity_log` (`entity_type: "invoice"`).
+
+Migración SQL requerida:
+
+```sql
+CREATE TABLE IF NOT EXISTS invoices (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  invoice_no  TEXT NOT NULL DEFAULT '',
+  inv_date    TEXT NOT NULL DEFAULT '',
+  status      TEXT NOT NULL DEFAULT 'draft',
+  total       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  lines       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS invoices_project_idx ON invoices(project_id, created_at DESC);
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON invoices FOR ALL TO anon USING (true) WITH CHECK (true);
+```
+
 ### Change Order (orden de cambio) — `EstimateTab.tsx` + `pdf.ts` + tabla `change_orders`
 
 Botón **Change Order / Orden de cambio** en la cabecera oscura del Estimate, junto a Factura. Emite órdenes de cambio sobre el contrato vigente **y las guarda por proyecto**. El modal tiene tres vistas: `list` (órdenes guardadas) → `build` (armado) → `email` (envío con preview del PDF), más Abrir y PDF.

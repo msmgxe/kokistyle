@@ -484,6 +484,22 @@ CREATE INDEX IF NOT EXISTS project_objectives_project_idx ON project_objectives(
 ALTER TABLE project_objectives ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON project_objectives FOR ALL TO anon USING (true) WITH CHECK (true);
 
+-- Facturas (Invoices) del Estimate — histórico por proyecto, con parciales (ago 2026)
+CREATE TABLE IF NOT EXISTS invoices (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  invoice_no  TEXT NOT NULL DEFAULT '',
+  inv_date    TEXT NOT NULL DEFAULT '',
+  status      TEXT NOT NULL DEFAULT 'draft',   -- 'draft' | 'sent' | 'paid'
+  total       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  lines       JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [{ description, amount }]
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS invoices_project_idx ON invoices(project_id, created_at DESC);
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON invoices FOR ALL TO anon USING (true) WITH CHECK (true);
+
 -- Órdenes de cambio (Change Orders) del Estimate — guardadas por proyecto (ago 2026)
 CREATE TABLE IF NOT EXISTS change_orders (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

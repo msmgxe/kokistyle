@@ -5,7 +5,7 @@ export interface ActivityEntry {
   user_name?: string;
   user_role?: string;
   action: "login" | "create" | "update" | "delete" | "mark_bought";
-  entity_type?: "project" | "task" | "payment" | "expense" | "material" | "contact" | "note" | "photo" | "estimate_item" | "change_order" | "agenda_event" | "device_token";
+  entity_type?: "project" | "task" | "payment" | "expense" | "material" | "contact" | "note" | "photo" | "estimate_item" | "change_order" | "invoice" | "agenda_event" | "device_token";
   entity_id?: string;
   entity_name?: string;
   project_id?: string;

@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   ChevronDown, ChevronUp, Plus, X, Trash2, FileText, Zap, Info, GripVertical, Save, Pencil,
-  Ruler, Wallet,
+  Ruler, Wallet, CheckCircle2,
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { money, depositAmounts, depositPct } from "@/src/lib/utils";
@@ -42,6 +42,39 @@ interface CoLineRow {
   section: string;
   description: string;
   amount: string;
+}
+
+/** Fila de `invoices` — las líneas facturadas viven en un JSONB. */
+interface InvoiceRow {
+  id: string;
+  project_id: string;
+  invoice_no: string;
+  inv_date: string;
+  status: string;                 // 'draft' | 'sent' | 'paid'
+  total: number;
+  lines: { description?: string; amount?: number }[];
+  created_at: string;
+}
+
+/** Línea editable de la factura en el formulario. */
+interface InvLineRow {
+  id: string;
+  on: boolean;
+  glosa: string;
+  amount: string;
+}
+
+const invTotalOf = (row: InvoiceRow): number =>
+  Number(row.total) || (row.lines ?? []).reduce((s, l) => s + (Number(l.amount) || 0), 0);
+
+/** Fecha de hoy como la imprimen los documentos: "AUG. 20, 2026" / "20 AGO. 2026". */
+function todayLabel(en: boolean): string {
+  const now = new Date();
+  const mEN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const mES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+  const mm  = (en ? mEN : mES)[now.getMonth()];
+  return en ? `${mm}. ${String(now.getDate()).padStart(2, "0")}, ${now.getFullYear()}`
+            : `${String(now.getDate()).padStart(2, "0")} ${mm}. ${now.getFullYear()}`;
 }
 
 /** Fila de `change_orders` — las líneas viven en un JSONB. */
@@ -611,10 +644,19 @@ export default function EstimateTab({
 
   // ── Invoice modal (factura desde el payment schedule) ─────────────────────
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [invView,      setInvView]      = useState<"build" | "email">("build");
+  const [invView,      setInvView]      = useState<"list" | "build" | "email">("list");
+  const [invList,      setInvList]      = useState<InvoiceRow[]>([]);
+  const [invId,        setInvId]        = useState<string | null>(null);
+  const [invStatus,    setInvStatus]    = useState<"draft" | "sent" | "paid">("draft");
+  const [invSaving,    setInvSaving]    = useState(false);
+  const [invDeleteId,  setInvDeleteId]  = useState<string | null>(null);
+  const [invTableMissing, setInvTableMissing] = useState(false);
+  const [invConfirmClose, setInvConfirmClose] = useState(false);
+  const [invPreviewOn, setInvPreviewOn] = useState(false);
+  const invSavedSnap = useRef("");
   const [invNo,        setInvNo]        = useState("");
   const [invDate,      setInvDate]      = useState("");
-  const [invLines,     setInvLines]     = useState<{ on: boolean; glosa: string }[]>([]);
+  const [invLines,     setInvLines]     = useState<InvLineRow[]>([]);
   const [invEmailTo,   setInvEmailTo]   = useState("");
   const [invEmailSub,  setInvEmailSub]  = useState("");
   const [invEmailMsg,  setInvEmailMsg]  = useState("");
@@ -1259,67 +1301,209 @@ export default function EstimateTab({
     }
   }, [buildEmailPdfBlob, emailMode, emailTo, emailSubject, emailMsg, project.title, EN, toast, closeEmailModal]);
 
-  // ── Invoice (factura) — se arma desde el payment schedule ─────────────────
+  // ── Invoice (factura) — guardada por proyecto, con histórico ──────────────
   const setHdr = useCallback((patch: Partial<EstimateRow>) =>
     setEstimate(p => p ? { ...p, ...patch } : p), []);
 
-  const buildInvoiceData = useCallback((): InvoiceData => {
-    const gt   = totals.grandTotal;
-    const amts = depAmountsAt(gt);
-    const lines = (estimate?.deposit_schedule ?? []).map((dep, i) => {
-      const st = invLines[i];
-      if (!st?.on) return null;
-      return { description: st.glosa.trim() || (EN ? dep.label_en : dep.label_es), amount: amts[i] };
-    }).filter(Boolean) as { description: string; amount: number }[];
-    return {
-      invoiceNo: invNo.trim(), date: invDate.trim(), language,
-      client: {
-        name:    estimate?.customer_name ?? "",
-        company: estimate?.customer_company ?? "",
-        address: estimate?.customer_address ?? "",
-        city:    estimate?.city ?? "",
-        phone:   estimate?.phone ?? "",
-        email:   estimate?.email ?? "",
-        website: estimate?.customer_website ?? "",
-      },
-      lines,
-    };
-  }, [estimate, invLines, invNo, invDate, language, totals, depAmountsAt, EN]);
+  const newInvLine = useCallback((glosa = "", amount = ""): InvLineRow => ({
+    id: `inv${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    on: true, glosa, amount,
+  }), []);
 
-  const openInvoiceModal = useCallback(() => {
-    if (!estimate) return;
-    const now = new Date();
-    const mEN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-    const mES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
-    const mm  = (EN ? mEN : mES)[now.getMonth()];
-    setInvDate(EN ? `${mm}. ${String(now.getDate()).padStart(2,"0")}, ${now.getFullYear()}`
-                  : `${String(now.getDate()).padStart(2,"0")} ${mm}. ${now.getFullYear()}`);
-    setInvNo("");
-    setInvLines(estimate.deposit_schedule.map(d => ({ on: true, glosa: EN ? d.label_en : d.label_es })));
+  /** Líneas sembradas desde el calendario de pagos, con su monto vigente. */
+  const invLinesFromSchedule = useCallback((): InvLineRow[] => {
+    const deps = estimate?.deposit_schedule ?? [];
+    const amts = depAmountsAt(totals.grandTotal);
+    return deps.map((d, i) => ({
+      id: `inv-dep${i}-${Date.now().toString(36)}`,
+      on: true,
+      glosa: (EN ? d.label_en : d.label_es) || "",
+      amount: String(amts[i] ?? 0),
+    }));
+  }, [estimate, depAmountsAt, totals.grandTotal, EN]);
+
+  /** Lo que va a salir impreso: mismas líneas y montos que muestra el formulario. */
+  const invTotal = useMemo(
+    () => invLines.reduce((s, l) => l.on ? s + (parseFloat(l.amount) || 0) : s, 0),
+    [invLines]);
+
+  const buildInvoiceData = useCallback((): InvoiceData => ({
+    invoiceNo: invNo.trim(), date: invDate.trim(), language,
+    client: {
+      name:    estimate?.customer_name ?? "",
+      company: estimate?.customer_company ?? "",
+      address: estimate?.customer_address ?? "",
+      city:    estimate?.city ?? "",
+      phone:   estimate?.phone ?? "",
+      email:   estimate?.email ?? "",
+      website: estimate?.customer_website ?? "",
+    },
+    lines: invLines.filter(l => l.on).map(l => ({
+      description: l.glosa.trim() || (EN ? "Item" : "Concepto"),
+      amount: Math.round((parseFloat(l.amount) || 0) * 100) / 100,
+    })),
+  }), [estimate, invLines, invNo, invDate, language, EN]);
+
+  const refreshInvPreview = useCallback(() => {
+    const url = URL.createObjectURL(getInvoicePdfBlob(buildInvoiceData()));
+    setInvPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
+  }, [buildInvoiceData]);
+
+  // ── Factura: persistencia en `invoices` ───────────────────────────────────
+  const invMissingMsg = useCallback((msg?: string) =>
+    msg?.includes("does not exist") || msg?.includes("schema cache")
+      ? (EN ? "Run the SQL migration for invoices in Supabase first"
+            : "Ejecuta la migración SQL de invoices en Supabase primero")
+      : `Error: ${msg ?? ""}`, [EN]);
+
+  const loadInvList = useCallback(async (): Promise<InvoiceRow[]> => {
+    const { data, error } = await supabase
+      .from("invoices").select("*")
+      .eq("project_id", project.id)
+      .order("created_at", { ascending: false });
+    if (error) { setInvTableMissing(true); setInvList([]); return []; }
+    setInvTableMissing(false);
+    const rows = (data ?? []) as InvoiceRow[];
+    setInvList(rows);
+    return rows;
+  }, [project.id]);
+
+  /** Factura nueva: numeración correlativa y líneas del calendario de pagos. */
+  const startNewInv = useCallback((rows: InvoiceRow[]) => {
+    const used = new Set(rows.map(r => r.invoice_no.trim()));
+    let n = rows.length + 1, no = String(n).padStart(3, "0");
+    while (used.has(no)) { n++; no = String(n).padStart(3, "0"); }
+    setInvId(null); setInvStatus("draft");
+    setInvNo(no); setInvDate(todayLabel(EN));
+    setInvLines(invLinesFromSchedule());
+    setInvConfirmClose(false);
     setInvView("build");
+    invSavedSnap.current = "";
+  }, [EN, invLinesFromSchedule]);
+
+  const editInv = useCallback((row: InvoiceRow) => {
+    setInvId(row.id);
+    setInvStatus(row.status === "sent" ? "sent" : row.status === "paid" ? "paid" : "draft");
+    setInvNo(row.invoice_no); setInvDate(row.inv_date);
+    setInvLines((row.lines ?? []).map((l, i) => ({
+      id: `inv${row.id.slice(0, 6)}${i}`,
+      on: true,
+      glosa: l.description ?? "",
+      amount: String(l.amount ?? ""),
+    })));
+    setInvConfirmClose(false);
+    setInvView("build");
+    invSavedSnap.current = "";
+  }, []);
+
+  /** Huella del formulario para saber si hay cambios sin guardar. */
+  const invSnapshot = useCallback(() => JSON.stringify({
+    invNo, invDate, lines: invLines.map(l => [l.on, l.glosa, l.amount]),
+  }), [invNo, invDate, invLines]);
+
+  const invDirty = useCallback(() => invSnapshot() !== invSavedSnap.current, [invSnapshot]);
+
+  const saveInv = useCallback(async (silent = false, status?: "draft" | "sent" | "paid"): Promise<string | null> => {
+    setInvSaving(true);
+    const next = status ?? invStatus;
+    const payload = {
+      project_id: project.id,
+      invoice_no: invNo.trim(),
+      inv_date:   invDate.trim(),
+      status:     next,
+      total:      Math.round(invTotal * 100) / 100,
+      lines: invLines.filter(l => l.on).map(l => ({
+        description: l.glosa.trim(),
+        amount: Math.round((parseFloat(l.amount) || 0) * 100) / 100,
+      })),
+      updated_at: new Date().toISOString(),
+    };
+    let id = invId;
+    if (id) {
+      const { error } = await supabase.from("invoices").update(payload).eq("id", id);
+      if (error) { toast(invMissingMsg(error.message)); setInvSaving(false); return null; }
+    } else {
+      const { data, error } = await supabase.from("invoices").insert(payload).select("id").single();
+      if (error || !data) { toast(invMissingMsg(error?.message)); setInvSaving(false); return null; }
+      id = (data as { id: string }).id;
+      setInvId(id);
+    }
+    setInvStatus(next);
+    logActivity({
+      user_id: currentUser?.id, user_name: currentUser?.name, user_role: currentUser?.role,
+      action: invId ? "update" : "create", entity_type: "invoice", entity_id: id,
+      entity_name: `Invoice ${invNo.trim()}`, project_id: project.id, project_name: project.title,
+      details: { total: payload.total, status: next },
+    });
+    await loadInvList();
+    invSavedSnap.current = invSnapshot();
+    setInvSaving(false);
+    if (!silent) toast(EN ? "Invoice saved ✓" : "Factura guardada ✓");
+    return id;
+  }, [project.id, project.title, invNo, invDate, invStatus, invTotal, invLines, invId,
+      loadInvList, toast, invMissingMsg, EN, currentUser, invSnapshot]);
+
+  const deleteInv = useCallback(async (row: InvoiceRow) => {
+    const { error } = await supabase.from("invoices").delete().eq("id", row.id);
+    if (error) { toast(invMissingMsg(error.message)); return; }
+    logActivity({
+      user_id: currentUser?.id, user_name: currentUser?.name, user_role: currentUser?.role,
+      action: "delete", entity_type: "invoice", entity_id: row.id,
+      entity_name: `Invoice ${row.invoice_no}`, project_id: project.id, project_name: project.title,
+    });
+    setInvDeleteId(null);
+    if (invId === row.id) setInvId(null);
+    await loadInvList();
+    toast(EN ? "Invoice deleted" : "Factura eliminada");
+  }, [invId, loadInvList, toast, invMissingMsg, EN, project.id, project.title, currentUser]);
+
+  /** Marca la factura como cobrada — el histórico sigue el pago del cliente. */
+  const setInvPaid = useCallback(async (row: InvoiceRow, paid: boolean) => {
+    const { error } = await supabase.from("invoices")
+      .update({ status: paid ? "paid" : "sent", updated_at: new Date().toISOString() })
+      .eq("id", row.id);
+    if (error) { toast(invMissingMsg(error.message)); return; }
+    if (invId === row.id) setInvStatus(paid ? "paid" : "sent");
+    await loadInvList();
+  }, [invId, loadInvList, toast, invMissingMsg]);
+
+  const openInvoiceModal = useCallback(async () => {
+    if (!estimate) return;
     setInvEmailTo(estimate.email?.trim() ?? "");
     setInvEmailSub(`${EN ? "Invoice" : "Factura"} — ${project.title}`);
     setInvEmailMsg(EN
       ? `Hello${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nPlease find attached your invoice for "${project.title}".\nFeel free to reply to this email with any questions.\n\nBest regards,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`
       : `Hola${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nAdjunto encontrará su factura de "${project.title}".\nCualquier duda, puede responder directamente a este correo.\n\nSaludos cordiales,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`);
+    setInvDeleteId(null);
     setShowInvoiceModal(true);
-  }, [estimate, EN, project.title]);
+    setInvView("list");
+    const rows = await loadInvList();
+    if (!rows.length) startNewInv(rows);
+  }, [estimate, EN, project.title, loadInvList, startNewInv]);
 
   const closeInvoiceModal = useCallback(() => {
     setShowInvoiceModal(false);
+    setInvConfirmClose(false);
+    setInvPreviewOn(false);
     setInvPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
   }, []);
 
+  /** Cerrar sin perder trabajo: si hay cambios, primero pregunta. */
+  const attemptCloseInv = useCallback(() => {
+    if (invView === "build" && invDirty()) { setInvConfirmClose(true); return; }
+    closeInvoiceModal();
+  }, [invView, invDirty, closeInvoiceModal]);
+
   const goInvoiceEmail = useCallback(() => {
-    const url = URL.createObjectURL(getInvoicePdfBlob(buildInvoiceData()));
-    setInvPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
+    refreshInvPreview();
     setInvView("email");
-  }, [buildInvoiceData]);
+  }, [refreshInvPreview]);
 
   const sendInvoiceEmail = useCallback(async () => {
     if (!invEmailTo.includes("@")) return;
     setInvSending(true);
     try {
+      await saveInv(true, "sent");   // el envío deja la factura guardada
       const blob = getInvoicePdfBlob(buildInvoiceData());
       const pdfBase64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -1329,21 +1513,37 @@ export default function EstimateTab({
       });
       const res = await fetch("/api/estimate/send-email", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: invEmailTo.trim(), subject: invEmailSub.trim(), message: invEmailMsg, fileName: `Invoice - ${project.title}.pdf`, pdfBase64 }),
+        body: JSON.stringify({ to: invEmailTo.trim(), subject: invEmailSub.trim(), message: invEmailMsg, fileName: `Invoice ${invNo.trim()} - ${project.title}.pdf`, pdfBase64 }),
       });
       const data = await res.json();
       if (data.ok) {
         toast(EN ? `Invoice sent to ${invEmailTo.trim()} ✓` : `Factura enviada a ${invEmailTo.trim()} ✓`);
         addProjectNote(project.id, EN
-          ? `📤 Invoice${invNo.trim() ? " #" + invNo.trim() : ""} emailed to ${invEmailTo.trim()} — ${noteDate("en")}`
-          : `📤 Factura${invNo.trim() ? " #" + invNo.trim() : ""} enviada por correo a ${invEmailTo.trim()} — ${noteDate("es")}`);
+          ? `📤 Invoice${invNo.trim() ? " #" + invNo.trim() : ""} (${money(invTotal)}) emailed to ${invEmailTo.trim()} — ${noteDate("en")}`
+          : `📤 Factura${invNo.trim() ? " #" + invNo.trim() : ""} (${money(invTotal)}) enviada por correo a ${invEmailTo.trim()} — ${noteDate("es")}`);
+        await loadInvList();
         closeInvoiceModal();
       }
       else toast((EN ? "Send failed: " : "Error al enviar: ") + (data.error ?? ""));
     } catch {
       toast(EN ? "Send failed — check your connection" : "Error al enviar — revisa tu conexión");
     } finally { setInvSending(false); }
-  }, [invEmailTo, invEmailSub, invEmailMsg, buildInvoiceData, project.title, EN, toast, closeInvoiceModal]);
+  }, [invEmailTo, invEmailSub, invEmailMsg, buildInvoiceData, saveInv, invNo, invTotal,
+      project.id, project.title, EN, toast, closeInvoiceModal, loadInvList]);
+
+  // Sella la huella cuando el formulario ya refleja la factura recién abierta.
+  useEffect(() => {
+    if (showInvoiceModal && invView === "build" && invSavedSnap.current === "") {
+      invSavedSnap.current = invSnapshot();
+    }
+  }, [showInvoiceModal, invView, invSnapshot]);
+
+  // La vista previa sigue al formulario: lo que se ve es lo que se imprime.
+  useEffect(() => {
+    if (!showInvoiceModal || invView !== "build" || !invPreviewOn) return;
+    const t = setTimeout(() => refreshInvPreview(), 400);
+    return () => clearTimeout(t);
+  }, [showInvoiceModal, invView, invPreviewOn, invLines, invNo, invDate, refreshInvPreview]);
 
 
 
@@ -1453,14 +1653,7 @@ export default function EstimateTab({
     return rows;
   }, [project.id]);
 
-  const coToday = useCallback(() => {
-    const now = new Date();
-    const mEN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-    const mES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
-    const mm  = (EN ? mEN : mES)[now.getMonth()];
-    return EN ? `${mm}. ${String(now.getDate()).padStart(2,"0")}, ${now.getFullYear()}`
-              : `${String(now.getDate()).padStart(2,"0")} ${mm}. ${now.getFullYear()}`;
-  }, [EN]);
+  const coToday = useCallback(() => todayLabel(EN), [EN]);
 
   /** Orden nueva: numeración correlativa y contrato anterior acumulando las ya guardadas. */
   const startNewCo = useCallback((rows: ChangeOrderRow[]) => {
@@ -2252,18 +2445,99 @@ export default function EstimateTab({
 
     </div>{/* /main card */}
 
-      {/* ── Invoice modal (factura desde el payment schedule) ──────────────── */}
+      {/* ── Invoice modal (factura: histórico · armado · envío) ────────────── */}
       {showInvoiceModal && estimate && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center" onClick={closeInvoiceModal}>
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center" onClick={attemptCloseInv}>
           <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between bg-[var(--brand)] px-5 py-3.5">
               <span className="text-sm font-bold text-white">
-                🧾 {invView === "email" ? (EN ? "Send invoice by email" : "Enviar factura por correo") : (EN ? "Invoice" : "Factura")}
+                🧾 {invView === "email"
+                  ? (EN ? "Send invoice by email" : "Enviar factura por correo")
+                  : invView === "list"
+                    ? (EN ? "Invoices" : "Facturas")
+                    : (invId ? (EN ? `Invoice #${invNo}` : `Factura #${invNo}`) : (EN ? "New invoice" : "Factura nueva"))}
               </span>
-              <button onClick={closeInvoiceModal} className="text-white/60 hover:text-white"><X size={16} /></button>
+              <button onClick={attemptCloseInv} className="text-white/60 hover:text-white"><X size={16} /></button>
             </div>
 
-            {invView === "build" ? (
+            {invView === "list" ? (
+              <>
+                <div className="flex-1 space-y-2 overflow-y-auto p-5">
+                  {invTableMissing && (
+                    <div className="rounded-xl border border-[#B0492F]/40 bg-[#FDF5F3] dark:bg-[#2a1a1a] px-3 py-2.5 text-[11.5px] leading-snug text-[#B0492F]">
+                      {EN
+                        ? "The invoices table does not exist yet — you can still build, print and email invoices, but they will not be saved until the SQL migration runs."
+                        : "La tabla invoices todavía no existe — puedes armar, imprimir y enviar facturas, pero no se guardarán hasta correr la migración SQL."}
+                    </div>
+                  )}
+                  {!invList.length && !invTableMissing && (
+                    <p className="py-6 text-center text-[12px] text-[#97A1A0] dark:text-[#728098]">
+                      {EN ? "No invoices yet for this project." : "Aún no hay facturas de este proyecto."}
+                    </p>
+                  )}
+                  {invList.map(row => {
+                    const paid = row.status === "paid";
+                    return (
+                      <div key={row.id} className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => editInv(row)} className="min-w-0 flex-1 text-left">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <b className="text-[13px] text-[var(--brand)] dark:text-[#e8edf7]">#{row.invoice_no || "—"}</b>
+                              <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                                paid
+                                  ? "bg-[#4F8A63]/15 text-[#4F8A63]"
+                                  : row.status === "sent"
+                                    ? "bg-[#395886]/15 text-[#395886]"
+                                    : "bg-[#E7E9EE] text-[#5C6A6E] dark:bg-[#22304d] dark:text-[#9fb0cc]"}`}>
+                                {paid ? (EN ? "Paid" : "Cobrada")
+                                      : row.status === "sent" ? (EN ? "Sent" : "Enviada") : (EN ? "Draft" : "Borrador")}
+                              </span>
+                              <span className="text-[10.5px] text-[#97A1A0] dark:text-[#728098]">{row.inv_date}</span>
+                            </span>
+                            <span className="mt-0.5 block truncate text-[11.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+                              {(row.lines ?? []).length
+                                ? (row.lines ?? []).map(l => l.description).filter(Boolean).join(" · ")
+                                : (EN ? "No lines" : "Sin líneas")}
+                            </span>
+                          </button>
+                          <span className="shrink-0 text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">{money(invTotalOf(row))}</span>
+                          <button onClick={() => setInvPaid(row, !paid)} title={paid ? (EN ? "Mark as unpaid" : "Marcar como no cobrada") : (EN ? "Mark as paid" : "Marcar como cobrada")}
+                            className={`shrink-0 ${paid ? "text-[#4F8A63]" : "text-[#97A1A0] hover:text-[#4F8A63]"}`}>
+                            <CheckCircle2 size={14} />
+                          </button>
+                          <button onClick={() => editInv(row)} title={EN ? "Edit" : "Editar"}
+                            className="shrink-0 text-[#97A1A0] hover:text-[var(--accent)]"><Pencil size={13} /></button>
+                          <button onClick={() => setInvDeleteId(row.id)} title={EN ? "Delete" : "Eliminar"}
+                            className="shrink-0 text-[#97A1A0] hover:text-[#B0492F]"><Trash2 size={13} /></button>
+                        </div>
+                        {invDeleteId === row.id && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] pt-2 text-[11.5px]">
+                            <span className="mr-auto font-bold text-[#B0492F]">{EN ? "Delete this invoice?" : "¿Eliminar esta factura?"}</span>
+                            <button onClick={() => deleteInv(row)} className="rounded-lg bg-[#B0492F] px-3 py-1 font-bold text-white hover:bg-[#953d27]">{EN ? "Yes" : "Sí"}</button>
+                            <button onClick={() => setInvDeleteId(null)} className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] px-3 py-1 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">No</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {invList.length > 0 && (
+                    <div className="flex items-center justify-between rounded-xl bg-[#F7F3EA] dark:bg-[#17233d] px-3 py-2 text-[12px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
+                      <span>{EN ? "Invoiced / collected" : "Facturado / cobrado"}</span>
+                      <span>
+                        {money(invList.reduce((s, r) => s + invTotalOf(r), 0))}
+                        <span className="ml-2 text-[#4F8A63]">{money(invList.filter(r => r.status === "paid").reduce((s, r) => s + invTotalOf(r), 0))}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
+                  <button onClick={closeInvoiceModal} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Close" : "Cerrar"}</button>
+                  <button onClick={() => startNewInv(invList)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)]">
+                    <Plus size={14} />{EN ? "New invoice" : "Nueva factura"}
+                  </button>
+                </div>
+              </>
+            ) : invView === "build" ? (
               <>
                 <div className="flex-1 space-y-4 overflow-y-auto p-5">
                   <div className="grid grid-cols-2 gap-3">
@@ -2280,35 +2554,68 @@ export default function EstimateTab({
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
-                      {EN ? "Description — from payment schedule" : "Descripción — del payment schedule"}
-                    </label>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">
+                        {EN ? "Lines that will print" : "Líneas que van a salir impresas"}
+                      </label>
+                      <button type="button" onClick={() => setInvLines(invLinesFromSchedule())}
+                        title={EN ? "Reload the payment schedule installments" : "Volver a traer las cuotas del calendario de pagos"}
+                        className="text-[10px] font-bold text-[var(--accent)] hover:underline">
+                        ↺ {EN ? "Payment schedule" : "Calendario de pagos"}
+                      </button>
+                    </div>
                     <div className="space-y-2">
-                      {estimate.deposit_schedule.map((dep, i) => {
-                        const st  = invLines[i] ?? { on: false, glosa: "" };
-                        const amt = depAmountsAt(totals.grandTotal)[i] ?? 0;
-                        return (
-                          <div key={i} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${st.on ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#17233d]" : "border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]"}`}>
-                            <input type="checkbox" checked={st.on}
-                              onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, on: e.target.checked } : x))}
-                              className="mt-1 h-4 w-4 accent-[var(--accent)]" />
-                            <div className="min-w-0 flex-1">
-                              <div className="mb-1 flex items-center gap-2">
-                                <span className="rounded bg-[var(--brand)] px-1.5 py-0.5 text-[9px] font-bold text-white">{dep.pct}%</span>
-                                <span className="text-[11px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">{money(amt)}</span>
-                              </div>
-                              <input value={st.glosa}
-                                onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, glosa: e.target.value } : x))}
-                                placeholder={EN ? "Description…" : "Descripción…"}
-                                className="w-full border-0 border-b border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                      {invLines.map((l, i) => (
+                        <div key={l.id} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${l.on ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#17233d]" : "border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]"}`}>
+                          <input type="checkbox" checked={l.on}
+                            onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, on: e.target.checked } : x))}
+                            title={EN ? "Include in this invoice" : "Incluir en esta factura"}
+                            className="mt-1.5 h-4 w-4 accent-[var(--accent)]" />
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex items-center gap-2">
+                              <input type="number" step="0.01" value={l.amount}
+                                onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))}
+                                placeholder="0"
+                                className="h-8 w-32 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#0b1220] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                              <span className="text-[10px] text-[#97A1A0] dark:text-[#728098]">
+                                {totals.grandTotal > 0 ? `${Math.round((parseFloat(l.amount) || 0) / totals.grandTotal * 100)}% ${EN ? "of contract" : "del contrato"}` : ""}
+                              </span>
+                              <button onClick={() => setInvLines(ls => ls.filter((_, j) => j !== i))}
+                                className="ml-auto text-[#97A1A0] hover:text-[#B0492F]" title={EN ? "Remove line" : "Eliminar línea"}>
+                                <X size={13} />
+                              </button>
                             </div>
+                            <input value={l.glosa}
+                              onChange={e => setInvLines(ls => ls.map((x, j) => j === i ? { ...x, glosa: e.target.value } : x))}
+                              placeholder={EN ? "Description…" : "Descripción…"}
+                              className="w-full border-0 border-b border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
-                    <div className="mt-2 flex items-center justify-end gap-2 text-[12px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
-                      {EN ? "Total due" : "Total a pagar"}: <span>{money(buildInvoiceData().lines.reduce((s, l) => s + l.amount, 0))}</span>
+                    <button onClick={() => setInvLines(ls => [...ls, newInvLine()])}
+                      className="mt-2 inline-flex items-center gap-1 rounded-lg border border-dashed border-[var(--accent)]/60 px-3 py-1.5 text-[11px] font-bold text-[var(--accent)] hover:bg-[var(--accent)]/10">
+                      <Plus size={12} />{EN ? "Add line" : "Agregar línea"}
+                    </button>
+                    <p className="mt-1.5 text-[10px] leading-snug text-[#97A1A0] dark:text-[#728098]">
+                      {EN
+                        ? "Edit any amount for a partial invoice — the PDF prints exactly these lines and this total."
+                        : "Edita cualquier monto para facturar un parcial — el PDF imprime exactamente estas líneas y este total."}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between rounded-xl bg-[var(--brand)] px-3 py-2.5 text-sm font-bold text-white">
+                      <span>{EN ? "Total due" : "Total a pagar"}</span>
+                      <span>{money(invTotal)}</span>
                     </div>
+                  </div>
+
+                  <div>
+                    <button type="button" onClick={() => { setInvPreviewOn(v => !v); if (!invPreviewOn) refreshInvPreview(); }}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--accent)] hover:underline">
+                      👁 {invPreviewOn ? (EN ? "Hide PDF preview" : "Ocultar vista previa") : (EN ? "Show PDF preview" : "Ver vista previa del PDF")}
+                    </button>
+                    {invPreviewOn && invPreview && (
+                      <iframe src={invPreview} title="Invoice preview" className="mt-2 h-72 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]" />
+                    )}
                   </div>
 
                   <div>
@@ -2330,12 +2637,39 @@ export default function EstimateTab({
                   </div>
                 </div>
 
+                {invConfirmClose ? (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] bg-[#FDF5F3] dark:bg-[#2a1a1a] p-4">
+                    <span className="mr-auto text-[12px] font-bold text-[#B0492F]">
+                      {EN ? "This invoice has unsaved changes." : "Esta factura tiene cambios sin guardar."}
+                    </span>
+                    <button onClick={() => setInvConfirmClose(false)}
+                      className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-white dark:hover:bg-[#0b1220]">
+                      {EN ? "Keep editing" : "Seguir editando"}
+                    </button>
+                    <button onClick={closeInvoiceModal}
+                      className="rounded-xl border border-[#B0492F]/50 px-4 py-2.5 text-sm font-bold text-[#B0492F] hover:bg-[#B0492F]/10">
+                      {EN ? "Discard" : "Descartar"}
+                    </button>
+                    <button onClick={async () => { const id = await saveInv(true); if (id) closeInvoiceModal(); }} disabled={invSaving}
+                      className="rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
+                      {invSaving ? (EN ? "Saving…" : "Guardando…") : (EN ? "Save and close" : "Guardar y cerrar")}
+                    </button>
+                  </div>
+                ) : (
                 <div className="flex flex-wrap gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
-                  <button onClick={closeInvoiceModal} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Cancel" : "Cancelar"}</button>
+                  <button onClick={() => { setInvDeleteId(null); setInvView("list"); }}
+                    className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
+                    ← {EN ? "Invoices" : "Facturas"}
+                  </button>
+                  <button onClick={() => saveInv()} disabled={invSaving}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
+                    <Save size={13} />{invSaving ? (EN ? "Saving…" : "Guardando…") : (EN ? "Save" : "Guardar")}
+                  </button>
                   <button onClick={() => openInvoicePdfInBrowser(buildInvoiceData())} className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Open" : "Abrir"}</button>
                   <button onClick={() => exportInvoicePdf(buildInvoiceData())} className="inline-flex items-center gap-1.5 rounded-xl bg-[#7B1838] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#6a1530]"><FileText size={13} />PDF</button>
                   <button onClick={goInvoiceEmail} className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--accent-strong)]">✉️ Email</button>
                 </div>
+                )}
               </>
             ) : (
               <>
