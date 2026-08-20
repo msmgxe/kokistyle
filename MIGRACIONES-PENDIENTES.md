@@ -111,6 +111,9 @@ La orden de cambio ya funciona sin esto: cuando la columna no existe, el total m
 viaja como línea centinela dentro del JSONB `lines`. Correr la migración lo deja en su
 columna propia (más limpio y consultable); las órdenes viejas se siguen leyendo igual.
 
+> Los **subtotales manuales por grupo** (*Fijar* en Subtotal agrega / Subtotal acredita)
+> no necesitan ningún script: se guardan siempre como centinelas en ese mismo JSONB.
+
 ```sql
 ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS total_override NUMERIC(12,2);
 ```

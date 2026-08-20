@@ -91,13 +91,20 @@ interface ChangeOrderRow {
   status: string;
   /** Total manual del cambio — null = suma de las líneas. */
   total_override?: number | null;
-  /** `kind: "total"` es la línea centinela del total manual (respaldo sin migración). */
-  lines: { kind: "add" | "credit" | "total"; section?: string; description?: string; amount?: number }[];
+  /** Las líneas `kind` que no son "add"/"credit" son centinelas de monto manual
+   *  (total de la orden y subtotal por grupo) — respaldo sin migración. */
+  lines: { kind: "add" | "credit" | "total" | "add_total" | "credit_total"; section?: string; description?: string; amount?: number }[];
   created_at: string;
 }
 
 /** Total manual guardado: la columna `total_override` si la migración ya corrió,
  *  si no la línea centinela `kind: "total"` dentro del JSONB `lines`. */
+/** Subtotal manual de un grupo, guardado como centinela en el JSONB `lines`. */
+function coGroupTotal(row: ChangeOrderRow, kind: "add_total" | "credit_total"): number | null {
+  const sentinel = (row.lines ?? []).find(l => l.kind === kind);
+  return sentinel ? Number(sentinel.amount) || 0 : null;
+}
+
 function coManualTotal(row: ChangeOrderRow): number | null {
   if (row.total_override != null) return Number(row.total_override) || 0;
   const sentinel = (row.lines ?? []).find(l => l.kind === "total");
@@ -681,6 +688,8 @@ export default function EstimateTab({
   const [coPrior,      setCoPrior]      = useState("0");
   const [coMode,       setCoMode]       = useState<"full" | "summary">("full");
   const [coTotal,      setCoTotal]      = useState("");   // "" = suma de las líneas
+  const [coAddTotal,   setCoAddTotal]   = useState("");   // "" = suma de las líneas que agregan
+  const [coCredTotal,  setCoCredTotal]  = useState("");   // "" = suma de las líneas que acreditan
   const [coAddToLast,  setCoAddToLast]  = useState(true);
   const [coLines,      setCoLines]      = useState<CoLineRow[]>([]);
   const [coEmailTo,    setCoEmailTo]    = useState("");
@@ -1556,13 +1565,43 @@ export default function EstimateTab({
 
   const coTotals = useMemo(() => {
     const num = (v: string) => Math.max(0, parseFloat(v) || 0);
-    const added    = coLines.filter(l => l.kind === "add").reduce((s, l) => s + num(l.amount), 0);
-    const credited = coLines.filter(l => l.kind === "credit").reduce((s, l) => s + num(l.amount), 0);
+    const opt = (v: string) => v.trim() === "" ? null : (parseFloat(v) || 0);
+    const addOverride    = opt(coAddTotal);
+    const creditOverride = opt(coCredTotal);
+    const added    = addOverride    ?? coLines.filter(l => l.kind === "add").reduce((s, l) => s + num(l.amount), 0);
+    const credited = creditOverride ?? coLines.filter(l => l.kind === "credit").reduce((s, l) => s + num(l.amount), 0);
     const prior    = Math.max(0, parseFloat(coPrior) || 0);
-    const override = coTotal.trim() === "" ? null : (parseFloat(coTotal) || 0);
+    const override = opt(coTotal);
     const net      = override ?? added - credited;
-    return { added, credited, net, prior, override, newContract: prior + net };
-  }, [coLines, coPrior, coTotal]);
+    return { added, credited, net, prior, override, addOverride, creditOverride, newContract: prior + net };
+  }, [coLines, coPrior, coTotal, coAddTotal, coCredTotal]);
+
+  /** Fila de monto del resumen: muestra el calculado o deja fijarlo a mano. */
+  const coAmountRow = (
+    label: string, value: number, raw: string,
+    set: (v: string) => void, tone: string, sign: string, dim = false,
+  ) => (
+    <div className={`flex items-center justify-between gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc] ${dim ? "opacity-45" : ""}`}>
+      <span>{label}</span>
+      {raw.trim() === "" ? (
+        <span className="flex items-center gap-2">
+          <b style={{ color: tone }}>{sign}{money(value)}</b>
+          <button type="button" onClick={() => set(String(Math.round(value * 100) / 100))}
+            className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-1 text-[10px] font-bold text-[var(--accent)] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
+            {EN ? "Set" : "Fijar"}
+          </button>
+        </span>
+      ) : (
+        <span className="flex items-center gap-1.5">
+          <input type="number" step={10} value={raw} onChange={e => set(e.target.value)}
+            className="h-8 w-28 rounded-lg border border-[var(--accent)] bg-white dark:bg-[#111a2e] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:outline-none" />
+          <button type="button" onClick={() => set("")}
+            title={EN ? "Back to the sum of the lines" : "Volver a la suma de las líneas"}
+            className="text-[#97A1A0] hover:text-[#B0492F]"><X size={13} /></button>
+        </span>
+      )}
+    </div>
+  );
 
   const coSchedule = useCallback(() => {
     const deps = estimate?.deposit_schedule ?? [];
@@ -1609,7 +1648,9 @@ export default function EstimateTab({
         amount:      Math.max(0, parseFloat(l.amount) || 0),
       })),
     schedule: coSchedule(),
-    netOverride: coTotals.override,
+    netOverride:    coTotals.override,
+    addOverride:    coTotals.addOverride,
+    creditOverride: coTotals.creditOverride,
   }), [coNo, coDate, language, project.title, coReason, coDays, coTotals, coAddToLast, estimate, coLines, coSchedule]);
 
   const refreshCoPreview = useCallback((mode: "full" | "summary") => {
@@ -1619,9 +1660,9 @@ export default function EstimateTab({
 
   /** Huella del formulario para saber si hay cambios sin guardar. */
   const coSnapshot = useCallback(() => JSON.stringify({
-    coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal,
+    coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coAddTotal, coCredTotal,
     lines: coLines.map(l => [l.kind, l.section, l.description, l.amount]),
-  }), [coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coLines]);
+  }), [coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coAddTotal, coCredTotal, coLines]);
 
   const coDirty = useCallback(() => coSnapshot() !== coSavedSnap.current, [coSnapshot]);
 
@@ -1630,10 +1671,12 @@ export default function EstimateTab({
   const coNetOf = useCallback((row: ChangeOrderRow) => {
     const manual = coManualTotal(row);
     if (manual != null) return manual;
-    return (row.lines ?? []).reduce((s, l) => {
-      const a = Math.max(0, Number(l.amount) || 0);
-      return s + (l.kind === "credit" ? -a : a);
-    }, 0);
+    const sum = (kind: "add" | "credit") => (row.lines ?? [])
+      .filter(l => l.kind === kind)
+      .reduce((s, l) => s + Math.max(0, Number(l.amount) || 0), 0);
+    const added    = coGroupTotal(row, "add_total")    ?? sum("add");
+    const credited = coGroupTotal(row, "credit_total") ?? sum("credit");
+    return added - credited;
   }, []);
 
   const coMissingMsg = useCallback((msg?: string) =>
@@ -1664,7 +1707,8 @@ export default function EstimateTab({
     const prior = Math.round((totals.grandTotal + rows.reduce((s, r) => s + coNetOf(r), 0)) * 100) / 100;
     setCoId(null); setCoStatus("draft");
     setCoNo(no); setCoDate(coToday()); setCoReason(""); setCoDays("0");
-    setCoPrior(String(prior)); setCoMode("full"); setCoAddToLast(true); setCoTotal("");
+    setCoPrior(String(prior)); setCoMode("full"); setCoAddToLast(true);
+    setCoTotal(""); setCoAddTotal(""); setCoCredTotal("");
     setCoLines([newCoLine("add")]);
     setCoConfirmClose(false);
     setCoView("build");
@@ -1672,7 +1716,7 @@ export default function EstimateTab({
   }, [totals.grandTotal, coNetOf, coToday, newCoLine]);
 
   const editCo = useCallback((row: ChangeOrderRow) => {
-    const lines = (row.lines ?? []).filter(l => l.kind !== "total").map((l, i) => ({
+    const lines = (row.lines ?? []).filter(l => l.kind === "add" || l.kind === "credit").map((l, i) => ({
       id: `co${row.id.slice(0, 6)}${i}`,
       kind: (l.kind === "credit" ? "credit" : "add") as "add" | "credit",
       section: l.section ?? "",
@@ -1687,6 +1731,10 @@ export default function EstimateTab({
     setCoMode(row.detail_mode === "summary" ? "summary" : "full");
     const manual = coManualTotal(row);
     setCoTotal(manual == null ? "" : String(manual));
+    const addManual  = coGroupTotal(row, "add_total");
+    const credManual = coGroupTotal(row, "credit_total");
+    setCoAddTotal(addManual   == null ? "" : String(addManual));
+    setCoCredTotal(credManual == null ? "" : String(credManual));
     setCoAddToLast(row.add_to_last !== false);
     setCoLines(lines.length ? lines : [newCoLine("add")]);
     setCoConfirmClose(false);
@@ -1707,13 +1755,17 @@ export default function EstimateTab({
       add_to_last:    coAddToLast,
       detail_mode:    coMode,
       status:         coStatus,
-      lines: coLines
-        .filter(l => l.description.trim() !== "" || (parseFloat(l.amount) || 0) > 0)
-        .map(l => ({
-          kind: l.kind, section: l.section.trim(),
-          description: l.description.trim(),
-          amount: Math.max(0, parseFloat(l.amount) || 0),
-        })),
+      lines: [
+        ...coLines
+          .filter(l => l.description.trim() !== "" || (parseFloat(l.amount) || 0) > 0)
+          .map(l => ({
+            kind: l.kind, section: l.section.trim(),
+            description: l.description.trim(),
+            amount: Math.max(0, parseFloat(l.amount) || 0),
+          })),
+        ...(coTotals.addOverride    != null ? [{ kind: "add_total",    section: "", description: "", amount: coTotals.addOverride }] : []),
+        ...(coTotals.creditOverride != null ? [{ kind: "credit_total", section: "", description: "", amount: coTotals.creditOverride }] : []),
+      ],
       updated_at: new Date().toISOString(),
     };
     const write = async (body: Record<string, unknown>) => {
@@ -2836,7 +2888,9 @@ export default function EstimateTab({
                             <input type="number" min={0} step={10} value={l.amount}
                               onChange={e => setCoLines(ls => ls.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))}
                               placeholder="0"
-                              className="h-7 w-24 shrink-0 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#0b1220] px-2 text-right text-[12px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                              disabled={coTotals.override != null || (l.kind === "add" ? coTotals.addOverride != null : coTotals.creditOverride != null)}
+                              title={EN ? "Amount of this line" : "Monto de esta línea"}
+                              className="h-8 w-28 shrink-0 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#0b1220] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none disabled:opacity-40" />
                             <button onClick={() => setCoLines(ls => ls.filter((_, j) => j !== i))}
                               className="shrink-0 text-[#97A1A0] hover:text-[#B0492F]" title={EN ? "Remove line" : "Eliminar línea"}>
                               <X size={13} />
@@ -2884,14 +2938,10 @@ export default function EstimateTab({
                       <input type="number" min={0} value={coPrior} onChange={e => setCoPrior(e.target.value)}
                         className="h-8 w-32 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
                     </div>
-                    <div className={`flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc] ${coTotals.override != null ? "opacity-45" : ""}`}>
-                      <span>{EN ? "Additions subtotal" : "Subtotal agrega"}</span>
-                      <b className="text-[#4F8A63]">{money(coTotals.added)}</b>
-                    </div>
-                    <div className={`flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc] ${coTotals.override != null ? "opacity-45" : ""}`}>
-                      <span>{EN ? "Credits subtotal" : "Subtotal acredita"}</span>
-                      <b className="text-[#B0492F]">-{money(coTotals.credited)}</b>
-                    </div>
+                    {coAmountRow(EN ? "Additions subtotal" : "Subtotal agrega",
+                      coTotals.added, coAddTotal, setCoAddTotal, "#4F8A63", "", coTotals.override != null)}
+                    {coAmountRow(EN ? "Credits subtotal" : "Subtotal acredita",
+                      coTotals.credited, coCredTotal, setCoCredTotal, "#B0492F", "-", coTotals.override != null)}
                     <div className="flex items-center justify-between gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#17233d] px-3 py-2 text-[12.5px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
                       <span>{EN ? "Net of this order" : "Neto de esta orden"}</span>
                       {coTotals.override == null ? (
@@ -2922,11 +2972,17 @@ export default function EstimateTab({
                       ? "Prior contract is prefilled with the estimate grand total — edit it if previous change orders were already approved. \"Set total\" lets you price the whole change at once, leaving the lines without amounts."
                       : "El contrato anterior viene del total del estimado — edítalo si ya se aprobaron órdenes de cambio previas. Con \"Fijar total\" pones el precio del cambio completo y dejas las líneas sin monto."}
                   </p>
-                  {coTotals.override != null && (
+                  {coTotals.override != null ? (
                     <p className="-mt-2 rounded-lg bg-[#F0A090]/20 px-2.5 py-1.5 text-[10.5px] leading-snug text-[#7B1838]">
                       {EN
                         ? "Manual total: the PDF prints the scope and this total — per-line amounts are not shown."
                         : "Total manual: el PDF muestra el alcance y este total — los montos por línea no se imprimen."}
+                    </p>
+                  ) : (coTotals.addOverride != null || coTotals.creditOverride != null) && (
+                    <p className="-mt-2 rounded-lg bg-[#F0A090]/20 px-2.5 py-1.5 text-[10.5px] leading-snug text-[#7B1838]">
+                      {EN
+                        ? "Manual subtotal: that block prints its scope and its subtotal — without the amount of each line."
+                        : "Subtotal manual: ese bloque imprime su alcance y su subtotal — sin el monto de cada línea."}
                     </p>
                   )}
 

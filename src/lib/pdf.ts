@@ -842,11 +842,17 @@ export interface ChangeOrderData {
   schedule: { label: string; pct: number; was: number; now: number }[];
   /** Total manual del cambio: sustituye a la suma de las líneas cuando se fija. */
   netOverride?: number | null;
+  /** Subtotal manual de cada grupo: sustituye a la suma de sus líneas. Con uno
+   *  fijado, ese grupo imprime su alcance sin montos por línea. */
+  addOverride?: number | null;
+  creditOverride?: number | null;
 }
 
-export function changeOrderTotals(co: Pick<ChangeOrderData, "lines" | "priorContract" | "netOverride">) {
-  const added   = co.lines.filter(l => l.kind === "add").reduce((s, l) => s + l.amount, 0);
-  const credited = co.lines.filter(l => l.kind === "credit").reduce((s, l) => s + l.amount, 0);
+export function changeOrderTotals(
+  co: Pick<ChangeOrderData, "lines" | "priorContract" | "netOverride" | "addOverride" | "creditOverride">,
+) {
+  const added    = co.addOverride    ?? co.lines.filter(l => l.kind === "add").reduce((s, l) => s + l.amount, 0);
+  const credited = co.creditOverride ?? co.lines.filter(l => l.kind === "credit").reduce((s, l) => s + l.amount, 0);
   const net = co.netOverride ?? added - credited;
   return { added, credited, net, newContract: co.priorContract + net };
 }
@@ -963,7 +969,10 @@ function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF;
   const adds    = co.lines.filter(l => l.kind === "add");
   const credits = co.lines.filter(l => l.kind === "credit");
   // Con total manual los montos por línea no suman el neto: se omiten del PDF.
-  const showAmounts = co.mode === "full" && co.netOverride == null;
+  // Con total manual de la orden no se imprime ningún monto por línea; con un
+  // subtotal manual de grupo, ese grupo imprime su alcance sin montos.
+  const showSubtotals = co.mode === "full" && co.netOverride == null;
+  const groupOverride = (kind: "add" | "credit") => kind === "add" ? co.addOverride : co.creditOverride;
 
   // ── Alcance del cambio ────────────────────────────────────────────────────
   // Un bloque a ancho completo por grupo que fluye línea a línea de página en
@@ -971,27 +980,24 @@ function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF;
   {
     const PAD = 5, HEAD_H = G.headH, FOOT_H = G.footH, LINE_H = G.lineH, SEC_H = G.secH, SEP_H = G.sepH;
     const PAGE_BOT = 262, PAGE_TOP = 20;
-    const amtW  = showAmounts ? 26 : 0;
-    const descW = CW - PAD * 2 - amtW;
-
     type Atom = { h: number; sec?: string; t?: string; ind?: number; amount?: number; sep?: boolean };
 
-    const atomsOf = (list: ChangeOrderLine[]): Atom[] => {
+    const atomsOf = (list: ChangeOrderLine[], withAmounts: boolean, descW: number): Atom[] => {
       const out: Atom[] = [];
       list.forEach((l, i) => {
         doc.setFont("helvetica", "normal"); doc.setFontSize(G.bodyFs);
         const wrapped = wrapDesc(l.description, descW);
-        if (l.section) out.push({ h: SEC_H, sec: l.section, amount: showAmounts ? l.amount : undefined });
+        if (l.section) out.push({ h: SEC_H, sec: l.section, amount: withAmounts ? l.amount : undefined });
         wrapped.forEach((ln, j) => out.push({
           h: LINE_H, t: ln.t, ind: ln.ind,
-          amount: showAmounts && !l.section && j === 0 ? l.amount : undefined,
+          amount: withAmounts && !l.section && j === 0 ? l.amount : undefined,
         }));
         if (i < list.length - 1) out.push({ h: SEP_H, sep: true });
       });
       return out;
     };
 
-    const drawAtom = (a: Atom, top: number, isCredit: boolean) => {
+    const drawAtom = (a: Atom, top: number, isCredit: boolean, descW: number) => {
       if (a.sep) {
         doc.setDrawColor(240, 235, 224); doc.setLineWidth(0.2);
         doc.line(ML + PAD, top + a.h / 2, MR - PAD, top + a.h / 2);
@@ -1015,7 +1021,9 @@ function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF;
       const isCredit = kind === "credit";
       const head = isCredit ? (EN ? "CREDITED TO OWNER" : "SE ACREDITA AL CLIENTE")
                             : (EN ? "ADDED TO SCOPE"    : "SE AGREGA AL ALCANCE");
-      const atoms = atomsOf(list);
+      const withAmounts = showSubtotals && groupOverride(kind) == null;
+      const descW = CW - PAD * 2 - (withAmounts ? 26 : 0);
+      const atoms = atomsOf(list, withAmounts, descW);
       let i = 0, part = 0;
       while (i < atoms.length) {
         if (PAGE_BOT - y < HEAD_H + LINE_H * 3 + FOOT_H + 6) { doc.addPage(); y = PAGE_TOP; }
@@ -1024,7 +1032,7 @@ function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF;
         const chunk: Atom[] = [];
         let h = HEAD_H + 2.6;
         while (i < atoms.length) {
-          const foot = i === atoms.length - 1 && showAmounts ? FOOT_H : 0;
+          const foot = i === atoms.length - 1 && showSubtotals ? FOOT_H : 0;
           if (h + atoms[i].h + foot + 2.6 > avail) break;
           h += atoms[i].h; chunk.push(atoms[i]); i++;
         }
@@ -1034,7 +1042,7 @@ function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF;
         }
         if (!chunk.length) { h += atoms[i].h; chunk.push(atoms[i]); i++; }
         const last = i >= atoms.length;
-        const boxH = h + (last && showAmounts ? FOOT_H : 0) + 2.6;
+        const boxH = h + (last && showSubtotals ? FOOT_H : 0) + 2.6;
 
         doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255);
         doc.roundedRect(ML, y, CW, boxH, 2, 2, "FD");
@@ -1042,12 +1050,12 @@ function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF;
         doc.rect(ML + 0.3, y + 0.3, CW - 0.6, HEAD_H, "F");
         doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
         doc.text(part ? `${head}  (cont.)` : head, ML + PAD, y + 4.7);
-        if (showAmounts) doc.text(EN ? "AMOUNT" : "MONTO", MR - PAD, y + 4.7, { align: "right" });
+        if (withAmounts) doc.text(EN ? "AMOUNT" : "MONTO", MR - PAD, y + 4.7, { align: "right" });
 
         let top = y + HEAD_H + 2.6;
-        chunk.forEach(a => { drawAtom(a, top, isCredit); top += a.h; });
+        chunk.forEach(a => { drawAtom(a, top, isCredit, descW); top += a.h; });
 
-        if (last && showAmounts) {
+        if (last && showSubtotals) {
           const fy = y + boxH - FOOT_H - 0.4;
           doc.setFillColor(...(isCredit ? [250, 234, 229] : [228, 240, 231]) as [number, number, number]);
           doc.rect(ML + 0.4, fy, CW - 0.8, FOOT_H, "F");
@@ -1075,7 +1083,7 @@ function renderChangeOrder(co: ChangeOrderData, compact: boolean): { doc: jsPDF;
       doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
       doc.text(EN ? "No lines in this change order." : "Sin líneas en esta orden de cambio.", ML + PAD, y + 12);
       y += 16 + G.gap;
-    } else if (!showAmounts) {
+    } else if (!showSubtotals) {
       // Sin montos por línea: el total del cambio cierra el alcance.
       if (PAGE_BOT - y < 14) { doc.addPage(); y = PAGE_TOP; }
       doc.setFillColor(22, 50, 61);
