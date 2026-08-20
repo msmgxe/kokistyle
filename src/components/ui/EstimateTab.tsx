@@ -2332,7 +2332,7 @@ export default function EstimateTab({
                   <p className="text-[11px] text-[#97A1A0] dark:text-[#728098]">{EN ? "From" : "Desde"}: <span className="font-bold text-[var(--brand)] dark:text-[#e8edf7]">Luxaris Design &lt;luxaris25@yahoo.com&gt;</span></p>
                   <div>
                     <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">{EN ? "To" : "Para"} *</label>
-                    <input type="email" value={coEmailTo} onChange={e => setCoEmailTo(e.target.value)} placeholder="cliente@email.com"
+                    <input type="email" value={coEmailTo} onChange={e => setCoEmailTo(e.target.value)} placeholder={EN ? "customer@email.com" : "cliente@email.com"}
                       className="h-10 w-full rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 text-sm text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--brand)] focus:outline-none" />
                   </div>
                   <div>
