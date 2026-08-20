@@ -56,8 +56,19 @@ interface ChangeOrderRow {
   add_to_last: boolean;
   detail_mode: "full" | "summary";
   status: string;
-  lines: { kind: "add" | "credit"; section?: string; description?: string; amount?: number }[];
+  /** Total manual del cambio — null = suma de las líneas. */
+  total_override?: number | null;
+  /** `kind: "total"` es la línea centinela del total manual (respaldo sin migración). */
+  lines: { kind: "add" | "credit" | "total"; section?: string; description?: string; amount?: number }[];
   created_at: string;
+}
+
+/** Total manual guardado: la columna `total_override` si la migración ya corrió,
+ *  si no la línea centinela `kind: "total"` dentro del JSONB `lines`. */
+function coManualTotal(row: ChangeOrderRow): number | null {
+  if (row.total_override != null) return Number(row.total_override) || 0;
+  const sentinel = (row.lines ?? []).find(l => l.kind === "total");
+  return sentinel ? Number(sentinel.amount) || 0 : null;
 }
 
 interface ItemRow {
@@ -627,6 +638,7 @@ export default function EstimateTab({
   const [coDays,       setCoDays]       = useState("0");
   const [coPrior,      setCoPrior]      = useState("0");
   const [coMode,       setCoMode]       = useState<"full" | "summary">("full");
+  const [coTotal,      setCoTotal]      = useState("");   // "" = suma de las líneas
   const [coAddToLast,  setCoAddToLast]  = useState(true);
   const [coLines,      setCoLines]      = useState<CoLineRow[]>([]);
   const [coEmailTo,    setCoEmailTo]    = useState("");
@@ -1345,9 +1357,10 @@ export default function EstimateTab({
     const added    = coLines.filter(l => l.kind === "add").reduce((s, l) => s + num(l.amount), 0);
     const credited = coLines.filter(l => l.kind === "credit").reduce((s, l) => s + num(l.amount), 0);
     const prior    = Math.max(0, parseFloat(coPrior) || 0);
-    const net      = added - credited;
-    return { added, credited, net, prior, newContract: prior + net };
-  }, [coLines, coPrior]);
+    const override = coTotal.trim() === "" ? null : (parseFloat(coTotal) || 0);
+    const net      = override ?? added - credited;
+    return { added, credited, net, prior, override, newContract: prior + net };
+  }, [coLines, coPrior, coTotal]);
 
   const coSchedule = useCallback(() => {
     const deps = estimate?.deposit_schedule ?? [];
@@ -1392,6 +1405,7 @@ export default function EstimateTab({
         amount:      Math.max(0, parseFloat(l.amount) || 0),
       })),
     schedule: coSchedule(),
+    netOverride: coTotals.override,
   }), [coNo, coDate, language, project.title, coReason, coDays, coTotals, coAddToLast, estimate, coLines, coSchedule]);
 
   const refreshCoPreview = useCallback((mode: "full" | "summary") => {
@@ -1401,18 +1415,22 @@ export default function EstimateTab({
 
   /** Huella del formulario para saber si hay cambios sin guardar. */
   const coSnapshot = useCallback(() => JSON.stringify({
-    coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast,
+    coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal,
     lines: coLines.map(l => [l.kind, l.section, l.description, l.amount]),
-  }), [coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coLines]);
+  }), [coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coTotal, coLines]);
 
   const coDirty = useCallback(() => coSnapshot() !== coSavedSnap.current, [coSnapshot]);
 
   // ── Change Order: persistencia en `change_orders` ─────────────────────────
-  const coNetOf = useCallback((row: ChangeOrderRow) =>
-    (row.lines ?? []).reduce((s, l) => {
+
+  const coNetOf = useCallback((row: ChangeOrderRow) => {
+    const manual = coManualTotal(row);
+    if (manual != null) return manual;
+    return (row.lines ?? []).reduce((s, l) => {
       const a = Math.max(0, Number(l.amount) || 0);
       return s + (l.kind === "credit" ? -a : a);
-    }, 0), []);
+    }, 0);
+  }, []);
 
   const coMissingMsg = useCallback((msg?: string) =>
     msg?.includes("does not exist") || msg?.includes("schema cache")
@@ -1449,7 +1467,7 @@ export default function EstimateTab({
     const prior = Math.round((totals.grandTotal + rows.reduce((s, r) => s + coNetOf(r), 0)) * 100) / 100;
     setCoId(null); setCoStatus("draft");
     setCoNo(no); setCoDate(coToday()); setCoReason(""); setCoDays("0");
-    setCoPrior(String(prior)); setCoMode("full"); setCoAddToLast(true);
+    setCoPrior(String(prior)); setCoMode("full"); setCoAddToLast(true); setCoTotal("");
     setCoLines([newCoLine("add")]);
     setCoConfirmClose(false);
     setCoView("build");
@@ -1457,7 +1475,7 @@ export default function EstimateTab({
   }, [totals.grandTotal, coNetOf, coToday, newCoLine]);
 
   const editCo = useCallback((row: ChangeOrderRow) => {
-    const lines = (row.lines ?? []).map((l, i) => ({
+    const lines = (row.lines ?? []).filter(l => l.kind !== "total").map((l, i) => ({
       id: `co${row.id.slice(0, 6)}${i}`,
       kind: (l.kind === "credit" ? "credit" : "add") as "add" | "credit",
       section: l.section ?? "",
@@ -1470,6 +1488,8 @@ export default function EstimateTab({
     setCoDays(String(row.extra_days ?? 0));
     setCoPrior(String(row.prior_contract ?? 0));
     setCoMode(row.detail_mode === "summary" ? "summary" : "full");
+    const manual = coManualTotal(row);
+    setCoTotal(manual == null ? "" : String(manual));
     setCoAddToLast(row.add_to_last !== false);
     setCoLines(lines.length ? lines : [newCoLine("add")]);
     setCoConfirmClose(false);
@@ -1479,13 +1499,14 @@ export default function EstimateTab({
 
   const saveCo = useCallback(async (silent = false): Promise<string | null> => {
     setCoSaving(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       project_id:     project.id,
       order_no:       coNo.trim(),
       co_date:        coDate.trim(),
       reason:         coReason.trim(),
       extra_days:     Math.max(0, parseInt(coDays, 10) || 0),
       prior_contract: coTotals.prior,
+      total_override: coTotals.override,
       add_to_last:    coAddToLast,
       detail_mode:    coMode,
       status:         coStatus,
@@ -1498,16 +1519,27 @@ export default function EstimateTab({
         })),
       updated_at: new Date().toISOString(),
     };
-    let id = coId;
-    if (id) {
-      const { error } = await supabase.from("change_orders").update(payload).eq("id", id);
-      if (error) { toast(coMissingMsg(error.message)); setCoSaving(false); return null; }
-    } else {
-      const { data, error } = await supabase.from("change_orders").insert(payload).select("id").single();
-      if (error || !data) { toast(coMissingMsg(error?.message)); setCoSaving(false); return null; }
-      id = (data as { id: string }).id;
-      setCoId(id);
+    const write = async (body: Record<string, unknown>) => {
+      if (coId) {
+        const { error } = await supabase.from("change_orders").update(body).eq("id", coId);
+        return { savedId: coId as string | null, error };
+      }
+      const { data, error } = await supabase.from("change_orders").insert(body).select("id").single();
+      return { savedId: (data as { id: string } | null)?.id ?? null, error };
+    };
+    let res = await write(payload);
+    if (res.error?.message?.includes("total_override")) {
+      // Columna aún sin migrar: el total manual viaja dentro del JSONB `lines`.
+      const legacy = { ...payload };
+      delete legacy.total_override;
+      if (coTotals.override != null) {
+        legacy.lines = [...(payload.lines as object[]), { kind: "total", amount: coTotals.override }];
+      }
+      res = await write(legacy);
     }
+    if (res.error || !res.savedId) { toast(coMissingMsg(res.error?.message)); setCoSaving(false); return null; }
+    const id = res.savedId;
+    if (!coId) setCoId(id);
     logActivity({
       user_id: currentUser?.id, user_name: currentUser?.name, user_role: currentUser?.role,
       action: coId ? "update" : "create", entity_type: "change_order", entity_id: id,
@@ -2515,17 +2547,33 @@ export default function EstimateTab({
                       <input type="number" min={0} value={coPrior} onChange={e => setCoPrior(e.target.value)}
                         className="h-8 w-32 rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
                     </div>
-                    <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+                    <div className={`flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc] ${coTotals.override != null ? "opacity-45" : ""}`}>
                       <span>{EN ? "Additions subtotal" : "Subtotal agrega"}</span>
                       <b className="text-[#4F8A63]">{money(coTotals.added)}</b>
                     </div>
-                    <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+                    <div className={`flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] px-3 py-2 text-[12px] text-[#5C6A6E] dark:text-[#9fb0cc] ${coTotals.override != null ? "opacity-45" : ""}`}>
                       <span>{EN ? "Credits subtotal" : "Subtotal acredita"}</span>
                       <b className="text-[#B0492F]">-{money(coTotals.credited)}</b>
                     </div>
-                    <div className="flex items-center justify-between border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#17233d] px-3 py-2 text-[12.5px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
+                    <div className="flex items-center justify-between gap-2 border-b border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#17233d] px-3 py-2 text-[12.5px] font-bold text-[var(--brand)] dark:text-[#e8edf7]">
                       <span>{EN ? "Net of this order" : "Neto de esta orden"}</span>
-                      <span>{coTotals.net >= 0 ? "+" : "-"}{money(Math.abs(coTotals.net))}</span>
+                      {coTotals.override == null ? (
+                        <span className="flex items-center gap-2">
+                          <span>{coTotals.net >= 0 ? "+" : "-"}{money(Math.abs(coTotals.net))}</span>
+                          <button type="button" onClick={() => setCoTotal(String(coTotals.added - coTotals.credited))}
+                            className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] bg-white dark:bg-[#111a2e] px-2 py-1 text-[10px] font-bold text-[var(--accent)] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
+                            {EN ? "Set total" : "Fijar total"}
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <input type="number" step={10} value={coTotal} onChange={e => setCoTotal(e.target.value)}
+                            className="h-8 w-32 rounded-lg border border-[var(--accent)] bg-white dark:bg-[#111a2e] px-2 text-right text-[13px] font-bold text-[var(--brand)] dark:text-[#e8edf7] focus:outline-none" />
+                          <button type="button" onClick={() => setCoTotal("")}
+                            title={EN ? "Back to the sum of the lines" : "Volver a la suma de las líneas"}
+                            className="text-[#97A1A0] hover:text-[#B0492F]"><X size={13} /></button>
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between bg-[var(--brand)] px-3 py-2.5 text-sm font-bold text-white">
                       <span>{EN ? "New contract sum" : "Nuevo monto del contrato"}</span>
@@ -2534,9 +2582,16 @@ export default function EstimateTab({
                   </div>
                   <p className="-mt-2 text-[10px] text-[#97A1A0] dark:text-[#728098]">
                     {EN
-                      ? "Prior contract is prefilled with the estimate grand total — edit it if previous change orders were already approved."
-                      : "El contrato anterior viene del total del estimado — edítalo si ya se aprobaron órdenes de cambio previas."}
+                      ? "Prior contract is prefilled with the estimate grand total — edit it if previous change orders were already approved. \"Set total\" lets you price the whole change at once, leaving the lines without amounts."
+                      : "El contrato anterior viene del total del estimado — edítalo si ya se aprobaron órdenes de cambio previas. Con \"Fijar total\" pones el precio del cambio completo y dejas las líneas sin monto."}
                   </p>
+                  {coTotals.override != null && (
+                    <p className="-mt-2 rounded-lg bg-[#F0A090]/20 px-2.5 py-1.5 text-[10.5px] leading-snug text-[#7B1838]">
+                      {EN
+                        ? "Manual total: the PDF prints the scope and this total — per-line amounts are not shown."
+                        : "Total manual: el PDF muestra el alcance y este total — los montos por línea no se imprimen."}
+                    </p>
+                  )}
 
                   <div className="flex items-start justify-between gap-3 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2.5">
                     <div className="min-w-0">

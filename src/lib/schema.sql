@@ -493,6 +493,7 @@ CREATE TABLE IF NOT EXISTS change_orders (
   reason          TEXT NOT NULL DEFAULT '',
   extra_days      INT NOT NULL DEFAULT 0,
   prior_contract  NUMERIC(12,2) NOT NULL DEFAULT 0,
+  total_override  NUMERIC(12,2),                  -- total manual del cambio (null = suma de líneas)
   add_to_last     BOOLEAN NOT NULL DEFAULT true,
   detail_mode     TEXT NOT NULL DEFAULT 'full',   -- 'full' | 'summary'
   status          TEXT NOT NULL DEFAULT 'draft',  -- 'draft' | 'sent'
@@ -500,6 +501,7 @@ CREATE TABLE IF NOT EXISTS change_orders (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS total_override NUMERIC(12,2);
 CREATE INDEX IF NOT EXISTS change_orders_project_idx ON change_orders(project_id, created_at DESC);
 ALTER TABLE change_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON change_orders FOR ALL TO anon USING (true) WITH CHECK (true);

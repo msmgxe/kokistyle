@@ -296,6 +296,7 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
   - Por sección: borde izquierdo de color (teal=labor, rojo=material) + items en 2 columnas (pares)
   - **Payment Schedule a la izquierda** · **Descuento + Grand Total a la derecha** (Grand Total anclado a la línea inferior del rectángulo del Payment Schedule)
   - Footer con divider + texto del contratista centrado
+- **Texto seguro (ago 2026)** — `pdfSafe()` + `latin1Doc()` en `src/lib/pdf.ts`: las fuentes estándar de jsPDF sólo dibujan Latin-1, y **un solo carácter fuera de ese rango** (la viñeta que Word pega como `U+F0B7`, un guion largo, una comilla tipográfica) hacía que jsPDF escribiera la cadena entera en UTF-16 — el visor la mostraba con las letras separadas, desbordada y con `ð·` al inicio. `latin1Doc()` envuelve `text` / `splitTextToSize` / `getTextWidth` de **todos** los documentos, así medir y dibujar coinciden. Los signos tipográficos se mapean a su byte cp1252 (`•` → `\x95`) y lo que no existe en Latin-1 se sustituye o se descarta.
 - **`exportEstimatePdf()`** — llama `buildEstimatePdf()` y hace `doc.save()` (descarga)
 - **`getEstimatePdfBlob()`** — llama `buildEstimatePdf()` y devuelve `Blob` (para WhatsApp)
 
@@ -317,12 +318,14 @@ Botón **Change Order / Orden de cambio** en la cabecera oscura del Estimate, ju
 - **Numeración y contrato anterior automáticos**: la orden nueva toma el siguiente `CO-00N` libre y su *contrato anterior* = grand total del estimado **+ la suma de los netos de las órdenes ya guardadas**. Ambos siguen siendo editables.
 - **Cambios sin guardar**: cerrar el modal (X o fondo) con cambios pendientes muestra *Seguir editando · Descartar · Guardar y cerrar* — el trabajo no se pierde.
 - **Diseño del documento — "delta visual"** (opción 2 del prototipo `change-order-3-opciones.html`): banda oscura con nº de orden y badge *Pendiente de firma*, tres cifras (**contrato anterior → este cambio → contrato nuevo**), motivo, bloques **Se agrega** (verde) / **Se acredita** (rojo), cronograma (+N días), cuotas recalculadas y firmas contratista/cliente con `CONTRACTOR_SIGNATURE`. Cierra con una cláusula centrada: *"This Change Order constitutes additional work outside the original proposal…"*.
-- **Columna vacía = ancho completo**: si no hay créditos (o no hay agregados), el bloque que sí tiene líneas ocupa los 190 mm — así el detalle largo entra en **una sola página**.
-- **Descripciones multilínea**: la descripción de cada línea es un `<textarea>` que crece solo; los saltos de línea se respetan en el PDF y las viñetas (`•`) llevan sangría de continuación.
+- **Alcance a ancho completo y paginado (ago 2026)**: cada grupo (*Se agrega* / *Se acredita*) es un bloque de 190 mm que **fluye línea a línea de página en página** — si el alcance no cabe, la caja continúa en la hoja siguiente con la cabecera `(cont.)` y el subtotal se imprime al cerrar el grupo. Ni las etiquetas de sección ni los separadores quedan huérfanos al pie.
+- **Descripciones multilínea**: la descripción de cada línea es un `<textarea>` que crece solo; **cada salto de línea es un acápite con viñeta propia y sangría francesa** (la continuación alinea bajo el texto, no bajo la viñeta). El *motivo del cambio* sale **justificado**.
+- **Total manual (`total_override`)**: el botón **Fijar total / Set total** de la fila *Neto de esta orden* permite poner el precio del cambio completo **sin capturar montos por línea**. Con el total fijado, el PDF imprime el alcance y una banda oscura **TOTAL DE ESTE CAMBIO** (nunca los montos por línea, que no sumarían el neto), y las cuotas se recalculan con ese neto. La ✕ vuelve a la suma de las líneas.
+- **Respaldo sin migración (ago 2026)**: si `change_orders.total_override` todavía no existe (p. ej. sin acceso al dashboard de Supabase), el guardado reintenta y el total manual viaja como **línea centinela `{ kind: "total", amount: N }` dentro del JSONB `lines`**. `coManualTotal(row)` lee primero la columna y si no la centinela, y `editCo` filtra esa línea del formulario — así el total manual persiste y se sincroniza entre dispositivos sin correr SQL. Al correr la migración la columna toma precedencia y las órdenes viejas se siguen leyendo bien.
 - **Con detalle / Sin detalle** (`mode: "full" | "summary"`, mismo enum que el PDF del Estimate): `full` muestra el monto de cada línea y los subtotales (bandas verde/roja de contraste); `summary` lista el alcance en viñetas **sin montos por línea** — solo el cambio total y el contrato nuevo. El toggle está en `build` y se repite junto al preview en `email`.
 - **Cuotas**: `Sumar el neto a la última cuota` (default) mantiene las primeras y ajusta la última; desmarcado recalcula todas por su porcentaje. El total del contrato va en banda oscura y el importe anterior aparece tachado en gris.
 - **Envío**: `POST /api/estimate/send-email` (mismo SMTP Yahoo del estimado y la factura) con adjunto `Change Order <nº> - <proyecto>.pdf`, nota en `project_notes` y registro en `activity_log` (`entity_type: "change_order"`).
-- API en `src/lib/pdf.ts`: `ChangeOrderData` · `changeOrderTotals()` · `exportChangeOrderPdf()` · `openChangeOrderPdfInBrowser()` · `getChangeOrderPdfBlob()`.
+- API en `src/lib/pdf.ts`: `ChangeOrderData` (con `netOverride`) · `changeOrderTotals()` · `exportChangeOrderPdf()` · `openChangeOrderPdfInBrowser()` · `getChangeOrderPdfBlob()`.
 - La orden **no modifica el estimado**: el grand total del proyecto no cambia al guardarla; el acumulado vive en el *contrato anterior* de la siguiente orden.
 
 Migración SQL requerida (Bloque final de `schema.sql`):
@@ -339,10 +342,12 @@ CREATE TABLE IF NOT EXISTS change_orders (
   add_to_last     BOOLEAN NOT NULL DEFAULT true,
   detail_mode     TEXT NOT NULL DEFAULT 'full',
   status          TEXT NOT NULL DEFAULT 'draft',
+  total_override  NUMERIC(12,2),
   lines           JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS total_override NUMERIC(12,2);
 CREATE INDEX IF NOT EXISTS change_orders_project_idx ON change_orders(project_id, created_at DESC);
 ALTER TABLE change_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON change_orders FOR ALL TO anon USING (true) WITH CHECK (true);
