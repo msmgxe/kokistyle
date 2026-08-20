@@ -483,3 +483,23 @@ CREATE TABLE IF NOT EXISTS project_objectives (
 CREATE INDEX IF NOT EXISTS project_objectives_project_idx ON project_objectives(project_id, sort_order);
 ALTER TABLE project_objectives ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON project_objectives FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Órdenes de cambio (Change Orders) del Estimate — guardadas por proyecto (ago 2026)
+CREATE TABLE IF NOT EXISTS change_orders (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id      UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  order_no        TEXT NOT NULL DEFAULT '',
+  co_date         TEXT NOT NULL DEFAULT '',
+  reason          TEXT NOT NULL DEFAULT '',
+  extra_days      INT NOT NULL DEFAULT 0,
+  prior_contract  NUMERIC(12,2) NOT NULL DEFAULT 0,
+  add_to_last     BOOLEAN NOT NULL DEFAULT true,
+  detail_mode     TEXT NOT NULL DEFAULT 'full',   -- 'full' | 'summary'
+  status          TEXT NOT NULL DEFAULT 'draft',  -- 'draft' | 'sent'
+  lines           JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS change_orders_project_idx ON change_orders(project_id, created_at DESC);
+ALTER TABLE change_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON change_orders FOR ALL TO anon USING (true) WITH CHECK (true);

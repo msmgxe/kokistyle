@@ -25,10 +25,12 @@ import { supabase } from "@/src/lib/supabase";
 import { money } from "@/src/lib/utils";
 import { openEstimatePdfInBrowser, getEstimatePdfBlob, exportInvoicePdf, openInvoicePdfInBrowser, getInvoicePdfBlob, exportChangeOrderPdf, openChangeOrderPdfInBrowser, getChangeOrderPdfBlob, type InvoiceData, type ChangeOrderData } from "@/src/lib/pdf";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
+import { logActivity } from "@/src/lib/activity";
 import { computeGrandTotal } from "@/src/lib/estimateTotals";
 
 import type { Project, EstimateSectionCatalog, DepositEntry, ProjectEstimate, Payment } from "@/src/types/project";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useAuth } from "@/src/context/AuthContext";
 import { branding } from "@/src/config/branding";
 import DayPlannerModal from "./DayPlannerModal";
 
@@ -40,6 +42,22 @@ interface CoLineRow {
   section: string;
   description: string;
   amount: string;
+}
+
+/** Fila de `change_orders` — las líneas viven en un JSONB. */
+interface ChangeOrderRow {
+  id: string;
+  project_id: string;
+  order_no: string;
+  co_date: string;
+  reason: string;
+  extra_days: number;
+  prior_contract: number;
+  add_to_last: boolean;
+  detail_mode: "full" | "summary";
+  status: string;
+  lines: { kind: "add" | "credit"; section?: string; description?: string; amount?: number }[];
+  created_at: string;
 }
 
 interface ItemRow {
@@ -525,6 +543,7 @@ export default function EstimateTab({
   toast: (msg: string) => void;
 }) {
   const { language } = useLanguage();
+  const { currentUser } = useAuth();
   const EN = language === "en";
 
   const [estimate,       setEstimate]       = useState<EstimateRow | null>(null);
@@ -593,7 +612,15 @@ export default function EstimateTab({
 
   // ── Change Order modal (orden de cambio — delta visual) ───────────────────
   const [showCoModal,  setShowCoModal]  = useState(false);
-  const [coView,       setCoView]       = useState<"build" | "email">("build");
+  const [coView,       setCoView]       = useState<"list" | "build" | "email">("list");
+  const [coList,       setCoList]       = useState<ChangeOrderRow[]>([]);
+  const [coId,         setCoId]         = useState<string | null>(null);
+  const [coStatus,     setCoStatus]     = useState<"draft" | "sent">("draft");
+  const [coSaving,     setCoSaving]     = useState(false);
+  const [coDeleteId,   setCoDeleteId]   = useState<string | null>(null);
+  const [coTableMissing, setCoTableMissing] = useState(false);
+  const [coConfirmClose, setCoConfirmClose] = useState(false);
+  const coSavedSnap = useRef("");
   const [coNo,         setCoNo]         = useState("");
   const [coDate,       setCoDate]       = useState("");
   const [coReason,     setCoReason]     = useState("");
@@ -1306,6 +1333,7 @@ export default function EstimateTab({
   }, [invEmailTo, invEmailSub, invEmailMsg, buildInvoiceData, project.title, EN, toast, closeInvoiceModal]);
 
 
+
   // ── Change Order (orden de cambio) — delta sobre el contrato vigente ───────
   const newCoLine = useCallback((kind: "add" | "credit" = "add"): CoLineRow => ({
     id: `co${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
@@ -1371,34 +1399,175 @@ export default function EstimateTab({
     setCoPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
   }, [buildCoData]);
 
-  const openCoModal = useCallback(() => {
-    if (!estimate) return;
+  /** Huella del formulario para saber si hay cambios sin guardar. */
+  const coSnapshot = useCallback(() => JSON.stringify({
+    coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast,
+    lines: coLines.map(l => [l.kind, l.section, l.description, l.amount]),
+  }), [coNo, coDate, coReason, coDays, coPrior, coMode, coAddToLast, coLines]);
+
+  const coDirty = useCallback(() => coSnapshot() !== coSavedSnap.current, [coSnapshot]);
+
+  // ── Change Order: persistencia en `change_orders` ─────────────────────────
+  const coNetOf = useCallback((row: ChangeOrderRow) =>
+    (row.lines ?? []).reduce((s, l) => {
+      const a = Math.max(0, Number(l.amount) || 0);
+      return s + (l.kind === "credit" ? -a : a);
+    }, 0), []);
+
+  const coMissingMsg = useCallback((msg?: string) =>
+    msg?.includes("does not exist") || msg?.includes("schema cache")
+      ? (EN ? "Run the SQL migration for change_orders in Supabase first"
+            : "Ejecuta la migración SQL de change_orders en Supabase primero")
+      : `Error: ${msg ?? ""}`, [EN]);
+
+  const loadCoList = useCallback(async (): Promise<ChangeOrderRow[]> => {
+    const { data, error } = await supabase
+      .from("change_orders").select("*")
+      .eq("project_id", project.id)
+      .order("created_at", { ascending: false });
+    if (error) { setCoTableMissing(true); setCoList([]); return []; }
+    setCoTableMissing(false);
+    const rows = (data ?? []) as ChangeOrderRow[];
+    setCoList(rows);
+    return rows;
+  }, [project.id]);
+
+  const coToday = useCallback(() => {
     const now = new Date();
     const mEN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
     const mES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
     const mm  = (EN ? mEN : mES)[now.getMonth()];
-    setCoDate(EN ? `${mm}. ${String(now.getDate()).padStart(2,"0")}, ${now.getFullYear()}`
-                 : `${String(now.getDate()).padStart(2,"0")} ${mm}. ${now.getFullYear()}`);
-    setCoNo("CO-001");
-    setCoReason("");
-    setCoDays("0");
-    setCoPrior(String(Math.round(totals.grandTotal * 100) / 100));
-    setCoMode("full");
-    setCoAddToLast(true);
+    return EN ? `${mm}. ${String(now.getDate()).padStart(2,"0")}, ${now.getFullYear()}`
+              : `${String(now.getDate()).padStart(2,"0")} ${mm}. ${now.getFullYear()}`;
+  }, [EN]);
+
+  /** Orden nueva: numeración correlativa y contrato anterior acumulando las ya guardadas. */
+  const startNewCo = useCallback((rows: ChangeOrderRow[]) => {
+    const used = new Set(rows.map(r => r.order_no.trim()));
+    let n = rows.length + 1, no = `CO-${String(n).padStart(3, "0")}`;
+    while (used.has(no)) { n++; no = `CO-${String(n).padStart(3, "0")}`; }
+    const prior = Math.round((totals.grandTotal + rows.reduce((s, r) => s + coNetOf(r), 0)) * 100) / 100;
+    setCoId(null); setCoStatus("draft");
+    setCoNo(no); setCoDate(coToday()); setCoReason(""); setCoDays("0");
+    setCoPrior(String(prior)); setCoMode("full"); setCoAddToLast(true);
     setCoLines([newCoLine("add")]);
+    setCoConfirmClose(false);
     setCoView("build");
+    coSavedSnap.current = "";   // se rellena en el efecto de sincronía
+  }, [totals.grandTotal, coNetOf, coToday, newCoLine]);
+
+  const editCo = useCallback((row: ChangeOrderRow) => {
+    const lines = (row.lines ?? []).map((l, i) => ({
+      id: `co${row.id.slice(0, 6)}${i}`,
+      kind: (l.kind === "credit" ? "credit" : "add") as "add" | "credit",
+      section: l.section ?? "",
+      description: l.description ?? "",
+      amount: String(l.amount ?? ""),
+    }));
+    setCoId(row.id);
+    setCoStatus(row.status === "sent" ? "sent" : "draft");
+    setCoNo(row.order_no); setCoDate(row.co_date); setCoReason(row.reason);
+    setCoDays(String(row.extra_days ?? 0));
+    setCoPrior(String(row.prior_contract ?? 0));
+    setCoMode(row.detail_mode === "summary" ? "summary" : "full");
+    setCoAddToLast(row.add_to_last !== false);
+    setCoLines(lines.length ? lines : [newCoLine("add")]);
+    setCoConfirmClose(false);
+    setCoView("build");
+    coSavedSnap.current = "";
+  }, [newCoLine]);
+
+  const saveCo = useCallback(async (silent = false): Promise<string | null> => {
+    setCoSaving(true);
+    const payload = {
+      project_id:     project.id,
+      order_no:       coNo.trim(),
+      co_date:        coDate.trim(),
+      reason:         coReason.trim(),
+      extra_days:     Math.max(0, parseInt(coDays, 10) || 0),
+      prior_contract: coTotals.prior,
+      add_to_last:    coAddToLast,
+      detail_mode:    coMode,
+      status:         coStatus,
+      lines: coLines
+        .filter(l => l.description.trim() !== "" || (parseFloat(l.amount) || 0) > 0)
+        .map(l => ({
+          kind: l.kind, section: l.section.trim(),
+          description: l.description.trim(),
+          amount: Math.max(0, parseFloat(l.amount) || 0),
+        })),
+      updated_at: new Date().toISOString(),
+    };
+    let id = coId;
+    if (id) {
+      const { error } = await supabase.from("change_orders").update(payload).eq("id", id);
+      if (error) { toast(coMissingMsg(error.message)); setCoSaving(false); return null; }
+    } else {
+      const { data, error } = await supabase.from("change_orders").insert(payload).select("id").single();
+      if (error || !data) { toast(coMissingMsg(error?.message)); setCoSaving(false); return null; }
+      id = (data as { id: string }).id;
+      setCoId(id);
+    }
+    logActivity({
+      user_id: currentUser?.id, user_name: currentUser?.name, user_role: currentUser?.role,
+      action: coId ? "update" : "create", entity_type: "change_order", entity_id: id,
+      entity_name: `Change Order ${coNo.trim()}`, project_id: project.id, project_name: project.title,
+      details: { net: coTotals.net, new_contract: coTotals.newContract },
+    });
+    await loadCoList();
+    coSavedSnap.current = coSnapshot();
+    setCoSaving(false);
+    if (!silent) toast(EN ? "Change order saved ✓" : "Orden de cambio guardada ✓");
+    return id;
+  }, [project.id, project.title, coNo, coDate, coReason, coDays, coTotals, coAddToLast, coMode,
+      coStatus, coLines, coId, loadCoList, toast, coMissingMsg, EN, currentUser, coSnapshot]);
+
+  const deleteCo = useCallback(async (row: ChangeOrderRow) => {
+    const { error } = await supabase.from("change_orders").delete().eq("id", row.id);
+    if (error) { toast(coMissingMsg(error.message)); return; }
+    logActivity({
+      user_id: currentUser?.id, user_name: currentUser?.name, user_role: currentUser?.role,
+      action: "delete", entity_type: "change_order", entity_id: row.id,
+      entity_name: `Change Order ${row.order_no}`, project_id: project.id, project_name: project.title,
+    });
+    setCoDeleteId(null);
+    if (coId === row.id) setCoId(null);
+    await loadCoList();
+    toast(EN ? "Change order deleted" : "Orden de cambio eliminada");
+  }, [coId, loadCoList, toast, coMissingMsg, EN, project.id, project.title, currentUser]);
+
+  // Sella la huella cuando el formulario ya refleja la orden recién abierta o cargada.
+  useEffect(() => {
+    if (showCoModal && coView === "build" && coSavedSnap.current === "") {
+      coSavedSnap.current = coSnapshot();
+    }
+  }, [showCoModal, coView, coSnapshot]);
+
+  const openCoModal = useCallback(async () => {
+    if (!estimate) return;
     setCoEmailTo(estimate.email?.trim() ?? "");
     setCoEmailSub(`${EN ? "Change Order" : "Orden de cambio"} — ${project.title}`);
     setCoEmailMsg(EN
       ? `Hello${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nPlease find attached the change order for "${project.title}".\nPlease reply with your approval so we can proceed.\n\nBest regards,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`
       : `Hola${estimate.customer_name ? " " + estimate.customer_name : ""},\n\nAdjunto encontrará la orden de cambio de "${project.title}".\nQuedo atento a su aprobación para continuar.\n\nSaludos cordiales,\n${branding.contractor}\n${branding.companyName} · ${branding.phone}`);
+    setCoDeleteId(null);
     setShowCoModal(true);
-  }, [estimate, EN, project.title, totals.grandTotal, newCoLine]);
+    setCoView("list");
+    const rows = await loadCoList();
+    if (!rows.length) startNewCo(rows);
+  }, [estimate, EN, project.title, loadCoList, startNewCo]);
 
   const closeCoModal = useCallback(() => {
     setShowCoModal(false);
+    setCoConfirmClose(false);
     setCoPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
   }, []);
+
+  /** Cerrar sin perder trabajo: si hay cambios, primero pregunta. */
+  const attemptCloseCo = useCallback(() => {
+    if (coView === "build" && coDirty()) { setCoConfirmClose(true); return; }
+    closeCoModal();
+  }, [coView, coDirty, closeCoModal]);
 
   const goCoEmail = useCallback(() => {
     refreshCoPreview(coMode);
@@ -1409,6 +1578,7 @@ export default function EstimateTab({
     if (!coEmailTo.includes("@")) return;
     setCoSending(true);
     try {
+      const savedId = await saveCo(true);   // el envío deja la orden guardada
       const blob = getChangeOrderPdfBlob(buildCoData(coMode));
       const pdfBase64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -1425,6 +1595,11 @@ export default function EstimateTab({
       });
       const data = await res.json();
       if (data.ok) {
+        if (savedId) {
+          await supabase.from("change_orders").update({ status: "sent" }).eq("id", savedId);
+          setCoStatus("sent");
+          await loadCoList();
+        }
         toast(EN ? `Change order sent to ${coEmailTo.trim()} ✓` : `Orden de cambio enviada a ${coEmailTo.trim()} ✓`);
         addProjectNote(project.id, EN
           ? `📝 Change order${coNo.trim() ? " " + coNo.trim() : ""} (${money(coTotals.net)}) emailed to ${coEmailTo.trim()} — new contract ${money(coTotals.newContract)} — ${noteDate("en")}`
@@ -1435,7 +1610,7 @@ export default function EstimateTab({
     } catch {
       toast(EN ? "Send failed — check your connection" : "Error al enviar — revisa tu conexión");
     } finally { setCoSending(false); }
-  }, [coEmailTo, coEmailSub, coEmailMsg, buildCoData, coMode, coNo, coTotals, project.id, project.title, EN, toast, closeCoModal]);
+  }, [coEmailTo, coEmailSub, coEmailMsg, buildCoData, coMode, coNo, coTotals, project.id, project.title, EN, toast, closeCoModal, saveCo, loadCoList]);
 
   // ── Copy estimate to another project ─────────────────────────────────────
   const openCopyModal = useCallback(async () => {
@@ -2168,18 +2343,82 @@ export default function EstimateTab({
 
       {/* ── Change Order modal (orden de cambio — delta visual) ────────────── */}
       {showCoModal && estimate && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center" onClick={closeCoModal}>
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center" onClick={attemptCloseCo}>
           <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#111a2e] shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between bg-[var(--brand)] px-5 py-3.5">
               <span className="text-sm font-bold text-white">
                 📝 {coView === "email"
                   ? (EN ? "Send change order by email" : "Enviar orden de cambio por correo")
-                  : (EN ? "Change Order" : "Orden de cambio")}
+                  : coView === "list"
+                    ? (EN ? "Change orders" : "Órdenes de cambio")
+                    : coId
+                      ? `${EN ? "Change order" : "Orden de cambio"} · ${coNo}`
+                      : (EN ? "New change order" : "Nueva orden de cambio")}
               </span>
-              <button onClick={closeCoModal} className="text-white/60 hover:text-white"><X size={16} /></button>
+              <button onClick={attemptCloseCo} className="text-white/60 hover:text-white"><X size={16} /></button>
             </div>
 
-            {coView === "build" ? (
+            {coView === "list" ? (
+              <>
+                <div className="flex-1 space-y-2 overflow-y-auto p-5">
+                  {coTableMissing && (
+                    <div className="rounded-xl border border-[#B0492F]/40 bg-[#B0492F]/10 px-3 py-2.5 text-[11.5px] leading-snug text-[#B0492F]">
+                      {EN ? "Saving needs the change_orders table — run the SQL migration in Supabase. Meanwhile you can still build, print and send an order."
+                          : "Guardar necesita la tabla change_orders — ejecuta la migración SQL en Supabase. Mientras tanto puedes armar, imprimir y enviar una orden."}
+                    </div>
+                  )}
+                  {!coList.length && !coTableMissing && (
+                    <p className="py-8 text-center text-[13px] text-[#97A1A0] dark:text-[#728098]">
+                      {EN ? "No change orders for this project yet." : "Este proyecto todavía no tiene órdenes de cambio."}
+                    </p>
+                  )}
+                  {coList.map(row => {
+                    const net = coNetOf(row);
+                    return (
+                      <div key={row.id} className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220] px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => editCo(row)} className="min-w-0 flex-1 text-left">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <b className="text-[13px] text-[var(--brand)] dark:text-[#e8edf7]">{row.order_no || "—"}</b>
+                              <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                                row.status === "sent"
+                                  ? "bg-[#4F8A63]/15 text-[#4F8A63]"
+                                  : "bg-[#E7E9EE] text-[#5C6A6E] dark:bg-[#22304d] dark:text-[#9fb0cc]"}`}>
+                                {row.status === "sent" ? (EN ? "Sent" : "Enviada") : (EN ? "Draft" : "Borrador")}
+                              </span>
+                              <span className="text-[10.5px] text-[#97A1A0] dark:text-[#728098]">{row.co_date}</span>
+                            </span>
+                            <span className="mt-0.5 block truncate text-[11.5px] text-[#5C6A6E] dark:text-[#9fb0cc]">
+                              {row.reason || (EN ? "No reason written" : "Sin motivo escrito")}
+                            </span>
+                          </button>
+                          <span className={`shrink-0 text-[13px] font-bold ${net < 0 ? "text-[#B0492F]" : "text-[#4F8A63]"}`}>
+                            {net >= 0 ? "+" : "-"}{money(Math.abs(net))}
+                          </span>
+                          <button onClick={() => editCo(row)} title={EN ? "Edit" : "Editar"}
+                            className="shrink-0 text-[#97A1A0] hover:text-[var(--accent)]"><Pencil size={13} /></button>
+                          <button onClick={() => setCoDeleteId(row.id)} title={EN ? "Delete" : "Eliminar"}
+                            className="shrink-0 text-[#97A1A0] hover:text-[#B0492F]"><Trash2 size={13} /></button>
+                        </div>
+                        {coDeleteId === row.id && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] pt-2 text-[11.5px]">
+                            <span className="mr-auto font-bold text-[#B0492F]">{EN ? "Delete this change order?" : "¿Eliminar esta orden de cambio?"}</span>
+                            <button onClick={() => deleteCo(row)} className="rounded-lg bg-[#B0492F] px-3 py-1 font-bold text-white hover:bg-[#953d27]">{EN ? "Yes" : "Sí"}</button>
+                            <button onClick={() => setCoDeleteId(null)} className="rounded-lg border border-[#E7E9EE] dark:border-[#22304d] px-3 py-1 font-bold text-[#5C6A6E] dark:text-[#9fb0cc]">No</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
+                  <button onClick={closeCoModal} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Close" : "Cerrar"}</button>
+                  <button onClick={() => startNewCo(coList)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)]">
+                    <Plus size={14} />{EN ? "New change order" : "Nueva orden"}
+                  </button>
+                </div>
+              </>
+            ) : coView === "build" ? (
               <>
                 <div className="flex-1 space-y-4 overflow-y-auto p-5">
                   <div className="grid grid-cols-3 gap-3">
@@ -2234,10 +2473,17 @@ export default function EstimateTab({
                               <X size={13} />
                             </button>
                           </div>
-                          <input value={l.description}
-                            onChange={e => setCoLines(ls => ls.map((x, j) => j === i ? { ...x, description: e.target.value } : x))}
-                            placeholder={EN ? "Describe the work…" : "Describe el trabajo…"}
-                            className="w-full border-0 border-b border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
+                          <textarea value={l.description} rows={2}
+                            ref={el => { if (el) { el.style.height = "auto"; el.style.height = `${el.scrollHeight}px`; } }}
+                            onChange={e => {
+                              const el = e.currentTarget;
+                              const v  = el.value;
+                              el.style.height = "auto";
+                              el.style.height = `${el.scrollHeight}px`;
+                              setCoLines(ls => ls.map((x, j) => j === i ? { ...x, description: v } : x));
+                            }}
+                            placeholder={EN ? "Describe the work — Enter for a new line…" : "Describe el trabajo — Enter para una línea nueva…"}
+                            className="w-full resize-none overflow-hidden border-0 border-b border-dashed border-[#D9DDE3] dark:border-[#2c3c5e] bg-transparent pb-0.5 text-[13px] leading-snug text-[var(--brand)] dark:text-[#e8edf7] focus:border-[var(--accent)] focus:outline-none" />
                         </div>
                       ))}
                     </div>
@@ -2256,6 +2502,11 @@ export default function EstimateTab({
                         <Plus size={12} />{EN ? "Credit" : "Acredita"}
                       </button>
                     </div>
+                    <p className="mt-1.5 text-[10px] leading-snug text-[#97A1A0] dark:text-[#728098]">
+                      {EN
+                        ? "Enter starts a new line inside a description. Start a line with • for a bullet — the PDF keeps them."
+                        : "Enter crea una línea nueva dentro de la descripción. Empieza la línea con • para una viñeta — el PDF las respeta."}
+                    </p>
                   </div>
 
                   <div className="overflow-hidden rounded-xl border border-[#E7E9EE] dark:border-[#22304d]">
@@ -2319,12 +2570,39 @@ export default function EstimateTab({
                   )}
                 </div>
 
+                {coConfirmClose ? (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] bg-[#FDF5F3] dark:bg-[#2a1a1a] p-4">
+                    <span className="mr-auto text-[12px] font-bold text-[#B0492F]">
+                      {EN ? "This change order has unsaved changes." : "Esta orden tiene cambios sin guardar."}
+                    </span>
+                    <button onClick={() => setCoConfirmClose(false)}
+                      className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-white dark:hover:bg-[#0b1220]">
+                      {EN ? "Keep editing" : "Seguir editando"}
+                    </button>
+                    <button onClick={closeCoModal}
+                      className="rounded-xl border border-[#B0492F]/50 px-4 py-2.5 text-sm font-bold text-[#B0492F] hover:bg-[#B0492F]/10">
+                      {EN ? "Discard" : "Descartar"}
+                    </button>
+                    <button onClick={async () => { const id = await saveCo(true); if (id) closeCoModal(); }} disabled={coSaving}
+                      className="rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
+                      {coSaving ? (EN ? "Saving…" : "Guardando…") : (EN ? "Save and close" : "Guardar y cerrar")}
+                    </button>
+                  </div>
+                ) : (
                 <div className="flex flex-wrap gap-2 border-t border-[#E7E9EE] dark:border-[#22304d] p-4">
-                  <button onClick={closeCoModal} className="flex-1 rounded-xl border border-[#E7E9EE] dark:border-[#22304d] py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Cancel" : "Cancelar"}</button>
+                  <button onClick={() => { setCoDeleteId(null); setCoView("list"); }}
+                    className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[#5C6A6E] dark:text-[#9fb0cc] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">
+                    ← {EN ? "Orders" : "Órdenes"}
+                  </button>
+                  <button onClick={() => saveCo()} disabled={coSaving}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)] disabled:opacity-40">
+                    <Save size={13} />{coSaving ? (EN ? "Saving…" : "Guardando…") : (EN ? "Save" : "Guardar")}
+                  </button>
                   <button onClick={() => openChangeOrderPdfInBrowser(buildCoData(coMode))} className="rounded-xl border border-[#E7E9EE] dark:border-[#22304d] px-4 py-2.5 text-sm font-bold text-[var(--brand)] dark:text-[#e8edf7] hover:bg-[#F7F8FA] dark:hover:bg-[#0b1220]">{EN ? "Open" : "Abrir"}</button>
                   <button onClick={() => exportChangeOrderPdf(buildCoData(coMode))} className="inline-flex items-center gap-1.5 rounded-xl bg-[#7B1838] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#6a1530]"><FileText size={13} />PDF</button>
                   <button onClick={goCoEmail} className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--accent-strong)]">✉️ Email</button>
                 </div>
+                )}
               </>
             ) : (
               <>

@@ -172,6 +172,7 @@ Schema completo en `src/lib/schema.sql`. Ejecutar en el orden indicado en el arc
 | `payments` | Ingresos recibidos del cliente |
 | `expenses` | Egresos pagados a proveedores |
 | `project_notes` | Notas con adjuntos JSONB por proyecto |
+| `change_orders` | Órdenes de cambio del Estimate (líneas en JSONB) |
 | `project_photos` | Fotos de obra por proyecto (url en Storage, caption, tag antes/avance/despues/problema/material, taken_at) |
 | `app_users` | Colaboradores con permisos granulares |
 | `user_project_access` | Proyectos asignados por colaborador |
@@ -308,16 +309,44 @@ ALTER TABLE estimate_sections ADD COLUMN IF NOT EXISTS material_included BOOLEAN
 - Env vars requeridas (en `.env.local` y Vercel): `YAHOO_EMAIL` + `YAHOO_APP_PASSWORD` (generar en Yahoo → Account Security → App passwords; la contraseña normal NO funciona)
 - Errores de credenciales devuelven mensaje claro ("Yahoo rechazó las credenciales…"); todo se reporta con toast
 
-### Change Order (orden de cambio) — `EstimateTab.tsx` + `pdf.ts`
+### Change Order (orden de cambio) — `EstimateTab.tsx` + `pdf.ts` + tabla `change_orders`
 
-Botón **Change Order / Orden de cambio** en la cabecera oscura del Estimate, junto a Factura. Emite una orden de cambio sobre el contrato vigente con el mismo patrón del Invoice: modal con vista `build` → vista `email` (preview del PDF en iframe), más **Abrir** y **PDF**.
+Botón **Change Order / Orden de cambio** en la cabecera oscura del Estimate, junto a Factura. Emite órdenes de cambio sobre el contrato vigente **y las guarda por proyecto**. El modal tiene tres vistas: `list` (órdenes guardadas) → `build` (armado) → `email` (envío con preview del PDF), más Abrir y PDF.
 
-- **Diseño del documento — "delta visual"** (opción 2 del prototipo `change-order-3-opciones.html`): banda oscura con nº de orden y badge *Pendiente de firma*, tres cifras (**contrato anterior → este cambio → contrato nuevo**), motivo del cambio, columnas **Se agrega** (verde) / **Se acredita** (rojo), cronograma (+N días), cuotas recalculadas y firmas contratista/cliente con `CONTRACTOR_SIGNATURE`.
-- **Con detalle / Sin detalle** (`mode: "full" | "summary"`, mismo enum que el PDF del Estimate): `full` muestra el monto de cada línea y los subtotales; `summary` muestra el alcance en viñetas **sin montos por línea** — solo el cambio total y el contrato nuevo. El toggle está en la vista `build` (afecta Abrir/PDF/Email) y se repite junto al preview en la vista `email`.
-- **Contrato anterior**: campo editable prellenado con el grand total del estimado. Si ya se aprobaron órdenes previas, se edita a mano — **no hay tabla `change_orders`**, la orden es *stateless* igual que la factura (no persiste ni modifica el estimado).
-- **Cuotas**: `Sumar el neto a la última cuota` (default) mantiene las primeras cuotas y ajusta la última; desmarcado recalcula todas por su porcentaje. Solo aparece si el estimado tiene `deposit_schedule`.
-- **Envío**: `POST /api/estimate/send-email` (mismo endpoint SMTP Yahoo del estimado y la factura) con adjunto `Change Order <nº> - <proyecto>.pdf`, y deja nota en `project_notes` con el neto y el contrato nuevo.
+- **Persistencia (`change_orders`)**: al abrir, el modal lista las órdenes del proyecto (nº, fecha, badge Borrador/Enviada, neto). Desde ahí se **crea** una nueva, se **edita** una existente (clic en la fila o ✏️) o se **elimina** con confirmación en línea. **Guardar** hace insert/update; el envío por correo guarda primero y marca la orden como `sent`. Si la tabla no existe, la UI sigue permitiendo armar/imprimir/enviar y el guardado avisa que falta la migración.
+- **Numeración y contrato anterior automáticos**: la orden nueva toma el siguiente `CO-00N` libre y su *contrato anterior* = grand total del estimado **+ la suma de los netos de las órdenes ya guardadas**. Ambos siguen siendo editables.
+- **Cambios sin guardar**: cerrar el modal (X o fondo) con cambios pendientes muestra *Seguir editando · Descartar · Guardar y cerrar* — el trabajo no se pierde.
+- **Diseño del documento — "delta visual"** (opción 2 del prototipo `change-order-3-opciones.html`): banda oscura con nº de orden y badge *Pendiente de firma*, tres cifras (**contrato anterior → este cambio → contrato nuevo**), motivo, bloques **Se agrega** (verde) / **Se acredita** (rojo), cronograma (+N días), cuotas recalculadas y firmas contratista/cliente con `CONTRACTOR_SIGNATURE`. Cierra con una cláusula centrada: *"This Change Order constitutes additional work outside the original proposal…"*.
+- **Columna vacía = ancho completo**: si no hay créditos (o no hay agregados), el bloque que sí tiene líneas ocupa los 190 mm — así el detalle largo entra en **una sola página**.
+- **Descripciones multilínea**: la descripción de cada línea es un `<textarea>` que crece solo; los saltos de línea se respetan en el PDF y las viñetas (`•`) llevan sangría de continuación.
+- **Con detalle / Sin detalle** (`mode: "full" | "summary"`, mismo enum que el PDF del Estimate): `full` muestra el monto de cada línea y los subtotales (bandas verde/roja de contraste); `summary` lista el alcance en viñetas **sin montos por línea** — solo el cambio total y el contrato nuevo. El toggle está en `build` y se repite junto al preview en `email`.
+- **Cuotas**: `Sumar el neto a la última cuota` (default) mantiene las primeras y ajusta la última; desmarcado recalcula todas por su porcentaje. El total del contrato va en banda oscura y el importe anterior aparece tachado en gris.
+- **Envío**: `POST /api/estimate/send-email` (mismo SMTP Yahoo del estimado y la factura) con adjunto `Change Order <nº> - <proyecto>.pdf`, nota en `project_notes` y registro en `activity_log` (`entity_type: "change_order"`).
 - API en `src/lib/pdf.ts`: `ChangeOrderData` · `changeOrderTotals()` · `exportChangeOrderPdf()` · `openChangeOrderPdfInBrowser()` · `getChangeOrderPdfBlob()`.
+- La orden **no modifica el estimado**: el grand total del proyecto no cambia al guardarla; el acumulado vive en el *contrato anterior* de la siguiente orden.
+
+Migración SQL requerida (Bloque final de `schema.sql`):
+
+```sql
+CREATE TABLE IF NOT EXISTS change_orders (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id      UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  order_no        TEXT NOT NULL DEFAULT '',
+  co_date         TEXT NOT NULL DEFAULT '',
+  reason          TEXT NOT NULL DEFAULT '',
+  extra_days      INT NOT NULL DEFAULT 0,
+  prior_contract  NUMERIC(12,2) NOT NULL DEFAULT 0,
+  add_to_last     BOOLEAN NOT NULL DEFAULT true,
+  detail_mode     TEXT NOT NULL DEFAULT 'full',
+  status          TEXT NOT NULL DEFAULT 'draft',
+  lines           JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS change_orders_project_idx ON change_orders(project_id, created_at DESC);
+ALTER TABLE change_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_all ON change_orders FOR ALL TO anon USING (true) WITH CHECK (true);
+```
 
 ### Módulo Materials — Import desde Estimate
 

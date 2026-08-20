@@ -804,29 +804,43 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   const ML  = 10, MR = W - 10, CW = MR - ML, CX = W / 2;
   const { added, credited, net, newContract } = changeOrderTotals(co);
 
+  /** Descripción multilínea: respeta los saltos de línea del usuario y sangra
+   *  la continuación de las viñetas para que los acápites se lean como tales. */
+  const wrapDesc = (text: string, width: number): { t: string; ind: number }[] => {
+    const out: { t: string; ind: number }[] = [];
+    (text || "—").split(/\r?\n/).forEach(raw => {
+      const para = raw.trim();
+      if (!para) { out.push({ t: "", ind: 0 }); return; }
+      const ind = /^[•·*-]\s+/.test(para) ? 3 : 0;
+      (doc.splitTextToSize(para, width - ind) as string[])
+        .forEach((ln, i) => out.push({ t: ln, ind: i ? ind : 0 }));
+    });
+    return out;
+  };
+
   // ── Banda superior oscura ──
-  const bandH = 36;
+  const bandH = 33;
   doc.setFillColor(22, 50, 61);
   doc.rect(0, 0, W, bandH, "F");
   doc.setFont("times", "bolditalic"); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
-  doc.text("Luxaris Design LLC.", ML, 12);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(18);
-  doc.text(`${EN ? "CHANGE ORDER" : "ORDEN DE CAMBIO"} ${co.orderNo}`.trim(), ML, 24);
+  doc.text("Luxaris Design LLC.", ML, 11.5);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(17);
+  doc.text(`${EN ? "CHANGE ORDER" : "ORDEN DE CAMBIO"} ${co.orderNo}`.trim(), ML, 22.5);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(183, 203, 199);
   const sub = [co.projectTitle, co.client.name, `${EN ? "Issued" : "Emitida"} ${co.date}`]
     .filter(Boolean).join("   ·   ");
-  doc.text(sub, ML, 31, { maxWidth: CW - 52 });
+  doc.text(sub, ML, 29, { maxWidth: CW - 52 });
 
   const pillW = 46, pillH = 8;
   doc.setFillColor(240, 160, 144);
-  doc.roundedRect(MR - pillW, 9, pillW, pillH, 4, 4, "F");
+  doc.roundedRect(MR - pillW, 8, pillW, pillH, 4, 4, "F");
   doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(123, 24, 56);
-  doc.text(EN ? "AWAITING SIGNATURE" : "PENDIENTE DE FIRMA", MR - pillW / 2, 14.4, { align: "center" });
+  doc.text(EN ? "AWAITING SIGNATURE" : "PENDIENTE DE FIRMA", MR - pillW / 2, 13.4, { align: "center" });
 
-  let y = bandH + 9;
+  let y = bandH + 8;
 
   // ── Tres cifras: anterior → cambio → nuevo ──
-  const kpiW = 58, gap = (CW - kpiW * 3) / 2, kpiH = 19;
+  const kpiW = 58, gap = (CW - kpiW * 3) / 2, kpiH = 17;
   const kpi = (x: number, label: string, value: string, kind: "plain" | "delta" | "now") => {
     if (kind === "now") { doc.setFillColor(22, 50, 61); doc.setDrawColor(22, 50, 61); }
     else if (kind === "delta") { doc.setFillColor(237, 243, 238); doc.setDrawColor(79, 138, 99); }
@@ -835,10 +849,10 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
     doc.roundedRect(x, y, kpiW, kpiH, 2, 2, "FD");
     doc.setFont("helvetica", "bold"); doc.setFontSize(6.8);
     doc.setTextColor(...(kind === "now" ? [155, 182, 177] : [150, 150, 150]) as [number, number, number]);
-    doc.text(label, x + 5, y + 6.5);
-    doc.setFontSize(15);
+    doc.text(label, x + 5, y + 6);
+    doc.setFontSize(14);
     doc.setTextColor(...(kind === "now" ? [255, 255, 255] : kind === "delta" ? [61, 113, 80] : [22, 50, 61]) as [number, number, number]);
-    doc.text(value, x + 5, y + 14.5);
+    doc.text(value, x + 5, y + 13.5);
   };
   const arrow = (x: number) => {
     doc.setFillColor(185, 176, 160);
@@ -850,39 +864,42 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   kpi(ML + kpiW + gap, EN ? "THIS CHANGE" : "ESTE CAMBIO", signed(net), "delta");
   arrow(ML + (kpiW + gap) * 2 - gap / 2);
   kpi(ML + (kpiW + gap) * 2, EN ? "NEW CONTRACT" : "CONTRATO NUEVO", money(newContract), "now");
-  y += kpiH + 7;
+  y += kpiH + 6;
 
   // ── Motivo del cambio ──
   if (co.reason.trim()) {
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.2);
     const rl = doc.splitTextToSize(co.reason.trim(), CW - 10) as string[];
-    const rh = 9 + rl.length * 3.9;
+    const rh = 8 + rl.length * 3.6;
     doc.setFillColor(247, 243, 234); doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3);
     doc.roundedRect(ML, y, CW, rh, 2, 2, "FD");
     doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
     doc.text(EN ? "REASON FOR CHANGE" : "MOTIVO DEL CAMBIO", ML + 5, y + 5);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(45, 45, 45);
-    rl.forEach((ln, i) => doc.text(ln, ML + 5, y + 9.6 + i * 3.9));
-    y += rh + 6;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.2); doc.setTextColor(45, 45, 45);
+    rl.forEach((ln, i) => doc.text(ln, ML + 5, y + 8.8 + i * 3.6));
+    y += rh + 5;
   }
 
   const adds    = co.lines.filter(l => l.kind === "add");
   const credits = co.lines.filter(l => l.kind === "credit");
 
   if (co.mode === "full") {
-    // ── Dos columnas con montos por línea ──
-    const colW = (CW - 6) / 2;
+    // ── Columnas con montos por línea. Si una queda vacía no se dibuja y la
+    //    otra ocupa todo el ancho — así el detalle largo cabe en una página. ──
+    const two  = adds.length > 0 && credits.length > 0;
+    const colW = two ? (CW - 6) / 2 : CW;
+    type Row = { line: ChangeOrderLine; wrapped: { t: string; ind: number }[] };
+    const rowH = (r: Row) => (r.line.section ? 7.4 : 4) + Math.max(0, r.wrapped.length - 1) * 3.4 + 3;
     const measure = (list: ChangeOrderLine[]) => {
       doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-      const rows = list.map(l => ({
-        line: l,
-        wrapped: doc.splitTextToSize(l.description || "—", colW - 32) as string[],
-      }));
-      const body = rows.reduce((s, r) => s + Math.max(9, 5.5 + r.wrapped.length * 3.6), 0);
-      return { rows, h: 6.5 + (list.length ? body : 10) + 7 };
+      const rows: Row[] = list.map(l => ({ line: l, wrapped: wrapDesc(l.description, colW - 34) }));
+      return { rows, h: 6 + (list.length ? rows.reduce((acc, r) => acc + rowH(r), 0) : 10) + 8 };
     };
-    const mA = measure(adds), mC = measure(credits);
-    const colH = Math.max(mA.h, mC.h);
+
+    const blocks: { kind: "add" | "credit"; m: ReturnType<typeof measure>; subtotal: number }[] = [];
+    if (adds.length || !credits.length) blocks.push({ kind: "add",    m: measure(adds),    subtotal: added });
+    if (credits.length)                 blocks.push({ kind: "credit", m: measure(credits), subtotal: credited });
+    const colH = Math.max(...blocks.map(b => b.m.h));
     if (y + colH > 250) { doc.addPage(); y = 20; }
 
     const drawCol = (x: number, kind: "add" | "credit", m: ReturnType<typeof measure>, subtotal: number) => {
@@ -896,49 +913,52 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
       doc.text(isCredit ? (EN ? "CREDITED TO OWNER" : "SE ACREDITA AL CLIENTE")
                         : (EN ? "ADDED TO SCOPE" : "SE AGREGA AL ALCANCE"), x + 4, y + 4.5);
 
-      let ry = y + 6.5;
+      let ry = y + 6;
       if (!m.rows.length) {
         doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
         doc.text(EN ? "No lines in this column." : "Sin líneas en esta columna.", x + 4, ry + 6);
         ry += 10;
       }
       m.rows.forEach(r => {
-        const rh = Math.max(9, 5.5 + r.wrapped.length * 3.6);
         if (r.line.section) {
           doc.setFont("helvetica", "bold"); doc.setFontSize(6.3); doc.setTextColor(150, 150, 150);
-          doc.text(r.line.section.toUpperCase(), x + 4, ry + 4, { maxWidth: colW - 32 });
+          doc.text(r.line.section.toUpperCase(), x + 4, ry + 4, { maxWidth: colW - 34 });
         }
         doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
         doc.setTextColor(...(isCredit ? [176, 73, 47] : [61, 113, 80]) as [number, number, number]);
         doc.text((isCredit ? "-" : "+") + money(r.line.amount), x + colW - 4, ry + 4, { align: "right" });
         doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(45, 45, 45);
-        r.wrapped.forEach((ln, i) => doc.text(ln, x + 4, ry + (r.line.section ? 7.8 : 4) + i * 3.6));
-        ry += rh;
+        const dy0 = ry + (r.line.section ? 7.4 : 4);
+        r.wrapped.forEach((ln, i) => { if (ln.t) doc.text(ln.t, x + 4 + ln.ind, dy0 + i * 3.4); });
+        ry += rowH(r);
         doc.setDrawColor(240, 235, 224); doc.setLineWidth(0.2);
         doc.line(x + 3, ry, x + colW - 3, ry);
       });
 
-      const fy = y + colH - 7;
-      doc.setFillColor(247, 243, 234);
-      doc.rect(x + 0.3, fy, colW - 0.6, 6.7, "F");
-      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(22, 50, 61);
-      doc.text(isCredit ? (EN ? "Credits subtotal" : "Subtotal acredita")
-                        : (EN ? "Additions subtotal" : "Subtotal agrega"), x + 4, fy + 4.5);
-      doc.text((isCredit ? "-" : "") + money(subtotal), x + colW - 4, fy + 4.5, { align: "right" });
+      const fbH = 7.6, fy = y + colH - fbH - 0.4;
+      if (isCredit) doc.setFillColor(250, 234, 229); else doc.setFillColor(228, 240, 231);
+      doc.rect(x + 0.4, fy, colW - 0.8, fbH, "F");
+      doc.setTextColor(...(isCredit ? [140, 51, 30] : [46, 92, 63]) as [number, number, number]);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5);
+      doc.text(isCredit ? (EN ? "CREDITS SUBTOTAL" : "SUBTOTAL ACREDITA")
+                        : (EN ? "ADDITIONS SUBTOTAL" : "SUBTOTAL AGREGA"), x + 4, fy + 5.3);
+      doc.setFontSize(9.5);
+      doc.text((isCredit ? "-" : "") + money(subtotal), x + colW - 4, fy + 5.3, { align: "right" });
     };
-    drawCol(ML, "add", mA, added);
-    drawCol(ML + colW + 6, "credit", mC, credited);
-    y += colH + 7;
+    blocks.forEach((b, i) => drawCol(ML + i * (colW + 6), b.kind, b.m, b.subtotal));
+    y += colH + 6;
   } else {
     // ── Resumen: el alcance sin montos por línea ──
     doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-    const block = (title: string, list: ChangeOrderLine[]) =>
-      list.map(l => ({ title, wrapped: doc.splitTextToSize("•  " + (l.description || "—"), CW - 14) as string[] }));
-    const groups: { head: string; rows: { wrapped: string[] }[] }[] = [];
-    if (adds.length)    groups.push({ head: EN ? "ADDED TO SCOPE" : "SE AGREGA AL ALCANCE", rows: block("", adds) });
-    if (credits.length) groups.push({ head: EN ? "CREDITED TO OWNER" : "SE ACREDITA AL CLIENTE", rows: block("", credits) });
+    const mkRows = (list: ChangeOrderLine[]) => list.map(l => {
+      const txt = (l.description || "—").trim();
+      return { wrapped: wrapDesc(/^[•·*-]\s+/.test(txt) ? txt : "•  " + txt, CW - 16) };
+    });
+    const groups: { head: string; rows: { wrapped: { t: string; ind: number }[] }[] }[] = [];
+    if (adds.length)    groups.push({ head: EN ? "ADDED TO SCOPE" : "SE AGREGA AL ALCANCE", rows: mkRows(adds) });
+    if (credits.length) groups.push({ head: EN ? "CREDITED TO OWNER" : "SE ACREDITA AL CLIENTE", rows: mkRows(credits) });
 
-    const bodyH = groups.reduce((s, g) => s + 6 + g.rows.reduce((ss, r) => ss + r.wrapped.length * 4, 0) + 3, 0);
+    const bodyH = groups.reduce((acc, g) => acc + 6 + g.rows.reduce((ss, r) => ss + r.wrapped.length * 4, 0) + 3, 0);
     const boxH  = 8 + (groups.length ? bodyH : 8);
     if (y + boxH > 250) { doc.addPage(); y = 20; }
     doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255);
@@ -954,7 +974,7 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
       doc.text(g.head, ML + 5, ry);
       ry += 4.5;
       doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(45, 45, 45);
-      g.rows.forEach(r => { r.wrapped.forEach(ln => { doc.text(ln, ML + 6, ry); ry += 4; }); });
+      g.rows.forEach(r => { r.wrapped.forEach(ln => { if (ln.t) doc.text(ln.t, ML + 6 + ln.ind, ry); ry += 4; }); });
       ry += 3;
     });
     if (!groups.length) {
@@ -967,49 +987,72 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   // ── Cronograma + cuotas ──
   const hasSched = co.schedule.length > 0;
   const boxW = hasSched ? (CW - 6) / 2 : CW;
-  const schedH = hasSched ? Math.max(26, 15 + (co.schedule.length + 1) * 4.6) : 26;
-  if (y + schedH > 258) { doc.addPage(); y = 20; }
+
+  // Las glosas de cuota son largas: se miden envueltas para que el alto de la
+  // caja y el de cada fila las respeten y nunca pisen al monto.
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7);
+  const amtColW  = 30;
+  const schedRows = co.schedule.map(r => ({
+    ...r,
+    changed: Math.round(r.now) !== Math.round(r.was),
+    lines: doc.splitTextToSize(`${r.label} · ${r.pct}%`, boxW - amtColW - 8) as string[],
+  }));
+  const rowsH  = schedRows.reduce((acc, r) => acc + Math.max(5, r.lines.length * 3.2 + 1.8), 0);
+  const totalBandH = 8;
+  const schedH = hasSched ? Math.max(29, 10.5 + rowsH + totalBandH + 1.5) : 29;
+  if (y + schedH > 252) { doc.addPage(); y = 20; }
 
   doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255);
   doc.roundedRect(ML, y, boxW, schedH, 2, 2, "FD");
   doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
   doc.text(EN ? "SCHEDULE" : "CRONOGRAMA", ML + 5, y + 6);
   doc.setFontSize(13); doc.setTextColor(22, 50, 61);
-  doc.text(co.extraDays > 0 ? `+${co.extraDays} ${EN ? "days" : "días"}` : (EN ? "No change" : "Sin cambios"), ML + 5, y + 13.5);
+  doc.text(co.extraDays > 0 ? `+${co.extraDays} ${EN ? "days" : "días"}` : (EN ? "No change" : "Sin cambios"), ML + 5, y + 14);
   doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(92, 106, 110);
   doc.text(
     co.extraDays > 0
       ? (EN ? "Delivery date shifts by the days above." : "La fecha de entrega se corre los días indicados.")
       : (EN ? "Delivery date holds." : "La fecha de entrega se mantiene."),
-    ML + 5, y + 19, { maxWidth: boxW - 10 });
+    ML + 5, y + 19.5, { maxWidth: boxW - 10 });
 
   if (hasSched) {
     const bx = ML + boxW + 6;
-    doc.setDrawColor(230, 221, 203); doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255);
     doc.roundedRect(bx, y, boxW, schedH, 2, 2, "FD");
     doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(150, 150, 150);
     doc.text(EN ? "UPDATED INSTALLMENTS" : "CUOTAS ACTUALIZADAS", bx + 5, y + 6);
-    let sy = y + 11.5;
-    co.schedule.forEach(r => {
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(60, 60, 60);
-      doc.text(`${r.label} · ${r.pct}%`, bx + 5, sy, { maxWidth: boxW - 46 });
-      doc.setFont("helvetica", "bold");
-      const changed = Math.round(r.now) !== Math.round(r.was);
-      doc.setTextColor(...(changed ? [61, 113, 80] : [22, 50, 61]) as [number, number, number]);
-      doc.text(money(r.now), bx + boxW - 5, sy, { align: "right" });
-      if (changed) {
-        doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(150, 150, 150);
-        doc.text(money(r.was), bx + boxW - 5 - doc.getTextWidth(money(r.now)) - 2.5, sy, { align: "right" });
+
+    let sy = y + 10.5;
+    schedRows.forEach((r, i) => {
+      const rh = Math.max(5, r.lines.length * 3.2 + 1.8);
+      if (i % 2 === 1) { doc.setFillColor(250, 248, 243); doc.rect(bx + 0.4, sy - 3.2, boxW - 0.8, rh, "F"); }
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(60, 60, 60);
+      r.lines.forEach((ln, j) => doc.text(ln, bx + 5, sy + j * 3.2));
+      const amtStr = money(r.now);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+      const amtW = doc.getTextWidth(amtStr);   // medido con la fuente en que se dibuja
+      doc.setTextColor(...(r.changed ? [61, 113, 80] : [22, 50, 61]) as [number, number, number]);
+      doc.text(amtStr, bx + boxW - 5, sy, { align: "right" });
+      if (r.changed) {
+        doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(160, 160, 160);
+        const wasStr = money(r.was), wasX = bx + boxW - 7 - amtW;
+        doc.text(wasStr, wasX, sy, { align: "right" });
+        doc.setDrawColor(175, 175, 175); doc.setLineWidth(0.25);
+        doc.line(wasX - doc.getTextWidth(wasStr), sy - 0.9, wasX, sy - 0.9);
       }
-      sy += 4.6;
+      sy += rh;
     });
-    doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.2);
-    doc.line(bx + 4, sy - 3, bx + boxW - 4, sy - 3);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(22, 50, 61);
-    doc.text(EN ? "NEW CONTRACT" : "CONTRATO NUEVO", bx + 5, sy + 1);
-    doc.text(money(newContract), bx + boxW - 5, sy + 1, { align: "right" });
+
+    // Total del contrato: banda oscura, máximo contraste
+    const tby = y + schedH - totalBandH - 0.4;
+    doc.setFillColor(22, 50, 61);
+    doc.rect(bx + 0.4, tby, boxW - 0.8, totalBandH, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
+    doc.text(EN ? "NEW CONTRACT" : "CONTRATO NUEVO", bx + 5, tby + 5.6);
+    doc.setFontSize(9.5);
+    doc.text(money(newContract), bx + boxW - 5, tby + 5.6, { align: "right" });
   }
-  y += schedH + 6;
+  y += schedH + 5;
 
   // ── Nota ──
   doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(80, 80, 80);
@@ -1022,13 +1065,13 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
             : (EN ? "The net amount is spread across every installment by its percentage." : "El neto de esta orden se reparte en todas las cuotas según su porcentaje."))
         : "");
   const noteLines = doc.splitTextToSize(note, CW) as string[];
-  noteLines.forEach((ln, i) => doc.text(ln, ML, y + i * 3.6));
-  y += noteLines.length * 3.6;
+  noteLines.forEach((ln, i) => doc.text(ln, ML, y + i * 3.5));
+  y += noteLines.length * 3.5;
 
   // ── Firmas ──
-  const sigImgW = 28, sigImgH = 24;
-  let sigLineY = Math.max(y + 26, 244);
-  if (sigLineY > 262) { doc.addPage(); sigLineY = 60; }
+  const sigImgW = 21, sigImgH = 18;
+  let sigLineY = Math.max(y + 20, 236);
+  if (sigLineY > 252) { doc.addPage(); sigLineY = 60; }
   const sigW = 72;
   const slx1 = ML + 8, slx2 = slx1 + sigW;
   const srx2 = MR - 8, srx1 = srx2 - sigW;
@@ -1049,6 +1092,15 @@ function buildChangeOrderPdf(co: ChangeOrderData): { doc: jsPDF; filename: strin
   doc.text((co.client.name || "—").toUpperCase(), (srx1 + srx2) / 2, sigLineY + 10, { align: "center" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
   doc.text(`${EN ? "Date" : "Fecha"}: ______________`, (srx1 + srx2) / 2, sigLineY + 15.5, { align: "center" });
+
+  // ── Cláusula de cierre, centrada al pie del documento ──
+  const closing = EN
+    ? "This Change Order constitutes additional work outside the original proposal and will be added to the original contract amount upon customer approval."
+    : "Esta orden de cambio constituye trabajo adicional fuera de la propuesta original y se sumará al monto del contrato original una vez aprobada por el cliente.";
+  doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
+  const closingLines = doc.splitTextToSize(closing, CW - 36) as string[];
+  const closingY = Math.min(sigLineY + 23, 277 - (closingLines.length - 1) * 3.8);
+  closingLines.forEach((ln, i) => doc.text(ln, CX, closingY + i * 3.8, { align: "center" }));
 
   // ── Pie de página ──
   doc.setDrawColor(230, 221, 203); doc.setLineWidth(0.3);
