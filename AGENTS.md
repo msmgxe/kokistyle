@@ -861,12 +861,22 @@ Ambos llaman a `saveHeader()` — guarda el estimado completo (header + deposit_
 
 ---
 
+## Calendario de pagos — una sola regla (`depositAmounts`, ago 2026)
+
+`deposit_schedule` guarda por cuota un `pct` y, cuando se captura en dólares, `mode: "amount"` + `fixed_amount`. El `pct` guardado **envejece** en cuanto cambia el estimado, así que el monto de cada cuota se calcula siempre con `depositAmounts(deps, grandTotal, balanceLast?)` de `src/lib/utils.ts`:
+
+1. cuota en dólares (`mode === "amount"`) → vale su `fixed_amount`;
+2. el resto → `grandTotal × pct / 100`;
+3. la última cuota, si no es fija, **absorbe la diferencia** para que el calendario sume exactamente el gran total (`balanceLast`, que el modal de editar cuota apaga para calcular el "restante").
+
+El % que se muestra sale de `depositPct(dep, amount, grandTotal)`: el capturado si la cuota se definió en %, el derivado del monto si se definió en dólares. Antes había **cuatro** copias divergentes de este cálculo (timeline del tab, factura, orden de cambio y PDF del estimado, que sólo usaba `pct`): el PDF imprimía montos viejos que no cuadraban con la pantalla. Cualquier vista nueva del calendario debe usar estos dos helpers, nunca `dep.pct` a mano.
+
 ## Deposit Payment Modal (EstimateTab)
 
 El modal de instalamentos del Estimate (`deposit_schedule`) tiene un detalle expandible por fila que muestra/crea los pagos reales del cliente.
 
 - Tabla `payments` — tipo `anticipo | abono | final` mapeados a índice de instalamento (0, 1, 2)
-- Validación: la suma de pagos de un instalamento **no puede superar el target** (`pct × grandTotal / 100`)
+- Validación: la suma de pagos de un instalamento **no puede superar el target** (`depositAmounts(...)[i]`)
 - Si la suma ya supera el target (datos históricos), se muestra un banner de advertencia rojo
 - Formulario "Add": calcula `remaining = target - received`; bloquea el botón si `wouldExceed`
 - Edición inline: ícono lápiz abre inputs en la misma fila; ✓ guarda, ✕ cancela

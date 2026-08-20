@@ -4,7 +4,7 @@
  */
 import jsPDF from "jspdf";
 import type { Payment, Expense, Project, ProjectEstimate } from "@/src/types/project";
-import { money } from "./utils";
+import { money, depositAmounts, depositPct } from "./utils";
 import { branding } from "@/src/config/branding";
 import { CONTRACTOR_SIGNATURE } from "@/src/config/signature";
 
@@ -541,16 +541,17 @@ function buildEstimatePdf(
   const amountX = schedX + schedW - 4;
   const labelX  = schedX + 23;
   let py = schedY + 9.5;
+  const depAmts = depositAmounts(estimate.deposit_schedule, grandTotal);
   for (let i = 0; i < estimate.deposit_schedule.length; i++) {
     const dep = estimate.deposit_schedule[i];
     const rgb = depRgb[i] ?? ([92, 106, 110] as [number, number, number]);
     doc.setFillColor(rgb[0], rgb[1], rgb[2]);
     doc.roundedRect(schedX + 3, py, 15, 7, 1.5, 1.5, "F");
     doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
-    doc.text(`${dep.pct}%`, schedX + 10.5, py + 4.8, { align: "center" });
+    doc.text(`${Math.round(depositPct(dep, depAmts[i], grandTotal))}%`, schedX + 10.5, py + 4.8, { align: "center" });
     // Monto a la derecha
     doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(22, 50, 61);
-    const amtStr = money(grandTotal * dep.pct / 100);
+    const amtStr = money(depAmts[i]);
     const amtW   = doc.getTextWidth(amtStr);
     doc.text(amtStr, amountX, py + 4.9, { align: "right" });
     // Glosa con maxWidth para no chocar con el monto

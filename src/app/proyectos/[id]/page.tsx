@@ -39,7 +39,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/src/lib/supabase";
 import {
   money, dateFmt, totalIncome, totalExpense, balanceDue, cashFlow,
-  dShort, initials,
+  dShort, initials, depositAmounts, depositPct,
 } from "@/src/lib/utils";
 import { getEstadoCuentaBlob, getGanttPdfBlob, type GanttPdfRow } from "@/src/lib/pdf";
 import PdfPreviewModal from "@/src/components/ui/PdfPreviewModal";
@@ -2115,6 +2115,7 @@ export default function ProjectDetailPage() {
 
   // ── Hero: valores derivados ──
   const grandTotal  = estTotals?.client ?? project.budget ?? 0;
+  const depAmts     = depositAmounts(estDeposits, grandTotal);
   const cobrado     = totalIncome(project.payments ?? []);
   const cobradoPct  = grandTotal > 0 ? Math.min(Math.round((cobrado / grandTotal) * 100), 100) : 0;
   const totalTasks  = (project.tasks ?? []).length;
@@ -2287,12 +2288,12 @@ export default function ProjectDetailPage() {
                 <div className="mb-1.5 text-[10px] font-bold uppercase text-[#97A1A0] dark:text-[#728098]">{hp.paymentSchedule}</div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {estDeposits.slice(0, 6).map((d, i) => {
-                    const amt = d.mode === "amount" && d.fixed_amount != null ? d.fixed_amount : (Number(d.pct) || 0) * grandTotal / 100;
+                    const amt = depAmts[i] ?? 0;
                     const paid = !!d.received;
                     const label = language === "en" ? d.label_en : d.label_es;
                     return (
                       <div key={i} className={`rounded-xl border p-2.5 text-[11px] ${paid ? "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20" : "border-amber-500/40 bg-amber-50 dark:bg-amber-950/20"}`}>
-                        <div className={`flex justify-between font-bold ${paid ? "text-[#4F8A63]" : "text-[#B98A2F]"}`}><span className="truncate">{label}</span><span>{Number(d.pct) || 0}%</span></div>
+                        <div className={`flex justify-between font-bold ${paid ? "text-[#4F8A63]" : "text-[#B98A2F]"}`}><span className="truncate">{label}</span><span>{Math.round(depositPct(d, amt, grandTotal))}%</span></div>
                         <div className="mt-0.5 font-mono font-bold text-[var(--brand)]">{money(amt)}</div>
                       </div>
                     );

@@ -22,7 +22,7 @@ import {
   Ruler, Wallet,
 } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
-import { money } from "@/src/lib/utils";
+import { money, depositAmounts, depositPct } from "@/src/lib/utils";
 import { openEstimatePdfInBrowser, getEstimatePdfBlob, exportInvoicePdf, openInvoicePdfInBrowser, getInvoicePdfBlob, exportChangeOrderPdf, openChangeOrderPdfInBrowser, getChangeOrderPdfBlob, type InvoiceData, type ChangeOrderData } from "@/src/lib/pdf";
 import { addProjectNote, noteDate } from "@/src/lib/notes";
 import { logActivity } from "@/src/lib/activity";
@@ -1061,11 +1061,11 @@ export default function EstimateTab({
   }, [editingPayId, editForm, EN, toast, onRefresh]);
 
   // ── Deposit schedule helpers ───────────────────────────────────────────────
-  const depositTarget = useCallback((dep: import("@/src/types/project").DepositEntry, gt: number) =>
-    dep.mode === "amount" && dep.fixed_amount != null
-      ? dep.fixed_amount
-      : Math.round(gt * dep.pct / 100 * 100) / 100,
-  []);
+  /** Montos de las cuotas con la regla compartida — la misma que usan el PDF del
+   *  estimado, la factura y la orden de cambio. */
+  const depAmountsAt = useCallback((gt: number, balanceLast = true) =>
+    depositAmounts(estimate?.deposit_schedule?.length ? estimate.deposit_schedule : defaultDeposits(), gt, balanceLast),
+  [estimate]);
 
   const openDepositEdit = useCallback((idx: number) => {
     if (!estimate) return;
@@ -1264,11 +1264,12 @@ export default function EstimateTab({
     setEstimate(p => p ? { ...p, ...patch } : p), []);
 
   const buildInvoiceData = useCallback((): InvoiceData => {
-    const gt = totals.grandTotal;
+    const gt   = totals.grandTotal;
+    const amts = depAmountsAt(gt);
     const lines = (estimate?.deposit_schedule ?? []).map((dep, i) => {
       const st = invLines[i];
       if (!st?.on) return null;
-      return { description: st.glosa.trim() || (EN ? dep.label_en : dep.label_es), amount: depositTarget(dep, gt) };
+      return { description: st.glosa.trim() || (EN ? dep.label_en : dep.label_es), amount: amts[i] };
     }).filter(Boolean) as { description: string; amount: number }[];
     return {
       invoiceNo: invNo.trim(), date: invDate.trim(), language,
@@ -1283,7 +1284,7 @@ export default function EstimateTab({
       },
       lines,
     };
-  }, [estimate, invLines, invNo, invDate, language, totals, depositTarget, EN]);
+  }, [estimate, invLines, invNo, invDate, language, totals, depAmountsAt, EN]);
 
   const openInvoiceModal = useCallback(() => {
     if (!estimate) return;
@@ -1366,18 +1367,20 @@ export default function EstimateTab({
     const deps = estimate?.deposit_schedule ?? [];
     if (!deps.length) return [];
     const { prior, newContract } = coTotals;
-    const rows = deps.map(d => ({
+    const wasAmts = depAmountsAt(prior);
+    const nowAmts = depAmountsAt(newContract);
+    const rows = deps.map((d, i) => ({
       label: (EN ? d.label_en : d.label_es) || "",
-      pct:   d.pct,
-      was:   depositTarget(d, prior),
-      now:   coAddToLast ? depositTarget(d, prior) : depositTarget(d, newContract),
+      pct:   Math.round(depositPct(d, wasAmts[i], prior)),
+      was:   wasAmts[i],
+      now:   coAddToLast ? wasAmts[i] : nowAmts[i],
     }));
     if (coAddToLast) {
       const head = rows.slice(0, -1).reduce((s, r) => s + r.now, 0);
       rows[rows.length - 1].now = newContract - head;
     }
     return rows;
-  }, [estimate, coTotals, coAddToLast, depositTarget, EN]);
+  }, [estimate, coTotals, coAddToLast, depAmountsAt, EN]);
 
   const buildCoData = useCallback((mode: "full" | "summary"): ChangeOrderData => ({
     orderNo: coNo.trim(),
@@ -1765,7 +1768,8 @@ export default function EstimateTab({
   const deps      = estimate.deposit_schedule ?? defaultDeposits();
   const totalRec  = deps.reduce((sum, _, i) => sum + depositsForIdx(i).reduce((s, p) => s + p.amount, 0), 0);
   const pctSum    = deps.reduce((s, d) => s + d.pct, 0);
-  const amtSum    = deps.reduce((s, d) => s + depositTarget(d, grandTotal), 0);
+  const depAmts   = depAmountsAt(grandTotal);
+  const amtSum    = depAmts.reduce((s, n) => s + n, 0);
   const pctOk     = Math.abs(amtSum - grandTotal) < 0.02 || Math.abs(pctSum - 100) < 0.11;
   const pending   = Math.max(0, grandTotal - totalRec);
   const recvPct   = grandTotal > 0 ? Math.min(100, Math.round(totalRec / grandTotal * 100)) : 0;
@@ -1774,17 +1778,7 @@ export default function EstimateTab({
   const depositRows = (estimate.deposit_schedule ?? defaultDeposits()).map((dep, i, arr) => {
     const color    = DEPOSIT_PALETTE[i % DEPOSIT_PALETTE.length];
     const isLast   = i === arr.length - 1;
-    const target = (() => {
-      if (dep.mode === "amount" && dep.fixed_amount) return dep.fixed_amount;
-      if (isLast && arr.length > 1) {
-        const sumOthers = arr.slice(0, -1).reduce((s, d) => {
-          if (d.mode === "amount" && d.fixed_amount) return s + d.fixed_amount;
-          return s + Math.round(grandTotal * d.pct / 100 * 100) / 100;
-        }, 0);
-        return Math.max(0, Math.round((grandTotal - sumOthers) * 100) / 100);
-      }
-      return Math.round(grandTotal * dep.pct / 100 * 100) / 100;
-    })();
+    const target   = depAmts[i] ?? 0;
     const received    = depositsForIdx(i).reduce((s, p) => s + p.amount, 0);
     const receivedPct = target > 0 ? Math.min(100, Math.round(received / target * 100)) : 0;
     const paid        = target > 0 && received >= target;
@@ -1811,7 +1805,7 @@ export default function EstimateTab({
               <button onClick={() => openDepositEdit(i)} title={EN ? "Edit installment" : "Editar cuota"}
                 className="flex w-[62px] flex-shrink-0 items-center justify-center self-stretch text-[17px] font-black text-white transition hover:opacity-80"
                 style={{ background: color }}>
-                {Math.round(dep.pct)}%
+                {Math.round(depositPct(dep, target, grandTotal))}%
               </button>
               <span className="flex-shrink-0 px-3.5 font-mono text-[15px] font-black text-[var(--brand)]">
                 {money(target)}
@@ -2292,7 +2286,7 @@ export default function EstimateTab({
                     <div className="space-y-2">
                       {estimate.deposit_schedule.map((dep, i) => {
                         const st  = invLines[i] ?? { on: false, glosa: "" };
-                        const amt = depositTarget(dep, totals.grandTotal);
+                        const amt = depAmountsAt(totals.grandTotal)[i] ?? 0;
                         return (
                           <div key={i} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${st.on ? "border-[var(--accent)] bg-[#EDF3FB] dark:bg-[#17233d]" : "border-[#E7E9EE] dark:border-[#22304d] bg-[#F7F8FA] dark:bg-[#0b1220]"}`}>
                             <input type="checkbox" checked={st.on}
@@ -2847,7 +2841,7 @@ export default function EstimateTab({
       {depositModal !== null && estimate && (() => {
         const idx     = depositModal;
         const dep     = estimate.deposit_schedule[idx] ?? defaultDeposits()[idx];
-        const target  = depositTarget(dep, totals.grandTotal);
+        const target  = depAmountsAt(totals.grandTotal)[idx] ?? 0;
         const pmts    = depositsForIdx(idx);
         const received = pmts.reduce((s, p) => s + p.amount, 0);
         const remaining = Math.max(0, target - received);
@@ -2867,9 +2861,7 @@ export default function EstimateTab({
                 <div className="flex-1 min-w-0 pr-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
                     {EN ? "Payment Detail" : "Detalle de Pago"} · {money(target)}
-                    {dep.mode === "amount"
-                      ? ` (${Math.round((dep.fixed_amount ?? 0) / (totals.grandTotal || 1) * 100)}%)`
-                      : ` (${Math.round(dep.pct)}%)`}
+                    {` (${Math.round(depositPct(dep, target, totals.grandTotal))}%)`}
                   </p>
                   <h3 className="mt-0.5 text-base font-bold text-white">{label}</h3>
                 </div>
@@ -3126,7 +3118,8 @@ export default function EstimateTab({
       {editDepositIdx !== null && estimate && (() => {
         const color       = DEPOSIT_PALETTE[editDepositIdx % DEPOSIT_PALETTE.length];
         const gt          = totals.grandTotal;
-        const sumOthersAmt = estimate.deposit_schedule.filter((_, j) => j !== editDepositIdx).reduce((s, d) => s + depositTarget(d, gt), 0);
+        const sumOthersAmt = depAmountsAt(gt, false)
+          .reduce((s, n, j) => j === editDepositIdx ? s : s + n, 0);
         const remainAmt   = Math.max(0, Math.round((gt - sumOthersAmt) * 100) / 100);
         const remainPct   = gt > 0 ? Math.round(remainAmt / gt * 1000) / 10 : 0;
         const currentAmt  = editDepositLastChanged === "amount" ? (parseFloat(editDepositAmt) || 0) : Math.round(gt * (parseFloat(editDepositPct) || 0) / 100 * 100) / 100;
