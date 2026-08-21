@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import { resolveSession } from "@/src/lib/session";
 
 export const maxDuration = 15;
 
-/** Valida que quien llama sea el superadmin: por PIN (sesión clásica) o por token de
- *  dispositivo superadmin no revocado (sesión de shortcut). Los datos de contacto de
- *  los prospectos son privados — nunca se exponen con la anon key. */
-async function isSuperadmin(pin?: string, token?: string): Promise<boolean> {
-  const admin = getSupabaseAdmin();
-  if (pin) {
-    const { data } = await admin.from("superadmin_config").select("pin").eq("id", true).maybeSingle();
-    if (data && String(pin) === String(data.pin)) return true;
-  }
-  if (token) {
-    const { data } = await admin.from("device_tokens")
-      .select("user_id, revoked").eq("token", token).maybeSingle();
-    if (data && data.user_id === "superadmin" && !data.revoked) return true;
-  }
-  return false;
+/** Los datos de contacto de los prospectos son privados: nunca se exponen con la
+ *  anon key.  Superadmin: cookie de sesión o, como respaldo, PIN/token de dispositivo.
+ *  `resolveSession` es el único punto que valida revocación **y** expiración. */
+async function isSuperadmin(req: NextRequest, pin?: string, token?: string): Promise<boolean> {
+  const session = await resolveSession(req, { adminPin: pin, adminToken: token });
+  return session?.role === "superadmin";
 }
 
 export async function POST(req: NextRequest) {
@@ -26,7 +18,7 @@ export async function POST(req: NextRequest) {
       pin?: string; token?: string; op?: "list" | "update" | "delete";
       id?: string; status?: string; notes?: string;
     };
-    if (!(await isSuperadmin(pin, token))) {
+    if (!(await isSuperadmin(req, pin, token))) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 403 });
     }
     const admin = getSupabaseAdmin();

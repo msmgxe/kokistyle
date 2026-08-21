@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import { limitByIp } from "@/src/lib/rate-limit";
 
 export const maxDuration = 15;
 
@@ -8,6 +9,11 @@ const clean = (s: unknown, max = 200) => String(s ?? "").trim().slice(0, max);
 
 /** POST — captura de lead público (gate del AI Design gratuito). Server-side, admin client. */
 export async function POST(req: NextRequest) {
+  // Formulario público: se queda abierto, pero con tope por IP para que no se
+  // pueda sembrar la tabla ni multiplicar cupos de render gratis.
+  const limited = limitByIp(req, "prospects", 10, 60 * 60_000);
+  if (limited) return limited;
+
   try {
     const body = await req.json();
 

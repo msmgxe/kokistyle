@@ -1,26 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 import type { SiteContent } from "@/src/types/site";
+import { resolveSession } from "@/src/lib/session";
 
 export const maxDuration = 15;
 
-async function isSuperadmin(pin?: string, token?: string): Promise<boolean> {
-  const admin = getSupabaseAdmin();
-  if (pin) {
-    const { data } = await admin.from("superadmin_config").select("pin").eq("id", true).maybeSingle();
-    if (data && String(pin) === String(data.pin)) return true;
-  }
-  if (token) {
-    const { data } = await admin.from("device_tokens").select("user_id, revoked").eq("token", token).maybeSingle();
-    if (data && data.user_id === "superadmin" && !data.revoked) return true;
-  }
-  return false;
+/** Superadmin: cookie de sesión o, como respaldo, PIN/token de dispositivo.
+ *  `resolveSession` es el único punto que valida revocación **y** expiración. */
+async function isSuperadmin(req: NextRequest, pin?: string, token?: string): Promise<boolean> {
+  const session = await resolveSession(req, { adminPin: pin, adminToken: token });
+  return session?.role === "superadmin";
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { pin, token, data } = await req.json() as { pin?: string; token?: string; data?: SiteContent };
-    if (!(await isSuperadmin(pin, token))) {
+    if (!(await isSuperadmin(req, pin, token))) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 403 });
     }
     if (!data || typeof data !== "object") {

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { limitByIp } from "@/src/lib/rate-limit";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
+  const limited = limitByIp(req, "auth-reset-pin", 8, 60000);
+  if (limited) return limited;
+
   try {
     const { code, newPin } = await req.json();
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import { resolveSession } from "@/src/lib/session";
+import { limitByIp } from "@/src/lib/rate-limit";
 
 export const maxDuration = 60; // permite el resultado síncrono (Prefer: wait)
 
@@ -9,6 +11,10 @@ const FREE_RENDER_LIMIT = Number(process.env.FREE_RENDER_LIMIT ?? 3);
 // POST — pide el resultado síncrono a Replicate (Prefer: wait). El render tarda ~7s,
 // así que casi siempre devuelve el output directo; el cliente usa GET como respaldo.
 export async function POST(req: NextRequest) {
+  // Render facturable: tope por IP además del cupo por prospecto.
+  const limited = limitByIp(req, "design-render", 12, 60 * 60_000);
+  if (limited) return limited;
+
   const token = process.env.REPLICATE_API_TOKEN;
   if (!token) {
     return NextResponse.json(
@@ -35,15 +41,8 @@ export async function POST(req: NextRequest) {
   // ── Gate anti-abuso (endurece C3) ──────────────────────────────────────────
   // Dos vías: (a) superadmin interno (Design tab del panel) — sin límite;
   //           (b) prospecto público válido bajo su FREE_RENDER_LIMIT.
-  let internal = false;
-  if (adminPin) {
-    const { data } = await admin.from("superadmin_config").select("pin").eq("id", true).maybeSingle();
-    if (data && String(adminPin) === String(data.pin)) internal = true;
-  }
-  if (!internal && adminToken) {
-    const { data } = await admin.from("device_tokens").select("user_id, revoked").eq("token", adminToken).maybeSingle();
-    if (data && data.user_id === "superadmin" && !data.revoked) internal = true;
-  }
+  const session = await resolveSession(req, { adminPin, adminToken });
+  const internal = session?.role === "superadmin";
 
   // El prospecto se valida ANTES de gastar; el conteo se incrementa solo si Replicate
   // acepta el job (no se "gasta" un render en un fallo).

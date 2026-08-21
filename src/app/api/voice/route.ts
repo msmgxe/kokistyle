@@ -3,6 +3,8 @@ import { generateText, tool, jsonSchema, stepCountIs, type ToolSet, type ModelMe
 import { anthropic } from "@ai-sdk/anthropic";
 import { supabase } from "@/src/lib/supabase";
 import type { Permissions } from "@/src/types/auth";
+import { resolveSession, unauthorized } from "@/src/lib/session";
+import { limitByIp } from "@/src/lib/rate-limit";
 
 export const maxDuration = 30;
 
@@ -730,6 +732,11 @@ ${hasReadTools
 };
 
 export async function POST(req: NextRequest) {
+  // Ruta facturable (Claude): sólo con sesión del panel.
+  const limited = limitByIp(req, "voice", 40, 60_000);
+  if (limited) return limited;
+  if (!(await resolveSession(req))) return unauthorized();
+
   let language: Lang = "es";
   try {
     const body = await req.json() as {

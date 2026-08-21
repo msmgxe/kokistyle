@@ -1295,6 +1295,10 @@ export default function EstimateTab({
           pdfBase64,
         }),
       });
+      if (res.status === 401) {
+        toast(EN ? "Your session expired — sign in again to send" : "Tu sesión expiró — vuelve a entrar para enviar");
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
         toast(EN ? `Estimate sent to ${emailTo.trim()} ✓` : `Estimado enviado a ${emailTo.trim()} ✓`);
@@ -1526,6 +1530,10 @@ export default function EstimateTab({
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: invEmailTo.trim(), subject: invEmailSub.trim(), message: invEmailMsg, fileName: `Invoice ${invNo.trim()} - ${project.title}.pdf`, pdfBase64 }),
       });
+      if (res.status === 401) {
+        toast(EN ? "Your session expired — sign in again to send" : "Tu sesión expiró — vuelve a entrar para enviar");
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
         toast(EN ? `Invoice sent to ${invEmailTo.trim()} ✓` : `Factura enviada a ${invEmailTo.trim()} ✓`);
@@ -1906,6 +1914,10 @@ export default function EstimateTab({
           fileName: `Change Order ${coNo.trim()} - ${project.title}.pdf`, pdfBase64,
         }),
       });
+      if (res.status === 401) {
+        toast(EN ? "Your session expired — sign in again to send" : "Tu sesión expiró — vuelve a entrar para enviar");
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
         if (savedId) {

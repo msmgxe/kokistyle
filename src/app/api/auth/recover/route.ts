@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { limitByIp } from "@/src/lib/rate-limit";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
+  const limited = limitByIp(req, "auth-recover", 5, 3600000);
+  if (limited) return limited;
+
   try {
     const { email } = await req.json();
     if (!email) return NextResponse.json({ ok: true }); // No revelar si existe

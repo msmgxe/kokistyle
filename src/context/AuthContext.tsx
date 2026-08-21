@@ -4,7 +4,6 @@ import {
   createContext, useContext, useState, useEffect, useCallback, ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/src/lib/supabase";
 import type { AppUser, PermissionSection, PermissionAction } from "@/src/types/auth";
 import { FULL_PERMISSIONS } from "@/src/types/auth";
 import { logActivity } from "@/src/lib/activity";
@@ -70,7 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 1. Sesión por PIN — vive solo mientras el navegador está abierto
     const tabSession = sessionStorage.getItem(SESSION_KEY);
     if (tabSession) {
-      try { setCurrentUser(JSON.parse(tabSession)); } catch { sessionStorage.removeItem(SESSION_KEY); }
+      try {
+        const user = JSON.parse(tabSession) as AppUser;
+        setCurrentUser(user);
+        // Renueva la cookie de sesión del servidor por si el navegador la perdió.
+        fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: user.pin ?? "" }),
+        }).catch(() => { /* sin red: se reintenta en la próxima apertura */ });
+      } catch { sessionStorage.removeItem(SESSION_KEY); }
       setIsLoading(false);
       return;
     }
@@ -131,37 +139,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Login ──────────────────────────────────────────────────────────────────
+  /** El PIN se verifica siempre en el servidor: superadmin y colaboradores. La
+   *  respuesta trae la sesión firmada en cookie httpOnly. */
   const login = useCallback(async (pin: string): Promise<boolean> => {
-    // 1. Check superadmin via secure API route
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin }),
       });
-      const { isSuperAdmin, name } = await res.json();
-      if (isSuperAdmin) {
-        const user: AppUser = { ...SUPERADMIN_TEMPLATE, pin, name: name ?? "Admin" };
+      const data = await res.json() as { isSuperAdmin?: boolean; name?: string; user?: AppUser };
+
+      if (data.isSuperAdmin) {
+        const user: AppUser = { ...SUPERADMIN_TEMPLATE, pin, name: data.name ?? "Admin" };
         setCurrentUser(user);
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
         logActivity({ user_id: "superadmin", user_name: user.name, user_role: "superadmin", action: "login" });
         return true;
       }
-    } catch { /* API unavailable — continue to collaborator check */ }
-
-    // 2. Check collaborator in DB
-    const { data, error } = await supabase
-      .from("app_users")
-      .select("*")
-      .eq("pin", pin)
-      .eq("active", true)
-      .maybeSingle();
-    if (error || !data) return false;
-    const user = data as AppUser;
-    setCurrentUser(user);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    logActivity({ user_id: user.id, user_name: user.name, user_role: "collaborator", action: "login" });
-    return true;
+      if (data.user) {
+        const user = { ...data.user, pin } as AppUser;
+        setCurrentUser(user);
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        logActivity({ user_id: user.id, user_name: user.name, user_role: "collaborator", action: "login" });
+        return true;
+      }
+    } catch { /* sin red o servidor caído: no hay sesión */ }
+    return false;
   }, []);
 
   // ── Login con token de dispositivo (shortcut sin PIN) ──────────────────────
@@ -193,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Logout — cierra la sesión, pero conserva el token del dispositivo:
   //    el shortcut nunca pide PIN; para apagarlo → Seguridad → Dispositivos → Revocar
   const logout = useCallback(() => {
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => { /* la cookie caduca sola */ });
     setCurrentUser(null);
     setLocked(false);
     sessionStorage.removeItem(SESSION_KEY);

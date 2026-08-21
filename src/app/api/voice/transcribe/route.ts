@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveSession, unauthorized } from "@/src/lib/session";
+import { limitByIp } from "@/src/lib/rate-limit";
 
 export const maxDuration = 60;
 
@@ -6,6 +8,11 @@ export const maxDuration = 60;
 // cualquier navegador) y aquí Whisper (Replicate) convierte el audio a texto.
 // Reemplaza la dependencia de SpeechRecognition, roto en varios Android.
 export async function POST(req: NextRequest) {
+  // Ruta facturable (Whisper en Replicate): sólo con sesión.
+  const limited = limitByIp(req, "transcribe", 30, 60_000);
+  if (limited) return limited;
+  if (!(await resolveSession(req))) return unauthorized();
+
   const token = process.env.REPLICATE_API_TOKEN;
   if (!token) {
     return NextResponse.json({ error: "REPLICATE_API_TOKEN not configured" }, { status: 500 });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { limitByIp } from "@/src/lib/rate-limit";
 import { randomBytes } from "crypto";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 
@@ -12,6 +13,9 @@ async function verifySuperadminPin(pin: string): Promise<boolean> {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = limitByIp(req, "auth-device-tokens", 20, 60000);
+  if (limited) return limited;
+
   try {
     const { pin, op, label, id } = await req.json() as {
       pin?: string; op?: "create" | "list" | "revoke"; label?: string; id?: string;

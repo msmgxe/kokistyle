@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import { issueSession, setSessionCookie } from "@/src/lib/session";
+import { limitByIp } from "@/src/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const limited = limitByIp(req, "device-login", 20, 60_000);
+  if (limited) return limited;
+
   try {
     const { token } = await req.json() as { token?: string };
     if (!token) return NextResponse.json({ ok: false, error: "Missing token" }, { status: 400 });
@@ -28,7 +33,10 @@ export async function POST(req: NextRequest) {
         .select("name")
         .eq("id", true)
         .maybeSingle();
-      return NextResponse.json({ ok: true, role: "superadmin", name: cfg?.name ?? "Admin" });
+      const name = String(cfg?.name ?? "Admin");
+      const res = NextResponse.json({ ok: true, role: "superadmin", name });
+      setSessionCookie(res, issueSession({ sub: "superadmin", role: "superadmin", name }));
+      return res;
     }
 
     const { data: user } = await admin
@@ -38,7 +46,11 @@ export async function POST(req: NextRequest) {
       .eq("active", true)
       .maybeSingle();
     if (!user) return NextResponse.json({ ok: false, error: "Usuario inactivo" }, { status: 403 });
-    return NextResponse.json({ ok: true, role: "colaborador", user });
+    const res = NextResponse.json({ ok: true, role: "colaborador", user });
+    setSessionCookie(res, issueSession({
+      sub: String(user.id), role: "collaborator", name: String(user.name ?? ""),
+    }));
+    return res;
   } catch {
     return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
   }

@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { resolveSession, unauthorized } from "@/src/lib/session";
+import { limitByIp } from "@/src/lib/rate-limit";
 
 export const maxDuration = 60;
 
 // Claude mira la foto del espacio actual + el objetivo del cliente y propone
 // el alcance de obra como secciones listas para el Estimate (con montos de referencia).
 export async function POST(req: NextRequest) {
+  // Ruta facturable (Claude vision) y con fetch de imagen: sólo con sesión.
+  const limited = limitByIp(req, "design-scope", 20, 60_000);
+  if (limited) return limited;
+  if (!(await resolveSession(req))) return unauthorized();
+
   let body: { imageUrl?: string; objective?: string; language?: string };
   try {
     body = await req.json();
