@@ -870,9 +870,10 @@ export default function DayPlannerModal({
           .eq("project_id", projectId)
           .or("source.eq.estimate,source.eq.planner")
           .order("sort_order", { ascending: true }),
+        // Vista sin montos: la cuadrilla ve a quién tiene asignado, no cuánto cobra
         supabase
-          .from("project_contacts")
-          .select("contacts(id, name)")
+          .from("project_contacts_public")
+          .select("contact_id, name")
           .eq("project_id", projectId),
       ]);
 
@@ -880,8 +881,11 @@ export default function DayPlannerModal({
 
       const tasks = existingTasks ?? [];
       const loadedContacts: PlanContact[] = (projectContacts ?? [])
-        .map(pc => (pc as unknown as { contacts: PlanContact }).contacts)
-        .filter(Boolean);
+        .map(pc => {
+          const row = pc as unknown as { contact_id: string; name: string };
+          return { id: row.contact_id, name: row.name };
+        })
+        .filter(c => c.id);
       setContacts(loadedContacts);
 
       // Días = fechas con tareas ∪ fechas configuradas en este dispositivo (días vacíos incluidos)
