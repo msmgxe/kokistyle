@@ -91,7 +91,23 @@ tocar datos en vivo.
 
 ## Lo que queda
 
-### 5B · Storage privado con URLs firmadas — pendiente
+### 5B · Storage privado con URLs firmadas — ✅ migrado, falta borrar los originales
+
+Bucket `luxaris-privado` (sin acceso público) para `project-photos/` y `notes/`. En la base se
+guardan referencias `priv:<ruta>` y se sirven con enlaces firmados de una hora, pedidos en lote por
+galería. Las URLs públicas antiguas se resuelven igual: **conviven**, y por eso la migración pudo
+hacerse sin apagar nada.
+
+Tres correcciones en el camino, todas por verificar de menos: las portadas no siempre están en la
+galería (hay que copiar el archivo, no sólo reescribir la referencia) y se guardan con `?v=<ts>`
+para saltarse la caché del CDN, query que acabó dentro de la ruta. `resolveFileUrls` cae ahora a la
+copia pública si un archivo no se puede firmar, para que un fallo de migración no deje la app sin
+imágenes.
+
+**Falta el último paso**: `POST /api/storage/migrate?borrar=1` retira los originales del bucket
+público. Hasta entonces, quien tenga una URL vieja sigue pudiendo abrirla.
+
+### 5B bis · lo que queda del Storage — pendiente
 
 Hoy el bucket es público: quien tenga una URL abre el archivo, aunque ya no pueda descubrir cuáles
 existen. Afecta a fotos de casas de clientes y a adjuntos de notas.
@@ -122,10 +138,15 @@ Es una migración con movimiento de datos: se hace sola, no mezclada con otro lo
 - Sin pruebas automatizadas: no hay script de test en `package.json`.
 - Migraciones versionadas y CI con `tsc`, lint y pruebas de políticas.
 
-### Fase 4 · Operación — pendiente
+### Fase 4 · Operación — en curso
 
-- **La auditoría la escribe el cliente.** `activity_log` ya es append-only, pero el actor lo sigue
-  poniendo el navegador: debería derivarse de la sesión en el servidor.
+- ✅ **La auditoría la escribe el servidor.** `logActivity()` va por `POST /api/activity`, que
+  deriva el actor de la sesión firmada; lo que mande el cliente sobre quién actúa se ignora. Con
+  `sql/fase4-auditoria.sql` se le retira al navegador el permiso de escribir directo.
+- ✅ **Índices por proyecto** (`sql/fase4-indices.sql`): Postgres no indexa las claves foráneas solo,
+  y ahora cada consulta filtra por proyecto — las políticas evalúan `lux_can_see(project_id)` fila a
+  fila.
+- Pendiente: mover también `voice_actions` (el registro de Katy) a una ruta de servidor.
 - Trazas y alertas de error y de gasto de IA.
 - Índices según las consultas reales; caché/ISR en la landing.
 - Migrar de las API keys legacy (`anon`/`service_role`) a las nuevas (`sb_publishable_`/`sb_secret_`).
