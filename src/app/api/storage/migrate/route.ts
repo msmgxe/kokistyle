@@ -97,9 +97,11 @@ export async function POST(req: NextRequest) {
 
   for (const p of (portadas ?? []) as { id: string; photo_url: string }[]) {
     const yaPrivada = p.photo_url.startsWith("priv:");
-    const ruta = yaPrivada
+    // La portada se guardaba con `?v=<timestamp>`: hay que limpiarlo o la ruta
+    // no existe. Las referencias ya escritas con la query se reparan aquí.
+    const ruta = (yaPrivada
       ? p.photo_url.slice("priv:".length)
-      : pathFromPublicUrl(p.photo_url, PUBLIC_BUCKET);
+      : pathFromPublicUrl(p.photo_url, PUBLIC_BUCKET) ?? "").split("?")[0] || null;
     if (!ruta) continue;
 
     const copiada = await copiar(ruta);          // idempotente: si ya está, sigue
@@ -107,7 +109,7 @@ export async function POST(req: NextRequest) {
       informe.portadas.errores.push(`no se pudo copiar la portada de ${p.id}: ${ruta}`);
       continue;
     }
-    if (!yaPrivada) {
+    if (p.photo_url !== privateRef(ruta)) {
       await admin.from("projects").update({ photo_url: privateRef(ruta) }).eq("id", p.id);
     }
     informe.portadas.migradas++;

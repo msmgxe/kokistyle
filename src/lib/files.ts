@@ -21,7 +21,8 @@ const TTL_SECONDS = 60 * 60;
 
 export const privateRef  = (path: string) => `${PREFIX}${path}`;
 export const isPrivateRef = (ref: string) => typeof ref === "string" && ref.startsWith(PREFIX);
-export const refToPath   = (ref: string) => ref.slice(PREFIX.length);
+/** Ruta limpia: sin el prefijo y sin la query que algunas URLs arrastraban. */
+export const refToPath = (ref: string) => ref.slice(PREFIX.length).split("?")[0];
 
 /** Ruta dentro del bucket a partir de una URL pública (para migrar y para borrar). */
 export function pathFromPublicUrl(url: string, bucket = "kokistyle-files"): string | null {
@@ -33,6 +34,10 @@ export function pathFromPublicUrl(url: string, bucket = "kokistyle-files"): stri
 }
 
 const cache = new Map<string, { url: string; expira: number }>();
+
+/** URL del bucket público — respaldo mientras dure la migración. */
+const publicUrlFor = (path: string) =>
+  supabase.storage.from("kokistyle-files").getPublicUrl(path).data.publicUrl;
 
 /**
  * Resuelve una lista de referencias a URLs mostrables. Las públicas se
@@ -57,16 +62,18 @@ export async function resolveFileUrls(refs: string[]): Promise<Map<string, strin
     const rutas = porFirmar.map(refToPath);
     const { data, error } = await supabase.storage
       .from(PRIVATE_BUCKET).createSignedUrls(rutas, TTL_SECONDS);
-    if (error) {
-      console.error("firmar archivos:", error.message);
-    } else {
-      (data ?? []).forEach((item, i) => {
-        const ref = porFirmar[i];
-        if (!item?.signedUrl) return;
-        salida.set(ref, item.signedUrl);
-        cache.set(ref, { url: item.signedUrl, expira: ahora + (TTL_SECONDS - 120) * 1000 });
-      });
-    }
+    if (error) console.error("firmar archivos:", error.message);
+    porFirmar.forEach((ref, i) => {
+      const firmada = data?.[i]?.signedUrl;
+      if (firmada) {
+        salida.set(ref, firmada);
+        cache.set(ref, { url: firmada, expira: ahora + (TTL_SECONDS - 120) * 1000 });
+        return;
+      }
+      // Sin firma: se sirve la copia pública si todavía existe. No se cachea,
+      // para que vuelva a intentar firmar en cuanto el archivo esté migrado.
+      salida.set(ref, publicUrlFor(refToPath(ref)));
+    });
   }
   return salida;
 }
