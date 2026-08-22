@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Tipos: tolerancia cero
+      - name: Tipos
+        run: pnpm tsc --noEmit
+
+      # Pruebas: lógica de dinero, PDF, sesión y PINes
+      - name: Pruebas
+        run: pnpm test
+
+      # Lint con trinquete: la deuda vieja se tolera, la nueva no
+      - name: Lint
+        run: pnpm lint:ratchet
+
+      # Que el proyecto siga compilando de verdad
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://ejemplo.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: clave-de-build

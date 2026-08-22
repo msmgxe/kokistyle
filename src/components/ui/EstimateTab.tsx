@@ -785,7 +785,6 @@ export default function EstimateTab({
     }
     const disc = Math.round(labor * ((estimate.discount_pct ?? 0) / 100) * 100) / 100;
     return { allTotal: all, laborTotal: labor, discountAmt: disc, grandTotal: all - disc };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimate]);
 
   const effectiveCatalog = catalog.length > 0 ? catalog : FALLBACK_CATALOG;

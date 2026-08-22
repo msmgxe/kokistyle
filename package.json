@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --import ./tests/loader.mjs --test tests/*.test.ts",
+    "lint:ratchet": "node scripts/lint-ratchet.mjs",
+    "ci": "pnpm tsc --noEmit && pnpm test && pnpm lint:ratchet"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.86",

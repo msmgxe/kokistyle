@@ -41,7 +41,27 @@ pnpm install        # Instalar dependencias
 pnpm dev            # Servidor de desarrollo (localhost:3000)
 pnpm build          # Build de producción
 pnpm tsc --noEmit   # Verificar tipos sin compilar
+pnpm test           # Pruebas (node --test, sin dependencias)
+pnpm lint:ratchet   # Lint con trinquete: falla si la deuda sube
+pnpm ci             # Lo que corre en CI: tipos + pruebas + lint
 ```
+
+### Pruebas (ago 2026)
+
+Corren con el **runner de Node** (`node --test`) y el *type stripping* nativo: **cero dependencias nuevas**. `tests/loader.mjs` resuelve los alias `@/…`, las importaciones sin extensión y los dos paquetes cuyo mapa de exports no funciona fuera de Next (`next/server` y `jspdf`, este último vía `tests/jspdf-shim.mjs` porque es CommonJS).
+
+Cubren la lógica donde de verdad hubo bugs, no porcentaje de líneas:
+
+| Archivo | Qué protege |
+|---|---|
+| `tests/utils.test.ts` | `depositAmounts`/`depositPct` — el calendario de pagos, donde el PDF y la pantalla llegaron a decir cifras distintas |
+| `tests/pdf.test.ts` | `pdfSafe` (la viñeta de Word que rompía el PDF entero) y `changeOrderTotals` con sus tres overrides |
+| `tests/change-order-pdf.test.ts` | genera el PDF de verdad: que el texto no salga en UTF-16, que quepa en una página, que pagine si es largo y que el total manual no imprima montos por línea |
+| `tests/auth.test.ts` | scrypt, la firma de sesión (payload manipulado, firma falsa, expiración, escalada de rol) y el límite por IP |
+
+**El trinquete de lint** (`scripts/lint-ratchet.mjs` + `lint-baseline.json`): el proyecto arrastra errores de reglas de React que arreglar de golpe sería arriesgado. La deuda existente se tolera, **la nueva bloquea el CI**. Cuando baje, `node scripts/lint-ratchet.mjs --save` fija la nueva base para que no se pueda volver atrás.
+
+CI en `.github/workflows/ci.yml`: tipos, pruebas, trinquete y build en cada push y PR.
 
 ---
 
