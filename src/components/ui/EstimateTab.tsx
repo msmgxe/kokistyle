@@ -313,11 +313,13 @@ function SortableSection({
   // Local string so the number input doesn't freeze at "0"
   const [totalStr, setTotalStr] = useState(section.section_total > 0 ? String(section.section_total) : "");
 
-  useEffect(() => {
-    if (!hasItemAmounts) {
-      setTotalStr(section.section_total > 0 ? String(section.section_total) : "");
-    }
-  }, [section.section_total, hasItemAmounts]);
+  // El campo del total sigue al valor guardado mientras la sección no tenga
+  // montos por item (entonces manda la suma y el campo queda de sólo lectura).
+  const [origenTotal, setOrigenTotal] = useState(section.section_total);
+  if (origenTotal !== section.section_total) {
+    setOrigenTotal(section.section_total);
+    if (!hasItemAmounts) setTotalStr(section.section_total > 0 ? String(section.section_total) : "");
+  }
 
   const itemSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { PHOTO_TAG_ORDER, photoTagColor } from "@/src/lib/photos";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -43,11 +43,15 @@ export default function PhotoComposer({
   const [rotations, setRotations] = useState<Record<number, number>>({});
   const [sel, setSel] = useState<number | null>(null);
 
-  // Al cambiar la selección de archivos (p.ej. "Del carrete" dentro del modal) se reinicia
-  useEffect(() => {
+  // Al cambiar la selección de archivos (p.ej. "Del carrete" dentro del modal) se
+  // reinicia. Se ajusta en el render: con un efecto se pintaba una vez con los
+  // giros de la tanda anterior.
+  const [origenPreviews, setOrigenPreviews] = useState(previews);
+  if (origenPreviews !== previews) {
+    setOrigenPreviews(previews);
     setRotations({});
     setSel(previews.length === 1 ? 0 : null);
-  }, [previews]);
+  }
 
   const rotateSel = (deg: number) => {
     if (sel === null) return;

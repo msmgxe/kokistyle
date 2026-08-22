@@ -82,7 +82,11 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
   const [photoFile,      setPhotoFile]      = useState<File | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
 
-  useEffect(() => {
+  // El formulario se rellena al abrirlo sobre otro proyecto. Ajuste en render:
+  // con un efecto se pintaba un fotograma con los datos del anterior.
+  const [origenProyecto, setOrigenProyecto] = useState(project);
+  if (origenProyecto !== project) {
+    setOrigenProyecto(project);
     if (project) {
       setForm({
         title:      project.title,
@@ -94,7 +98,7 @@ export default function ProjectFormModal({ project, initialValues, onClose, onSa
       });
       setPhotoPreview(project.photo_url ?? "");
     }
-  }, [project]);
+  }
 
   const set = (k: string, v: string | number) => {
     setForm(p => ({ ...p, [k]: v }));

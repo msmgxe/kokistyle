@@ -1988,12 +1988,12 @@ export default function ProjectDetailPage() {
     return hasPermission(sec, "view");
   });
 
-  // Si el tab activo no es visible para el usuario (p.ej. tab_access legado con "workflow"), saltar al primero
-  useEffect(() => {
-    if (visibleTabs.length > 0 && !visibleTabs.some(tab => tab.id === activeTab)) {
-      setActiveTab(visibleTabs[0].id);
-    }
-  });
+  // Si el tab activo no es visible para el usuario (p.ej. tab_access legado con
+  // "workflow"), se salta al primero. Va en el render: con un efecto se pintaba
+  // una vez un tab que esa persona no puede ver.
+  if (visibleTabs.length > 0 && !visibleTabs.some(tab => tab.id === activeTab)) {
+    setActiveTab(visibleTabs[0].id);
+  }
 
   // Agrupa los tabs visibles en las 3 secciones (Finanzas · Obra · Info); oculta secciones vacías
   const visibleTabIds = new Set(visibleTabs.map(tab => tab.id));
