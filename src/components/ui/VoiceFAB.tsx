@@ -1276,7 +1276,7 @@ export default function VoiceFAB() {
             <div className="border-t border-[#E6DDCB] dark:border-[#22304d] p-3">
               {messages.length === 0 && (
                 <p className="mb-2 text-xs text-[#5C6A6E] dark:text-[#9fb0cc]">
-                  Escribe tu instrucción — p.ej. "Agregar egreso $500 a Jorge"
+                  Escribe tu instrucción — p.ej. &ldquo;Agregar egreso $500 a Jorge&rdquo;
                 </p>
               )}
               <div className="flex gap-2">

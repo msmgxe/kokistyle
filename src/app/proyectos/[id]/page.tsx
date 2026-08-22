@@ -290,7 +290,8 @@ function MaterialesTab({
     );
   };
 
-  useEffect(() => { setItems(materials); }, [materials]);
+  const [origenMats, setOrigenMats] = useState(materials);
+  if (origenMats !== materials) { setOrigenMats(materials); setItems(materials); }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -903,8 +904,10 @@ function PagosTab({
   const [activePayId, setActivePayId] = useState<string | null>(null);
   const [activeExpId, setActiveExpId] = useState<string | null>(null);
 
-  useEffect(() => { setPayItems([...payments].reverse()); }, [payments]);
-  useEffect(() => { setExpItems([...expenses].reverse()); }, [expenses]);
+  const [origenPagos, setOrigenPagos] = useState(payments);
+  if (origenPagos !== payments) { setOrigenPagos(payments); setPayItems([...payments].reverse()); }
+  const [origenEgresos, setOrigenEgresos] = useState(expenses);
+  if (origenEgresos !== expenses) { setOrigenEgresos(expenses); setExpItems([...expenses].reverse()); }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -1264,9 +1267,11 @@ function PlanTab({
   const persist = usePersistOrder("tasks");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const [origenTareas, setOrigenTareas] = useState(tasks);
+  if (origenTareas !== tasks) {
+    setOrigenTareas(tasks);
     setItems([...tasks].sort((a, b) => a.sort_order - b.sort_order));
-  }, [tasks]);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

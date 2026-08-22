@@ -69,7 +69,10 @@ export default function ProyectosLayout({ children }: { children: React.ReactNod
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  // El menú se cierra al cambiar de página: se ajusta en el render, no en un
+  // efecto, para no pintar dos veces con el menú aún abierto.
+  const [rutaPrevia, setRutaPrevia] = useState(pathname);
+  if (rutaPrevia !== pathname) { setRutaPrevia(pathname); setMenuOpen(false); }
   useEffect(() => { try { setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1"); } catch { /* noop */ } }, []);
   const toggleCollapse = () => setCollapsed(c => {
     const n = !c;

@@ -205,7 +205,7 @@ export default function PlanPage() {
     terminado:   "bg-[#DCEBDD] dark:bg-[#14261c] text-[#4F8A63]",
   };
 
-  const DarkBar = ({ withControls }: { withControls: boolean }) => (
+  const darkBar = (withControls: boolean) => (
     <div className={`mb-4 flex items-center gap-3 rounded-2xl bg-[var(--brand)] px-5 py-3 ${view === "report" ? "print:hidden" : ""}`}>
       <div className="flex shrink-0 items-center gap-2">
         <span className="hidden text-[9px] font-bold uppercase tracking-widest text-white/35 sm:block">{branding.companyName}</span>
@@ -280,7 +280,7 @@ export default function PlanPage() {
   );
 
   if (projects.length === 0) {
-    return <div><DarkBar withControls={false} /><div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-10 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{gp.noProjects}</div></div>;
+    return <div>{darkBar(false)}<div className="rounded-2xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] p-10 text-center text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{gp.noProjects}</div></div>;
   }
 
   // Cronológico ascendente dentro de cada estado; sin fecha al final
@@ -295,7 +295,7 @@ export default function PlanPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <DarkBar withControls />
+      {darkBar(true)}
 
       {view === "report" && (
         <DailyReport projects={projects} toast={showToast} onRefresh={fetchProjects} />

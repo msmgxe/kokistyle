@@ -335,7 +335,8 @@ function SortableSection({
 
   const name = EN ? section.name_en : section.name_es;
   const [localName, setLocalName] = useState(name);
-  useEffect(() => { setLocalName(name); }, [name]);
+  const [origenName, setOrigenName] = useState(name);
+  if (origenName !== name) { setOrigenName(name); setLocalName(name); }
 
   const isEditingName = editingNameId === section.id;
 
