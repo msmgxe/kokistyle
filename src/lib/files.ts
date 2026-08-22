@@ -27,7 +27,9 @@ export const refToPath   = (ref: string) => ref.slice(PREFIX.length);
 export function pathFromPublicUrl(url: string, bucket = "kokistyle-files"): string | null {
   const marca = `/${bucket}/`;
   const i = url.indexOf(marca);
-  return i === -1 ? null : decodeURIComponent(url.slice(i + marca.length));
+  if (i === -1) return null;
+  const cruda = url.slice(i + marca.length).split("?")[0];   // sin query (?t=…)
+  return decodeURIComponent(cruda);
 }
 
 const cache = new Map<string, { url: string; expira: number }>();

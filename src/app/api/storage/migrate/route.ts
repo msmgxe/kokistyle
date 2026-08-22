@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
   const informe = {
     fotos: { migradas: 0, pendientes: 0, errores: [] as string[] },
     adjuntos: { migrados: 0, pendientes: 0, errores: [] as string[] },
+    portadas: { migradas: 0, errores: [] as string[] },
     borrados: 0,
   };
 
@@ -86,14 +87,30 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Portadas: `projects.photo_url` apunta a la misma foto ────────────────
+  // ── Portadas ─────────────────────────────────────────────────────────────
+  // Una portada no siempre está en la galería: `ProjectFormModal` sube la suya
+  // directamente. Por eso hay que copiar el archivo, no sólo reescribir la
+  // referencia — y hay que revisar también las que ya dicen `priv:`, por si se
+  // reescribieron antes de que el archivo existiera en el bucket privado.
   const { data: portadas } = await admin
     .from("projects").select("id, photo_url").not("photo_url", "is", null).limit(400);
+
   for (const p of (portadas ?? []) as { id: string; photo_url: string }[]) {
-    if (p.photo_url.startsWith("priv:")) continue;
-    const ruta = pathFromPublicUrl(p.photo_url, PUBLIC_BUCKET);
+    const yaPrivada = p.photo_url.startsWith("priv:");
+    const ruta = yaPrivada
+      ? p.photo_url.slice("priv:".length)
+      : pathFromPublicUrl(p.photo_url, PUBLIC_BUCKET);
     if (!ruta) continue;
-    await admin.from("projects").update({ photo_url: privateRef(ruta) }).eq("id", p.id);
+
+    const copiada = await copiar(ruta);          // idempotente: si ya está, sigue
+    if (!copiada) {
+      informe.portadas.errores.push(`no se pudo copiar la portada de ${p.id}: ${ruta}`);
+      continue;
+    }
+    if (!yaPrivada) {
+      await admin.from("projects").update({ photo_url: privateRef(ruta) }).eq("id", p.id);
+    }
+    informe.portadas.migradas++;
   }
 
   // ── Cuánto falta ─────────────────────────────────────────────────────────
