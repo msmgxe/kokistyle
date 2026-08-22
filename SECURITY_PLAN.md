@@ -1,6 +1,6 @@
 # Seguridad — estado y plan · Luxaris Design
 
-> Documento vivo. Última actualización: **21 ago 2026**.
+> Documento vivo. Última actualización: **22 ago 2026**.
 > Sustituye al análisis interno de jul 2026, cuyos hallazgos están resueltos o incorporados aquí.
 > Base: auditoría externa del 21 ago 2026 (`architecture-review-2026-08-21.html`), verificada
 > hallazgo por hallazgo contra el código antes de actuar.
@@ -22,7 +22,7 @@ Comprobado desde fuera, con sólo la clave pública:
 | `GET /rest/v1/payments`, `contacts`, `app_users`, `invoices` | todo | `[]` |
 | `POST /rest/v1/projects` | creaba filas | **401** |
 | Listar el bucket de archivos | catálogo completo, carpeta por carpeta | cerrado |
-| Descargar una foto de obra sin credenciales | 147 KB, HTTP 200 | sólo con URL conocida (pendiente) |
+| Descargar una foto de obra sin credenciales | 147 KB, HTTP 200 | bucket privado, enlace firmado de 1 h |
 
 ---
 
@@ -51,7 +51,7 @@ Comprobado desde fuera, con sólo la clave pública:
   permite el límite por IP se recorren en unas 17 horas. Seis son un millón — más de dos meses.
   Los PINes existentes siguen funcionando; la regla aplica al fijar uno nuevo.
 
-## Fase 2 · RLS y Storage — ✅ el grueso; queda 5B
+## Fase 2 · RLS y Storage — ✅ completada
 
 La pieza que faltaba era **identidad en el navegador**: RLS decide mirando quién pregunta, y la anon
 key no dice quién es nadie. Solución: el servidor firma un JWT que PostgREST entiende
@@ -107,36 +107,23 @@ imágenes.
 **Falta el último paso**: `POST /api/storage/migrate?borrar=1` retira los originales del bucket
 público. Hasta entonces, quien tenga una URL vieja sigue pudiendo abrirla.
 
-### 5B bis · lo que queda del Storage — pendiente
+### El margen fuera de la vista del cliente — ✅ hecho, falta la limpieza
 
-Hoy el bucket es público: quien tenga una URL abre el archivo, aunque ya no pueda descubrir cuáles
-existen. Afecta a fotos de casas de clientes y a adjuntos de notas.
+`cost` y `profit` vivían junto al precio del cliente en `estimate_items`, y RLS no filtra columnas.
+Ahora están en `estimate_item_costs`, con RLS de sólo superadmin (`sql/fase2-costos.sql`). Las
+columnas viejas siguen ahí de respaldo hasta correr `sql/fase2-costos-limpieza.sql`; **hasta
+entonces el margen sigue siendo legible** por quien vea el estimado.
 
-Plan por etapas, para no romper la landing ni la herramienta pública de AI Design:
+### Fase 3 · Calidad — ✅ la red; falta la deuda
 
-1. **Bucket privado nuevo** para `project-photos/` y `notes/` — lo verdaderamente sensible.
-2. **Migrar los archivos** con la service role y reescribir `project_photos.url` y
-   `project_notes.attachments`.
-3. **URLs firmadas** de minutos, pedidas en lote al cargar cada galería (`createSignedUrls`).
-   Toca `photos.ts`, `ProjectPhotos`, `QuickPhoto`, el hero del proyecto y los adjuntos de notas.
-4. El bucket público se queda sólo con `site/` (imágenes de la landing).
-5. **Después**: `design-leads/` y `design-renders/`. Ojo — el motor de render descarga la imagen de
-   entrada por URL, así que ahí hay que pasarle una URL firmada de corta vida.
-
-### Separar `cost` y `profit` — pendiente
-
-`estimate_items` guarda el costo y el margen junto al precio del cliente, y RLS no filtra columnas.
-La solución limpia no es otra vista, sino **una tabla aparte** (`estimate_item_costs`) que sea sólo
-del superadmin. Deja `estimate_items` con lo que el cliente puede ver, y elimina el problema de raíz.
-Es una migración con movimiento de datos: se hace sola, no mezclada con otro lote.
-
-### Fase 3 · Calidad — pendiente
-
-- Dividir el detalle de proyecto en hooks por dominio; hoy concentra demasiadas responsabilidades.
-- **47 errores y 27 advertencias de lint** (mayoría `setState` en efectos y refs en render). Se
-  corrigen por lotes antes de activar reglas nuevas.
-- Sin pruebas automatizadas: no hay script de test en `package.json`.
-- Migraciones versionadas y CI con `tsc`, lint y pruebas de políticas.
+- **44 pruebas** con el runner de Node y *type stripping*: cero dependencias nuevas. Cubren el
+  calendario de pagos, `pdfSafe`, los overrides de la orden de cambio, la generación real del PDF y
+  la sesión firmada frente a manipulación, expiración y escalada de rol.
+- **Trinquete de lint** (`scripts/lint-ratchet.mjs`): la deuda vieja se tolera, la nueva bloquea.
+  Ya se ganó el sueldo — cazó un `useFileUrls` llamado después de un `return` condicional.
+- **CI** (`.github/workflows/ci.yml`): tipos, pruebas, trinquete y build en cada push.
+- Pendiente: los **47 errores de lint** (mayoría `setState` dentro de efectos) y dividir el detalle
+  de proyecto en hooks por dominio.
 
 ### Fase 4 · Operación — en curso
 
@@ -156,9 +143,18 @@ Es una migración con movimiento de datos: se hace sola, no mezclada con otro lo
 
 ## Pendientes del lado de Marco
 
-- [ ] Cambiar el PIN de la colaboradora **Lidette** (`1234`, encontrado por casualidad al probar la
-      ruta de login: dos intentos bastaron).
-- [ ] Volver a poner su PIN de 6 dígitos, ahora que el diálogo de notas lo acepta.
+Los tres primeros son los que todavía dejan una puerta abierta:
+
+- [ ] **`POST /api/storage/migrate?borrar=1`** — retira las copias públicas de las fotos y adjuntos.
+      Hasta hacerlo, quien tenga una URL vieja sigue abriéndola.
+- [ ] **`sql/fase2-costos-limpieza.sql`** — borra `cost` y `profit` de `estimate_items`. Hasta
+      entonces el margen sigue legible para quien vea el estimado.
+- [ ] **`sql/fase4-auditoria.sql`** — quita al navegador el permiso de escribir en el registro.
+      Correr después de que el despliegue de hoy esté arriba.
+- [ ] `sql/fase4-indices.sql` — índices por proyecto (rendimiento, no seguridad).
 - [ ] Rotar la App Password de Yahoo — el relay de correo estuvo abierto.
-- [ ] Añadir `SESSION_SECRET` en Vercel (opcional; hoy la firma usa material de la service role).
-- [ ] **No revocar** la llave `360D2684…` (Legacy HS256) hasta migrar las API keys.
+- [ ] `SESSION_SECRET` en Vercel (opcional; hoy la firma usa material de la service role).
+      Ojo: al añadirla se cierran las sesiones abiertas.
+- [ ] **No revocar** la llave `360D2684…` (Legacy HS256) hasta migrar a las API keys nuevas
+      (`sb_publishable_` / `sb_secret_`): de ella dependen las claves `anon` y `service_role`
+      actuales, y también el token que firma el panel.
