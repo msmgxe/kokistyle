@@ -11,7 +11,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "./supabase-admin";
-import { checkPin } from "./pin";
+import { checkPin, verifyPinHash, upgradePin } from "./pin";
 
 export const SESSION_COOKIE = "lux_session";
 const MAX_AGE = 60 * 60 * 24 * 30;   // 30 días
@@ -138,9 +138,19 @@ export async function findUserByPin(pin: string): Promise<Record<string, unknown
   if (!pin) return null;
   const { data } = await getSupabaseAdmin()
     .from("app_users").select("*").eq("active", true);
+
   for (const row of (data ?? []) as Record<string, unknown>[]) {
-    const match = await checkPin("app_users", { id: row.id }, pin);
-    if (match) return { ...row, pin: undefined, pin_hash: undefined };
+    const hash  = row.pin_hash as string | undefined;
+    const plain = row.pin as string | undefined;
+    const ok = hash
+      ? verifyPinHash(pin, hash)
+      : !!plain && String(plain) === String(pin);
+    if (!ok) continue;
+    if (!hash) await upgradePin("app_users", { id: row.id }, pin);   // migra al vuelo
+    const safe = { ...row };
+    delete safe.pin;
+    delete safe.pin_hash;                       // el PIN nunca vuelve al cliente
+    return safe;
   }
   return null;
 }

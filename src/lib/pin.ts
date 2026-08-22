@@ -49,7 +49,7 @@ async function selectPin(table: string, match: Record<string, unknown>, extra = 
 }
 
 /** Guarda el hash y borra el PIN en claro (best-effort: si falta la columna, no rompe). */
-async function upgradeStoredPin(table: string, match: Record<string, unknown>, pin: string) {
+export async function upgradePin(table: string, match: Record<string, unknown>, pin: string) {
   const admin = getSupabaseAdmin();
   const { error } = await admin.from(table).update({ pin_hash: hashPin(pin), pin: "" }).match(match);
   if (error) {
@@ -75,7 +75,7 @@ export async function checkPin(
 
   // Todavía en claro: se acepta una única vez y se migra.
   if (row.pin && String(row.pin) === String(pin)) {
-    await upgradeStoredPin(table, match, pin);
+    await upgradePin(table, match, pin);
     return row;
   }
   return null;
