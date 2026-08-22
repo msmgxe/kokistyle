@@ -1,6 +1,6 @@
 # Migraciones pendientes de Supabase
 
-> Estado al **20 ago 2026**. Todo lo de aquí es **idempotente**: si algo ya existe, no
+> Estado al **21 ago 2026**. Todo lo de aquí es **idempotente**: si algo ya existe, no
 > pasa nada al volver a ejecutarlo. Se puede correr entero de arriba a abajo.
 
 **Dónde ejecutarlo:** [SQL editor del proyecto](https://supabase.com/dashboard/project/sdbgsastykfrabndiftc/sql/new)
@@ -74,8 +74,8 @@ from (values
 order by estado desc, columna;
 ```
 
-Lo que salga **FALTA** es lo que hay que correr. Los pasos 2 y 3 cubren lo urgente;
-el paso 4 cubre todo lo demás.
+Lo que salga **FALTA** es lo que hay que correr. Los pasos 2 a 4 cubren lo urgente;
+el paso 5 cubre todo lo demás.
 
 ---
 
@@ -146,7 +146,43 @@ CREATE POLICY anon_all ON change_orders FOR ALL TO anon USING (true) WITH CHECK 
 
 ---
 
-## Paso 4 — Red de seguridad (solo lo que el paso 1 marcó FALTA)
+## Paso 4 — PINes hasheados (Fase 1 de seguridad) · **requerido**
+
+Hoy los PINes están en claro en la base. Estas dos columnas permiten guardarlos
+con **scrypt**. La migración es transparente: en el **primer inicio de sesión** de
+cada persona con su PIN de siempre, la app guarda el hash y vacía el PIN en claro.
+Nadie tiene que cambiar su PIN ni se queda fuera.
+
+```sql
+ALTER TABLE superadmin_config ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+ALTER TABLE app_users         ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+```
+
+Después de que cada persona haya entrado una vez, esta consulta muestra quién
+falta por migrar:
+
+```sql
+select 'superadmin' as quien,
+       coalesce(pin, '') <> '' as pin_en_claro,
+       pin_hash is not null    as hasheado
+from superadmin_config
+union all
+select name, coalesce(pin, '') <> '', pin_hash is not null
+from app_users
+order by pin_en_claro desc;
+```
+
+Cuando **ninguna fila** tenga `pin_en_claro = true`, la migración terminó. Si
+alguien no entra en semanas y quieres cerrar ya, basta con reasignarle el PIN
+desde el panel (Equipo → editar): al guardarlo, el servidor lo escribe hasheado.
+
+> **Sube la longitud del PIN a 6 dígitos o más.** El hash encarece cada intento
+> (~35 ms), pero un PIN de 4 dígitos son sólo 10.000 combinaciones: unos 6 minutos
+> de CPU si alguien se llevara la base. Con 6 dígitos son ~10 horas; con 8, ~44 días.
+
+---
+
+## Paso 5 — Red de seguridad (solo lo que el paso 1 marcó FALTA)
 
 Bloque idempotente con todas las columnas que la app espera. Correrlo completo es
 seguro aunque ya existan todas.
@@ -217,7 +253,7 @@ Si el paso 1 marcó **FALTA** alguna de las tablas de la lista (`project_objecti
 
 ---
 
-## Paso 5 — Comprobar que quedó
+## Paso 6 — Comprobar que quedó
 
 1. Volver a correr las dos consultas del **paso 1**: no debe quedar ningún `FALTA`.
 2. En la app (recargar con ⇧+Cmd+R primero):
@@ -236,4 +272,5 @@ Si el paso 1 marcó **FALTA** alguna de las tablas de la lista (`project_objecti
 | Factura: histórico, editar, eliminar, marcar cobrada | ❌ no guarda (avisa en la lista) |
 | Orden de cambio: todo, incluido el total manual | ✅ funciona (el total viaja en el JSONB) |
 | Orden de cambio: `total_override` en su columna | ⚠️ usa el respaldo |
+| PINes guardados con hash | ❌ siguen en claro hasta correr el paso 4 |
 | Estimate, calendario de pagos, PDFs | ✅ sin cambios |

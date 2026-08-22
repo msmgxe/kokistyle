@@ -286,6 +286,13 @@ ON CONFLICT DO NOTHING;
 -- ALTER TABLE app_users ADD COLUMN IF NOT EXISTS tab_access    JSONB;
 -- ALTER TABLE app_users ADD COLUMN IF NOT EXISTS my_tasks_only BOOLEAN NOT NULL DEFAULT false;
 
+-- ── PINes hasheados (Fase 1 de seguridad, ago 2026) ──────────────────────────
+-- El PIN deja de guardarse en claro: se verifica con scrypt (src/lib/pin.ts).
+-- La migración es transparente — en el primer inicio de sesión con el PIN actual
+-- se guarda su hash y se vacía la columna `pin`.
+ALTER TABLE superadmin_config ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+ALTER TABLE app_users         ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+
 -- ── Superadmin display name ──────────────────────────────────────────────────
 -- Migration: run once if upgrading (superadmin_config must already exist)
 -- ALTER TABLE superadmin_config ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Admin';

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { limitByIp } from "@/src/lib/rate-limit";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import { checkPin } from "@/src/lib/pin";
 
 export async function POST(req: NextRequest) {
   const limited = limitByIp(req, "auth-set-email", 8, 60000);
@@ -9,15 +10,8 @@ export async function POST(req: NextRequest) {
   try {
     const { pin, email } = await req.json();
 
-    const { data } = await getSupabaseAdmin()
-      .from("superadmin_config")
-      .select("pin")
-      .eq("id", true)
-      .maybeSingle();
-
     // Sin configuración no hay superadmin: nunca un PIN de respaldo en el código.
-    const storedPin = data?.pin;
-    if (!storedPin || String(pin) !== String(storedPin)) {
+    if (!(await checkPin("superadmin_config", { id: true }, String(pin)))) {
       return NextResponse.json({ ok: false, error: "PIN incorrecto" }, { status: 400 });
     }
 

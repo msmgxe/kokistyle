@@ -756,6 +756,18 @@ ALTER TABLE app_users ADD COLUMN IF NOT EXISTS tab_access    JSONB;
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS my_tasks_only BOOLEAN NOT NULL DEFAULT false;
 ```
 
+### Seguridad del servidor (fases 0 y 1, ago 2026)
+
+Tras la auditoría del 21 ago 2026, la autorización dejó de vivir sólo en la interfaz:
+
+- **`src/lib/session.ts`** — sesión firmada con HMAC-SHA256 en cookie `httpOnly` (`lux_session`, 30 días). El PIN se canjea server-side al entrar; `resolveSession(req, legacy?)` es **el único** punto que resuelve identidad y valida revocación **y** expiración del token de dispositivo. Clave de firma: `SESSION_SECRET` → `SUPABASE_SERVICE_ROLE_KEY` → (sólo en dev) una clave efímera.
+- **`src/lib/pin.ts`** — PINes con **scrypt** (N=16384, r=8, ~35 ms por verificación), sin dependencias nuevas. `checkPin()` acepta el PIN en claro una última vez y lo **migra al hash en ese mismo login**; `writePin()` guarda siempre hasheado. Columnas `pin_hash` en `superadmin_config` y `app_users` (migración en `schema.sql`).
+- **`src/lib/rate-limit.ts`** — tope por IP y ventana fija, en memoria del proceso. Aplicado a login, cambio/recuperación de PIN, tokens de dispositivo, correo, IA, prospectos y renders.
+- **Rutas cerradas**: `/api/estimate/send-email` (además valida destinatario y limita el adjunto a 8 MB), `/api/voice`, `/api/voice/transcribe`, `/api/design-scope`. `/api/prospects` y `/api/design-render` siguen públicos por diseño (gate de la landing) sólo con tope por IP.
+- **`/api/auth/users`** — alta y edición de colaboradores con el PIN hasheado en el servidor: `UsersPanel` ya no escribe credenciales con la anon key. El campo PIN vacío significa "no cambiar".
+- **Sin PIN de respaldo**: se eliminó el literal que había en `login`, `change-pin` y `set-email`. Sin fila de configuración no hay superadmin.
+- **Pendiente (fase 2)**: RLS por fila, Storage privado con URLs firmadas y mover a API las consultas sensibles que hoy hace el navegador con la anon key.
+
 ### Flujo de login
 1. PIN ingresado en `AdminModal`
 2. Si PIN = superadmin → verifica via `/api/auth/login` (server-side)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
-import { issueSession, setSessionCookie } from "@/src/lib/session";
+import { issueSession, setSessionCookie, findUserByPin } from "@/src/lib/session";
+import { checkPin } from "@/src/lib/pin";
 import { limitByIp } from "@/src/lib/rate-limit";
 
 /**
@@ -16,15 +16,9 @@ export async function POST(req: NextRequest) {
     const { pin } = await req.json() as { pin?: string };
     if (!pin) return NextResponse.json({ isSuperAdmin: false, ok: false });
 
-    const admin = getSupabaseAdmin();
-    const { data: cfg } = await admin
-      .from("superadmin_config")
-      .select("pin, email, name")
-      .eq("id", true)
-      .maybeSingle();
-
     // Sin configuración no hay superadmin: nunca un PIN de respaldo en el código.
-    if (cfg?.pin && String(pin) === String(cfg.pin)) {
+    const cfg = await checkPin("superadmin_config", { id: true }, pin, "email, name");
+    if (cfg) {
       const name = String(cfg.name ?? "Admin");
       const res = NextResponse.json({
         ok: true, isSuperAdmin: true, email: cfg.email ?? null, name,
@@ -33,18 +27,10 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-    const { data: user } = await admin
-      .from("app_users")
-      .select("*")
-      .eq("pin", pin)
-      .eq("active", true)
-      .maybeSingle();
-
+    const user = await findUserByPin(pin);      // el PIN nunca vuelve al cliente
     if (!user) return NextResponse.json({ ok: false, isSuperAdmin: false });
 
-    const { pin: _pin, ...safeUser } = user as Record<string, unknown>;
-    void _pin;                                   // el PIN no vuelve al cliente
-    const res = NextResponse.json({ ok: true, isSuperAdmin: false, user: safeUser });
+    const res = NextResponse.json({ ok: true, isSuperAdmin: false, user });
     setSessionCookie(res, issueSession({
       sub:  String(user.id),
       role: "collaborator",

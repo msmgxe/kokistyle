@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { limitByIp } from "@/src/lib/rate-limit";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import { checkPin } from "@/src/lib/pin";
 
 export async function POST(req: NextRequest) {
   const limited = limitByIp(req, "auth-set-name", 8, 60000);
@@ -10,13 +11,7 @@ export async function POST(req: NextRequest) {
     const { pin, name } = await req.json();
     if (!pin || !name?.trim()) return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 });
 
-    const { data } = await getSupabaseAdmin()
-      .from("superadmin_config")
-      .select("pin")
-      .eq("id", true)
-      .maybeSingle();
-
-    if (!data || String(pin) !== String(data.pin)) {
+    if (!(await checkPin("superadmin_config", { id: true }, String(pin)))) {
       return NextResponse.json({ ok: false, error: "PIN incorrecto" }, { status: 403 });
     }
 

@@ -169,7 +169,7 @@ function UserRow({
   const [editing,       setEditing]       = useState(false);
   const [editTab,       setEditTab]       = useState<EditSubTab>("info");
   const [name,          setName]          = useState(user.name);
-  const [pin,           setPin]           = useState(user.pin);
+  const [pin,           setPin]           = useState("");   // vacío = no cambiar
   const [userType,      setUserType]      = useState<UserType>(user.user_type ?? "coworker");
   const [contactId,     setContactId]     = useState<string>(user.contact_id ?? "");
   const [tabAccess,     setTabAccess]     = useState<string[]>(user.tab_access ?? DEFAULT_COWORKER_TAB_ACCESS);
@@ -188,7 +188,7 @@ function UserRow({
 
   const startEdit = () => {
     setName(user.name);
-    setPin(user.pin);
+    setPin("");
     setUserType(user.user_type ?? "coworker");
     setContactId(user.contact_id ?? "");
     setTabAccess(user.tab_access ?? DEFAULT_COWORKER_TAB_ACCESS);
@@ -203,19 +203,27 @@ function UserRow({
     setEditing(false);
   };
 
+  /** El PIN se hashea en el servidor: el navegador ya no escribe credenciales. */
   const save = async () => {
     setSaving(true);
-    const { data, error } = await supabase.from("app_users").update({
-      name,
-      pin,
-      user_type:     userType,
-      contact_id:    contactId || null,
-      tab_access:    tabAccess,
-      my_tasks_only: myTasksOnly,
-      permissions:   perms,
-    }).eq("id", user.id).select().single();
+    const res = await fetch("/api/auth/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        op: "update", id: user.id,
+        pin: pin.trim(),                       // vacío = no cambiar
+        fields: {
+          name,
+          user_type:     userType,
+          contact_id:    contactId || null,
+          tab_access:    tabAccess,
+          my_tasks_only: myTasksOnly,
+          permissions:   perms,
+        },
+      }),
+    }).then(r => r.json()).catch(() => ({ ok: false }));
     setSaving(false);
-    if (!error && data) { onUpdated(data as AppUser); setEditing(false); }
+    if (res.ok && res.user) { onUpdated(res.user as AppUser); setEditing(false); }
   };
 
   const toggleProject = async (projectId: string, add: boolean) => {
@@ -338,7 +346,7 @@ function UserRow({
                       </div>
                       <div>
                         <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">PIN</label>
-                        <input type="password" value={pin}
+                        <input type="password" value={pin} placeholder="•••• (sin cambios)"
                           onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
                           inputMode="numeric" maxLength={8}
                           className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] px-3 py-2 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
@@ -532,24 +540,24 @@ function CreateUserForm({
     if (!name.trim()) { setError("Name is required"); return; }
     if (pin.length < 4) { setError("PIN must be at least 4 digits"); return; }
     setSaving(true);
-    const { data, error: e } = await supabase
-      .from("app_users")
-      .insert({
-        name: name.trim(),
-        pin,
-        role:          "colaborador",
-        user_type:     userType,
-        contact_id:    contactId || null,
-        tab_access:    tabAccess,
-        my_tasks_only: myTasksOnly,
-        permissions:   perms,
-        active:        true,
-      })
-      .select()
-      .single();
+    const res = await fetch("/api/auth/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        op: "create", pin,
+        fields: {
+          name: name.trim(),
+          user_type:     userType,
+          contact_id:    contactId || null,
+          tab_access:    tabAccess,
+          my_tasks_only: myTasksOnly,
+          permissions:   perms,
+        },
+      }),
+    }).then(r => r.json()).catch(() => ({ ok: false, error: "network" }));
     setSaving(false);
-    if (e) { setError(e.message); return; }
-    onCreated(data as AppUser);
+    if (!res.ok) { setError(res.error === "unauthorized" ? "Sesión expirada — vuelve a entrar" : String(res.error ?? "Error")); return; }
+    onCreated(res.user as AppUser);
   };
 
   const FORM_TABS: { id: "info" | "tabs" | "perms"; label: string }[] = [

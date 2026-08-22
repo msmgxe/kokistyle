@@ -11,6 +11,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "./supabase-admin";
+import { checkPin } from "./pin";
 
 export const SESSION_COOKIE = "lux_session";
 const MAX_AGE = 60 * 60 * 24 * 30;   // 30 días
@@ -111,24 +112,37 @@ export async function sessionFromDeviceToken(token: string): Promise<SessionPayl
 }
 
 async function sessionFromPin(pin: string): Promise<SessionPayload | null> {
-  const admin = getSupabaseAdmin();
-  const { data: cfg } = await admin
-    .from("superadmin_config").select("pin, name").eq("id", true).maybeSingle();
-  if (cfg?.pin && String(pin) === String(cfg.pin)) {
+  const cfg = await checkPin("superadmin_config", { id: true }, pin, "name");
+  if (cfg) {
     return {
       sub: "superadmin", role: "superadmin",
       name: String(cfg.name ?? "Admin"),
       exp: Math.floor(Date.now() / 1000) + MAX_AGE,
     };
   }
-  const { data: user } = await admin
-    .from("app_users").select("id, name").eq("pin", pin).eq("active", true).maybeSingle();
+  const user = await findUserByPin(pin);
   if (!user) return null;
   return {
     sub: String(user.id), role: "collaborator",
     name: String(user.name ?? ""),
     exp: Math.floor(Date.now() / 1000) + MAX_AGE,
   };
+}
+
+/**
+ * Colaborador por PIN. Con los PINes hasheados ya no se puede buscar por
+ * igualdad, así que se recorren los activos y se comprueba cada uno; el
+ * conjunto es una cuadrilla, no un padrón.
+ */
+export async function findUserByPin(pin: string): Promise<Record<string, unknown> | null> {
+  if (!pin) return null;
+  const { data } = await getSupabaseAdmin()
+    .from("app_users").select("*").eq("active", true);
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const match = await checkPin("app_users", { id: row.id }, pin);
+    if (match) return { ...row, pin: undefined, pin_hash: undefined };
+  }
+  return null;
 }
 
 /** Sesión de la petición: cookie firmada o, como respaldo temporal, el

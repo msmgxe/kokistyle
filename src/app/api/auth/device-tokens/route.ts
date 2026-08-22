@@ -2,14 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { limitByIp } from "@/src/lib/rate-limit";
 import { randomBytes } from "crypto";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import { resolveSession } from "@/src/lib/session";
 
-async function verifySuperadminPin(pin: string): Promise<boolean> {
-  const { data } = await getSupabaseAdmin()
-    .from("superadmin_config")
-    .select("pin")
-    .eq("id", true)
-    .maybeSingle();
-  return !!data && String(pin) === String(data.pin);
+/** Superadmin: cookie de sesión o el PIN que aún envía el panel. */
+async function verifySuperadmin(req: NextRequest, pin?: string): Promise<boolean> {
+  const session = await resolveSession(req, { adminPin: pin });
+  return session?.role === "superadmin";
 }
 
 export async function POST(req: NextRequest) {
@@ -21,7 +19,7 @@ export async function POST(req: NextRequest) {
       pin?: string; op?: "create" | "list" | "revoke"; label?: string; id?: string;
     };
     if (!pin || !op) return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 });
-    if (!(await verifySuperadminPin(pin))) {
+    if (!(await verifySuperadmin(req, pin))) {
       return NextResponse.json({ ok: false, error: "PIN incorrecto" }, { status: 403 });
     }
 
