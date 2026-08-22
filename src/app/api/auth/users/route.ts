@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 import { resolveSession } from "@/src/lib/session";
-import { hashPin } from "@/src/lib/pin";
+import { hashPin, MIN_PIN_LENGTH } from "@/src/lib/pin";
 import { limitByIp } from "@/src/lib/rate-limit";
 
 export const maxDuration = 15;
@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     delete fields.pin_hash;                      // nunca desde el cliente
 
     const pin = String(body.pin ?? "").trim();
-    if (body.op === "create" && pin.length < 4) {
-      return NextResponse.json({ ok: false, error: "PIN too short" }, { status: 400 });
+    if (pin && pin.length < MIN_PIN_LENGTH) {
+      return NextResponse.json({ ok: false, error: `PIN needs at least ${MIN_PIN_LENGTH} digits` }, { status: 400 });
     }
 
     /** Escribe con hash y, si la columna aún no está migrada, en claro. */

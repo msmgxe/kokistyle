@@ -72,7 +72,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
 
   // ── Step: reset PIN ────────────────────────────────────────────────────────
   const handleResetPin = async () => {
-    if (newPin.length < 4)     { setError("Mínimo 4 dígitos"); return; }
+    if (newPin.length < 6)     { setError("Mínimo 6 dígitos"); return; }
     if (newPin !== newPin2)    { setError("Los PIN no coinciden"); return; }
     setLoading(true); setError("");
     const res  = await fetch("/api/auth/reset-pin", {
@@ -225,7 +225,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                 className="mb-2 h-10 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 text-center font-mono text-lg tracking-[1em] text-[var(--brand)] placeholder:tracking-normal placeholder:text-[#C4B89A] focus:border-[var(--brand)] focus:outline-none"
               />
               {error && <p className="mb-2 text-[11px] font-semibold text-[#B0492F]">{error}</p>}
-              <button onClick={handleResetPin} disabled={loading || newPin.length < 4}
+              <button onClick={handleResetPin} disabled={loading || newPin.length < 6}
                 className="w-full rounded-xl bg-[#7B1838] py-2.5 text-sm font-bold text-white hover:bg-[#641430] disabled:opacity-40">
                 {loading ? "Guardando…" : "Guardar nuevo PIN"}
               </button>

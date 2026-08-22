@@ -17,6 +17,12 @@ import { getSupabaseAdmin } from "./supabase-admin";
 
 const N = 16384, r = 8, p = 1, KEYLEN = 32, MAXMEM = 64 * 1024 * 1024;
 
+/** Largo mínimo de un PIN nuevo. Cuatro dígitos son 10.000 combinaciones: con
+ *  el límite por IP se recorren en unas 17 horas. Con seis son un millón, que
+ *  al mismo ritmo pasa de dos meses. Los PINes viejos siguen funcionando; esto
+ *  sólo aplica al fijar uno nuevo. */
+export const MIN_PIN_LENGTH = 6;
+
 export function hashPin(pin: string): string {
   const salt = crypto.randomBytes(16);
   const key = crypto.scryptSync(String(pin), salt, KEYLEN, { N, r, p, maxmem: MAXMEM });

@@ -538,7 +538,7 @@ function CreateUserForm({
 
   const create = async () => {
     if (!name.trim()) { setError("Name is required"); return; }
-    if (pin.length < 4) { setError("PIN must be at least 4 digits"); return; }
+    if (pin.length < 6) { setError("El PIN debe tener al menos 6 dígitos"); return; }
     setSaving(true);
     const res = await fetch("/api/auth/users", {
       method: "POST",
@@ -614,7 +614,7 @@ function CreateUserForm({
             <div>
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#5C6A6E] dark:text-[#9fb0cc]">Access PIN</label>
               <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                type="password" inputMode="numeric" maxLength={8} placeholder="Min. 4 digits"
+                type="password" inputMode="numeric" maxLength={8} placeholder="Mín. 6 dígitos"
                 className="w-full rounded-xl border border-[#D7CBB3] dark:border-[#2c3c5e] px-3 py-2.5 text-sm text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none" />
             </div>
           </div>

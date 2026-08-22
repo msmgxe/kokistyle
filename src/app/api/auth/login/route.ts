@@ -28,7 +28,15 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await findUserByPin(pin);      // el PIN nunca vuelve al cliente
-    if (!user) return NextResponse.json({ ok: false, isSuperAdmin: false });
+    if (!user) {
+      // Un PIN fallido queda registrado: sin rastro no hay forma de ver un ataque.
+      console.warn(JSON.stringify({
+        scope: "auth", event: "pin_failed",
+        ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown",
+        at: new Date().toISOString(),
+      }));
+      return NextResponse.json({ ok: false, isSuperAdmin: false });
+    }
 
     const res = NextResponse.json({ ok: true, isSuperAdmin: false, user });
     setSessionCookie(res, issueSession({

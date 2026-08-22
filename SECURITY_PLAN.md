@@ -1,126 +1,143 @@
-# Análisis de seguridad y plan de endurecimiento — Luxaris Design
+# Seguridad — estado y plan · Luxaris Design
 
-> Auditoría de código realizada en jul 2026 sobre la rama `main`. Este documento resume los
-> hallazgos y propone un plan de implementación por fases. **No** contiene secretos ni PINs reales.
-
----
-
-## Resumen ejecutivo
-
-La app funciona hoy sobre la **clave pública `anon` de Supabase** (`NEXT_PUBLIC_SUPABASE_ANON_KEY`),
-que por diseño viaja en el bundle del navegador. Como varias tablas tienen políticas permisivas
-(`anon_all FOR ALL`) o RLS sin habilitar, esos datos quedan accesibles para cualquiera que abra las
-herramientas de desarrollador. **No es un bug puntual — es el modelo de acceso lo que hay que endurecer.**
-
-La buena noticia: la parte más sensible ya está bien hecha (claves privadas solo en servidor, PIN del
-superadmin verificado server-side, tokens de dispositivo con RLS cerrada, cron con secreto). El trabajo
-pendiente es principalmente **mover el resto del acceso al mismo estándar**.
-
-Prioridad: **C (crítico) → H (alto) → M (medio)**. Ninguna corrección rompe funcionalidad para el usuario
-final; son cambios de backend + políticas SQL.
+> Documento vivo. Última actualización: **21 ago 2026**.
+> Sustituye al análisis interno de jul 2026, cuyos hallazgos están resueltos o incorporados aquí.
+> Base: auditoría externa del 21 ago 2026 (`architecture-review-2026-08-21.html`), verificada
+> hallazgo por hallazgo contra el código antes de actuar.
 
 ---
 
-## Controles YA implementados (base sólida)
+## Dónde estábamos y dónde estamos
 
-- ✅ `service_role` y demás secretos (SMTP Yahoo, VAPID, Resend, Replicate, Anthropic) **solo en servidor** — `supabase-admin` se importa exclusivamente bajo `src/app/api/`.
-- ✅ PIN del superadmin verificado **server-side** vía `/api/auth/login`; nunca se compara en el navegador.
-- ✅ `superadmin_config` y `device_tokens` tienen **RLS cerrada sin política anon** — solo accesibles por `service_role`.
-- ✅ Tokens de dispositivo: aleatorios (`crypto.randomBytes(24)`), revocables, revalidados en cada apertura, con expiración.
-- ✅ `/api/agenda/remind` protegido con `Bearer CRON_SECRET` — **este es el patrón a replicar** en las demás rutas.
-- ✅ Recuperación de PIN no revela si el correo existe; el código expira en 15 min; las rutas mutantes re-verifican el PIN.
-- ✅ Sin claves API hardcodeadas en `src/` (todas por `process.env`).
+El problema no eran los secretos —esos siempre estuvieron del lado servidor— sino que **la
+autorización vivía en la interfaz**: la clave pública de Supabase, que viaja en el JavaScript de la
+web, abría la base entera. Cualquiera podía leer proyectos, clientes, costos, márgenes, pagos y
+facturas sin ninguna credencial.
 
----
+Comprobado desde fuera, con sólo la clave pública:
 
-## Hallazgos
-
-### 🔴 CRÍTICO
-
-| # | Hallazgo | Evidencia | Impacto |
-|---|---|---|---|
-| **C1** | Login de colaboradores consulta `app_users` **desde el navegador** con la anon key comparando `pin` en texto plano. Implica que `app_users` es legible por cualquiera → se puede volcar la tabla con los PINs. | `AuthContext.tsx` (login colaborador), `UsersPanel.tsx` (PIN plaintext) | Robo de credenciales de todo el equipo |
-| **C2** | Tablas de negocio sin RLS habilitada: `projects, contacts, tasks, materials, payments, expenses, project_notes, budget_items…` | `schema.sql` bloques 1–10 | Cualquier visitante lee/edita/borra finanzas, PII de clientes y **costos/ganancia internos** |
-| **C3** | ~~`/api/design-render` sin autenticación~~ **MITIGADO (jul 2026)** | `api/design-render/route.ts` | El endpoint ahora exige un **prospecto válido** con límite `FREE_RENDER_LIMIT` (default 3), o credencial de superadmin para uso interno. Ya no es invocable de forma anónima ilimitada. Pendiente reforzar con rate-limit por IP en Fase 1. |
-| **C4** | `/api/estimate/send-email` es un **relay de correo abierto** — cualquiera envía correos desde tu cuenta Yahoo con `to`/`asunto`/`cuerpo`/PDF arbitrarios | `api/estimate/send-email/route.ts` | Spam/abuso desde tu dominio, sin límite de tamaño del PDF |
-| **C5** | `/api/voice` sin autenticación | `api/voice/route.ts` | Abuso de facturación del modelo Claude |
-
-### 🟠 ALTO
-
-| # | Hallazgo | Impacto |
+| | Antes | Ahora |
 |---|---|---|
-| **H1** | PIN de superadmin de respaldo **hardcodeado** en el código como fallback si la config no está sembrada | Login admin total si `superadmin_config` queda sin PIN |
-| **H2** | Sin rate limiting ni bloqueo por intentos en **ningún** endpoint de auth; el PIN es numérico corto → fuerza bruta | Adivinación del PIN |
-| **H3** | Tablas de auditoría (`activity_log`, `voice_actions`) y `push_subscriptions`, `agenda_events` con `anon_all` y campos de identidad de texto libre | El registro de auditoría es falsificable/borrable — no confiable |
-
-### 🟡 MEDIO
-
-| # | Hallazgo | Impacto |
-|---|---|---|
-| **M1** | Bucket `kokistyle-files` público con subida anónima, sin políticas de storage | Cualquiera sube/lee objetos (fotos, adjuntos) por URL |
-| **M2** | Ruta de subida usa la extensión del archivo del cliente sin validar | Content-type arbitrario |
-| **M3** | Rutas API sin verificación de origen (CORS/método) | Sumado a C3/C4/C5, invocables desde cualquier origen |
-
-### ⚪ BAJO
-- **L1** El objeto de sesión (con `pin` del superadmin) se guarda en `sessionStorage`/`localStorage` → legible por XSS.
-- **L2** Algunas rutas devuelven el texto de error del proveedor upstream al cliente.
+| `GET /rest/v1/projects` | 11 proyectos con cliente, dirección y presupuesto | `[]` |
+| `GET /rest/v1/payments`, `contacts`, `app_users`, `invoices` | todo | `[]` |
+| `POST /rest/v1/projects` | creaba filas | **401** |
+| Listar el bucket de archivos | catálogo completo, carpeta por carpeta | cerrado |
+| Descargar una foto de obra sin credenciales | 147 KB, HTTP 200 | sólo con URL conocida (pendiente) |
 
 ---
 
-## Plan de implementación por fases
+## Fase 0 · Contención — ✅ completada
 
-### Fase 1 — Cerrar el abuso de APIs de costo *(1 día · sin cambios de datos)*
-Ataca C3, C4, C5, M3. Es lo más barato y detiene sangría de facturación/spam de inmediato.
-1. Crear un helper `requireSession(req)` server-side que exija el mismo patrón que el cron: un header
-   `Authorization: Bearer <token de sesión>` o el token de dispositivo validado contra `device_tokens`.
-2. Aplicarlo al inicio de `/api/voice`, `/api/design-render`, `/api/estimate/send-email`.
-3. En `send-email`: validar tamaño de `pdfBase64` (p.ej. ≤ 8 MB), formato de `to`, y sanitizar el `subject`.
-4. Devolver errores genéricos al cliente (L2).
+- Eliminado el PIN de respaldo del código. Estaba en `login`, `change-pin` **y** `set-email`: sin
+  fila de configuración daba superadmin y permitía cambiar el PIN real y el correo de recuperación.
+- `/api/estimate/send-email` era un relay abierto: cualquiera enviaba correo con adjuntos desde la
+  cuenta de la empresa. Ahora exige sesión, valida destinatario y limita el adjunto a 8 MB.
+- `/api/voice`, `/api/voice/transcribe` y `/api/design-scope` eran rutas facturables sin ninguna
+  verificación. Cerradas.
+- Límite por IP en login, cambio y recuperación de PIN, tokens de dispositivo, correo, IA,
+  prospectos y renders (`src/lib/rate-limit.ts`).
+- `resolveSession()` es el único punto que valida revocación **y** expiración de un token de
+  dispositivo. Antes, tres rutas aceptaban tokens caducados.
 
-### Fase 2 — Autenticación real de Supabase + RLS *(3–5 días · el cambio estructural)*
-Ataca C1, C2, H3, M1. Es el corazón del endurecimiento.
-1. **Adoptar Supabase Auth** (email mágico o usuario/clave server-side) para emitir JWTs por usuario, en
-   lugar de operar todo con la anon key. El PIN sigue siendo la UX de entrada, pero detrás se canjea por una sesión real.
-2. **Habilitar RLS en todas las tablas de negocio** con políticas por rol: el superadmin ve todo; el
-   colaborador solo sus proyectos asignados (`user_project_access`); el cliente solo lectura de su proyecto sin finanzas.
-3. Mover el login de colaboradores a una **API route server-side** (como ya está el del superadmin) — el navegador nunca vuelve a leer `app_users`.
-4. `activity_log`/`voice_actions`: política **solo INSERT** para anon, sin UPDATE/DELETE; el `user_id` lo pone el servidor, no el cliente.
+## Fase 1 · Identidad — ✅ completada
 
-### Fase 3 — Credenciales robustas *(1–2 días)*
-Ataca C1 (parte 2), H1, H2, L1.
-1. **Hash de PINs con bcrypt** en `app_users` y `superadmin_config`; comparación con `bcrypt.compare` server-side.
-2. Eliminar el **PIN de respaldo hardcodeado**; si la config no existe, forzar un flujo de siembra seguro.
-3. **Rate limiting** por IP en los endpoints de auth (p.ej. Upstash Redis o un contador en Postgres): backoff progresivo + bloqueo temporal tras N intentos.
-4. Sacar el `pin` del objeto de sesión que se guarda en web storage.
+- **Sesión de servidor firmada** (HMAC-SHA256, cookie `httpOnly`) en `src/lib/session.ts`. El PIN se
+  canjea al entrar; las rutas dejaron de creerle al cliente.
+- **PINes con scrypt** (`src/lib/pin.ts`, ~35 ms por verificación, sin dependencias nuevas). La
+  migración es transparente: el PIN en claro se acepta una última vez y se convierte en ese login.
+- El navegador dejó de consultar `app_users`: el login de colaborador se resuelve en el servidor y
+  el alta/edición pasa por `/api/auth/users`, que hashea.
+- **Mínimo de 6 dígitos** para todo PIN nuevo. Cuatro dígitos son 10.000 combinaciones: al ritmo que
+  permite el límite por IP se recorren en unas 17 horas. Seis son un millón — más de dos meses.
+  Los PINes existentes siguen funcionando; la regla aplica al fijar uno nuevo.
 
-### Fase 4 — Storage y detalles *(1 día)*
-Ataca M1, M2.
-1. Convertir `kokistyle-files` en **bucket privado** con **URLs firmadas** de vida corta para lectura.
-2. Políticas de storage: subida solo para usuarios autenticados; validar extensión/content-type contra una allowlist.
+## Fase 2 · RLS y Storage — ✅ el grueso; queda 5B
+
+La pieza que faltaba era **identidad en el navegador**: RLS decide mirando quién pregunta, y la anon
+key no dice quién es nadie. Solución: el servidor firma un JWT que PostgREST entiende
+(`src/lib/supabase-jwt.ts`) con `lux_role` y `lux_projects`, y el cliente lo usa con la opción
+`accessToken`. **Las ~150 consultas del navegador siguieron funcionando sin tocarlas.**
+
+Scripts por lotes en `sql/fase2-paso*.sql`, cada uno con comprobación y marcha atrás:
+
+| Lote | Qué cierra |
+|---|---|
+| 1, 1B, 1C | espejo de las políticas para `authenticated` (sin cambiar permisos) |
+| 3A | egresos, presupuesto legacy, facturas, órdenes de cambio y agenda → sólo superadmin |
+| 3B | pagos que el cliente lee pero no toca; `project_contacts` cerrado, con vista sin montos para el Day Planner |
+| 3C | `projects` y sus hijos por `lux_can_see(project_id)` |
+| 3D | materiales, contactos y el estimado: lectura de los del proyecto, escritura sólo del superadmin |
+| 3E | identidad, auditoría append-only, suscripciones push y reservas |
+| 4 | **retirada de las políticas `anon`** — la clave pública deja de abrir la base |
+| 5A | fin de la enumeración del bucket de archivos |
+
+`sql/fase2-verificar.sql` impersona los claims de cada rol dentro de una transacción con `ROLLBACK`
+y prueba también las escrituras: es la forma de comprobar el aislamiento sin crear usuarios y sin
+tocar datos en vivo.
+
+### Reglas que dejó esta fase
+
+1. **Nunca `FOR ALL` con un `USING` permisivo.** `USING` gobierna también el `DELETE`: quien puede
+   ver, podría borrar. Una política por comando.
+2. **Las vistas no heredan el RLS de la tabla base** — corren con los permisos de su dueño. La
+   autorización va explícita en su `WHERE`. Es el patrón para tapar columnas, que RLS no filtra.
+3. **`schema.sql` no es la fuente de verdad de las políticas.** Varias se crearon en el dashboard.
+   Consultar siempre `pg_policies` y `pg_class` antes de diseñar.
+4. **Verificar la función, no el endpoint.** Un PIN de 6 dígitos no entraba en el diálogo de notas
+   porque el input capaba a 4; la API respondía perfecto. La prueba tiene que recorrer el camino
+   completo.
 
 ---
 
-## Nota sobre módulos nuevos (Equipo / Asignaciones — jul 2026)
+## Lo que queda
 
-El módulo **Equipo** (`/proyectos/equipo`, matriz de asignación + reportes) escribe montos por co-worker en
-`project_contacts`. Mitigaciones aplicadas dentro del modelo actual: la página está **gateada a superadmin**
-(`isSuperAdmin`) y las asignaciones se **auditan** en `activity_log`. Sin embargo, `project_contacts` sigue
-operando con la anon key como el resto del negocio, por lo que hereda **C2** — su endurecimiento definitivo
-(RLS por rol para que los montos internos no sean legibles con la clave pública) forma parte de la **Fase 2**.
-No se introdujo ninguna vulnerabilidad nueva; sí un dato financiero más que la Fase 2 debe cubrir.
+### 5B · Storage privado con URLs firmadas — pendiente
 
-## Cómo priorizar si el tiempo es limitado
+Hoy el bucket es público: quien tenga una URL abre el archivo, aunque ya no pueda descubrir cuáles
+existen. Afecta a fotos de casas de clientes y a adjuntos de notas.
 
-- **Esta semana:** Fase 1 completa (detiene abuso de facturación y el relay de correo — el riesgo más "explotable hoy").
-- **Este mes:** Fase 2 (RLS + auth real — cierra la exposición de datos, que es la más grave a largo plazo).
-- **Siguiente iteración:** Fases 3 y 4.
+Plan por etapas, para no romper la landing ni la herramienta pública de AI Design:
 
-Ninguna fase cambia lo que ve el usuario final; son capas de protección por debajo. Cuando quieras arrancar,
-empezamos por la Fase 1 que es la de mayor impacto por menor esfuerzo.
+1. **Bucket privado nuevo** para `project-photos/` y `notes/` — lo verdaderamente sensible.
+2. **Migrar los archivos** con la service role y reescribir `project_photos.url` y
+   `project_notes.attachments`.
+3. **URLs firmadas** de minutos, pedidas en lote al cargar cada galería (`createSignedUrls`).
+   Toca `photos.ts`, `ProjectPhotos`, `QuickPhoto`, el hero del proyecto y los adjuntos de notas.
+4. El bucket público se queda sólo con `site/` (imágenes de la landing).
+5. **Después**: `design-leads/` y `design-renders/`. Ojo — el motor de render descarga la imagen de
+   entrada por URL, así que ahí hay que pasarle una URL firmada de corta vida.
+
+### Separar `cost` y `profit` — pendiente
+
+`estimate_items` guarda el costo y el margen junto al precio del cliente, y RLS no filtra columnas.
+La solución limpia no es otra vista, sino **una tabla aparte** (`estimate_item_costs`) que sea sólo
+del superadmin. Deja `estimate_items` con lo que el cliente puede ver, y elimina el problema de raíz.
+Es una migración con movimiento de datos: se hace sola, no mezclada con otro lote.
+
+### Fase 3 · Calidad — pendiente
+
+- Dividir el detalle de proyecto en hooks por dominio; hoy concentra demasiadas responsabilidades.
+- **47 errores y 27 advertencias de lint** (mayoría `setState` en efectos y refs en render). Se
+  corrigen por lotes antes de activar reglas nuevas.
+- Sin pruebas automatizadas: no hay script de test en `package.json`.
+- Migraciones versionadas y CI con `tsc`, lint y pruebas de políticas.
+
+### Fase 4 · Operación — pendiente
+
+- **La auditoría la escribe el cliente.** `activity_log` ya es append-only, pero el actor lo sigue
+  poniendo el navegador: debería derivarse de la sesión en el servidor.
+- Trazas y alertas de error y de gasto de IA.
+- Índices según las consultas reales; caché/ISR en la landing.
+- Migrar de las API keys legacy (`anon`/`service_role`) a las nuevas (`sb_publishable_`/`sb_secret_`).
+  **Hasta entonces no se puede revocar la llave HS256 legacy**: de ella dependen las keys actuales.
 
 ---
 
-## Nota sobre el conector de Supabase
+## Pendientes del lado de Marco
 
-El conector de Supabase en claude.ai requiere autorización en los ajustes de conectores para que yo pueda
-inspeccionar/aplicar políticas RLS directamente. Sin eso, entrego el SQL para que lo ejecutes tú en el editor de Supabase.
+- [ ] Cambiar el PIN de la colaboradora **Lidette** (`1234`, encontrado por casualidad al probar la
+      ruta de login: dos intentos bastaron).
+- [ ] Volver a poner su PIN de 6 dígitos, ahora que el diálogo de notas lo acepta.
+- [ ] Rotar la App Password de Yahoo — el relay de correo estuvo abierto.
+- [ ] Añadir `SESSION_SECRET` en Vercel (opcional; hoy la firma usa material de la service role).
+- [ ] **No revocar** la llave `360D2684…` (Legacy HS256) hasta migrar las API keys.

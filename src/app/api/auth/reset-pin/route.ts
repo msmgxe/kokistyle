@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { limitByIp } from "@/src/lib/rate-limit";
+import { MIN_PIN_LENGTH } from "@/src/lib/pin";
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 import { writePin } from "@/src/lib/pin";
 
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
   try {
     const { code, newPin } = await req.json();
 
-    if (!code || !newPin || String(newPin).length < 4) {
+    if (!code || !newPin || String(newPin).length < MIN_PIN_LENGTH) {
       return NextResponse.json({ ok: false, error: "Datos inválidos" }, { status: 400 });
     }
 

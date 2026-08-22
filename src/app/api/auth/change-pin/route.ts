@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { limitByIp } from "@/src/lib/rate-limit";
+import { MIN_PIN_LENGTH } from "@/src/lib/pin";
 import { checkPin, writePin } from "@/src/lib/pin";
 
 export async function POST(req: NextRequest) {
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const { currentPin, newPin } = await req.json();
 
-    if (!currentPin || !newPin || String(newPin).length < 4) {
+    if (!currentPin || !newPin || String(newPin).length < MIN_PIN_LENGTH) {
       return NextResponse.json({ ok: false, error: "Datos inválidos" }, { status: 400 });
     }
 

@@ -98,7 +98,7 @@ export default function AdminSettings() {
 
   const handleChangePin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (np1.length < 4)   { setPinMsg({ ok: false, text: ts.minDigits }); return; }
+    if (np1.length < 6)   { setPinMsg({ ok: false, text: ts.minDigits }); return; }
     if (np1 !== np2)      { setPinMsg({ ok: false, text: ts.pinMismatch }); return; }
     setPinLoad(true); setPinMsg(null);
     const res = await changePin(curPin, np1);
