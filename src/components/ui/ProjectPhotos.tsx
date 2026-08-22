@@ -31,7 +31,7 @@ export default function ProjectPhotos({
   onProjectChange?: () => void;      // refresca el proyecto padre (hero) al cambiar la portada
 }) {
   const { t, language } = useLanguage();
-  const { currentUser } = useAuth();
+  const { currentUser, isSuperAdmin } = useAuth();
   const tf = t.panel.fotos;
   const EN = language === "en";
 
@@ -578,7 +578,8 @@ export default function ProjectPhotos({
               </span>
               {activeProject !== "all" && (
                 <div className="space-y-2 px-5 pt-3">
-                  {coverUrl === current.url ? (
+                  {/* La portada del proyecto la fija el superadmin: escribe en `projects` */}
+                  {!isSuperAdmin ? null : coverUrl === current.url ? (
                     <div className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#4F8A63]/20 py-2.5 text-[13px] font-bold text-[#8FD3A3]">
                       <Star size={14} className="fill-current" /> {tf.isCover}
                     </div>
