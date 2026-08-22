@@ -67,9 +67,38 @@ select 4, 'SUPERADMIN',
        (select count(*) from payments), (select count(*) from expenses),
        (select count(*) from invoices), (select count(*) from materials);
 
+-- ── ¿Y las escrituras? Se intentan de verdad, dentro de la transacción ─────
+-- Nunca probar esto contra la base en vivo: aquí es seguro porque todo el
+-- script termina en ROLLBACK.
+do $$
+declare borradas int; insertadas int;
+begin
+  -- Como cliente: no debe poder borrar sus pagos
+  perform set_config('request.jwt.claims',
+    json_build_object('role','authenticated','lux_role','client',
+                      'lux_projects', json_build_array((select proyecto from lux_param)))::text, true);
+  delete from payments;
+  get diagnostics borradas = row_count;
+  insert into lux_check values (5, 'CLIENTE intenta borrar pagos', null, null, borradas, null, null, null);
+
+  -- Como colaborador: no debe poder crear proyectos
+  perform set_config('request.jwt.claims',
+    '{"role":"authenticated","lux_role":"coworker","lux_projects":[]}', true);
+  begin
+    insert into projects (title, client, address) values ('prueba-rls','x','y');
+    get diagnostics insertadas = row_count;
+  exception when others then
+    insertadas = -1;   -- -1 = rechazado por la política, que es lo correcto
+  end;
+  insert into lux_check values (6, 'COLABORADOR intenta crear proyecto', insertadas, null, null, null, null, null);
+end $$;
+
 reset role;
 
 -- ── Resultado ──────────────────────────────────────────────────────────────
+-- En las dos últimas filas: "pagos" = filas que el cliente logró borrar (debe
+-- ser 0) y "proyectos" = filas que el colaborador logró crear (debe ser -1,
+-- o sea rechazado).
 -- Esperado: el colaborador y el cliente ven 1 proyecto y sólo sus tareas;
 -- egresos y facturas siempre 0 salvo para ti; el cliente sí ve sus pagos;
 -- "SIN PROYECTOS" todo a cero; el superadmin, los totales de la primera fila.
