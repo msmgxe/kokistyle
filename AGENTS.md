@@ -2,7 +2,7 @@
 
 > **Empresa:** Luxaris Design LLC  
 > **Mercado:** Florida, USA (South Florida · Miami · Boca Raton)  
-> **URL producción:** kokistyle.vercel.app  
+> **URL producción:** luxde.vercel.app  
 > **Repo:** github.com/msmgxe/kokistyle  
 
 ---

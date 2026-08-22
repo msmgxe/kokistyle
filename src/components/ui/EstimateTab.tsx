@@ -594,7 +594,7 @@ export default function EstimateTab({
   toast: (msg: string) => void;
 }) {
   const { language } = useLanguage();
-  const { currentUser } = useAuth();
+  const { currentUser, isSuperAdmin } = useAuth();
   const EN = language === "en";
 
   const [estimate,       setEstimate]       = useState<EstimateRow | null>(null);
@@ -2237,7 +2237,8 @@ export default function EstimateTab({
               <span className="hidden sm:inline">Email</span>
             </button>
 
-            {/* Invoice / Factura */}
+            {/* Invoice / Factura — documento interno: sólo el superadmin lo emite */}
+            {isSuperAdmin && (
             <button
               onClick={openInvoiceModal}
               title={EN ? "Generate invoice from the payment schedule" : "Generar factura desde el payment schedule"}
@@ -2246,8 +2247,10 @@ export default function EstimateTab({
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3h16v18l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
               <span className="hidden sm:inline">{EN ? "Invoice" : "Factura"}</span>
             </button>
+            )}
 
-            {/* Change Order / Orden de cambio */}
+            {/* Change Order / Orden de cambio — sólo el superadmin */}
+            {isSuperAdmin && (
             <button
               onClick={openCoModal}
               title={EN ? "Issue a change order over the current contract" : "Emitir una orden de cambio sobre el contrato vigente"}
@@ -2256,6 +2259,7 @@ export default function EstimateTab({
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M12 12v6"/></svg>
               <span className="hidden sm:inline">{EN ? "Change Order" : "Orden de cambio"}</span>
             </button>
+            )}
 
             {/* PDF */}
             <button
