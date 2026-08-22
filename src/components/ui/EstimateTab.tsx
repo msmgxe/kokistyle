@@ -723,10 +723,25 @@ export default function EstimateTab({
       .eq("estimate_id", est.id)
       .order("sort_order");
 
+    // Costo y ganancia viven en `estimate_item_costs`, que sólo lee el
+    // superadmin: RLS filtra filas, no columnas, y `estimate_items` la ve el
+    // cliente. Si la tabla aún no está migrada, se usa lo que traiga la fila.
+    const itemIds = (sections ?? []).flatMap(s => ((s.items ?? []) as ItemRow[]).map(i => i.id));
+    const margins = new Map<string, { cost: number; profit: number }>();
+    if (itemIds.length) {
+      const { data: costs } = await supabase
+        .from("estimate_item_costs").select("item_id, cost, profit").in("item_id", itemIds);
+      (costs ?? []).forEach(c => margins.set(String(c.item_id), {
+        cost: Number(c.cost) || 0, profit: Number(c.profit) || 0,
+      }));
+    }
+
     const mappedSections = (sections ?? []).map(s => ({
       ...s,
       material_included: (s as { material_included?: boolean }).material_included ?? false,
-      items: ((s.items ?? []) as ItemRow[]).sort((a, b) => a.sort_order - b.sort_order),
+      items: ((s.items ?? []) as ItemRow[])
+        .map(i => ({ ...i, ...(margins.get(i.id) ?? { cost: i.cost ?? 0, profit: i.profit ?? 0 }) }))
+        .sort((a, b) => a.sort_order - b.sort_order),
     }));
 
     setEstimate({
@@ -947,6 +962,17 @@ export default function EstimateTab({
     await supabase.from("estimate_sections").update({ [field]: value }).eq("id", sectionId);
   }, []);
 
+  /** Guarda el margen en `estimate_item_costs`. Silencioso si la tabla aún no
+   *  existe: las columnas viejas siguen recibiendo el dato hasta la limpieza. */
+  const saveMargin = useCallback(async (itemId: string, cost: number, profit: number) => {
+    const { error } = await supabase.from("estimate_item_costs")
+      .upsert({ item_id: itemId, cost, profit, updated_at: new Date().toISOString() },
+              { onConflict: "item_id" });
+    if (error && !/does not exist|schema cache/.test(error.message)) {
+      console.error("estimate_item_costs:", error.message);
+    }
+  }, []);
+
   // ── Items ─────────────────────────────────────────────────────────────────
   const addItem = useCallback(async (sectionId: string) => {
     if (!newItemDesc.trim()) return;
@@ -963,6 +989,7 @@ export default function EstimateTab({
       sort_order:  section.items.length * 10,
     }).select().single();
     if (data) {
+      saveMargin(String((data as ItemRow).id), cost, profit);
       setEstimate(p => p ? ({
         ...p,
         sections: p.sections.map(s =>
@@ -971,7 +998,7 @@ export default function EstimateTab({
       }) : p);
     }
     setNewItemDesc(""); setNewItemAmt(""); setAddingItemTo(null);
-  }, [estimate, newItemDesc, newItemAmt]);
+  }, [estimate, newItemDesc, newItemAmt, saveMargin]);
 
   const updateItemLocal = (
     sectionId: string, itemId: string, field: "description" | "cost" | "profit", value: string,
@@ -998,13 +1025,14 @@ export default function EstimateTab({
   const saveItemField = useCallback(async (itemId: string) => {
     const item = estimate?.sections.flatMap(s => s.items).find(i => i.id === itemId);
     if (!item) return;
+    saveMargin(itemId, item.cost ?? 0, item.profit ?? 0);
     await supabase.from("estimate_items").update({
       description: item.description,
       cost:        item.cost ?? 0,
       profit:      item.profit ?? 0,
       amount:      item.amount ?? 0,
     }).eq("id", itemId);
-  }, [estimate]);
+  }, [estimate, saveMargin]);
 
   const deleteItem = useCallback(async (sectionId: string, itemId: string) => {
     await supabase.from("estimate_items").delete().eq("id", itemId);
@@ -2003,7 +2031,7 @@ export default function EstimateTab({
         sort_order:         sec.sort_order,
       }).select().single();
       if (newSec && sec.items.length > 0) {
-        await supabase.from("estimate_items").insert(
+        const { data: created } = await supabase.from("estimate_items").insert(
           sec.items.map(item => ({
             section_id:      newSec.id,
             item_catalog_id: null,
@@ -2013,13 +2041,19 @@ export default function EstimateTab({
             amount:          item.amount,
             sort_order:      item.sort_order,
           }))
-        );
+        ).select("id, sort_order");
+        // El margen va a su propia tabla; se emparejan por el orden original
+        (created ?? []).forEach(row => {
+          const r = row as { id: string; sort_order: number };
+          const src = sec.items.find(i => i.sort_order === r.sort_order);
+          if (src) saveMargin(String(r.id), src.cost ?? 0, src.profit ?? 0);
+        });
       }
     }
     setCopying(false);
     setShowCopyModal(false);
     toast(EN ? "Estimate copied successfully!" : "¡Estimado copiado correctamente!");
-  }, [estimate, copyTargetId, copyProjects, EN, toast]);
+  }, [estimate, copyTargetId, copyProjects, saveMargin, EN, toast]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return (

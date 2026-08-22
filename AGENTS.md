@@ -232,6 +232,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS tasks_project_source_key_idx
   WHERE source_key IS NOT NULL;
 ```
 
+### Dónde vive el margen (ago 2026)
+
+`cost` y `profit` **salen de `estimate_items`** y pasan a `estimate_item_costs` (PK `item_id`), con RLS de sólo superadmin. Motivo: RLS filtra filas, no columnas, y `estimate_items` la lee el cliente de su propio proyecto — con las tres columnas juntas, tu margen quedaba a la vista. `EstimateTab` carga los márgenes en una segunda consulta y los mezcla por id (`saveMargin()` los escribe); si la tabla aún no existe, usa lo que traiga la fila. Migración en `sql/fase2-costos.sql`; las columnas viejas se retiran con `sql/fase2-costos-limpieza.sql` una vez verificado.
+
 ### Items del Estimate — 3 columnas: costo / ganancia / cliente (jul 2026)
 
 Cada item de `estimate_items` tiene tres montos:
