@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     adjuntos: { migrados: 0, pendientes: 0, errores: [] as string[] },
     portadas: { migradas: 0, errores: [] as string[] },
     borrados: 0,
+    sinCopia: [] as string[],   // no se borraron: falta su copia privada
   };
 
   /** Copia un archivo al bucket privado. Devuelve la ruta si quedó allí. */
@@ -121,15 +122,24 @@ export async function POST(req: NextRequest) {
   informe.fotos.pendientes = faltanFotos ?? 0;
 
   // ── Borrado de originales, sólo cuando se pide explícitamente ────────────
+  // Cada archivo se borra únicamente si su copia privada existe de verdad. Sin
+  // esa comprobación, un fallo de migración se convertiría en pérdida de datos.
   if (borrar) {
     for (const carpeta of CARPETAS) {
       const { data: proyectos } = await admin.storage.from(PUBLIC_BUCKET).list(carpeta, { limit: 1000 });
       for (const sub of proyectos ?? []) {
         const { data: archivos } = await admin.storage
           .from(PUBLIC_BUCKET).list(`${carpeta}/${sub.name}`, { limit: 1000 });
-        const rutas = (archivos ?? []).map(a => `${carpeta}/${sub.name}/${a.name}`);
-        if (!rutas.length) continue;
-        const { data: quitados } = await admin.storage.from(PUBLIC_BUCKET).remove(rutas);
+
+        const seguras: string[] = [];
+        for (const a of archivos ?? []) {
+          const ruta = `${carpeta}/${sub.name}/${a.name}`;
+          const { data: estaEnPrivado } = await admin.storage.from(PRIVATE_BUCKET).exists(ruta);
+          if (estaEnPrivado) seguras.push(ruta);
+          else informe.sinCopia.push(ruta);
+        }
+        if (!seguras.length) continue;
+        const { data: quitados } = await admin.storage.from(PUBLIC_BUCKET).remove(seguras);
         informe.borrados += quitados?.length ?? 0;
       }
     }
