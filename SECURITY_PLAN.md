@@ -1,9 +1,12 @@
 # Seguridad — estado y plan · Luxaris Design
 
-> Documento vivo. Última actualización: **22 ago 2026**.
+> Documento vivo. Última actualización: **22 ago 2026** (cierre de las fases 0–4).
 > Sustituye al análisis interno de jul 2026, cuyos hallazgos están resueltos o incorporados aquí.
 > Base: auditoría externa del 21 ago 2026 (`architecture-review-2026-08-21.html`), verificada
 > hallazgo por hallazgo contra el código antes de actuar.
+>
+> Documentos hermanos: **`ARRANQUE-SEGURO.md`** (cómo empezar la próxima app sin repetir esto),
+> `AGENTS.md` (guía de trabajo), `MIGRACIONES-PENDIENTES.md` (scripts SQL y su orden).
 
 ---
 
@@ -23,6 +26,11 @@ Comprobado desde fuera, con sólo la clave pública:
 | `POST /rest/v1/projects` | creaba filas | **401** |
 | Listar el bucket de archivos | catálogo completo, carpeta por carpeta | cerrado |
 | Descargar una foto de obra sin credenciales | 147 KB, HTTP 200 | bucket privado, enlace firmado de 1 h |
+
+**Cómo funciona ahora, en una línea:** el PIN se canjea en el servidor por una cookie de sesión
+firmada (`src/lib/session.ts`); de ahí sale un JWT de Supabase con `lux_role` y `lux_projects`
+(`src/lib/supabase-jwt.ts`) que el navegador usa con la opción `accessToken` de supabase-js; las
+políticas RLS leen esos claims con `lux_role()`, `lux_is_admin()` y `lux_can_see(project_id)`.
 
 ---
 
@@ -87,16 +95,12 @@ tocar datos en vivo.
    porque el input capaba a 4; la API respondía perfecto. La prueba tiene que recorrer el camino
    completo.
 
----
-
-## Lo que queda
-
-### 5B · Storage privado con URLs firmadas — ✅ migrado, falta borrar los originales
+## Fase 2B · Storage privado con URLs firmadas — ✅ completada
 
 Bucket `luxaris-privado` (sin acceso público) para `project-photos/` y `notes/`. En la base se
 guardan referencias `priv:<ruta>` y se sirven con enlaces firmados de una hora, pedidos en lote por
-galería. Las URLs públicas antiguas se resuelven igual: **conviven**, y por eso la migración pudo
-hacerse sin apagar nada.
+galería (`src/lib/files.ts`, hook `useFileUrls`). Las URLs públicas antiguas se resuelven igual:
+**conviven**, y por eso la migración pudo hacerse sin apagar nada.
 
 Tres correcciones en el camino, todas por verificar de menos: las portadas no siempre están en la
 galería (hay que copiar el archivo, no sólo reescribir la referencia) y se guardan con `?v=<ts>`
@@ -104,57 +108,72 @@ para saltarse la caché del CDN, query que acabó dentro de la ruta. `resolveFil
 copia pública si un archivo no se puede firmar, para que un fallo de migración no deje la app sin
 imágenes.
 
-**Falta el último paso**: `POST /api/storage/migrate?borrar=1` retira los originales del bucket
-público. Hasta entonces, quien tenga una URL vieja sigue pudiendo abrirla.
+`POST /api/storage/migrate` es repetible y sólo borra el original **después** de comprobar con
+`exists()` que la copia privada está en su sitio. El paso final es correrlo con `?borrar=1`, que
+retira las copias públicas. Para comprobar que ya no queda ninguna: abrir una URL antigua
+(`…/object/public/kokistyle-files/project-photos/…`) — debe responder 400. Mientras alguna siga
+viva, quien tenga ese enlace guardado sigue abriéndolo.
 
-### El margen fuera de la vista del cliente — ✅ hecho, falta la limpieza
+## Fase 2C · El margen fuera de la vista del cliente — ✅ completada
 
-`cost` y `profit` vivían junto al precio del cliente en `estimate_items`, y RLS no filtra columnas.
-Ahora están en `estimate_item_costs`, con RLS de sólo superadmin (`sql/fase2-costos.sql`). Las
-columnas viejas siguen ahí de respaldo hasta correr `sql/fase2-costos-limpieza.sql`; **hasta
-entonces el margen sigue siendo legible** por quien vea el estimado.
+`cost` y `profit` vivían junto al precio del cliente en `estimate_items`, y **RLS filtra filas, no
+columnas**: quien podía ver el estimado veía el margen. Ahora están en `estimate_item_costs`, con
+RLS de sólo superadmin (`sql/fase2-costos.sql`), y `sql/fase2-costos-limpieza.sql` retiró las
+columnas viejas. El patrón general —lo que no todos pueden ver va en otra tabla, no en otra
+columna— es la regla 7 de `ARRANQUE-SEGURO.md`.
 
-### Fase 3 · Calidad — ✅ la red; falta la deuda
+## Fase 3 · Calidad — ✅ la red montada
 
 - **44 pruebas** con el runner de Node y *type stripping*: cero dependencias nuevas. Cubren el
   calendario de pagos, `pdfSafe`, los overrides de la orden de cambio, la generación real del PDF y
   la sesión firmada frente a manipulación, expiración y escalada de rol.
 - **Trinquete de lint** (`scripts/lint-ratchet.mjs`): la deuda vieja se tolera, la nueva bloquea.
-  Ya se ganó el sueldo — cazó un `useFileUrls` llamado después de un `return` condicional.
+  Ya se ganó el sueldo — cazó un `useFileUrls` llamado después de un `return` condicional, que es
+  una violación real de las reglas de hooks.
 - **CI** (`.github/workflows/ci.yml`): tipos, pruebas, trinquete y build en cada push.
-- Pendiente: los **47 errores de lint** (mayoría `setState` dentro de efectos) y dividir el detalle
-  de proyecto en hooks por dominio.
+- Deuda de lint: de **47 a 33 errores**. Los ~28 que quedan son el patrón de carga de datos de la
+  app (`useEffect` que llama a una función declarada después y termina en `setState`); no son
+  bugs y se dejan en la base a propósito: sacarlos exige reordenar el detalle de proyecto, que es
+  el trabajo de la siguiente sección.
 
-### Fase 4 · Operación — en curso
+## Fase 4 · Operación — ✅ lo esencial
 
-- ✅ **La auditoría la escribe el servidor.** `logActivity()` va por `POST /api/activity`, que
-  deriva el actor de la sesión firmada; lo que mande el cliente sobre quién actúa se ignora. Con
-  `sql/fase4-auditoria.sql` se le retira al navegador el permiso de escribir directo.
-- ✅ **Índices por proyecto** (`sql/fase4-indices.sql`): Postgres no indexa las claves foráneas solo,
+- **La auditoría la escribe el servidor.** `logActivity()` va por `POST /api/activity`, que deriva
+  el actor de la sesión firmada; lo que mande el cliente sobre quién actúa se ignora.
+  `sql/fase4-auditoria.sql` le retira al navegador el permiso de escribir directo.
+- **Índices por proyecto** (`sql/fase4-indices.sql`): Postgres no indexa las claves foráneas solo,
   y ahora cada consulta filtra por proyecto — las políticas evalúan `lux_can_see(project_id)` fila a
   fila.
-- Pendiente: mover también `voice_actions` (el registro de Katy) a una ruta de servidor.
-- Trazas y alertas de error y de gasto de IA.
-- Índices según las consultas reales; caché/ISR en la landing.
-- Migrar de las API keys legacy (`anon`/`service_role`) a las nuevas (`sb_publishable_`/`sb_secret_`).
-  **Hasta entonces no se puede revocar la llave HS256 legacy**: de ella dependen las keys actuales.
 
 ---
 
-## Pendientes del lado de Marco
+## Lo que queda
 
-Los tres primeros son los que todavía dejan una puerta abierta:
+Ninguno de estos puntos deja hoy una puerta abierta; son deuda y endurecimiento.
 
-- [ ] **`POST /api/storage/migrate?borrar=1`** — retira las copias públicas de las fotos y adjuntos.
-      Hasta hacerlo, quien tenga una URL vieja sigue abriéndola.
-- [ ] **`sql/fase2-costos-limpieza.sql`** — borra `cost` y `profit` de `estimate_items`. Hasta
-      entonces el margen sigue legible para quien vea el estimado.
-- [ ] **`sql/fase4-auditoria.sql`** — quita al navegador el permiso de escribir en el registro.
-      Correr después de que el despliegue de hoy esté arriba.
-- [ ] `sql/fase4-indices.sql` — índices por proyecto (rendimiento, no seguridad).
-- [ ] Rotar la App Password de Yahoo — el relay de correo estuvo abierto.
-- [ ] `SESSION_SECRET` en Vercel (opcional; hoy la firma usa material de la service role).
-      Ojo: al añadirla se cierran las sesiones abiertas.
-- [ ] **No revocar** la llave `360D2684…` (Legacy HS256) hasta migrar a las API keys nuevas
-      (`sb_publishable_` / `sb_secret_`): de ella dependen las claves `anon` y `service_role`
-      actuales, y también el token que firma el panel.
+| Pendiente | Por qué importa |
+|---|---|
+| Migrar a las API keys nuevas (`sb_publishable_` / `sb_secret_`) | Es el requisito para poder revocar la llave HS256 legacy. |
+| Rotar la App Password de Yahoo | El relay de correo estuvo abierto un tiempo; la credencial pudo verse usada. |
+| `SESSION_SECRET` propio en Vercel | Hoy la firma de sesión usa material derivado de la service role. Al añadirla se cierran las sesiones abiertas. |
+| Mover `voice_actions` a una ruta de servidor | Es el último registro que el navegador escribe directo. |
+| Dividir `proyectos/[id]/page.tsx` en hooks por dominio | 2.500 líneas; es lo que sostiene los 33 errores de lint restantes. |
+| Trazas y alertas de error y de gasto de IA | Hoy no hay aviso si una ruta facturable se dispara. |
+| Caché/ISR en la landing | Rendimiento, no seguridad. |
+
+### La regla que no se puede romper
+
+**No revocar la llave `360D2684…` (Legacy HS256)** en Supabase → JWT Keys hasta completar la
+migración a las API keys nuevas: de ella dependen las claves `anon` y `service_role` en uso **y** el
+token que el panel firma para hablar con la base. Revocarla apaga la aplicación entera.
+
+### Si algo se rompe
+
+1. **El panel no carga datos.** Abrir `/api/auth/supabase-token` con sesión: si devuelve
+   `{"token":null}`, falta `SUPABASE_JWT_SECRET` o la sesión caducó. Quitando esa variable la app
+   vuelve al comportamiento anterior.
+2. **Una pantalla se queda vacía tras un cambio de políticas.** Cada script de `sql/` trae su marcha
+   atrás comentada al pie.
+3. **Las imágenes no se ven.** Se firman con una hora de vida; comprobar que el archivo exista en
+   `luxaris-privado`.
+4. **No llegan los correos.** Yahoo exige App Password, no la contraseña de la cuenta.

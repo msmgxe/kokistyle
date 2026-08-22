@@ -6,6 +6,14 @@
 **Dónde ejecutarlo:** [SQL editor del proyecto](https://supabase.com/dashboard/project/sdbgsastykfrabndiftc/sql/new)
 → pegar → `Run`.
 
+> Este documento cubre las **migraciones de esquema** (tablas y columnas que le faltan a la base).
+> Los scripts de **seguridad** —políticas RLS, tabla de costos, auditoría e índices— viven en
+> `sql/` y se corren en el orden de su nombre: `fase2-paso1` → `1b` → `1c` → `3a`…`3e` → `4` →
+> `5a` → `5b`, luego `fase2-costos` → `fase2-costos-limpieza`, y por último `fase4-auditoria` y
+> `fase4-indices`. Cada uno trae su consulta de comprobación y su marcha atrás comentada al pie.
+> `sql/fase2-verificar.sql` prueba el aislamiento de cada rol dentro de una transacción con
+> `ROLLBACK`. El estado y el porqué de cada fase están en `SECURITY_PLAN.md`.
+
 ---
 
 ## Paso 1 — Ver qué falta de verdad
