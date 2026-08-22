@@ -528,3 +528,15 @@ ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS total_override NUMERIC(12,2);
 CREATE INDEX IF NOT EXISTS change_orders_project_idx ON change_orders(project_id, created_at DESC);
 ALTER TABLE change_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_all ON change_orders FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- ── Nota sobre RLS real (ago 2026) ───────────────────────────────────────────
+-- Este archivo NO refleja todas las políticas del proyecto: varias se crearon
+-- desde el dashboard de Supabase y sólo existen allí (projects, tasks,
+-- materials, payments, expenses, contacts, project_contacts, project_notes,
+-- budget_items, app_users, user_project_access, site_content).
+-- Antes de tocar políticas, consultar siempre el estado real:
+--   select tablename, count(*) filter (where 'anon' = any(roles)) as anon,
+--          count(*) filter (where 'authenticated' = any(roles)) as authenticated
+--   from pg_policies where schemaname = 'public' group by tablename;
+-- El espejo para `authenticated` de la Fase 2 está en sql/fase2-paso1.sql y
+-- sql/fase2-paso1b.sql.
