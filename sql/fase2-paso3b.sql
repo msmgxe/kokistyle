@@ -12,20 +12,25 @@
 -- DELETE. El cliente debe poder ver sus pagos, nunca borrarlos.
 DROP POLICY IF EXISTS lux_auth_all ON payments;
 
+DROP POLICY IF EXISTS lux_payments_read ON payments;
 CREATE POLICY lux_payments_read ON payments FOR SELECT TO authenticated
   USING (lux_is_admin() OR (lux_role() = 'client' AND lux_can_see(project_id)));
 
+DROP POLICY IF EXISTS lux_payments_insert ON payments;
 CREATE POLICY lux_payments_insert ON payments FOR INSERT TO authenticated
   WITH CHECK (lux_is_admin());
 
+DROP POLICY IF EXISTS lux_payments_update ON payments;
 CREATE POLICY lux_payments_update ON payments FOR UPDATE TO authenticated
   USING (lux_is_admin()) WITH CHECK (lux_is_admin());
 
+DROP POLICY IF EXISTS lux_payments_delete ON payments;
 CREATE POLICY lux_payments_delete ON payments FOR DELETE TO authenticated
   USING (lux_is_admin());
 
 -- ── project_contacts: lleva el monto asignado a cada especialista ──────────
 DROP POLICY IF EXISTS lux_auth_all ON project_contacts;
+DROP POLICY IF EXISTS lux_admin_only ON project_contacts;
 CREATE POLICY lux_admin_only ON project_contacts FOR ALL TO authenticated
   USING (lux_is_admin()) WITH CHECK (lux_is_admin());
 

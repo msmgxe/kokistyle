@@ -36,22 +36,27 @@ $$;
 
 -- ── El apretón ─────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS lux_auth_all ON expenses;
+DROP POLICY IF EXISTS lux_admin_only ON expenses;
 CREATE POLICY lux_admin_only ON expenses FOR ALL TO authenticated
   USING (lux_is_admin()) WITH CHECK (lux_is_admin());
 
 DROP POLICY IF EXISTS lux_auth_all ON budget_items;
+DROP POLICY IF EXISTS lux_admin_only ON budget_items;
 CREATE POLICY lux_admin_only ON budget_items FOR ALL TO authenticated
   USING (lux_is_admin()) WITH CHECK (lux_is_admin());
 
 DROP POLICY IF EXISTS lux_auth_all ON invoices;
+DROP POLICY IF EXISTS lux_admin_only ON invoices;
 CREATE POLICY lux_admin_only ON invoices FOR ALL TO authenticated
   USING (lux_is_admin()) WITH CHECK (lux_is_admin());
 
 DROP POLICY IF EXISTS lux_auth_all ON change_orders;
+DROP POLICY IF EXISTS lux_admin_only ON change_orders;
 CREATE POLICY lux_admin_only ON change_orders FOR ALL TO authenticated
   USING (lux_is_admin()) WITH CHECK (lux_is_admin());
 
 DROP POLICY IF EXISTS lux_auth_all ON agenda_events;
+DROP POLICY IF EXISTS lux_admin_only ON agenda_events;
 CREATE POLICY lux_admin_only ON agenda_events FOR ALL TO authenticated
   USING (lux_is_admin()) WITH CHECK (lux_is_admin());
 
