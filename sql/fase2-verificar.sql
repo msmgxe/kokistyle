@@ -1,67 +1,79 @@
 -- ══════════════════════════════════════════════════════════════════════════
 -- FASE 2 · VERIFICACIÓN — probar el aislamiento sin crear usuarios
 -- ══════════════════════════════════════════════════════════════════════════
--- Simula el token de cada rol dentro de una transacción y cuenta lo que vería.
--- No modifica nada: termina en ROLLBACK.
+-- Impersona el token de cada rol y cuenta lo que vería cada uno. Devuelve TODO
+-- en una sola tabla, porque el editor de Supabase sólo muestra el resultado de
+-- la última consulta. No modifica nada: termina en ROLLBACK.
 --
--- ANTES DE CORRERLO: sustituye el UUID de abajo por el id de UNO de tus
--- proyectos (cópialo de: select id, title from projects limit 5;).
+-- ANTES DE CORRERLO: pon abajo el id de UNO de tus proyectos.
+--   select id, title from projects limit 5;
 
 begin;
 
--- ── Referencia: cuántas filas hay en total (como service role) ─────────────
-select 'TOTAL (sin RLS)' as escenario,
-       (select count(*) from projects)  as proyectos,
-       (select count(*) from tasks)     as tareas,
-       (select count(*) from payments)  as pagos,
-       (select count(*) from expenses)  as egresos,
-       (select count(*) from invoices)  as facturas;
+-- ⬇⬇⬇  PEGA AQUÍ EL UUID DE UN PROYECTO TUYO  ⬇⬇⬇
+create temp table lux_param on commit drop as
+  select '00000000-0000-0000-0000-000000000000'::text as proyecto;
 
--- ── Como COLABORADOR con un solo proyecto asignado ─────────────────────────
+create temp table lux_check (
+  orden int, escenario text,
+  proyectos int, tareas int, pagos int, egresos int, facturas int, materiales int
+) on commit drop;
+grant all on lux_check, lux_param to authenticated;
+
+-- ── Referencia: el total real, sin RLS ─────────────────────────────────────
+insert into lux_check
+select 0, 'TOTAL en la base',
+       (select count(*) from projects), (select count(*) from tasks),
+       (select count(*) from payments), (select count(*) from expenses),
+       (select count(*) from invoices), (select count(*) from materials);
+
 set local role authenticated;
-set local request.jwt.claims = '{"role":"authenticated","lux_role":"coworker","lux_projects":["00000000-0000-0000-0000-000000000000"]}';
 
-select 'COLABORADOR (1 proyecto)' as escenario,
-       (select count(*) from projects)  as proyectos,   -- esperado: 1
-       (select count(*) from tasks)     as tareas,      -- sólo las de ese proyecto
-       (select count(*) from payments)  as pagos,       -- esperado: 0
-       (select count(*) from expenses)  as egresos,     -- esperado: 0
-       (select count(*) from invoices)  as facturas;    -- esperado: 0
+-- ── Colaborador con un proyecto asignado ───────────────────────────────────
+select set_config('request.jwt.claims',
+  json_build_object('role','authenticated','lux_role','coworker',
+                    'lux_projects', json_build_array((select proyecto from lux_param)))::text, true);
+insert into lux_check
+select 1, 'COLABORADOR · 1 proyecto',
+       (select count(*) from projects), (select count(*) from tasks),
+       (select count(*) from payments), (select count(*) from expenses),
+       (select count(*) from invoices), (select count(*) from materials);
 
--- ── Como CLIENTE del mismo proyecto ────────────────────────────────────────
-set local request.jwt.claims = '{"role":"authenticated","lux_role":"client","lux_projects":["00000000-0000-0000-0000-000000000000"]}';
+-- ── Cliente del mismo proyecto ─────────────────────────────────────────────
+select set_config('request.jwt.claims',
+  json_build_object('role','authenticated','lux_role','client',
+                    'lux_projects', json_build_array((select proyecto from lux_param)))::text, true);
+insert into lux_check
+select 2, 'CLIENTE · 1 proyecto',
+       (select count(*) from projects), (select count(*) from tasks),
+       (select count(*) from payments), (select count(*) from expenses),
+       (select count(*) from invoices), (select count(*) from materials);
 
-select 'CLIENTE (1 proyecto)' as escenario,
-       (select count(*) from projects)  as proyectos,   -- esperado: 1
-       (select count(*) from tasks)     as tareas,      -- sólo las de ese proyecto
-       (select count(*) from payments)  as pagos,       -- sus pagos: > 0 si los hay
-       (select count(*) from expenses)  as egresos,     -- esperado: 0
-       (select count(*) from invoices)  as facturas;    -- esperado: 0
+-- ── Sesión sin proyectos (o token inventado) ───────────────────────────────
+select set_config('request.jwt.claims',
+  '{"role":"authenticated","lux_role":"coworker","lux_projects":[]}', true);
+insert into lux_check
+select 3, 'SIN PROYECTOS',
+       (select count(*) from projects), (select count(*) from tasks),
+       (select count(*) from payments), (select count(*) from expenses),
+       (select count(*) from invoices), (select count(*) from materials);
 
--- ── Como alguien SIN proyectos (o con un token inventado) ──────────────────
-set local request.jwt.claims = '{"role":"authenticated","lux_role":"coworker","lux_projects":[]}';
+-- ── Superadmin ─────────────────────────────────────────────────────────────
+select set_config('request.jwt.claims',
+  '{"role":"authenticated","lux_role":"superadmin","lux_projects":[]}', true);
+insert into lux_check
+select 4, 'SUPERADMIN',
+       (select count(*) from projects), (select count(*) from tasks),
+       (select count(*) from payments), (select count(*) from expenses),
+       (select count(*) from invoices), (select count(*) from materials);
 
-select 'SIN PROYECTOS' as escenario,
-       (select count(*) from projects)  as proyectos,   -- esperado: 0
-       (select count(*) from tasks)     as tareas,      -- esperado: 0
-       (select count(*) from payments)  as pagos,       -- esperado: 0
-       (select count(*) from expenses)  as egresos,     -- esperado: 0
-       (select count(*) from invoices)  as facturas;    -- esperado: 0
+reset role;
 
--- ── Como SUPERADMIN ────────────────────────────────────────────────────────
-set local request.jwt.claims = '{"role":"authenticated","lux_role":"superadmin","lux_projects":[]}';
-
-select 'SUPERADMIN' as escenario,
-       (select count(*) from projects)  as proyectos,   -- todos
-       (select count(*) from tasks)     as tareas,
-       (select count(*) from payments)  as pagos,
-       (select count(*) from expenses)  as egresos,
-       (select count(*) from invoices)  as facturas;
-
--- ── ¿Y si intenta escribir donde no debe? ──────────────────────────────────
--- Descomenta para comprobar que revienta (es la prueba de que WITH CHECK actúa):
--- set local request.jwt.claims = '{"role":"authenticated","lux_role":"client","lux_projects":["00000000-0000-0000-0000-000000000000"]}';
--- delete from payments;            -- borra 0 filas: el cliente no tiene DELETE
--- insert into projects (title, client, address) values ('hackeado','x','y');  -- debe fallar
+-- ── Resultado ──────────────────────────────────────────────────────────────
+-- Esperado: el colaborador y el cliente ven 1 proyecto y sólo sus tareas;
+-- egresos y facturas siempre 0 salvo para ti; el cliente sí ve sus pagos;
+-- "SIN PROYECTOS" todo a cero; el superadmin, los totales de la primera fila.
+select escenario, proyectos, tareas, pagos, egresos, facturas, materiales
+from lux_check order by orden;
 
 rollback;
