@@ -1,6 +1,8 @@
 import { supabase } from "./supabase";
+import { PRIVATE_BUCKET, privateRef } from "./files";
 import type { PhotoTag, ProjectPhoto } from "@/src/types/project";
 
+/** Bucket público histórico. Las fotos nuevas ya no van aquí. */
 export const PHOTOS_BUCKET = "kokistyle-files";
 
 export const PHOTO_TAG_ORDER: PhotoTag[] = ["antes", "avance", "despues", "problema", "material"];
@@ -66,11 +68,13 @@ export async function uploadProjectPhoto(opts: {
 }): Promise<ProjectPhoto> {
   const blob = await compressImage(opts.file, opts.rotate ?? 0);
   const path = `project-photos/${opts.projectId}/${crypto.randomUUID()}.jpg`;
+  // Las fotos de obra son de casas de clientes: nacen en el bucket privado y en
+  // la base queda una referencia que hay que firmar para poder ver.
   const { error: upErr } = await supabase.storage
-    .from(PHOTOS_BUCKET)
+    .from(PRIVATE_BUCKET)
     .upload(path, blob, { contentType: "image/jpeg" });
   if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path);
+  const pub = { publicUrl: privateRef(path) };
   // taken_at desde la fecha real del archivo — las fotos viejas del carrete quedan en su día
   const taken_at = isoLocal(new Date(opts.file.lastModified || Date.now()));
   const row = {

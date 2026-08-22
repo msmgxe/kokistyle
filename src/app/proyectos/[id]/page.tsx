@@ -43,6 +43,8 @@ import {
 } from "@/src/lib/utils";
 import { getEstadoCuentaBlob, getGanttPdfBlob, type GanttPdfRow } from "@/src/lib/pdf";
 import PdfPreviewModal from "@/src/components/ui/PdfPreviewModal";
+import { useFileUrls } from "@/src/components/ui/useFileUrls";
+import { PRIVATE_BUCKET, privateRef } from "@/src/lib/files";
 import {
   buildGanttScale, ganttBar, laneBg, isoOfDate, todayIsoLocal, ganttX, GanttHeader, TodayLine,
 } from "@/src/components/ui/GanttCalendar";
@@ -1566,6 +1568,8 @@ function NotasTab({
   const { t } = useLanguage();
   const tp = t.panel;
   const { verifyPin: checkPin } = useAuth();
+  // Los adjuntos privados se muestran con enlace firmado
+  const fileUrl = useFileUrls(notes.flatMap(n => (n.attachments ?? []).map(a => a.url)));
   const fileRef   = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
@@ -1586,12 +1590,12 @@ function NotasTab({
   const uploadFiles = async (noteId: string, files: File[]): Promise<NoteAttachment[]> => {
     const out: NoteAttachment[] = [];
     for (const file of files) {
+      // Los adjuntos de notas son documentos del cliente: bucket privado.
       const path = `notes/${noteId}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("kokistyle-files").upload(path, file, { upsert: true });
-      if (error) { toast(`Sin bucket de almacenamiento — crea "kokistyle-files" en Supabase Storage`); continue; }
-      const { data: { publicUrl } } = supabase.storage.from("kokistyle-files").getPublicUrl(path);
+      const { error } = await supabase.storage.from(PRIVATE_BUCKET).upload(path, file, { upsert: true });
+      if (error) { toast(`No se pudo subir "${file.name}": ${error.message}`); continue; }
       const type = file.type.startsWith("image/") ? "image" : file.type === "application/pdf" ? "pdf" : "other";
-      out.push({ name: file.name, url: publicUrl, type, size: file.size });
+      out.push({ name: file.name, url: privateRef(path), type, size: file.size });
     }
     return out;
   };
@@ -1749,8 +1753,8 @@ function NotasTab({
                   {note.attachments.map((a, i) => (
                     <div key={i} className="group relative">
                       {a.type === "image"
-                        ? <img src={a.url} alt={a.name} className="h-14 w-14 rounded-lg object-cover border border-[#E6DDCB] dark:border-[#22304d]" />
-                        : <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1 text-[11px] text-[#4E7A82]"><FileText size={11}/>{a.name}</a>
+                        ? <img src={fileUrl(a.url)} alt={a.name} className="h-14 w-14 rounded-lg object-cover border border-[#E6DDCB] dark:border-[#22304d]" />
+                        : <a href={fileUrl(a.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-lg border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-2 py-1 text-[11px] text-[#4E7A82]"><FileText size={11}/>{a.name}</a>
                       }
                       <button
                         onClick={() => removeAttachment(note, i)}
@@ -1795,10 +1799,10 @@ function NotasTab({
                 <div className="mb-3 flex flex-wrap gap-2">
                   {note.attachments.map((a, i) => (
                     a.type === "image"
-                      ? <a key={i} href={a.url} target="_blank" rel="noopener noreferrer">
-                          <img src={a.url} alt={a.name} className="h-16 w-16 rounded-xl object-cover border border-[#E6DDCB] dark:border-[#22304d] transition hover:opacity-90" />
+                      ? <a key={i} href={fileUrl(a.url)} target="_blank" rel="noopener noreferrer">
+                          <img src={fileUrl(a.url)} alt={a.name} className="h-16 w-16 rounded-xl object-cover border border-[#E6DDCB] dark:border-[#22304d] transition hover:opacity-90" />
                         </a>
-                      : <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+                      : <a key={i} href={fileUrl(a.url)} target="_blank" rel="noopener noreferrer"
                           className="flex items-center gap-1.5 rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-[#F7F3EA] dark:bg-[#0b1220] px-3 py-2 text-[12px] font-medium text-[#4E7A82] transition hover:bg-[#DCE8E9] dark:hover:bg-[#122a2c]">
                           <FileText size={13}/>{a.name}
                         </a>
@@ -2091,6 +2095,10 @@ export default function ProjectDetailPage() {
     return [{ url: cover, tag: "", caption: null }, ...heroPhotos];
   }, [project?.photo_url, heroPhotos]);
 
+  // Las fotos privadas se muestran con enlace firmado. Va aquí arriba a
+  // propósito: después del `return` de carga sería un hook condicional.
+  const fileUrl = useFileUrls([project?.photo_url, ...heroPhotos.map((p) => p.url)]);
+
   const stepLightbox = useCallback((dir: 1 | -1) => {
     setLightboxIdx((i) => (i === null || galleryPhotos.length === 0
       ? i
@@ -2201,8 +2209,8 @@ export default function ProjectDetailPage() {
             </div>
             {featuredUrl ? (
               <>
-                <button onClick={() => openLightbox(featuredUrl)} className="relative block h-52 w-full overflow-hidden rounded-xl bg-slate-900">
-                  <img src={featuredUrl} alt="" className="h-full w-full object-cover" />
+                <button onClick={() => openLightbox(fileUrl(featuredUrl))} className="relative block h-52 w-full overflow-hidden rounded-xl bg-slate-900">
+                  <img src={fileUrl(featuredUrl)} alt="" className="h-full w-full object-cover" />
                   <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
                     <ImageIcon size={11} /> {tp.project.photoView}
                   </div>
@@ -2210,8 +2218,8 @@ export default function ProjectDetailPage() {
                 {thumbs.length > 0 && (
                   <div className="mt-2 grid grid-cols-4 gap-2">
                     {thumbs.map((p, i) => (
-                      <button key={i} onClick={() => openLightbox(p.url)} className="h-16 w-full overflow-hidden rounded-lg border border-[#E6DDCB] dark:border-[#22304d]">
-                        <img src={p.url} alt="" className="h-full w-full object-cover transition hover:opacity-90" />
+                      <button key={i} onClick={() => openLightbox(fileUrl(p.url))} className="h-16 w-full overflow-hidden rounded-lg border border-[#E6DDCB] dark:border-[#22304d]">
+                        <img src={fileUrl(p.url)} alt="" className="h-full w-full object-cover transition hover:opacity-90" />
                       </button>
                     ))}
                   </div>

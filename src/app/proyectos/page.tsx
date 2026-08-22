@@ -18,6 +18,7 @@ import type { Project, Payment, Expense, Task } from "@/src/types/project";
 
 type KpiType = "projects" | "budgeted" | "income" | "expenses" | "outstanding" | "cashflow";
 import ProjectFormModal from "@/src/components/ui/ProjectFormModal";
+import { useFileUrls } from "@/src/components/ui/useFileUrls";
 import ReportBuilder from "@/src/components/ui/ReportBuilder";
 import ProjectThumb from "@/src/components/ui/ProjectThumb";
 import { useVoice } from "@/src/context/VoiceContext";
@@ -173,6 +174,8 @@ function ProjectCard({
   const { t, language } = useLanguage();
   const EN = language === "en";
   const tp = t.panel;
+  // La portada puede estar en el bucket privado: hay que firmarla
+  const coverUrl = useFileUrls([project.photo_url]);
   const inc = totalIncome(project.payments);
   const adv = advancePct(project.tasks);
   const pp = paymentPct(budget, project.payments);
@@ -192,7 +195,7 @@ function ProjectCard({
           className="relative block h-36 w-full overflow-hidden"
           aria-label={tp.project.photoView}
         >
-          <img src={project.photo_url} alt="" className="h-full w-full object-cover transition hover:scale-105 duration-300" />
+          <img src={coverUrl(project.photo_url)} alt="" className="h-full w-full object-cover transition hover:scale-105 duration-300" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
           <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/35 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
             <Camera size={10} /> {tp.project.photoView}
@@ -313,7 +316,7 @@ function ProjectCard({
           <X size={18} />
         </button>
         <img
-          src={project.photo_url}
+          src={coverUrl(project.photo_url)}
           alt={project.title}
           className="max-h-[88vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
           onClick={e => e.stopPropagation()}

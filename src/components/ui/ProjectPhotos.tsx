@@ -8,14 +8,14 @@ import { useGalleryPicker } from "@/src/components/ui/useGalleryPicker";
 import { supabase } from "@/src/lib/supabase";
 import { logActivity } from "@/src/lib/activity";
 import {
-  PHOTOS_BUCKET, PHOTO_TAG_ORDER, photoTagColor, uploadProjectPhoto, compressImage,
+  PHOTO_TAG_ORDER, photoTagColor, uploadProjectPhoto, compressImage,
 } from "@/src/lib/photos";
+import { PRIVATE_BUCKET, privateRef, resolveFileUrls, removeFile } from "@/src/lib/files";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useAuth } from "@/src/context/AuthContext";
 import type { ProjectPhoto, PhotoTag } from "@/src/types/project";
 
 const TAG_ORDER = PHOTO_TAG_ORDER;
-const BUCKET = PHOTOS_BUCKET;
 
 function toIso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -43,6 +43,10 @@ export default function ProjectPhotos({
 
   const [selProject, setSelProject] = useState<string>(projectId ?? projects?.[0]?.id ?? "");
   const [photos, setPhotos] = useState<ProjectPhoto[]>([]);
+  // Las fotos privadas se sirven con enlaces firmados: aquí va la traducción
+  // de lo guardado en la base a lo que puede mostrar el navegador.
+  const [srcs, setSrcs] = useState<Map<string, string>>(new Map());
+  const src = useCallback((ref: string) => srcs.get(ref) ?? ref, [srcs]);
   const [filter, setFilter] = useState<"all" | PhotoTag>("all");
   const [loading, setLoading] = useState(true);
 
@@ -90,7 +94,9 @@ export default function ProjectPhotos({
       setPhotos([]);
       if (error.message.includes("does not exist") || error.code === "42P01") toast(tf.needsMigration);
     } else {
-      setPhotos((data as ProjectPhoto[]) ?? []);
+      const filas = (data as ProjectPhoto[]) ?? [];
+      setPhotos(filas);
+      setSrcs(await resolveFileUrls(filas.map(f => f.url)));
     }
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,8 +155,7 @@ export default function ProjectPhotos({
   const deletePhoto = async (photo: ProjectPhoto) => {
     const { error } = await supabase.from("project_photos").delete().eq("id", photo.id);
     if (error) { toast(tf.deleteError); return; }
-    const path = photo.url.split(`/${BUCKET}/`)[1];
-    if (path) supabase.storage.from(BUCKET).remove([decodeURIComponent(path)]).then(() => {});
+    removeFile(photo.url);
     setViewIdx(null);
     setConfirmDel(false);
     setPhotos(prev => prev.filter(p => p.id !== photo.id));
@@ -225,14 +230,14 @@ export default function ProjectPhotos({
   // archivo nuevo (el CDN cachea por ruta, así que reusar la misma serviría la vieja).
   const rotateStored = async (p: ProjectPhoto, deg: number): Promise<string | null> => {
     try {
-      const res = await fetch(p.url);
+      const res = await fetch(src(p.url));
       if (!res.ok) return null;
       const blob = await res.blob();
       const rotated = await compressImage(new File([blob], "foto.jpg", { type: blob.type || "image/jpeg" }), deg);
       const path = `project-photos/${p.project_id}/${crypto.randomUUID()}.jpg`;
-      const { error } = await supabase.storage.from(BUCKET).upload(path, rotated, { contentType: "image/jpeg" });
+      const { error } = await supabase.storage.from(PRIVATE_BUCKET).upload(path, rotated, { contentType: "image/jpeg" });
       if (error) return null;
-      return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+      return privateRef(path);
     } catch {
       return null;
     }
@@ -259,13 +264,14 @@ export default function ProjectPhotos({
     if (error) { toast(tf.updateError); return; }
     setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, ...patch } : x));
     if (patch.url) {
+      const firmada = await resolveFileUrls([patch.url]);
+      setSrcs(prev => new Map([...prev, ...firmada]));
       // La portada apunta a la url vieja: hay que moverla antes de borrar el archivo
       if (coverUrl === oldUrl && activeProject !== "all") {
         await supabase.from("projects").update({ photo_url: patch.url }).eq("id", activeProject);
         onProjectChange?.();
       }
-      const path = oldUrl.split(`/${BUCKET}/`)[1];
-      if (path) supabase.storage.from(BUCKET).remove([decodeURIComponent(path)]).then(() => {});
+      removeFile(oldUrl);
     }
     setEditMode(false);
     toast(tf.updated);
@@ -426,7 +432,7 @@ export default function ProjectPhotos({
               aria-label={p.caption ?? tagLabel(p.tag)}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt={p.caption ?? ""} loading="lazy" className="h-full w-full object-cover" />
+              <img src={src(p.url)} alt={p.caption ?? ""} loading="lazy" className="h-full w-full object-cover" />
               <span
                 className="absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white"
                 style={{ background: photoTagColor(p.tag) }}
@@ -481,7 +487,7 @@ export default function ProjectPhotos({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imgRef}
-              src={current.url}
+              src={src(current.url)}
               alt={current.caption ?? ""}
               style={editMode ? { transform: `rotate(${editData.rotate}deg) scale(${rotScale})` } : undefined}
               className="max-h-full max-w-full rounded-xl object-contain transition-transform duration-200"

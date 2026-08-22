@@ -455,11 +455,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS materials_project_estimate_item_idx
 - Formatea automáticamente mientras el usuario escribe: `7865632531` → `(786) 563-2531`
 - Acepta máximo 10 dígitos; filtra cualquier carácter no numérico
 
-### Storage
+### Storage (ago 2026)
 
-- Bucket: `kokistyle-files` (público)
-- Uso: adjuntos de notas (imágenes, PDFs)
-- Políticas: INSERT, SELECT, DELETE para anon
+Dos buckets, por sensibilidad:
+
+| Bucket | Acceso | Qué guarda |
+|---|---|---|
+| `kokistyle-files` | público | `site/` (imágenes de la landing) y el flujo de AI Design (`design-leads/`, `design-refs/`, `design-renders/`) |
+| `luxaris-privado` | **privado** | `project-photos/` y `notes/` — casas de clientes y documentos |
+
+- **Nada de anon**: sólo queda un permiso público, subir a `design-leads/` desde la landing. El listado del bucket está cerrado (antes se podía enumerar carpeta por carpeta y descargar sin credenciales).
+- **Referencias, no URLs**: los archivos privados se guardan en la base como `priv:<ruta>` en lugar de una URL. `src/lib/files.ts` las resuelve — `resolveFileUrls()` firma en lote (una llamada por galería, cacheada en memoria) y `removeFile()` borra en el bucket que toque. Las URLs públicas antiguas siguen funcionando: **conviven**, que es lo que permite migrar sin apagar nada.
+- En componentes se usa el hook `useFileUrls(refs)` (`src/components/ui/useFileUrls.ts`). **Ojo**: va antes de cualquier `return` condicional, o React se rompe.
+- Migración: `sql/fase2-paso5b.sql` crea el bucket y su política; `POST /api/storage/migrate` (sólo superadmin) copia los archivos y reescribe `project_photos.url`, `project_notes.attachments` y `projects.photo_url`. Es repetible y no borra: los originales se retiran con `?borrar=1` al final.
 
 ---
 
