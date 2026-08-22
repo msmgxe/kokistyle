@@ -1833,20 +1833,20 @@ function NotasTab({
             </h3>
             <p className="mb-4 text-sm text-[#5C6A6E] dark:text-[#9fb0cc]">{tp.notes.pinPrompt}</p>
             <div className="mb-1 flex justify-center gap-3">
-              {[0,1,2,3].map(i => (
+              {Array.from({ length: Math.max(4, pinValue.length) }, (_, i) => (
                 <div key={i} className={`size-3 rounded-full transition ${pinValue.length > i ? "bg-[var(--brand)]" : "bg-[#D7CBB3] dark:bg-[#17233d]"}`} />
               ))}
             </div>
             <input
               type="password"
               inputMode="numeric"
-              maxLength={4}
+              maxLength={8}
               autoFocus
               value={pinValue}
-              onChange={(e) => { setPinValue(e.target.value.replace(/\D/g,"").slice(0,4)); setPinError(""); }}
-              onKeyDown={(e) => e.key === "Enter" && pinValue.length === 4 && verifyPin()}
-              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-center font-mono text-xl tracking-[1.5em] text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
-              placeholder="••••"
+              onChange={(e) => { setPinValue(e.target.value.replace(/\D/g,"").slice(0,8)); setPinError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && pinValue.length >= 4 && verifyPin()}
+              className="mb-2 h-11 w-full rounded-xl border border-[#E6DDCB] dark:border-[#22304d] bg-white dark:bg-[#111a2e] text-center font-mono text-xl tracking-[.6em] text-[var(--brand)] focus:border-[var(--brand)] focus:outline-none"
+              placeholder="••••••"
             />
             {pinError && <p className="mb-2 text-center text-xs font-semibold text-[#B0492F]">{pinError}</p>}
             <div className="flex gap-3 mt-2">
