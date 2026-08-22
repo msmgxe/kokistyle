@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import type { AppUser, PermissionSection, PermissionAction } from "@/src/types/auth";
 import { FULL_PERMISSIONS } from "@/src/types/auth";
 import { logActivity } from "@/src/lib/activity";
+import { resetSupabaseToken } from "@/src/lib/supabase";
 
 const SUPERADMIN_TEMPLATE: Omit<AppUser, "pin"> = {
   id:            "superadmin",
@@ -149,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ pin }),
       });
       const data = await res.json() as { isSuperAdmin?: boolean; name?: string; user?: AppUser };
+      resetSupabaseToken();                     // la sesión cambió: token nuevo
 
       if (data.isSuperAdmin) {
         const user: AppUser = { ...SUPERADMIN_TEMPLATE, pin, name: data.name ?? "Admin" };
@@ -198,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //    el shortcut nunca pide PIN; para apagarlo → Seguridad → Dispositivos → Revocar
   const logout = useCallback(() => {
     fetch("/api/auth/logout", { method: "POST" }).catch(() => { /* la cookie caduca sola */ });
+    resetSupabaseToken();
     setCurrentUser(null);
     setLocked(false);
     sessionStorage.removeItem(SESSION_KEY);

@@ -766,7 +766,8 @@ Tras la auditoría del 21 ago 2026, la autorización dejó de vivir sólo en la 
 - **Rutas cerradas**: `/api/estimate/send-email` (además valida destinatario y limita el adjunto a 8 MB), `/api/voice`, `/api/voice/transcribe`, `/api/design-scope`. `/api/prospects` y `/api/design-render` siguen públicos por diseño (gate de la landing) sólo con tope por IP.
 - **`/api/auth/users`** — alta y edición de colaboradores con el PIN hasheado en el servidor: `UsersPanel` ya no escribe credenciales con la anon key. El campo PIN vacío significa "no cambiar".
 - **Sin PIN de respaldo**: se eliminó el literal que había en `login`, `change-pin` y `set-email`. Sin fila de configuración no hay superadmin.
-- **Pendiente (fase 2)**: RLS por fila, Storage privado con URLs firmadas y mover a API las consultas sensibles que hoy hace el navegador con la anon key.
+- **Fase 2 en curso — identidad para el navegador**: `src/lib/supabase-jwt.ts` firma un JWT que PostgREST entiende (`role: "authenticated"` + claims propios `lux_role` y `lux_projects`) con `SUPABASE_JWT_SECRET`; `/api/auth/supabase-token` lo entrega y `src/lib/supabase.ts` lo consume con la opción `accessToken` de supabase-js (cacheado en memoria, renovado 60 s antes de expirar). **Degradación segura**: sin sesión o sin secreto devuelve `null` y supabase-js vuelve a la anon key, así que el código convive con la app actual. Orden de trabajo en `sql/fase2-paso1.sql` y en el documento de diseño de la Fase 2.
+- **Pendiente (fase 2)**: activar RLS tabla por tabla con esas políticas, vista de `estimate_items` sin `cost`/`profit` para colaboradores, retirar las políticas `anon` y pasar el Storage a privado con URLs firmadas.
 
 ### Flujo de login
 1. PIN ingresado en `AdminModal`
